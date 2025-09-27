@@ -114,7 +114,7 @@ namespace Sky.Editor.Services.CDN
             //    return results;
             //}
 
-            purgeUrls = purgeUrls.Distinct().Select(s => s.Trim('/')).Select(s => s.Equals("root") ? "/" : "/" + s).ToList();
+            purgeUrls = purgeUrls.Distinct().ToList();
 
             foreach (var setting in settings)
             {

@@ -20,7 +20,6 @@ namespace Sky.Editor.Data.Logic
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
-    using Cosmos.Editor.Services;
     using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
@@ -31,7 +30,6 @@ namespace Sky.Editor.Data.Logic
     using Sky.Cms.Controllers;
     using Sky.Cms.Models;
     using Sky.Cms.Services;
-    using Sky.Editor.Controllers;
     using Sky.Editor.Services.CDN;
     using X.Web.Sitemap.Extensions;
 
@@ -1588,9 +1586,6 @@ namespace Sky.Editor.Data.Logic
                 w => w.ArticleNumber == articleNumber
                 && w.StatusCode != (int)StatusCodeEnum.Redirect).ToListAsync();
 
-            // This holds the new or updated page URLS.
-            var purgePaths = new List<string>();
-            purgePaths.AddRange(publishedVersions.Select(s => s.UrlPath));
 
             if (publishedVersions.Count > 0)
             {
@@ -1628,9 +1623,15 @@ namespace Sky.Editor.Data.Logic
             DbContext.Pages.Add(newPage);
             await DbContext.SaveChangesAsync();
 
-            if (newVersion.UrlPath != "root")
+            // This holds the new or updated page URLS.
+            var purgePaths = new List<string>();
+            if (newVersion.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase))
             {
-                purgePaths.Add($"/pub/articles/{newVersion.ArticleNumber}/");
+                purgePaths.Add("/");
+            }
+            else
+            {
+                purgePaths.Add($"{settings.PublisherUrl.TrimEnd('/')}/{newVersion.UrlPath.TrimStart('/')}");
             }
 
             // Publish the static webpage that are published before now (add 5 min)
@@ -1650,7 +1651,7 @@ namespace Sky.Editor.Data.Logic
                 var cdnService = CdnService.GetCdnService(DbContext, logger, accessor.HttpContext);
                 try
                 {
-                    return await cdnService.PurgeCdn(purgePaths.Select(s => "/" + s.Trim('/')).Distinct().ToList());
+                    return await cdnService.PurgeCdn(purgePaths);
                 }
                 catch (Exception ex)
                 {

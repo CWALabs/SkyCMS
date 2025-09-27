@@ -7,8 +7,6 @@
 
 namespace Sky.Editor.Services.CDN
 {
-    using Microsoft.Extensions.Logging;
-    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -16,6 +14,8 @@ namespace Sky.Editor.Services.CDN
     using System.Net.Http.Headers;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Cloudflare CDN Service for cache management.
@@ -63,7 +63,7 @@ namespace Sky.Editor.Services.CDN
         public async Task<List<CdnResult>> PurgeCdn(List<string> purgeUrls)
         {
             var model = new List<CdnResult>();
-            if (purgeUrls == null || purgeUrls.Count == 0 || purgeUrls.Any(a => a == "/"))
+            if (purgeUrls == null || purgeUrls.Count == 0 || purgeUrls.Any(a => a == "/") || purgeUrls.Any(a => a.Equals("root", StringComparison.CurrentCultureIgnoreCase)))
             {
                 return await PurgeCdn(); // Nothing to purge
             }
@@ -97,7 +97,7 @@ namespace Sky.Editor.Services.CDN
             var response = await httpClient.PostAsync(url, content);
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            var result = System.Text.Json.JsonSerializer.Deserialize<CloudflareResponse>(responseContent);
+            var result = Newtonsoft.Json.JsonConvert.DeserializeObject<CloudflareResponse>(responseContent);
 
             var cdnResult = new CdnResult
             {
@@ -121,29 +121,40 @@ namespace Sky.Editor.Services.CDN
         private class CloudflareResponse
         {
             /// <summary>
-            /// Purge result ID.
+            /// Gets or sets the purge result.
             /// </summary>
-            public Result result { get; set; }
+            [JsonProperty("result")]
+            public Result Result { get; set; }
 
             /// <summary>
-            /// Indicates success.
+            /// Gets or sets a value indicating whether it was successful.
             /// </summary>
-            public bool success { get; set; }
+            [JsonProperty("success")]
+            public bool Success { get; set; }
 
             /// <summary>
-            /// Errors
+            /// Gets or sets the error list.
             /// </summary>
-            public List<object> errors { get; set; }
+            [JsonProperty("errors")]
+            public List<object> Errors { get; set; }
 
             /// <summary>
-            /// Messages from the API.
+            /// Gets or sets the messages from the API.
             /// </summary>
-            public List<object> messages { get; set; }
+            [JsonProperty("messages")]
+            public List<string> Messages { get; set; }
         }
 
+        /// <summary>
+        ///  Result identifier.
+        /// </summary>
         private class Result
         {
-            public string id { get; set; }
+            /// <summary>
+            /// Gets or sets the unique identifier for the object.
+            /// </summary>
+            [JsonProperty("id")]
+            public string Id { get; set; }
         }
     }
 }
