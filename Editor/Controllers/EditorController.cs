@@ -39,6 +39,7 @@ namespace Sky.Cms.Controllers
     using Sky.Cms.Hubs;
     using Sky.Cms.Models;
     using Sky.Cms.Services;
+    using Sky.Editor.Services.CDN;
 
     /// <summary>
     /// Editor controller.
@@ -2257,9 +2258,8 @@ namespace Sky.Cms.Controllers
                 return Ok();
             }
 
-            var settings = await Cosmos___SettingsController.GetCdnConfiguration(dbContext);
-            var cdnService = new CdnService(settings, logger, HttpContext);
-            var result = await cdnService.PurgeCdn(new List<string>() { "/" });
+            var cdnService = CdnService.GetCdnService(dbContext, logger, HttpContext);
+            var result = await cdnService.PurgeCdn();
             return Json(result);
         }
 

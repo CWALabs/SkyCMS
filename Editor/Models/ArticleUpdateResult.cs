@@ -9,7 +9,7 @@ namespace Sky.Cms.Models
 {
     using System.Collections.Generic;
     using Cosmos.Common.Models;
-    using Sky.Editor.Controllers;
+    using Sky.Editor.Services.CDN;
 
     /// <summary>
     ///   The result of a update operation.

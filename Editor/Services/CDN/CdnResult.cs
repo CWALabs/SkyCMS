@@ -5,7 +5,7 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Sky.Editor.Controllers
+namespace Sky.Editor.Services.CDN
 {
     using System;
     using System.Net;
@@ -17,6 +17,11 @@ namespace Sky.Editor.Controllers
     /// </summary>
     public class CdnResult
     {
+        /// <summary>
+        /// Gets or sets the provider name.
+        /// </summary>
+        public string ProviderName { get; set; }
+
         /// <summary>
         /// Gets or sets the HTTP status code.
         /// </summary>
@@ -68,7 +73,7 @@ namespace Sky.Editor.Controllers
         /// <returns>The string representation of this Azure.Response.</returns>
         public override string ToString()
         {
-            return $"Status: {Status}, ReasonPhrase: {ReasonPhrase}";
+            return $"Status: {Status}, ReasonPhrase: {ReasonPhrase}, Provider: {ProviderName}.";
         }
     }
 }

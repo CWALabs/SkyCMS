@@ -7,19 +7,10 @@
 
 namespace Sky.Cms.Controllers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
     using Cosmos.BlobService;
     using Cosmos.BlobService.Models;
     using Cosmos.Common.Data;
     using Cosmos.Common.Services;
-    using Sky.Editor.Models;
-    using Cosmos.Editor.Services;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Http;
@@ -35,6 +26,15 @@ namespace Sky.Cms.Controllers
     using Sky.Cms.Services;
     using Sky.Editor.Controllers;
     using Sky.Editor.Data.Logic;
+    using Sky.Editor.Models;
+    using Sky.Editor.Services.CDN;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
 
     /// <summary>
     /// File manager controller.
@@ -1653,12 +1653,11 @@ namespace Sky.Cms.Controllers
                 {
                     metaData.RelativePath
                 };
-
-                var settings = await Cosmos___SettingsController.GetCdnConfiguration(dbContext);
-                var cdnService = new CdnService(settings, logger, HttpContext);
+                var cdnService = CdnService.GetCdnService(dbContext, logger, HttpContext);
                 _ = await cdnService.PurgeCdn(purgeUrls);
             }
         }
+
 
         private long DivideByAndRoundUp(long number, long divideBy)
         {

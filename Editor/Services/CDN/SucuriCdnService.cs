@@ -5,53 +5,58 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Cosmos.Editor.Services
+namespace Sky.Editor.Services.CDN
 {
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
     using System.Threading.Tasks;
-    using Sky.Editor.Controllers;
+    using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Sucuri CDN service API class.
     /// </summary>
-    public class SucuriCdnService
+    public class SucuriCdnService : ICdnDriver
     {
-        private readonly string sucuriApiKey;
-        private readonly string sucuriApiSecret;
+        private readonly SucuriCdnConfig config;
+        private readonly ILogger logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SucuriCdnService"/> class.
         /// </summary>
-        /// <param name="sucuriApiKey">API Key.</param>
-        /// <param name="sucuriApiSecret">API Secret.</param>
-        public SucuriCdnService(string sucuriApiKey, string sucuriApiSecret)
+        /// <param name="setting">CDN setting.</param>
+        /// <param name="logger">Log service.</param>
+        public SucuriCdnService(CdnSetting setting, ILogger logger)
         {
-            this.sucuriApiKey = sucuriApiKey;
-            this.sucuriApiSecret = sucuriApiSecret;
+            config = JsonConvert.DeserializeObject<SucuriCdnConfig>(setting.Value);
+            this.logger = logger;
         }
 
         /// <summary>
-        /// Purge content from the Sucuri CDN.
+        /// Gets the provider name.
         /// </summary>
-        /// <param name="paths">URL path.</param>
-        /// <returns>ArmOperation.</returns>
-        public async Task<List<CdnResult>> PurgeContentAsync(string[] paths)
+        public string ProviderName
+        {
+            get { return "Sucuri"; }
+        }
+
+        /// <summary>
+        /// Purges the specified list of URLs from the CDN.
+        /// </summary>
+        /// <param name="purgeUrls">List of URLs to purge.</param>
+        /// <returns>CDN purge results.</returns>
+        public async Task<List<CdnResult>> PurgeCdn(List<string> purgeUrls)
         {
             var responses = new List<CdnResult>();
 
-            if (paths.Length == 0 || paths.Length > 20 || (paths.Length == 1 && paths[0] == "/"))
+            if (purgeUrls.Count == 0 || purgeUrls.Count > 20 || purgeUrls[0] == "/")
             {
                 responses.Add(await PurgeContentAsync(string.Empty));
             }
-            else if (paths.Length == 1 || paths.Length > 20)
-            {
-                responses.Add(await PurgeContentAsync(paths[0]));
-            }
             else
             {
-                foreach (var path in paths)
+                foreach (var path in purgeUrls)
                 {
                     responses.Add(await PurgeContentAsync(path));
                 }
@@ -60,10 +65,24 @@ namespace Cosmos.Editor.Services
             return responses;
         }
 
+        /// <summary>
+        /// Purges the entire CDN for the current endpoint.
+        /// </summary>
+        /// <returns>CDN purge results.</returns>
+        public async Task<List<CdnResult>> PurgeCdn()
+        {
+            var responses = new List<CdnResult>
+            {
+                await PurgeContentAsync(string.Empty)
+            };
+
+            return responses;
+        }
+
         private async Task<CdnResult> PurgeContentAsync(string path)
         {
             using var client = new HttpClient();
-            var requestUri = $"https://waf.sucuri.net/api?k={sucuriApiKey}&s={sucuriApiSecret}&a=clearcache";
+            var requestUri = $"https://waf.sucuri.net/api?k={config.ApiKey}&s={config.ApiSecret}&a=clearcache";
             string json = string.Empty;
             if (!string.IsNullOrEmpty(path))
             {
@@ -81,8 +100,10 @@ namespace Cosmos.Editor.Services
                 IsSuccessStatusCode = result.IsSuccessStatusCode,
                 Status = result.StatusCode,
                 ReasonPhrase = result.ReasonPhrase,
-                EstimatedFlushDateTime = DateTimeOffset.UtcNow.AddMinutes(2)
+                EstimatedFlushDateTime = DateTimeOffset.UtcNow.AddMinutes(2),
+                ProviderName = ProviderName
             };
         }
+
     }
 }

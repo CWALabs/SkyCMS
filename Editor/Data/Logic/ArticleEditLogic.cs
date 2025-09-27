@@ -32,6 +32,7 @@ namespace Sky.Editor.Data.Logic
     using Sky.Cms.Models;
     using Sky.Cms.Services;
     using Sky.Editor.Controllers;
+    using Sky.Editor.Services.CDN;
     using X.Web.Sitemap.Extensions;
 
     /// <summary>
@@ -1646,8 +1647,7 @@ namespace Sky.Editor.Data.Logic
 
             if (purgePaths.Count > 0)
             {
-                var settings = await Cosmos___SettingsController.GetCdnConfiguration(DbContext);
-                var cdnService = new CdnService(settings, logger, accessor.HttpContext);
+                var cdnService = CdnService.GetCdnService(DbContext, logger, accessor.HttpContext);
                 try
                 {
                     return await cdnService.PurgeCdn(purgePaths.Select(s => "/" + s.Trim('/')).Distinct().ToList());

@@ -1,0 +1,226 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+    "handler": "Microsoft.Azure.CreateUIDef",
+    "version": "0.1.2-preview",
+    "parameters": {
+        "resourceTypes": [
+            "microsoft.storage/storageaccounts",
+            "microsoft.resources/resourcegroups"
+        ],
+        "basics": [
+            {
+                "name": "adminEmailAddress",
+                "type": "Microsoft.Common.TextBox",
+                "label": "Admin Email Address",
+                "subLabel": "",
+                "defaultValue": "",
+                "toolTip": "Enter administrator email address for initial user account and email notifications.",
+                "constraints": {
+                    "required": true,
+                    "regex": "",
+                    "validationMessage": "",
+                    "validations": []
+                },
+                "infoMessages": [],
+                "visible": true
+            },
+            {
+                "name": "azureCommunicationsConnectionString",
+                "type": "Microsoft.Common.PasswordBox",
+                "label": {
+                    "password": "Azure Communications Connection String",
+                    "confirmPassword": "Confirm password"
+                },
+                "defaultValue": "",
+                "toolTip": "If you are using Azure Communications for email, enter connection string.",
+                "constraints": {
+                    "required": false,
+                    "regex": "",
+                    "validationMessage": "",
+                    "validations": []
+                },
+                "options": {
+                    "hideConfirmation": true
+                },
+                "visible": true
+            },
+            {
+                "name": "sendGridApiKey",
+                "type": "Microsoft.Common.PasswordBox",
+                "label": {
+                    "password": "Send Grid Api Key",
+                    "confirmPassword": "Confirm password"
+                },
+                "defaultValue": "",
+                "toolTip": "If you are using SendGrid for email, enter API key.",
+                "constraints": {
+                    "required": false,
+                    "regex": "",
+                    "validationMessage": "",
+                    "validations": []
+                },
+                "options": {
+                    "hideConfirmation": true
+                },
+                "visible": true
+            },
+            {
+                "name": "smtpHostName",
+                "type": "Microsoft.Common.TextBox",
+                "label": "Smtp Host Name",
+                "subLabel": "",
+                "defaultValue": "",
+                "toolTip": "If you are using an SMTP relay, enter host name. Example: smtp.mycompany.com.",
+                "constraints": {
+                    "required": false,
+                    "regex": "",
+                    "validationMessage": "",
+                    "validations": []
+                },
+                "infoMessages": [],
+                "visible": true
+            },
+            {
+                "name": "smtpPort",
+                "type": "Microsoft.Common.TextBox",
+                "label": "Smtp Port",
+                "subLabel": "",
+                "defaultValue": "",
+                "toolTip": "If you are using an SMTP relay, enter port number. Example: 587.",
+                "constraints": {
+                    "required": false,
+                    "regex": "",
+                    "validationMessage": "",
+                    "validations": []
+                },
+                "infoMessages": [],
+                "visible": true
+            },
+            {
+                "name": "smtpEnableSsl",
+                "type": "Microsoft.Common.DropDown",
+                "label": "Smtp Enable Ssl",
+                "subLabel": "",
+                "defaultValue": " ",
+                "toolTip": "If you are using an SMTP relay, enter true or false to enable TLS/SSL.",
+                "constraints": {
+                    "required": false,
+                    "allowedValues": [
+                        {
+                            "label": "",
+                            "value": ""
+                        },
+                        {
+                            "label": "true",
+                            "value": "true"
+                        },
+                        {
+                            "label": "false",
+                            "value": "false"
+                        }
+                    ],
+                    "validations": []
+                },
+                "infoMessages": [],
+                "visible": true
+            },
+            {
+                "name": "smtpUserName",
+                "type": "Microsoft.Common.TextBox",
+                "label": "Smtp User Name",
+                "subLabel": "",
+                "defaultValue": "",
+                "toolTip": "If you are using an SMTP relay, enter user name. Example: smtpEmailUser.",
+                "constraints": {
+                    "required": false,
+                    "regex": "",
+                    "validationMessage": "",
+                    "validations": []
+                },
+                "infoMessages": [],
+                "visible": true
+            },
+            {
+                "name": "smtpPassword",
+                "type": "Microsoft.Common.PasswordBox",
+                "label": {
+                    "password": "Smtp Password",
+                    "confirmPassword": "Confirm password"
+                },
+                "defaultValue": "",
+                "toolTip": "If you are using an SMTP relay, enter user password.",
+                "constraints": {
+                    "required": false,
+                    "regex": "",
+                    "validationMessage": "",
+                    "validations": []
+                },
+                "options": {
+                    "hideConfirmation": true
+                },
+                "visible": true
+            },
+            {
+                "name": "webAppPlanChoice",
+                "type": "Microsoft.Common.DropDown",
+                "label": "Web App Plan Choice",
+                "subLabel": "",
+                "defaultValue": "Premium Tier",
+                "toolTip": "Your choice of app service plan can be changed after installation.",
+                "constraints": {
+                    "required": false,
+                    "allowedValues": [
+                        {
+                            "label": "Basic Tier",
+                            "value": "Basic Tier"
+                        },
+                        {
+                            "label": "Premium Tier",
+                            "value": "Premium Tier"
+                        }
+                    ],
+                    "validations": []
+                },
+                "infoMessages": [],
+                "visible": true
+            },
+            {
+                "name": "storageAccountType",
+                "type": "Microsoft.Common.DropDown",
+                "label": "Storage Account Type",
+                "subLabel": "",
+                "defaultValue": "Locally-redundant storage",
+                "toolTip": "For static websites, choose Geo-redundant to have your website hosted in two different regions.",
+                "constraints": {
+                    "required": false,
+                    "allowedValues": [
+                        {
+                            "label": "Locally-redundant storage",
+                            "value": "Locally-redundant storage"
+                        },
+                        {
+                            "label": "Geo-redundant storage",
+                            "value": "Geo-redundant storage"
+                        }
+                    ],
+                    "validations": []
+                },
+                "infoMessages": [],
+                "visible": true
+            }
+        ],
+        "steps": [],
+        "outputs": {
+            "adminEmailAddress": "[basics('adminEmailAddress')]",
+            "azureCommunicationsConnectionString": "[basics('azureCommunicationsConnectionString')]",
+            "sendGridApiKey": "[basics('sendGridApiKey')]",
+            "smtpHostName": "[basics('smtpHostName')]",
+            "smtpPort": "[basics('smtpPort')]",
+            "smtpEnableSsl": "[basics('smtpEnableSsl')]",
+            "smtpUserName": "[basics('smtpUserName')]",
+            "smtpPassword": "[basics('smtpPassword')]",
+            "webAppPlanChoice": "[basics('webAppPlanChoice')]",
+            "storageAccountType": "[basics('storageAccountType')]"
+        }
+    }
+}

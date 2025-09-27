@@ -9,17 +9,18 @@ namespace Sky.Editor.Controllers
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
-    using Sky.Editor.Data.Logic;
-    using Sky.Editor.Models;
-    using Cosmos.Editor.Services;
     using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
+    using Sky.Editor.Data.Logic;
+    using Sky.Editor.Models;
+    using Sky.Editor.Services.CDN;
 
     /// <summary>
     /// The settings controller.
@@ -28,10 +29,6 @@ namespace Sky.Editor.Controllers
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S101:Types should be named in PascalCase", Justification = "The URL must be unique and not have a changes of conflicting with user authored web page URLs.")]
     public class Cosmos___SettingsController : Controller
     {
-        /// <summary>
-        /// CDN group name constant.
-        /// </summary>
-        public static readonly string CDNGROUPNAME = "CDN";
         /// <summary>
         /// Editor settings group name.
         /// </summary>
@@ -58,40 +55,14 @@ namespace Sky.Editor.Controllers
         }
 
         /// <summary>
-        /// Gets a CDN configuration.
-        /// </summary>
-        /// <param name="dbContext">Database context.</param>
-        /// <returns>AzureCdnEndpoint.</returns>
-        public static async Task<List<Setting>> GetCdnConfiguration(ApplicationDbContext dbContext)
-        {
-            var settings = await dbContext.Settings.Where(f => f.Group == CDNGROUPNAME).ToListAsync();
-
-            if (settings.Any())
-            {
-                return settings;
-            }
-
-            return new List<Setting>();
-        }
-
-        /// <summary>
         /// Gets the index page.
         /// </summary>
         /// <returns>IActionResult.</returns>
         public IActionResult Index()
         {
-            if (true)
-            {
-                var model = ((EditorSettings)this.settings).GetEditorConfig();
-                model.IsMultiTenantEditor = true; // This is set by environment variables and cannot be changed.
-                return View(model);
-            }
-            else
-            {
-                var model = new EditorConfig((EditorSettings)settings);
-                model.IsMultiTenantEditor = false; // This is set by environment variables and cannot be changed.
-                return View(model);
-            }
+            var model = new EditorConfig((EditorSettings)settings);
+            model.IsMultiTenantEditor = false; // This is set by environment variables and cannot be changed.
+            return View(model);
         }
 
         /// <summary>
@@ -103,12 +74,6 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(EditorConfig model)
         {
-            model.IsMultiTenantEditor = true; // This is set by environment variables and cannot be changed.
-            //if (!ModelState.IsValid || !this.settings.IsMultiTenantEditor)
-            //{
-            //    return View(model);
-            //}
-
             // Check if mode is static website, and if so, set the blob URL.
             if (model.StaticWebPages)
             {
@@ -145,11 +110,30 @@ namespace Sky.Editor.Controllers
         /// <returns>IActionResult.</returns>
         public async Task<IActionResult> CDN()
         {
+            var model = new CdnViewModel();
             ViewData["Operation"] = null;
 
-            var settings = await GetCdnConfiguration(dbContext);
+            var settings = await dbContext.Settings.Where(f => f.Group == CdnService.CDNGROUPNAME).ToListAsync();
+            foreach (var setting in settings)
+            {
+                var cdnSetting = JsonConvert.DeserializeObject<CdnSetting>(setting.Value);
 
-            var model = new CdnService(settings, logger, HttpContext);
+                switch (cdnSetting.CdnProvider)
+                {
+                    case CdnProviderEnum.AzureCDN:
+                    case CdnProviderEnum.AzureFrontdoor:
+                        model.AzureCdn = JsonConvert.DeserializeObject<AzureCdnConfig>(cdnSetting.Value);
+                        break;
+                    case CdnProviderEnum.Cloudflare:
+                        model.Cloudflare = JsonConvert.DeserializeObject<CloudflareCdnConfig>(cdnSetting.Value);
+                        break;
+                    case CdnProviderEnum.Sucuri:
+                        model.Sucuri = JsonConvert.DeserializeObject<SucuriCdnConfig>(cdnSetting.Value);
+                        break;
+                    default:
+                        break;
+                }
+            }
 
             return View(model);
         }
@@ -157,174 +141,77 @@ namespace Sky.Editor.Controllers
         /// <summary>
         /// Updates the CDN configuration.
         /// </summary>
-        /// <param name="config">The CDN end point configuration.</param>
+        /// <param name="model">The CDN configuration.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CDN(CdnService config)
+        public async Task<IActionResult> CDN(CdnViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                return View(config);
+                return View(model);
             }
 
-            // If any of the Azure CDN fields are set, then all of them must be set.
-            if (!string.IsNullOrEmpty(config.ResourceGroup)
-                || !string.IsNullOrEmpty(config.ProfileName)
-                || !string.IsNullOrEmpty(config.EndPointName)
-                || config.SubscriptionId.HasValue)
-            {
-                if (string.IsNullOrEmpty(config.ResourceGroup))
-                {
-                    ModelState.AddModelError("ResourceGroup", "ERROR: Resource Group is required.");
-                }
-
-                if (string.IsNullOrEmpty(config.ProfileName))
-                {
-                    ModelState.AddModelError("ProfileName", "ERROR: Profile Name is required.");
-                }
-
-                if (string.IsNullOrEmpty(config.EndPointName))
-                {
-                    ModelState.AddModelError("EndPointName", "ERROR: End Point Name is required.");
-                }
-
-                if (config.SubscriptionId == null)
-                {
-                    ModelState.AddModelError("SubscriptionId", "ERROR: Subscription Id is required.");
-                }
-
-                if (!ModelState.IsValid)
-                {
-                    return View(config);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(config.SucuriApiKey) || !string.IsNullOrEmpty(config.SucuriApiSecret))
-            {
-                if (string.IsNullOrEmpty(config.SucuriApiKey))
-                {
-                    ModelState.AddModelError("SucuriApiKey", "ERROR Sucuri API Key is required.");
-                }
-
-                if (string.IsNullOrEmpty(config.SucuriApiSecret))
-                {
-                    ModelState.AddModelError("SucuriApiSecret", "ERROR Sucuri API Secret is required.");
-                }
-
-                if (!ModelState.IsValid)
-                {
-                    return View(config);
-                }
-            }
-
-            var settings = await GetCdnConfiguration(dbContext);
-
-            var profileName = settings.Find(f => f.Name == "ProfileName");
-            if (profileName == null)
-            {
-                profileName = new Setting { Group = CDNGROUPNAME, Name = "ProfileName", Value = config.ProfileName };
-                dbContext.Settings.Add(profileName);
-            }
-            else
-            {
-                profileName.Value = config.ProfileName;
-            }
-
-            var resourceGroupName = settings.Find(f => f.Name == "ResourceGroupName");
-            if (resourceGroupName == null)
-            {
-                resourceGroupName = new Setting { Group = CDNGROUPNAME, Name = "ResourceGroupName", Value = config.ResourceGroup };
-                dbContext.Settings.Add(resourceGroupName);
-            }
-            else
-            {
-                resourceGroupName.Value = config.ResourceGroup;
-            }
-
-            var isFrontDoor = settings.Find(f => f.Name == "IsFrontDoor");
-            if (isFrontDoor == null)
-            {
-                isFrontDoor = new Setting { Group = CDNGROUPNAME, Name = "IsFrontDoor", Value = config.IsFrontDoor.ToString() };
-                dbContext.Settings.Add(isFrontDoor);
-            }
-            else
-            {
-                isFrontDoor.Value = config.IsFrontDoor.ToString();
-            }
-
-            var subscriptionId = settings.Find(f => f.Name == "SubscriptionId");
-            if (subscriptionId == null)
-            {
-                subscriptionId = new Setting { Group = CDNGROUPNAME, Name = "SubscriptionId", Value = config.SubscriptionId.ToString() };
-                dbContext.Settings.Add(subscriptionId);
-            }
-            else
-            {
-                subscriptionId.Value = config.SubscriptionId.ToString();
-            }
-
-            var endPointName = settings.Find(f => f.Name == "EndPointName");
-            if (endPointName == null)
-            {
-                endPointName = new Setting { Group = CDNGROUPNAME, Name = "EndPointName", Value = config.EndPointName };
-                dbContext.Settings.Add(endPointName);
-            }
-            else
-            {
-                endPointName.Value = config.EndPointName;
-            }
-
-            var sucuriApiKey = settings.Find(f => f.Name == "SucuriApiKey");
-            if (sucuriApiKey == null)
-            {
-                sucuriApiKey = new Setting
-                {
-                    Group = CDNGROUPNAME,
-                    Name = "SucuriApiKey",
-                    Value = config.SucuriApiKey,
-                };
-                dbContext.Settings.Add(sucuriApiKey);
-            }
-            else
-            {
-                sucuriApiKey.Value = config.SucuriApiKey;
-            }
-
-            var sucuriApiSecret = settings.Find(f => f.Name == "SucuriApiSecret");
-            if (sucuriApiSecret == null)
-            {
-                sucuriApiSecret = new Setting
-                {
-                    Group = CDNGROUPNAME,
-                    Name = "SucuriApiSecret",
-                    Value = config.SucuriApiSecret,
-                };
-                dbContext.Settings.Add(sucuriApiSecret);
-            }
-            else
-            {
-                sucuriApiSecret.Value = config.SucuriApiSecret;
-            }
-
-            // Save the changes to the database.
+            // Clear out the old settings
+            var settings = await dbContext.Settings.Where(f => f.Group == CdnService.CDNGROUPNAME).ToListAsync();
+            dbContext.Settings.RemoveRange(settings);
             await dbContext.SaveChangesAsync();
 
-            // Try making a connection to the CDN to validate the configuration.
-            var message = string.Empty;
-
-            var operation = await TestConnection();
-            ViewData["Operation"] = operation;
-
-            if (operation != null && operation.Response != null && operation.Response.ContentStream != null)
+            if (!string.IsNullOrEmpty(model.AzureCdn.ProfileName))
             {
-                using var streamReader = new StreamReader(operation.Response.ContentStream);
-                message = await streamReader.ReadToEndAsync();
+                var setting = new Setting
+                {
+                    Group = CdnService.CDNGROUPNAME,
+                    Name = CdnProviderEnum.AzureCDN.ToString(),
+                    Value = JsonConvert.SerializeObject(new CdnSetting
+                    {
+                        CdnProvider = model.AzureCdn.IsFrontDoor ? CdnProviderEnum.AzureFrontdoor : CdnProviderEnum.AzureCDN,
+                        Value = JsonConvert.SerializeObject(model.AzureCdn),
+                    }),
+                    Description = "Azure CDN or Front Door configuration.",
+                };
+
+                dbContext.Settings.Add(setting);
             }
 
-            logger.LogInformation(message);
+            if (!string.IsNullOrEmpty(model.Cloudflare.ApiToken))
+            {
+                var setting = new Setting
+                {
+                    Group = CdnService.CDNGROUPNAME,
+                    Name = CdnProviderEnum.Cloudflare.ToString(),
+                    Value = JsonConvert.SerializeObject(new CdnSetting
+                    {
+                        CdnProvider = CdnProviderEnum.Cloudflare,
+                        Value = JsonConvert.SerializeObject(model.Cloudflare),
+                    }),
+                    Description = "Cloudflare CDN configuration.",
+                };
+                dbContext.Settings.Add(setting);
+            }
 
-            return View(config);
+            if (!string.IsNullOrEmpty(model.Sucuri.ApiKey))
+            {
+                var setting = new Setting
+                {
+                    Group = CdnService.CDNGROUPNAME,
+                    Name = CdnProviderEnum.Sucuri.ToString(),
+                    Value = JsonConvert.SerializeObject(new CdnSetting
+                    {
+                        CdnProvider = CdnProviderEnum.Sucuri,
+                        Value = JsonConvert.SerializeObject(model.Sucuri),
+                    }),
+                    Description = "Sucuri CDN configuration.",
+                };
+                dbContext.Settings.Add(setting);
+            }
+
+            await dbContext.SaveChangesAsync();
+
+            var operation = await TestConnection();
+            ViewData["TestResult"] = operation;
+
+            return View(model);
         }
 
         /// <summary>
@@ -333,7 +220,7 @@ namespace Sky.Editor.Controllers
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         public async Task<IActionResult> Remove()
         {
-            var cdnConfiguration = await dbContext.Settings.Where(f => f.Group == CDNGROUPNAME).ToListAsync();
+            var cdnConfiguration = await dbContext.Settings.Where(f => f.Group == CdnService.CDNGROUPNAME).ToListAsync();
 
             if (cdnConfiguration.Any())
             {
@@ -344,19 +231,20 @@ namespace Sky.Editor.Controllers
             return RedirectToAction("Index");
         }
 
-        private async Task<CdnResult> TestConnection()
+        private async Task<List<CdnResult>> TestConnection()
         {
-            var settings = await GetCdnConfiguration(dbContext);
-            var cdnService = new CdnService(settings, logger, HttpContext);
+            var cdnService = CdnService.GetCdnService(dbContext, logger, HttpContext);
 
-            if (!cdnService.IsConfigured())
+            try
             {
-                throw new InvalidOperationException("CDN configuration is not complete.");
+                var result = await cdnService.PurgeCdn(new List<string> { "/" });
+                return result;
             }
-
-            var result = await cdnService.PurgeCdn(new List<string> { "/" });
-
-            return result.FirstOrDefault();
+            catch (Exception ex)
+            { 
+                logger.LogError(ex, "Error testing CDN connection.");
+                return new List<CdnResult> { new CdnResult { IsSuccessStatusCode = false, Message = ex.Message } };
+            }
         }
     }
 }
