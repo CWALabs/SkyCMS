@@ -7,19 +7,14 @@
 
 namespace Sky.Editor.Boot
 {
-    using System;
-    using System.Text.RegularExpressions;
-    using System.Threading.RateLimiting;
-    using System.Threading.Tasks;
-    using System.Web;
     using AspNetCore.Identity.FlexDb.Extensions;
     using Azure.Identity;
     using Cosmos.BlobService;
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Services.Configurations;
-    using Sky.Editor.Data.Logic;
     using Cosmos.EmailServices;
+    using EllipticCurve.Utils;
     using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.DataProtection;
@@ -37,6 +32,13 @@ namespace Sky.Editor.Boot
     using Newtonsoft.Json.Serialization;
     using Sky.Cms.Hubs;
     using Sky.Cms.Services;
+    using Sky.Editor.Data.Logic;
+    using Sky.Editor.Services;
+    using System;
+    using System.Text.RegularExpressions;
+    using System.Threading.RateLimiting;
+    using System.Threading.Tasks;
+    using System.Web;
 
     /// <summary>
     /// Boots up the multi-tenant editor.
@@ -71,6 +73,15 @@ namespace Sky.Editor.Boot
 
             // Database connection string
             var connectionString = builder.Configuration.GetConnectionString("ApplicationDbContextConnection");
+
+            // Backup storage connection string
+            var backupConnectionString = builder.Configuration.GetConnectionString("BackupStorageConnectionString");
+            if (!string.IsNullOrEmpty(backupConnectionString))
+            {
+                // Create the blob storage context for backup and restore of the database.
+                builder.Services.AddSingleton<FileBackupRestoreService>();
+            }
+
 
             // If this is set, the Cosmos identity provider will:
             // 1. Create the database if it does not already exist.
@@ -290,7 +301,28 @@ namespace Sky.Editor.Boot
                 }));
 
             var app = builder.Build();
-                        
+
+            // If there is a backup connection string, then restore the database file now.
+            // Also, on shutdown of the application, upload the database file to storage.
+            if (!string.IsNullOrEmpty(backupConnectionString))
+            {
+                // If the connection string is for SQLite, then restore the database file.
+                var databasePath = connectionString.Split('=')[1];
+                var databaseFileName = System.IO.Path.GetFileName(databasePath);
+
+                // Restore any files from blob storage to local file system.
+                var backupService = app.Services.GetRequiredService<FileBackupRestoreService>();
+                var localFilePath = System.IO.Path.Combine("/app/data/", databaseFileName);
+                backupService.DownloadAsync(databaseFileName, localFilePath).Wait();
+
+                // Upload SQLite file to blob storage on shutdown
+                var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+                lifetime.ApplicationStopping.Register(() =>
+                {
+                    backupService.UploadAsync(localFilePath, databaseFileName).Wait();
+                });
+            }
+
             // https://seankilleen.com/2020/06/solved-net-core-azure-ad-in-docker-container-incorrectly-uses-an-non-https-redirect-uri/
             app.UseForwardedHeaders();
 

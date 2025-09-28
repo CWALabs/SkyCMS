@@ -64,7 +64,7 @@ Managed identity (no secret in config):
 
 ## Amazon S3
 
-TL;DR connection string:
+Quick setup guide: see [AWS S3 access keys for SkyCMS](./AWS-S3-AccessKeys.md) for a step‑by‑step, least‑privilege walkthrough (create IAM user, bucket‑scoped policy, and access keys).
 
 ```json
 {
@@ -85,12 +85,20 @@ Best practice: Scope IAM permissions to the specific bucket and required actions
 
 ## Cloudflare R2 (S3-compatible)
 
-Cloudflare R2 is S3-compatible. However, the current implementation uses the AWS SDK with regional endpoints and does not expose a custom S3 endpoint in configuration. R2 typically requires a custom endpoint (e.g., `https://<account>.r2.cloudflarestorage.com`).
+Cloudflare R2 is S3-compatible. With SkyCMS you’ll provide your Account ID, bucket name, and S3-style credentials (Key ID/Secret). Some SDKs also require a custom endpoint like `https://<account-id>.r2.cloudflarestorage.com`.
 
-- If you need R2 support, you will likely require a code change to provide a custom ServiceURL in the S3 client configuration.
-- In the meantime, prefer Azure Blob Storage or Amazon S3 for a turnkey setup.
+Quick setup guide: see [Cloudflare R2 access keys for SkyCMS](./Cloudflare-R2-AccessKeys.md) to find your Account ID and bucket, and to generate an S3 API token (read/write/delete).
 
-R2 credentials are created from the Cloudflare dashboard (R2 → API Tokens). Use a User API Token with appropriate bucket scope.
+Format the connection string for R2 storage in the following manner. Note it requires
+an Account ID, Bucket name, Key ID and Key Secret:
+
+```json
+{
+   "ConnectionStrings": {
+      "StorageConnectionString": "AccountId={Account ID};Bucket={bucket name};KeyId={access-key-id};Key={secret-access-key};"
+   }
+}
+```
 
 ---
 

@@ -101,8 +101,9 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
   - MS SQL, MySQL: Multi-user, globally distributed NoSQL database
   - SQLite: Built in database for single editor applications
 - **Cloud Storage Options**
-  - Azure Storage: File share and BLOB storage for web assets
+  - Azure Storage: File share and BLOB storage
   - Amazon S3 (and compatible): BLOB storage
+  - Cloudflare R2 for BLOB storage
   - Any SMB or NFS persistent file share storage
 
 ## 📁 Project Structure
@@ -215,7 +216,9 @@ dotnet run --project Editor
 ## 📖 Documentation
 
 - **Installation Guide**: [sky.moonrise.net/install](/ArmTemplates/README.md)
-- **Storage Configuration**: [Docs/StorageConfig.md](./Docs/StorageConfig.md) — Supported providers (Azure Blob, AWS S3), container/bucket naming, CDN integration, and recommended settings
+- **Storage Configuration**: [Docs/StorageConfig.md](./Docs/StorageConfig.md) — Supported providers (Azure Blob, AWS S3, Cloudflare R2), container/bucket naming, CDN integration, and recommended settings
+  - AWS: [AWS S3 access keys (quick guide)](./Docs/AWS-S3-AccessKeys.md)
+  - Cloudflare: [Cloudflare R2 access keys (quick guide)](./Docs/Cloudflare-R2-AccessKeys.md)
 - **Database Configuration**: [Docs/DatabaseConfig.md](./Docs/DatabaseConfig.md) — Provider options (Cosmos DB, SQL Server, MySQL, SQLite), connection strings, EF configuration, and migration guidance
 - **Developer Documentation**: sky.moonrise.net/docs (coming soon)
 - **API Reference**: Available in the running application

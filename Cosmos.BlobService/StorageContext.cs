@@ -7,11 +7,7 @@
 
 namespace Cosmos.BlobService
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
+    using Amazon.Runtime.Internal.Util;
     using Azure.Identity;
     using Cosmos.BlobService.Config;
     using Cosmos.BlobService.Drivers;
@@ -20,6 +16,11 @@ namespace Cosmos.BlobService
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <summary>
     ///     Multi cloud blob service context.
@@ -68,6 +69,19 @@ namespace Cosmos.BlobService
                 var connectionString = configuration.GetConnectionString("StorageConnectionString") ?? configuration.GetConnectionString("AzureBlobStorageConnectionString");
                 primaryDriver = GetDriverFromConnectionString(connectionString);
             }
+        }
+
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StorageContext"/> class.
+        /// </summary>
+        /// <param name="connectionString">Connection string.</param>
+        /// <param name="cache">Memory cache.</param>
+        public StorageContext(string connectionString, IMemoryCache cache)
+        {
+            isMultiTenant = false;
+            memoryCache = cache;
+            primaryDriver = GetDriverFromConnectionString(connectionString);
         }
 
         /// <summary>
