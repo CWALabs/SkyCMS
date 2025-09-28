@@ -7,7 +7,11 @@
 
 namespace Cosmos.BlobService
 {
-    using Amazon.Runtime.Internal.Util;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Azure.Identity;
     using Cosmos.BlobService.Config;
     using Cosmos.BlobService.Drivers;
@@ -16,11 +20,6 @@ namespace Cosmos.BlobService
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>
     ///     Multi cloud blob service context.
@@ -402,6 +401,25 @@ namespace Cosmos.BlobService
             if (connectionString.StartsWith("DefaultEndpointsProtocol=", StringComparison.CurrentCultureIgnoreCase))
             {
                 return new AzureStorage(connectionString, new DefaultAzureCredential());
+            }
+            else if (connectionString.Contains("accountid", StringComparison.CurrentCultureIgnoreCase))
+            {
+                // Example: AccountId=xxxxxx;Bucket=cosmoscms-001;KeyId=AKIA;Key=MySecretKey;
+                var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                var bucket = parts.FirstOrDefault(p => p.StartsWith("Bucket=", StringComparison.CurrentCultureIgnoreCase)).Split("=")[1];
+                var accountId = parts.FirstOrDefault(p => p.StartsWith("AccountId=", StringComparison.CurrentCultureIgnoreCase)).Split("=")[1];
+                var keyId = parts.FirstOrDefault(p => p.StartsWith("KeyId=", StringComparison.CurrentCultureIgnoreCase)).Split("=")[1];
+                var key = parts.FirstOrDefault(p => p.StartsWith("Key=", StringComparison.CurrentCultureIgnoreCase)).Split("=")[1];
+
+                return new AmazonStorage(
+                    new AmazonStorageConfig()
+                    {
+                        AccountId = accountId,
+                        KeyId = keyId,
+                        Key = key,
+                        BucketName = bucket,
+                    },
+                    memoryCache);
             }
             else if (connectionString.Contains("bucket", StringComparison.CurrentCultureIgnoreCase))
             {
