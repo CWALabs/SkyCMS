@@ -232,6 +232,7 @@ dotnet run --project Editor
   - Cloudflare: [Cloudflare R2 access keys (quick guide)](./Docs/Cloudflare-R2-AccessKeys.md)
   - Cloudflare: [Edge/origin-less hosting guide (R2 + Worker)](./Docs/CloudflareEdgeHosting.md)
 - **Database Configuration**: [Docs/DatabaseConfig.md](./Docs/DatabaseConfig.md) — Provider options (Cosmos DB, SQL Server, MySQL, SQLite), connection strings, EF configuration, and migration guidance
+- **AWS Deployment (CloudFormation + ECS Fargate)**: [AWS/README.md](./AWS/README.md)
 - **Developer Documentation**: sky.moonrise.net/docs (coming soon)
 - **API Reference**: Available in the running application
 - **Video Tutorials**: YouTube Channel (coming soon)

@@ -1,0 +1,450 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, ALB, S3 (blob storage), and EFS (SQLite persistence)
+
+Parameters:
+  StackName:
+    Type: String
+    Default: skycms
+    Description: Logical name prefix for created resources
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Existing VPC ID to deploy into
+
+  PublicSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Public subnets (in at least two AZs) for ALB and tasks
+
+  S3BucketName:
+    Type: String
+    Description: S3 bucket name for blob storage
+
+  S3Region:
+    Type: String
+    Description: AWS region of the S3 bucket (e.g., us-west-2)
+
+  S3AccessKeyId:
+    Type: String
+    NoEcho: true
+    Description: S3 access key ID used by the app to access the bucket
+
+  S3SecretAccessKey:
+    Type: String
+    NoEcho: true
+    Description: S3 secret access key used by the app to access the bucket
+
+  AdminEmailAddress:
+    Type: String
+    Description: Administrator email for initial account and notifications
+
+  SmtpHostName:
+    Type: String
+    Default: ''
+    Description: SMTP relay host (optional)
+
+  SmtpPort:
+    Type: Number
+    Default: 587
+    Description: SMTP port (optional)
+
+  SmtpEnableTls:
+    Type: String
+    AllowedValues: ['true','false']
+    Default: 'true'
+    Description: Enable TLS for SMTP (optional)
+
+  SmtpUserName:
+    Type: String
+    Default: ''
+    Description: SMTP username (optional)
+
+  SmtpPassword:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: SMTP password (optional)
+
+  SendGridApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: SendGrid API key (optional)
+
+  DesiredCount:
+    Type: Number
+    Default: 1
+    Description: Desired number of ECS tasks for each service
+
+  EditorImage:
+    Type: String
+    Default: toiyabe/sky-editor:latest
+    Description: Container image for the Editor service
+
+  PublisherImage:
+    Type: String
+    Default: toiyabe/sky-publisher:latest
+    Description: Container image for the Publisher service
+
+Mappings: {}
+
+Conditions:
+  UseSMTP: !Not [ !Equals [ !Ref SmtpHostName, '' ] ]
+  UseSendGrid: !Not [ !Equals [ !Ref SendGridApiKey, '' ] ]
+
+Resources:
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP/8080 to ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/ecs/${StackName}"
+      RetentionInDays: 14
+
+  EfsFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      PerformanceMode: generalPurpose
+      ThroughputMode: bursting
+      FileSystemTags:
+        - Key: Name
+          Value: !Sub "${StackName}-sqlite"
+
+  EfsMountSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow NFS for EFS mounts
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref EditorServiceSG
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref PublisherServiceSG
+
+  EfsMountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EfsFileSystem
+      SubnetId: !Select [ 0, !Ref PublicSubnets ]
+      SecurityGroups: [ !Ref EfsMountSecurityGroup ]
+
+  EfsMountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EfsFileSystem
+      SubnetId: !Select [ 1, !Ref PublicSubnets ]
+      SecurityGroups: [ !Ref EfsMountSecurityGroup ]
+
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${StackName}-cluster"
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "${StackName}-alb"
+      Scheme: internet-facing
+      Subnets: !Ref PublicSubnets
+      SecurityGroups: [ !Ref AlbSecurityGroup ]
+
+  TargetGroupEditor:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${StackName}-tg-editor"
+      TargetType: ip
+      Protocol: HTTP
+      Port: 80
+      VpcId: !Ref VpcId
+      HealthCheckPath: /
+      Matcher:
+        HttpCode: 200-399
+
+  TargetGroupPublisher:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${StackName}-tg-pub"
+      TargetType: ip
+      Protocol: HTTP
+      Port: 80
+      VpcId: !Ref VpcId
+      HealthCheckPath: /Identity/Account/Login
+      Matcher:
+        HttpCode: 200-399
+
+  ListenerEditor:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroupEditor
+
+  ListenerPublisher:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 8080
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroupPublisher
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: s3-access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${S3BucketName}"
+                  - !Sub "arn:aws:s3:::${S3BucketName}/*"
+
+  EditorTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${StackName}-editor"
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [ FARGATE ]
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      Volumes:
+        - Name: sqlite
+          EFSVolumeConfiguration:
+            FilesystemId: !Ref EfsFileSystem
+            TransitEncryption: ENABLED
+            RootDirectory: '/'
+      ContainerDefinitions:
+        - Name: editor
+          Image: !Ref EditorImage
+          Essential: true
+          PortMappings:
+            - ContainerPort: 80
+              Protocol: tcp
+          Environment:
+            - Name: AdminEmail
+              Value: !Ref AdminEmailAddress
+            - Name: CosmosAllowSetup
+              Value: 'true'
+            - Name: CosmosPublisherUrl
+              Value: !Sub "http://${LoadBalancer.DNSName}:8080"
+            - Name: AzureBlobStorageEndPoint
+              Value: '/'
+            - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
+              Value: 'false'
+            - Name: CosmosSendGridApiKey
+              Value: !If [ UseSendGrid, !Ref SendGridApiKey, '' ]
+            - Name: SmtpEmailProviderOptions__Host
+              Value: !If [ UseSMTP, !Ref SmtpHostName, '' ]
+            - Name: SmtpEmailProviderOptions__Port
+              Value: !If [ UseSMTP, !Ref SmtpPort, '587' ]
+            - Name: SmtpEmailProviderOptions__EnableSsl
+              Value: !If [ UseSMTP, !Ref SmtpEnableTls, 'true' ]
+            - Name: SmtpEmailProviderOptions__UserName
+              Value: !If [ UseSMTP, !Ref SmtpUserName, '' ]
+            - Name: SmtpEmailProviderOptions__Password
+              Value: !If [ UseSMTP, !Ref SmtpPassword, '' ]
+            - Name: ConnectionStrings__ApplicationDbContextConnection
+              Value: 'Data Source=/data/sqlite/skycms.db'
+            - Name: ConnectionStrings__StorageConnectionString
+              Value: !Sub 'Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};'
+          Secrets: []
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: editor
+          MountPoints:
+            - ContainerPath: /data/sqlite
+              SourceVolume: sqlite
+          LinuxParameters:
+            InitProcessEnabled: true
+
+  PublisherTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${StackName}-publisher"
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [ FARGATE ]
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      Volumes:
+        - Name: sqlite
+          EFSVolumeConfiguration:
+            FilesystemId: !Ref EfsFileSystem
+            TransitEncryption: ENABLED
+            RootDirectory: '/'
+      ContainerDefinitions:
+        - Name: publisher
+          Image: !Ref PublisherImage
+          Essential: true
+          PortMappings:
+            - ContainerPort: 80
+              Protocol: tcp
+          Environment:
+            - Name: AdminEmail
+              Value: !Ref AdminEmailAddress
+            - Name: CosmosStaticWebPages
+              Value: 'true'
+            - Name: AzureBlobStorageEndPoint
+              Value: '/'
+            - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
+              Value: 'false'
+            - Name: CosmosSendGridApiKey
+              Value: !If [ UseSendGrid, !Ref SendGridApiKey, '' ]
+            - Name: SmtpEmailProviderOptions__Host
+              Value: !If [ UseSMTP, !Ref SmtpHostName, '' ]
+            - Name: SmtpEmailProviderOptions__Port
+              Value: !If [ UseSMTP, !Ref SmtpPort, '587' ]
+            - Name: SmtpEmailProviderOptions__EnableSsl
+              Value: !If [ UseSMTP, !Ref SmtpEnableTls, 'true' ]
+            - Name: SmtpEmailProviderOptions__UserName
+              Value: !If [ UseSMTP, !Ref SmtpUserName, '' ]
+            - Name: SmtpEmailProviderOptions__Password
+              Value: !If [ UseSMTP, !Ref SmtpPassword, '' ]
+            - Name: ConnectionStrings__ApplicationDbContextConnection
+              Value: 'Data Source=/data/sqlite/skycms.db'
+            - Name: ConnectionStrings__StorageConnectionString
+              Value: !Sub 'Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};'
+          Secrets: []
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: publisher
+          MountPoints:
+            - ContainerPath: /data/sqlite
+              SourceVolume: sqlite
+          LinuxParameters:
+            InitProcessEnabled: true
+
+  EditorServiceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP to Editor ECS service
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+
+  PublisherServiceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP to Publisher ECS service
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+
+  EditorService:
+    Type: AWS::ECS::Service
+    DependsOn: [ EfsMountTarget1, EfsMountTarget2 ]
+    Properties:
+      Cluster: !Ref EcsCluster
+      DesiredCount: !Ref DesiredCount
+      LaunchType: FARGATE
+      LoadBalancers:
+        - TargetGroupArn: !Ref TargetGroupEditor
+          ContainerName: editor
+          ContainerPort: 80
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PublicSubnets
+          SecurityGroups: [ !Ref EditorServiceSG ]
+      TaskDefinition: !Ref EditorTaskDefinition
+
+  PublisherService:
+    Type: AWS::ECS::Service
+    DependsOn: [ EfsMountTarget1, EfsMountTarget2 ]
+    Properties:
+      Cluster: !Ref EcsCluster
+      DesiredCount: !Ref DesiredCount
+      LaunchType: FARGATE
+      LoadBalancers:
+        - TargetGroupArn: !Ref TargetGroupPublisher
+          ContainerName: publisher
+          ContainerPort: 80
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PublicSubnets
+          SecurityGroups: [ !Ref PublisherServiceSG ]
+      TaskDefinition: !Ref PublisherTaskDefinition
+
+Outputs:
+  EditorServiceName:
+    Description: ECS service name for Editor
+    Value: !Ref EditorService
+  PublisherServiceName:
+    Description: ECS service name for Publisher
+    Value: !Ref PublisherService
+  EfsFileSystemId:
+    Description: EFS filesystem used for SQLite storage
+    Value: !Ref EfsFileSystem
+  S3Bucket:
+    Description: S3 bucket used for blob storage
+    Value: !Ref S3BucketName
+  EditorUrl:
+    Description: Public URL for the Editor app
+    Value: !Sub 'http://${LoadBalancer.DNSName}/'
+  PublisherUrl:
+    Description: Public URL for the Publisher app (used by Editor)
+    Value: !Sub 'http://${LoadBalancer.DNSName}:8080/'
