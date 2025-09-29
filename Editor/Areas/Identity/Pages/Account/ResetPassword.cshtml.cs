@@ -12,7 +12,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.EmailServices;
     using Microsoft.AspNetCore.Authorization;
@@ -24,7 +23,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using Microsoft.AspNetCore.WebUtilities;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
 
     /// <summary>
     /// Reset password page model.
@@ -33,7 +31,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     [EnableRateLimiting("fixed")]
     public class ResetPasswordModel : PageModel
     {
-        private readonly IOptions<SiteSettings> options;
         private readonly ICosmosEmailSender emailSender;
         private readonly ApplicationDbContext dbContext;
         private readonly ILogger<ForgotPasswordModel> logger;
@@ -43,14 +40,12 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         /// Initializes a new instance of the <see cref="ResetPasswordModel"/> class.
         /// </summary>
         /// <param name="userManager">User manager.</param>
-        /// <param name="options">Site settings.</param>
         /// <param name="emailSender">Email sender service.</param>
         /// <param name="dbContext">Database context.</param>
         /// <param name="logger">Log service.</param>
-        public ResetPasswordModel(UserManager<IdentityUser> userManager, IOptions<SiteSettings> options, IEmailSender emailSender, ApplicationDbContext dbContext, ILogger<ForgotPasswordModel> logger)
+        public ResetPasswordModel(UserManager<IdentityUser> userManager, IEmailSender emailSender, ApplicationDbContext dbContext, ILogger<ForgotPasswordModel> logger)
         {
             this.userManager = userManager;
-            this.options = options;
             this.emailSender = (ICosmosEmailSender)emailSender;
             this.dbContext = dbContext;
             this.logger = logger;

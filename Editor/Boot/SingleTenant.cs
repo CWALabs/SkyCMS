@@ -7,6 +7,12 @@
 
 namespace Sky.Editor.Boot
 {
+    using System;
+    using System.IO;
+    using System.Text.RegularExpressions;
+    using System.Threading.RateLimiting;
+    using System.Threading.Tasks;
+    using System.Web;
     using AspNetCore.Identity.FlexDb.Extensions;
     using Azure.Identity;
     using Cosmos.BlobService;
@@ -15,7 +21,6 @@ namespace Sky.Editor.Boot
     using Cosmos.Common.Services;
     using Cosmos.Common.Services.Configurations;
     using Cosmos.EmailServices;
-    using EllipticCurve.Utils;
     using Hangfire;
     using Hangfire.InMemory;
     using Microsoft.AspNetCore.Antiforgery;
@@ -38,12 +43,6 @@ namespace Sky.Editor.Boot
     using Sky.Cms.Services;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Services;
-    using System;
-    using System.IO;
-    using System.Text.RegularExpressions;
-    using System.Threading.RateLimiting;
-    using System.Threading.Tasks;
-    using System.Web;
 
     /// <summary>
     /// Boots up the multi-tenant editor.
@@ -101,7 +100,6 @@ namespace Sky.Editor.Boot
                     options.ShutdownTimeout = TimeSpan.FromMinutes(2);
                     options.HeartbeatInterval = TimeSpan.FromMinutes(5);
                 });
-
             }
 
             // If there is a backup connection string, then restore the database file now.
@@ -413,7 +411,7 @@ namespace Sky.Editor.Boot
                     recurringJobManager.AddOrUpdate<FileBackupRestoreService>(
                         "database-backup", // Job ID
                         job => job.UploadAsync(connectionString), // Run task.
-                        "*/1 * * * *", // Cron expression for every 1 minute
+                        "*/5 * * * *", // Cron expression for every 5 minutes
                         new RecurringJobOptions
                         {
                             TimeZone = TimeZoneInfo.Utc // Use UTC to avoid timezone issues

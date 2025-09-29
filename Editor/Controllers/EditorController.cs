@@ -9,6 +9,7 @@ namespace Sky.Cms.Controllers
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
@@ -18,15 +19,9 @@ namespace Sky.Cms.Controllers
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
     using Cosmos.Common.Services;
-    using Sky.Editor.Controllers;
-    using Sky.Editor.Data;
-    using Sky.Editor.Data.Logic;
-    using Sky.Editor.Models;
-    using Sky.Editor.Models.GrapesJs;
     using Cosmos.Editor.Services;
     using HtmlAgilityPack;
     using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.Mvc;
@@ -34,11 +29,16 @@ namespace Sky.Cms.Controllers
     using Microsoft.AspNetCore.SignalR;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Logging;
     using SendGrid.Helpers.Errors.Model;
     using Sky.Cms.Hubs;
     using Sky.Cms.Models;
     using Sky.Cms.Services;
+    using Sky.Editor.Data;
+    using Sky.Editor.Data.Logic;
+    using Sky.Editor.Models;
+    using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.CDN;
 
     /// <summary>
@@ -52,13 +52,12 @@ namespace Sky.Cms.Controllers
         private readonly ArticleEditLogic articleLogic;
         private readonly ApplicationDbContext dbContext;
         private readonly ILogger<EditorController> logger;
-        private readonly IEditorSettings options;
+        private readonly IEditorSettings editorSettings;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly UserManager<IdentityUser> userManager;
         private readonly Uri blobPublicAbsoluteUrl;
         private readonly IViewRenderService viewRenderService;
         private readonly StorageContext storageContext;
-        private readonly IWebHostEnvironment webHost;
         private readonly IHubContext<LiveEditorHub> hub;
 
         /// <summary>
@@ -73,7 +72,6 @@ namespace Sky.Cms.Controllers
         /// <param name="viewRenderService">View rendering service.</param>
         /// <param name="storageContext">Storage context.</param>
         /// <param name="hub">Editor SignalR hub.</param>
-        /// <param name="webHost">Host environment.</param>
         public EditorController(
             ILogger<EditorController> logger,
             ApplicationDbContext dbContext,
@@ -83,19 +81,18 @@ namespace Sky.Cms.Controllers
             IEditorSettings options,
             IViewRenderService viewRenderService,
             StorageContext storageContext,
-            IHubContext<LiveEditorHub> hub,
-            IWebHostEnvironment webHost)
+            IHubContext<LiveEditorHub> hub)
             : base(dbContext, userManager)
         {
             this.logger = logger;
             this.dbContext = dbContext;
-            this.options = options;
+            this.editorSettings = options;
             this.roleManager = roleManager;
             this.userManager = userManager;
             this.articleLogic = articleLogic;
             this.storageContext = storageContext;
             this.hub = hub;
-            this.webHost = webHost;
+
             var htmlUtilities = new HtmlUtilities();
 
             if (htmlUtilities.IsAbsoluteUri(options.BlobPublicUrl))
@@ -1011,6 +1008,13 @@ namespace Sky.Cms.Controllers
         {
             await articleLogic.PublishArticle(articleId, datetime);
 
+            if (!string.IsNullOrEmpty(editorSettings.BackupStorageConnectionString))
+            {
+                var backupService = new FileBackupRestoreService(editorSettings.BackupStorageConnectionString, new MemoryCache(new MemoryCacheOptions()));
+                var connectionString = dbContext.Database.GetConnectionString();
+                await backupService.UploadAsync(connectionString);
+            }
+
             return Redirect(editorUrl);
         }
 
@@ -1446,7 +1450,7 @@ namespace Sky.Cms.Controllers
             }
 
             // Web browser may ask for favicon.ico, so if the ID is not a number, just skip the response.
-            ViewData["BlobEndpointUrl"] = options.BlobPublicUrl;
+            ViewData["BlobEndpointUrl"] = editorSettings.BlobPublicUrl;
 
             // Get an article, or a template based on the controller name.
             var model = await articleLogic.GetArticleByArticleNumber(id, null);
@@ -2008,6 +2012,13 @@ namespace Sky.Cms.Controllers
             foreach (var page in pages)
             {
                 await articleLogic.CreateStaticWebpage(page);
+            }
+
+            if (!string.IsNullOrEmpty(editorSettings.BackupStorageConnectionString))
+            {
+                var backupService = new FileBackupRestoreService(editorSettings.BackupStorageConnectionString, new MemoryCache(new MemoryCacheOptions()));
+                var connectionString = dbContext.Database.GetConnectionString();
+                await backupService.UploadAsync(connectionString);
             }
 
             return Json(new { pages.Count });

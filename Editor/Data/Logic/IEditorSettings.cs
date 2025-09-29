@@ -30,6 +30,11 @@ namespace Sky.Editor.Data.Logic
         string BlobPublicUrl { get; }
 
         /// <summary>
+        /// Gets the backup storage connection string.
+        /// </summary>
+        string BackupStorageConnectionString { get; }
+
+        /// <summary>
         /// Gets a value indicating whether the publisher requires authentication.
         /// </summary>
         bool CosmosRequiresAuthentication { get; }

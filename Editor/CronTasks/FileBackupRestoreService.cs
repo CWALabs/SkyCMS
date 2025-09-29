@@ -25,7 +25,6 @@ namespace Cosmos.Common.Services
         private readonly IMemoryCache memoryCache;
         private readonly FileExtensionContentTypeProvider contentTypeProvider = new FileExtensionContentTypeProvider();
 
-
         /// <summary>
         /// Initializes a new instance of the <see cref="FileBackupRestoreService"/> class.
         /// </summary>
@@ -34,6 +33,17 @@ namespace Cosmos.Common.Services
         public FileBackupRestoreService(IConfiguration config, IMemoryCache memoryCache)
         {
             storageConnectionString = config.GetConnectionString("BackupStorageConnectionString");
+            this.memoryCache = memoryCache;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FileBackupRestoreService"/> class.
+        /// </summary>
+        /// <param name="storageConnectionString">Configuration.</param>
+        /// <param name="memoryCache">Memory cache.</param>
+        public FileBackupRestoreService(string storageConnectionString, IMemoryCache memoryCache)
+        {
+            this.storageConnectionString = storageConnectionString;
             this.memoryCache = memoryCache;
         }
 

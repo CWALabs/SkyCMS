@@ -1375,15 +1375,6 @@ namespace Sky.Editor.Data.Logic
         }
 
         /// <summary>
-        /// Gest the publisher URL depending if this is a multi-tenant editor or not.
-        /// </summary>
-        /// <returns>Publisher URL.</returns>
-        private string GetPublisherUrl()
-        {
-            return settings.GetEditorConfig().PublisherUrl.TrimEnd('/') + "/";
-        }
-
-        /// <summary>
         /// Logic handing logic for publishing articles and saves changes to the database.
         /// </summary>
         /// <param name="articleId">Article Id.</param>
@@ -1449,6 +1440,15 @@ namespace Sky.Editor.Data.Logic
 
             // Update the published pages collection
             return await UpsertPublishedPage(article.Id);
+        }
+
+        /// <summary>
+        /// Gest the publisher URL depending if this is a multi-tenant editor or not.
+        /// </summary>
+        /// <returns>Publisher URL.</returns>
+        private string GetPublisherUrl()
+        {
+            return settings.GetEditorConfig().PublisherUrl.TrimEnd('/') + "/";
         }
 
         /// <summary>

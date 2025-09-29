@@ -25,6 +25,7 @@ namespace Sky.Cms.Controllers
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.ModelBinding;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Caching.Memory;
     using Sky.Cms.Models;
     using Sky.Cms.Services;
     using Sky.Editor.Data;
@@ -44,6 +45,7 @@ namespace Sky.Cms.Controllers
         private readonly Uri blobPublicAbsoluteUrl;
         private readonly IViewRenderService viewRenderService;
         private readonly StorageContext storageContext;
+        private readonly IEditorSettings editorSettings;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LayoutsController"/> class.
@@ -54,18 +56,21 @@ namespace Sky.Cms.Controllers
         /// <param name="options"><see cref="CosmosConfig">Cosmos configuration</see> options.</param>
         /// <param name="storageContext">Storage context.</param>
         /// <param name="viewRenderService">View rendering service.</param>
+        /// <param name="editorSettings">Editor settings.</param>
         public LayoutsController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
             ArticleEditLogic articleLogic,
             IEditorSettings options,
             StorageContext storageContext,
-            IViewRenderService viewRenderService)
+            IViewRenderService viewRenderService,
+            IEditorSettings editorSettings)
             : base(dbContext, userManager)
         {
             this.dbContext = dbContext;
             this.articleLogic = articleLogic;
             this.storageContext = storageContext;
+            this.editorSettings = editorSettings;
 
             var htmlUtilities = new HtmlUtilities();
 
@@ -715,6 +720,13 @@ namespace Sky.Cms.Controllers
             }
 
             await dbContext.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(editorSettings.BackupStorageConnectionString))
+            {
+                var backupService = new FileBackupRestoreService(editorSettings.BackupStorageConnectionString, new MemoryCache(new MemoryCacheOptions()));
+                var connectionString = dbContext.Database.GetConnectionString();
+                await backupService.UploadAsync(connectionString);
+            }
 
             return RedirectToAction("Publish", "Editor");
         }

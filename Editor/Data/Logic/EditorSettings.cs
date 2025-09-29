@@ -15,7 +15,6 @@ namespace Sky.Editor.Data.Logic
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
-    using Newtonsoft.Json;
 
     /// <summary>
     ///   Logic for managing settings in the application.
@@ -33,6 +32,7 @@ namespace Sky.Editor.Data.Logic
         private readonly IConfiguration configuration;
         private readonly bool isMultiTenantEditor;
         private readonly EditorConfig editorConfig;
+        private readonly string backupStorageConnectionString;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorSettings"/> class.
@@ -47,8 +47,9 @@ namespace Sky.Editor.Data.Logic
             this.httpContextAccessor = httpContextAccessor;
             this.memoryCache = memoryCache;
             this.configuration = configuration;
-            this.isMultiTenantEditor = this.configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
-            this.editorConfig = GetEditorConfig();
+            isMultiTenantEditor = this.configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+            editorConfig = GetEditorConfig();
+            backupStorageConnectionString = this.configuration.GetConnectionString("BackupStorageConnectionString") ?? null;
         }
 
         /// <summary>
@@ -81,6 +82,17 @@ namespace Sky.Editor.Data.Logic
             get
             {
                 return this.editorConfig.BlobPublicUrl;
+            }
+        }
+
+        /// <summary>
+        /// Gets the backup storage connection string.
+        /// </summary>
+        public string BackupStorageConnectionString
+        {
+            get
+            {
+                return backupStorageConnectionString;
             }
         }
 
