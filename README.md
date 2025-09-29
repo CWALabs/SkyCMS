@@ -10,7 +10,11 @@
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMoonriseSoftwareCalifornia%2FSkyCMS%2Frefs%2Fheads%2Fmain%2FArmTemplates%2Fazuredeploy.json)
 
+(More click-to-deploy options coming soon)
+
 [View instructions](./Docs/AzureInstall.md) for installing on Azure | [What gets deployed?](./ArmTemplates/README.md) | [Storage Configuration](./Docs/StorageConfig.md) | [Database Configuration](./Docs/DatabaseConfig.md)
+
+Deploy anywhere: Azure, AWS, Cloudflare — or any cloud that supports Docker containers and either S3‑compatible object storage or Azure Storage.
 
 > SkyCMS lives high in the clouds—like a kestrel that can soar for months without landing. It manages static, dynamic, and origin-less edge-hosted websites with ease.
 
