@@ -1,6 +1,6 @@
-![SkyCMS Logo](/Editor/wwwroot/images/skycms/SkyCMSLogoNoWiTextDarkTransparent30h.png)
-
 # A light-weight, high-Performance, full-featured, multi-cloud content management system
+
+![SkyCMS Logo](/Editor/wwwroot/images/skycms/SkyCMSLogoNoWiTextDarkTransparent30h.png)
 
 [![CodeQL](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/codeql.yml/badge.svg)](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/codeql.yml)
 [![Publish Docker Images CI](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/docker-image.yml/badge.svg)](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/docker-image.yml)
@@ -11,6 +11,8 @@
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMoonriseSoftwareCalifornia%2FSkyCMS%2Frefs%2Fheads%2Fmain%2FArmTemplates%2Fazuredeploy.json)
 
 (More click-to-deploy options coming soon)
+
+Also available: [AWS CloudFormation deployment guide](./AWS/README.md)
 
 [View instructions](./Docs/AzureInstall.md) for installing on Azure | [What gets deployed?](./ArmTemplates/README.md) | [Storage Configuration](./Docs/StorageConfig.md) | [Database Configuration](./Docs/DatabaseConfig.md)
 
