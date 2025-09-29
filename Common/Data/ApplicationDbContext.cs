@@ -245,6 +245,30 @@ namespace Cosmos.Common.Data
         }
 
         /// <summary>
+        /// Determine if a Cosmos DB database exists.
+        /// </summary>
+        /// <param name="client">Cosmos DB client.</param>
+        /// <param name="databaseId">Database ID.</param>
+        /// <returns>True if the database exists, otherwise false.</returns>
+        private static async Task<bool> DoesCosmosDatabaseExist(CosmosClient client, string databaseId)
+        {
+            QueryDefinition query = new QueryDefinition(
+                "select * from c where c.id = @databaseId")
+                    .WithParameter("@databaseId", databaseId);
+
+            FeedIterator<dynamic> resultSet = client.GetDatabaseQueryIterator<dynamic>(query);
+
+            while (resultSet.HasMoreResults)
+            {
+                FeedResponse<dynamic> response = await resultSet.ReadNextAsync();
+
+                return response.Count > 0;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         ///     Determine if this service is configured.
         /// </summary>
         /// <returns>Indicates if context is configured and can connect.</returns>
@@ -383,24 +407,6 @@ namespace Cosmos.Common.Data
             }
 
             base.OnModelCreating(modelBuilder);
-        }
-
-        private static async Task<bool> DoesCosmosDatabaseExist(CosmosClient client, string databaseId)
-        {
-            QueryDefinition query = new QueryDefinition(
-                "select * from c where c.id = @databaseId")
-                    .WithParameter("@databaseId", databaseId);
-
-            FeedIterator<dynamic> resultSet = client.GetDatabaseQueryIterator<dynamic>(query);
-
-            while (resultSet.HasMoreResults)
-            {
-                FeedResponse<dynamic> response = await resultSet.ReadNextAsync();
-
-                return response.Count > 0;
-            }
-
-            return false;
         }
     }
 }

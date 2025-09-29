@@ -1,8 +1,8 @@
 ﻿using Azure.Identity;
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Tls;
 using System;
 using System.Linq;
+using Microsoft.Data.Sqlite;
 
 namespace AspNetCore.Identity.FlexDb
 {
@@ -56,6 +56,7 @@ namespace AspNetCore.Identity.FlexDb
         /// <para><b>SQL Server:</b>Server=tcp:{your_server}.database.windows.net,1433;Initial Catalog={your_database};Persist Security Info=False;User ID={your_user};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;</para>
         /// <para><b>MySQL:</b>Server={your_server};Port=3306;uid={your_user};pwd={your_password};database={your_database};</para>
         /// <para><b>SQLite:</b>Data Source=/data/localdev.db</para>
+        /// <para><b>Encrypted SQLite:</b>Data Source=/data/localdev.db;Password=yourpassword</para>
         /// </remarks>
         public static void ConfigureDbOptions(DbContextOptionsBuilder optionsBuilder, string connectionString)
         {
@@ -69,7 +70,32 @@ namespace AspNetCore.Identity.FlexDb
             }
             else if (connectionString.StartsWith("Data Source=", StringComparison.CurrentCultureIgnoreCase) && connectionString.Contains(".db"))
             {
-                optionsBuilder.UseSqlite(connectionString);
+                // Check if it's an encrypted SQLite connection (contains Password parameter)
+                if (!connectionString.Contains("Password=", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    // For encrypted SQLite, you'll need to use a custom approach since EF Core doesn't directly support sqlcipher
+                    // This would require implementing a custom DbContext that uses sqlite-net-sqlcipher
+                    throw new ArgumentException("Encrypted SQLite requires a password set in the connection string like this: Data Source=/data/localdev.db;Password=yourpassword.");
+                }
+                else
+                {
+                    var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                    var dbNamePart = parts.FirstOrDefault(p => p.StartsWith("Data Source=", StringComparison.InvariantCultureIgnoreCase));
+                    var passPart = parts.FirstOrDefault(p => p.StartsWith("Password=", StringComparison.InvariantCultureIgnoreCase));
+                    var dataSource = dbNamePart.Split('=')[1];
+                    var password = passPart.Split("=")[1];
+
+                    var connectionStringBuilder = new SqliteConnectionStringBuilder
+                    {
+                        DataSource = dataSource,
+                        Mode = SqliteOpenMode.ReadWriteCreate,
+                        Password = password
+                    };
+
+                    var sqliteConnection = new SqliteConnection(connectionStringBuilder.ToString());
+
+                    optionsBuilder.UseSqlite(sqliteConnection);
+                }
             }
             else if (connectionString.Contains("AccountEndpoint=", StringComparison.InvariantCultureIgnoreCase))
             {

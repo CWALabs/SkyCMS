@@ -12,9 +12,12 @@ namespace Sky.Editor.Boot
     using Cosmos.BlobService;
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
+    using Cosmos.Common.Services;
     using Cosmos.Common.Services.Configurations;
     using Cosmos.EmailServices;
     using EllipticCurve.Utils;
+    using Hangfire;
+    using Hangfire.InMemory;
     using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.DataProtection;
@@ -26,6 +29,7 @@ namespace Sky.Editor.Boot
     using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.RateLimiting;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -35,6 +39,7 @@ namespace Sky.Editor.Boot
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Services;
     using System;
+    using System.IO;
     using System.Text.RegularExpressions;
     using System.Threading.RateLimiting;
     using System.Threading.Tasks;
@@ -79,9 +84,34 @@ namespace Sky.Editor.Boot
             if (!string.IsNullOrEmpty(backupConnectionString))
             {
                 // Create the blob storage context for backup and restore of the database.
-                builder.Services.AddSingleton<FileBackupRestoreService>();
+                builder.Services.AddHangfire(config => config
+                        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                        .UseSimpleAssemblyNameTypeSerializer()
+                        .UseIgnoredAssemblyVersionTypeResolver()
+                        .UseInMemoryStorage(new InMemoryStorageOptions
+                        {
+                            IdType = InMemoryStorageIdType.Long
+                        }));
+
+                builder.Services.AddHangfireServer(options =>
+                {
+                    options.Queues = new[] { "critical", "default" };
+                    options.WorkerCount = Math.Max(Environment.ProcessorCount, 1);
+                    options.SchedulePollingInterval = TimeSpan.FromMinutes(1);
+                    options.ShutdownTimeout = TimeSpan.FromMinutes(2);
+                    options.HeartbeatInterval = TimeSpan.FromMinutes(5);
+                });
+
             }
 
+            // If there is a backup connection string, then restore the database file now.
+            // Also, on shutdown of the application, upload the database file to storage.
+            if (!string.IsNullOrEmpty(backupConnectionString))
+            {
+                // Restore any files from blob storage to local file system.
+                var restoreService = new FileBackupRestoreService(builder.Configuration, new MemoryCache(new MemoryCacheOptions()));
+                restoreService.DownloadAsync(connectionString).Wait();
+            }
 
             // If this is set, the Cosmos identity provider will:
             // 1. Create the database if it does not already exist.
@@ -101,7 +131,7 @@ namespace Sky.Editor.Boot
             {
                 AspNetCore.Identity.FlexDb.CosmosDbOptionsBuilder.ConfigureDbOptions(options, connectionString);
             });
-            
+
             // This service has to appear right after DB Context.
             builder.Services.AddTransient<IEditorSettings, EditorSettings>();
 
@@ -302,26 +332,7 @@ namespace Sky.Editor.Boot
 
             var app = builder.Build();
 
-            // If there is a backup connection string, then restore the database file now.
-            // Also, on shutdown of the application, upload the database file to storage.
-            if (!string.IsNullOrEmpty(backupConnectionString))
-            {
-                // If the connection string is for SQLite, then restore the database file.
-                var databasePath = connectionString.Split('=')[1];
-                var databaseFileName = System.IO.Path.GetFileName(databasePath);
 
-                // Restore any files from blob storage to local file system.
-                var backupService = app.Services.GetRequiredService<FileBackupRestoreService>();
-                var localFilePath = System.IO.Path.Combine("/app/data/", databaseFileName);
-                backupService.DownloadAsync(databaseFileName, localFilePath).Wait();
-
-                // Upload SQLite file to blob storage on shutdown
-                var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-                lifetime.ApplicationStopping.Register(() =>
-                {
-                    backupService.UploadAsync(localFilePath, databaseFileName).Wait();
-                });
-            }
 
             // https://seankilleen.com/2020/06/solved-net-core-azure-ad-in-docker-container-incorrectly-uses-an-non-https-redirect-uri/
             app.UseForwardedHeaders();
@@ -383,6 +394,58 @@ namespace Sky.Editor.Boot
             app.MapFallbackToController("Index", "Home");
 
             app.MapRazorPages();
+
+            // Configure Hangfire recurring jobs
+            if (!string.IsNullOrEmpty(backupConnectionString))
+            {
+                // Use a separate scope to register the recurring job
+                using (var scope = app.Services.CreateScope())
+                {
+                    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+                    var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                    var dataSourcePart = Array.Find(parts, p => p.StartsWith("Data Source=", StringComparison.InvariantCultureIgnoreCase));
+                    
+                    var databasefilePath = dataSourcePart.Split('=')[1];
+                    var databaseFileName = Path.GetFileName(databasefilePath);
+
+                    // Schedule the backup to run every 5 minutes
+                    // Cron expression: "*/5 * * * *" means every 5 minutes
+                    recurringJobManager.AddOrUpdate<FileBackupRestoreService>(
+                        "database-backup", // Job ID
+                        job => job.UploadAsync(connectionString), // Run task.
+                        "*/1 * * * *", // Cron expression for every 1 minute
+                        new RecurringJobOptions
+                        {
+                            TimeZone = TimeZoneInfo.Utc // Use UTC to avoid timezone issues
+                        });
+                }
+
+                // Optional: Enable Hangfire Dashboard for monitoring
+                app.UseHangfireDashboard("/hangfire", new DashboardOptions
+                {
+                    Authorization = new[] { new HangfireDashboardAuthorizationFilter() }
+                });
+            }
+
+            // If there is a backup connection string, then on shutdown of the application,
+            // upload the database file to blob storage.
+            if (!string.IsNullOrEmpty(backupConnectionString))
+            {
+                var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+                lifetime.ApplicationStopping.Register(() =>
+                {
+                    try
+                    {
+                        var backupService = app.Services.GetRequiredService<FileBackupRestoreService>();
+                        backupService.UploadAsync(connectionString).Wait();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Logging may not be available here, so consider other ways to log the exception if needed.
+                        Console.WriteLine($"Error during database backup on shutdown: {ex.Message}");
+                    }
+                });
+            }
 
             return app;
         }
