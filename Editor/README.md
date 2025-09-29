@@ -2,6 +2,12 @@
 
 The SkyCMS Editor is a sophisticated content management application that provides a comprehensive interface for creating, editing, and managing website content. Built on .NET 9.0 with ASP.NET Core, it offers multiple editing modes, multi-tenancy support, and integrates with modern web content editing tools.
 
+Quick links:
+
+- Storage setup: [Docs/StorageConfig.md](../Docs/StorageConfig.md) (see also: [AWS S3](../Docs/AWS-S3-AccessKeys.md), [Cloudflare R2](../Docs/Cloudflare-R2-AccessKeys.md))
+- Database setup: [Docs/DatabaseConfig.md](../Docs/DatabaseConfig.md)
+- Deploy to Azure: [ArmTemplates/azuredeploy.json](../ArmTemplates/azuredeploy.json)
+
 ## 🎯 Overview
 
 The Editor serves as the administrative and content creation hub of the SkyCMS platform, providing content creators, editors, and administrators with powerful tools to manage website content without requiring technical expertise.
@@ -91,8 +97,8 @@ The main controller handling content editing operations:
 ### Prerequisites
 
 - .NET 9.0 SDK
-- SQL Server or Azure SQL Database
-- Azure Blob Storage (for file storage)
+- Storage: Azure Blob or Amazon S3 (see StorageConfig)
+- Database: SQLite (quick start), or Azure SQL / SQL Server / Cosmos DB / MySQL
 - Node.js (for frontend dependencies)
 
 ### Installation
@@ -116,24 +122,33 @@ The main controller handling content editing operations:
 
 3. **Configure Settings**
 
-   Update `appsettings.json`:
+    Update `appsettings.json` (local quick start shown):
 
-   ```json
-   {
-     "ConnectionStrings": {
-       "DefaultConnection": "Your SQL connection string"
-     },
-     "CosmosPublisherUrl": "https://your-publisher-url.com",
-     "AzureBlobStorageEndPoint": "https://yourstorage.blob.core.windows.net",
-     "MultiTenantEditor": false
-   }
-   ```
+    ```json
+    {
+       "ConnectionStrings": {
+          "ApplicationDbContextConnection": "Data Source=skycms.db", 
+          "StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=yourkey;EndpointSuffix=core.windows.net",
+          "BackupStorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=backupacct;AccountKey=...;EndpointSuffix=core.windows.net"
+       },
+       "CosmosPublisherUrl": "https://your-publisher-url.com",
+       "MultiTenantEditor": false
+    }
+    ```
+
+    Notes:
+    - For S3, use: `Bucket={bucket};Region={region};KeyId={access-key-id};Key={secret};`
+    - For Azure managed identity, use: `AccountKey=AccessToken` and assign Blob Data roles to the app identity.
 
 4. **Initialize Database**
+
+   For relational providers (SQL Server/MySQL), run EF migrations:
 
    ```bash
    dotnet ef database update
    ```
+
+   For SQLite quick start, the database file will be created automatically on first run.
 
 5. **Run the Application**
 
@@ -156,8 +171,31 @@ The main controller handling content editing operations:
 #### Multi-Tenant Mode
 
 - Dynamic configuration per tenant
-- Shared database with tenant isolation
-- Advanced setup for hosting providers
+- Shared application with tenant isolation
+- Requires DynamicConfig (Cosmos.ConnectionStrings)
+
+Register in Program.cs:
+
+```csharp
+using Cosmos.DynamicConfig;
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IDynamicConfigurationProvider, DynamicConfigurationProvider>();
+
+var app = builder.Build();
+app.UseMiddleware<DomainMiddleware>();
+```
+
+And add the config database connection:
+
+```json
+{
+   "ConnectionStrings": {
+      "ConfigDbConnectionString": "AccountEndpoint=...;AccountKey=...;Database=SkyCmsConfig" 
+   }
+}
+```
 
 ### Key Configuration Options
 
@@ -165,7 +203,9 @@ The main controller handling content editing operations:
 |---------|-------------|---------|
 | `MultiTenantEditor` | Enable multi-tenant mode | false |
 | `CosmosPublisherUrl` | Publisher application URL | Required |
-| `AzureBlobStorageEndPoint` | Static file storage URL | "/" |
+| `StorageConnectionString` | Storage provider connection (Azure/S3) | Required |
+| `BackupStorageConnectionString` | Optional backup storage for periodic snapshots | Optional |
+| `AzureBlobStorageEndPoint` | Static file storage URL (legacy) | "/" |
 | `CosmosRequiresAuthentication` | Publisher authentication | false |
 | `CosmosStaticWebPages` | Static site generation | true |
 | `AllowSetup` | Enable setup wizard | false |
@@ -310,10 +350,13 @@ ENTRYPOINT ["dotnet", "Sky.Editor.dll"]
 ### Environment Variables
 
 ```bash
-ConnectionStrings__DefaultConnection="SQL connection string"
+ConnectionStrings__ApplicationDbContextConnection="Data Source=skycms.db"
+ConnectionStrings__StorageConnectionString="DefaultEndpointsProtocol=...;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net"
+ConnectionStrings__BackupStorageConnectionString="DefaultEndpointsProtocol=...;AccountName=backupacct;AccountKey=...;EndpointSuffix=core.windows.net"
 CosmosPublisherUrl="https://your-site.com"
-AzureBlobStorageEndPoint="https://storage.blob.core.windows.net"
 MultiTenantEditor="false"
+# Optional (multi-tenant config DB)
+ConnectionStrings__ConfigDbConnectionString="AccountEndpoint=...;AccountKey=...;Database=SkyCmsConfig"
 ```
 
 ## 📖 API Reference

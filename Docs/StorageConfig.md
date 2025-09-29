@@ -33,7 +33,7 @@ Jump to:
 
 ## Azure Blob Storage
 
-TL;DR connection string:
+Azure storage connection string:
 
 ```json
 {
@@ -85,7 +85,7 @@ Best practice: Scope IAM permissions to the specific bucket and required actions
 
 ## Cloudflare R2 (S3-compatible)
 
-Cloudflare R2 is S3-compatible. With SkyCMS you’ll provide your Account ID, bucket name, and S3-style credentials (Key ID/Secret). Some SDKs also require a custom endpoint like `https://<account-id>.r2.cloudflarestorage.com`.
+Cloudflare R2 is S3-compatible. With SkyCMS you’ll provide your Account ID, bucket name, and S3-style credentials (Key ID/Secret).
 
 Quick setup guide: see [Cloudflare R2 access keys for SkyCMS](./Cloudflare-R2-AccessKeys.md) to find your Account ID and bucket, and to generate an S3 API token (read/write/delete).
 

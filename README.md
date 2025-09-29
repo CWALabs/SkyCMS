@@ -12,11 +12,16 @@
 
 [View instructions](./Docs/AzureInstall.md) for installing on Azure | [What gets deployed?](./ArmTemplates/README.md) | [Storage Configuration](./Docs/StorageConfig.md) | [Database Configuration](./Docs/DatabaseConfig.md)
 
+> SkyCMS lives high in the clouds—like a kestrel that can soar for months without landing. It manages static, dynamic, and origin-less edge-hosted websites with ease.
+
+Choose your hosting model: [Static](./Docs/StorageConfig.md#static-website-hosting-azure) | [Edge (origin-less)](./Docs/CloudflareEdgeHosting.md) | [Headless](./Publisher/README.md) | [Decoupled](./Publisher/README.md)
+
 ## Overview
 
-[SkyCMS](https://Sky.moonrise.net/) is an open-source, cloud-native Content Management System designed for high-performance, scalability, and ease of use. Built with modern web technologies, SkyCMS runs in multiple modes to meet different deployment needs:
+[SkyCMS](https://Sky.moonrise.net/) is an open-source, cloud-native Content Management System designed for high-performance, scalability, and ease of use. Built with modern web technologies, SkyCMS runs in multiple modes to meet different deployment needs and can be hosted traditionally or at the edge (origin-less) using Cloudflare Workers + R2:
 
 - **Static Mode**: All content hosted on a static website with automatic content refresh - highest performance, stability, and operational simplicity
+  - Can be deployed as an **origin-less, edge-hosted** site via Cloudflare R2 + Worker
 - **Headless Mode**: Content delivered via API - ideal for multi-channel content distribution (web, mobile, desktop)
 - **Decoupled Mode**: Content delivered via dedicated website - near-static performance with backend functionality
 
@@ -90,21 +95,23 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 - **Backend**: ASP.NET Core 9.0+ (C#)
 - **Frontend**: JavaScript (70% of codebase), HTML5, CSS3, SCSS
 - **Database**: Azure Cosmos DB (NoSQL), MS SQL, MySQL or SQLite
-- **Storage**: Azure Blob Storage or AWS S3 (and compatible)
-- **Hosting**: Linux Docker containers
+- **Storage**: Azure Blob Storage, Amazon S3, Cloudflare R2 (S3-compatible)
+- **Hosting**: Linux Docker containers; Cloudflare Workers (edge/origin-less)
 - **Authentication**: ASP.NET Core Identity, Google and Microsoft
 
 ### Infrastructure Components
 
 - **Database Options**
   - Azure Cosmos DB: Multi-user, globally distributed NoSQL database
-  - MS SQL, MySQL: Multi-user, globally distributed NoSQL database
+  - MS SQL, MySQL: Relational databases
   - SQLite: Built in database for single editor applications
 - **Cloud Storage Options**
   - Azure Storage: File share and BLOB storage
   - Amazon S3 (and compatible): BLOB storage
   - Cloudflare R2 for BLOB storage
   - Any SMB or NFS persistent file share storage
+- **Edge Hosting Options**
+  - Cloudflare Workers + R2: Origin-less static hosting at the edge
 
 ## 📁 Project Structure
 
@@ -121,7 +128,7 @@ SkyCMS/
 └── SkyCMS.sln             # Visual Studio solution file
 ```
 
-## � Component Documentation
+## 📚 Component Documentation
 
 Each component has detailed documentation explaining its purpose, configuration, and usage:
 
@@ -173,7 +180,7 @@ Each component has detailed documentation explaining its purpose, configuration,
   - Azure B2C and external provider support
   - Role-based security and permissions
 
-## �🐳 Docker Containers
+## 🐳 Docker Containers
 
 SkyCMS applications are distributed as Docker containers for consistent deployment:
 
@@ -219,6 +226,7 @@ dotnet run --project Editor
 - **Storage Configuration**: [Docs/StorageConfig.md](./Docs/StorageConfig.md) — Supported providers (Azure Blob, AWS S3, Cloudflare R2), container/bucket naming, CDN integration, and recommended settings
   - AWS: [AWS S3 access keys (quick guide)](./Docs/AWS-S3-AccessKeys.md)
   - Cloudflare: [Cloudflare R2 access keys (quick guide)](./Docs/Cloudflare-R2-AccessKeys.md)
+  - Cloudflare: [Edge/origin-less hosting guide (R2 + Worker)](./Docs/CloudflareEdgeHosting.md)
 - **Database Configuration**: [Docs/DatabaseConfig.md](./Docs/DatabaseConfig.md) — Provider options (Cosmos DB, SQL Server, MySQL, SQLite), connection strings, EF configuration, and migration guidance
 - **Developer Documentation**: sky.moonrise.net/docs (coming soon)
 - **API Reference**: Available in the running application

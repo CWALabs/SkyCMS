@@ -4,6 +4,11 @@
 
 Cosmos.Common is the foundational library for the SkyCMS content management system, providing core functionality, data models, services, and base controllers that are shared across both the Editor and Publisher applications. This package contains essential components for content management, authentication, data access, and utility functions.
 
+## What's New
+
+- Updated docs aligned with .NET 9 and the latest storage/database guides
+- Cross-links to Storage and Database configuration, AWS S3, and Cloudflare R2 setup
+
 ## Features
 
 ### Core Infrastructure
@@ -60,7 +65,7 @@ Comprehensive set of entities including Articles, Pages, Layouts, Templates, Use
 
 ## Installation
 
-This package is part of the SkyCMS solution and can be obtained by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/CosmosCMS).
+This package is part of the SkyCMS solution and can be obtained by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
 
 ### NuGet Package
 
@@ -80,7 +85,39 @@ dotnet add package Cosmos.Common
 
 ### Database Configuration
 
-The ApplicationDbContext automatically detects the database provider based on the connection string:
+SkyCMS registers `ApplicationDbContext` in the host app. In the provided templates, the connection string key is `ConnectionStrings:ApplicationDbContextConnection` (with `DefaultConnection` as a common fallback). Choose the EF Core provider accordingly:
+
+Minimal hosting example (Program.cs):
+
+```csharp
+using Cosmos.Common.Data;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+var cs = builder.Configuration.GetConnectionString("ApplicationDbContextConnection")
+         ?? builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+// Choose one based on your connection string/provider
+if (cs.Contains("AccountEndpoint="))
+{
+    // Cosmos DB
+    builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseCosmos(cs, databaseName: "SkyCms"));
+}
+else if (cs.Contains("Server=") || cs.Contains("Data Source="))
+{
+    // SQL Server / SQLite (example)
+    if (cs.Contains(".db"))
+        builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlite(cs));
+    else
+        builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlServer(cs));
+}
+else if (cs.Contains("server=") || cs.Contains("Server="))
+{
+    // MySQL
+    builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseMySQL(cs));
+}
+```
 
 #### Cosmos DB
 
@@ -132,9 +169,9 @@ In your `Program.cs` or `Startup.cs`:
 using Cosmos.Common.Data;
 using Microsoft.EntityFrameworkCore;
 
-// Register ApplicationDbContext
+// Register ApplicationDbContext with your chosen provider (see example above)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseCosmos(connectionString, databaseName)); // or UseSqlServer, UseMySQL, UseSqlite
+    options.UseSqlServer(connectionString)); // Or UseCosmos / UseMySQL / UseSqlite
 
 // Register other common services
 builder.Services.AddScoped<ArticleLogic>();
@@ -387,6 +424,13 @@ public class FileService
 - **AspNetCore.Identity.FlexDb**: Flexible identity provider
 - **Cosmos.BlobService**: Multi-cloud blob storage
 - **Cosmos.DynamicConfig**: Dynamic configuration management
+
+## Related Documentation
+
+- Storage: [Docs/StorageConfig.md](../Docs/StorageConfig.md)
+    - AWS S3 keys: [Docs/AWS-S3-AccessKeys.md](../Docs/AWS-S3-AccessKeys.md)
+    - Cloudflare R2 keys: [Docs/Cloudflare-R2-AccessKeys.md](../Docs/Cloudflare-R2-AccessKeys.md)
+- Database: [Docs/DatabaseConfig.md](../Docs/DatabaseConfig.md)
 
 ## Multi-Database Support
 

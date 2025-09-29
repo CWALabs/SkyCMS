@@ -2,7 +2,13 @@
 
 A flexible, multi-database implementation of ASP.NET Core Identity that automatically selects the appropriate database provider based on your connection string. Supports Azure Cosmos DB, SQL Server, MySQL, and SQLite with seamless switching between providers.
 
-## 🎯 Overview
+## � What's New
+
+- .NET 9 support and dependency updates
+- Improved provider auto-detection docs and examples
+- Optional SQLite at-rest encryption via SQLCipher package
+
+## �🎯 Overview
 
 AspNetCore.Identity.FlexDb eliminates the need to choose a specific database provider at compile time. Simply provide a connection string, and the library automatically configures the correct Entity Framework provider, making it perfect for applications that need to support multiple deployment scenarios or migrate between database systems.
 
@@ -36,8 +42,10 @@ AspNetCore.Identity.FlexDb eliminates the need to choose a specific database pro
 
 ### SQLite
 
-- **Development**: Lightweight option for development and testing
-- **Connection String**: `Data Source=database.db`
+- **Simple**: Lightweight option for edge/single-editor deployments
+- **Optional encryption**: SQLCipher-enabled via `SQLitePCLRaw.bundle_e_sqlcipher`
+- **Connection String**: `Data Source=database.db;Password=strong-password;`
+- For containers, mount a persistent volume and set `Data Source` to the mounted path
 
 ## 🚀 Quick Start
 
@@ -49,7 +57,46 @@ Install the NuGet package:
 dotnet add package AspNetCore.Identity.CosmosDb
 ```
 
-### Basic Configuration
+### Basic Configuration (Minimal hosting, .NET 9)
+
+```csharp
+using AspNetCore.Identity.FlexDb;
+using AspNetCore.Identity.FlexDb.Extensions;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Connection string determines the provider automatically
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    CosmosDbOptionsBuilder.ConfigureDbOptions(options, connectionString));
+
+builder.Services.AddCosmosIdentity<ApplicationDbContext, IdentityUser, IdentityRole, string>(
+    options =>
+    {
+        options.Password.RequiredLength = 8;
+        options.User.RequireUniqueEmail = true;
+    },
+    cookieExpireTimeSpan: TimeSpan.FromDays(30),
+    slidingExpiration: true
+);
+
+var app = builder.Build();
+
+app.MapGet("/healthz", () => Results.Ok("ok"));
+app.Run();
+
+public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, IdentityRole, string>
+{
+    public ApplicationDbContext(DbContextOptions options) : base(options) { }
+}
+```
+
+Tip: The key name `DefaultConnection` is arbitrary—use any name, as long as you pass the same connection string into `ConfigureDbOptions`.
+
+### Basic Configuration (Startup.cs pattern)
 
 ```csharp
 using AspNetCore.Identity.FlexDb;
@@ -394,6 +441,12 @@ public async Task MigrateFromCosmosToSql()
     // Import to SQL Server
 }
 ```
+
+#### SQLite: "no such table" or schema errors
+
+- Ensure the schema exists for the selected provider
+- For quick start scenarios use: `await context.Database.EnsureCreatedAsync();`
+- For production, prefer EF Core migrations to manage versioned schema changes
 
 ### Performance Tuning
 

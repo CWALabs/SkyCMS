@@ -2,7 +2,7 @@
 
 ## Overview
 
-Cosmos.BlobService is a comprehensive multi-cloud blob storage abstraction layer that provides a unified interface for managing files across different cloud storage providers. It supports both Azure Blob Storage and Amazon S3, allowing applications to seamlessly switch between providers or use multiple providers simultaneously.
+Cosmos.BlobService is a comprehensive multi-cloud blob storage abstraction layer that provides a unified interface for managing files across different cloud storage providers. It supports Azure Blob Storage and Amazon S3 (with notes on Cloudflare R2), allowing applications to seamlessly switch between providers or use multiple providers simultaneously.
 
 ## Features
 
@@ -10,6 +10,7 @@ Cosmos.BlobService is a comprehensive multi-cloud blob storage abstraction layer
 
 - **Azure Blob Storage**: Full support with managed identity authentication
 - **Amazon S3**: Complete AWS S3 integration with chunked upload support
+- **Cloudflare R2 (S3-compatible)**: Requires custom S3 endpoint; see notes below
 - **Unified Interface**: Single API for all storage operations regardless of provider
 - **Provider Switching**: Runtime configuration of storage providers
 
@@ -53,16 +54,23 @@ The service uses a driver pattern where each cloud provider has its own implemen
 
 ## Installation
 
-This package is part of the SkyCMS solution and is not distributed separately on NuGet. You can obtain it by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/CosmosCMS).
+This package is part of the SkyCMS solution and is not distributed separately on NuGet. You can obtain it by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
 
 ## Configuration
+
+### Connection key precedence
+
+The Blob Service looks for the following configuration keys (in order):
+
+1. `ConnectionStrings:StorageConnectionString` (preferred)
+2. `ConnectionStrings:AzureBlobStorageConnectionString` (fallback for legacy configurations)
 
 ### Azure Blob Storage Configuration
 
 ```json
 {
   "ConnectionStrings": {
-    "AzureBlobStorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=yourkey;EndpointSuffix=core.windows.net"
+    "StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=yourkey;EndpointSuffix=core.windows.net"
   }
 }
 ```
@@ -72,9 +80,11 @@ For managed identity authentication:
 ```json
 {
   "ConnectionStrings": {
-    "AzureBlobStorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=AccessToken;EndpointSuffix=core.windows.net"
+    "StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=AccessToken;EndpointSuffix=core.windows.net"
   }
 }
+
+> Note: Using `AccountKey=AccessToken` enables DefaultAzureCredential in code. Ensure your app identity has appropriate Blob Data roles.
 ```
 
 ### Amazon S3 Configuration
@@ -82,10 +92,21 @@ For managed identity authentication:
 ```json
 {
   "ConnectionStrings": {
-    "AzureBlobStorageConnectionString": "Provider=Amazon;Bucket=yourbucket;Region=us-west-2;KeyId=yourkeyid;Key=yoursecretkey"
+    "StorageConnectionString": "Bucket=yourbucket;Region=us-west-2;KeyId=yourkeyid;Key=yoursecretkey;"
   }
 }
+
+Quick guide to create least-privilege keys: [Docs/AWS-S3-AccessKeys.md](../Docs/AWS-S3-AccessKeys.md)
 ```
+
+### Cloudflare R2 (S3-compatible) Configuration
+
+```json
+Cloudflare R2 is S3-compatible but typically requires a custom S3 endpoint like `https://<account-id>.r2.cloudflarestorage.com`. The current implementation uses the AWS SDK without exposing a custom endpoint setting; full R2 support may require a code change to pass a custom ServiceURL.
+
+You can still prepare credentials and bucket details using the R2 console. See: [Docs/Cloudflare-R2-AccessKeys.md](../Docs/Cloudflare-R2-AccessKeys.md)
+```
+
 
 ### Multi-Tenant Configuration
 
@@ -113,6 +134,13 @@ builder.Services.AddCosmosStorageContext(builder.Configuration);
 // Optional: Add data protection with blob storage
 builder.Services.AddCosmosCmsDataProtection(builder.Configuration, new DefaultAzureCredential());
 ```
+
+### Provider detection
+
+- Connection string starts with `DefaultEndpointsProtocol=` → Azure Blob Storage
+- Connection string contains `Bucket=` → Amazon S3 (or S3-compatible)
+
+For full configuration guidance, see [Docs/StorageConfig.md](../Docs/StorageConfig.md).
 
 ### Basic Usage
 
@@ -343,4 +371,4 @@ Licensed under the GNU Public License, Version 3.0. See the [LICENSE](LICENSE.tx
 
 ## Contributing
 
-This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/CosmosCMS).
+This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).

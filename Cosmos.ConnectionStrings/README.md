@@ -2,7 +2,7 @@
 
 ## Overview
 
-Cosmos.DynamicConfig is a sophisticated configuration management system designed for multi-tenant applications. It provides dynamic, domain-based configuration and connection string resolution, allowing a single application instance to serve multiple tenants with different database and storage configurations based on the incoming request's domain name.
+Cosmos.DynamicConfig is a configuration management system for multi-tenant applications. It provides dynamic, domain-based configuration and connection string resolution so a single application instance can serve multiple tenants with different database and storage settings based on the incoming request's domain name.
 
 ## Features
 
@@ -24,7 +24,7 @@ Cosmos.DynamicConfig is a sophisticated configuration management system designed
 
 - **Domain Validation**: Validate domain names against configured tenants
 - **Metrics Collection**: Built-in metrics tracking for tenant resource usage
-- **Entity Framework Integration**: Cosmos DB Entity Framework support
+- **Entity Framework Integration**: Works with Cosmos DB, SQL Server, MySQL, and SQLite via FlexDb provider detection
 - **HTTP Context Integration**: Seamless integration with ASP.NET Core pipeline
 
 ## Architecture
@@ -41,7 +41,7 @@ The main implementation that handles configuration resolution, caching, and data
 
 #### DynamicConfigDbContext
 
-Entity Framework DbContext for managing configuration data, connections, and metrics in Cosmos DB.
+Entity Framework DbContext for managing configuration data, connections, and metrics. The backing database is determined by your `ConfigDbConnectionString` (Cosmos DB, SQL Server, MySQL, or SQLite).
 
 #### Connection Entity
 
@@ -53,19 +53,51 @@ ASP.NET Core middleware that captures and stores the current request's domain fo
 
 ## Installation
 
-This package is part of the SkyCMS solution. You can obtain it by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/CosmosCMS).
+This package is part of the SkyCMS solution. You can obtain it by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
 
 ## Configuration
 
 ### Database Setup
 
-Configure the main configuration database connection string:
+Configure the main configuration database connection string (required key: `ConnectionStrings:ConfigDbConnectionString`).
 
 ```json
 {
   "ConnectionStrings": {
     "ConfigDbConnectionString": "AccountEndpoint=https://your-cosmos-account.documents.azure.com:443/;AccountKey=your-key;Database=your-config-db"
   }
+}
+```
+
+Alternative examples:
+
+SQL Server:
+
+```json
+{
+    "ConnectionStrings": {
+        "ConfigDbConnectionString": "Server=tcp:your-sql.database.windows.net,1433;Initial Catalog=YourConfigDb;User ID=youruser;Password=yourpassword;"
+    }
+}
+```
+
+MySQL:
+
+```json
+{
+    "ConnectionStrings": {
+        "ConfigDbConnectionString": "Server=your-mysql;Port=3306;uid=youruser;pwd=yourpassword;database=YourConfigDb;"
+    }
+}
+```
+
+SQLite:
+
+```json
+{
+    "ConnectionStrings": {
+        "ConfigDbConnectionString": "Data Source=your-config.db"
+    }
 }
 ```
 
@@ -100,6 +132,8 @@ builder.Services.AddScoped<IDynamicConfigurationProvider, DynamicConfigurationPr
 
 // Add domain middleware to capture request domain
 app.UseMiddleware<DomainMiddleware>();
+
+Note: The provider requires an active HTTP request context to infer the tenant domain. For background services or out-of-band operations, pass the domain explicitly to the API methods (see below).
 ```
 
 ### Basic Usage
@@ -132,6 +166,13 @@ public class TenantService
 }
 ```
 
+Explicit domain usage (no HTTP context required):
+
+```csharp
+var dbForFoo = _configProvider.GetDatabaseConnectionString("www.foo.com");
+var storageForFoo = _configProvider.GetStorageConnectionString("www.foo.com");
+```
+
 ### Domain-Specific Configuration
 
 ```csharp
@@ -147,7 +188,7 @@ public class ConfigurationController : ControllerBase
     [HttpGet("tenant-info")]
     public async Task<IActionResult> GetTenantInfo()
     {
-        // Check if multi-tenant is configured
+        // Check if multi-tenant is configured (any tenant connection present)
         if (!_configProvider.IsMultiTenantConfigured)
         {
             return BadRequest("Multi-tenant not configured");
@@ -346,4 +387,15 @@ Licensed under the GNU Public License, Version 3.0. See the LICENSE file for det
 
 ## Contributing
 
-This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/CosmosCMS).
+This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+
+## Troubleshooting
+
+- HTTP context is not available
+    - Ensure `AddHttpContextAccessor()` is registered and the code runs within an HTTP request. For background jobs, pass a domain string to the API.
+- Missing `ConfigDbConnectionString`
+    - The provider requires `ConnectionStrings:ConfigDbConnectionString`. Add it to configuration or environment variables.
+- Domain not found
+    - `ValidateDomainName` returns false if the domain is not configured. Add the domain to a `Connection` entity in the configuration database.
+- Stale configuration
+    - Results are cached for 10 seconds. Wait for cache expiry or adjust code to refresh if you just updated tenant settings.
