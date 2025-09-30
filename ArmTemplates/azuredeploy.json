@@ -107,7 +107,8 @@
         "storageAccountType": "[parameters('storageAccountType')]",
         "editorName": "[concat('editor-', uniquestring(resourceGroup().id))]",
         "publisherName": "[concat('publisher-', uniquestring(resourceGroup().id))]",
-        "azureCommunicationConnection": "[parameters('azureCommunicationsConnectionString')]"
+        "azureCommunicationConnection": "[parameters('azureCommunicationsConnectionString')]",
+        "dbPassword": "[substring(replace(guid(resourceGroup().id),'-',''),0,16)]"
     },
     "resources": [
         {
@@ -271,7 +272,7 @@
                     ],
                     "properties": {
                         "ApplicationDbContextConnection": {
-                            "value": "Data Source=/data/sqlite/skycms.db",
+                            "value": "[concat('Data Source=/data/sqlite/skycms.db;Password=', variables('dbPassword'), ';')]",
                             "type": "Custom"
                         },
                         "StorageConnectionString": {
@@ -318,7 +319,7 @@
                         "accountName": "[variables('storageAccountName')]",
                         "shareName": "data-sqlite",
                         "accessKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value]",
-                        "mountPath": "/data/sqlite"
+                        "mountPath": "/skycms"
                     }
                 },
                 "storageAccountUrl": "[reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').primaryEndpoints.web]"
@@ -413,7 +414,7 @@
                     ],
                     "properties": {
                         "ApplicationDbContextConnection": {
-                            "value": "Data Source=/data/sqlite/skycms.db",
+                            "value": "[concat('Data Source=/data/sqlite/skycms.db;Password=', variables('dbPassword'), ';')]",
                             "type": "Custom"
                         },
                         "StorageConnectionString": {
