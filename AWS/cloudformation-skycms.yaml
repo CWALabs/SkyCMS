@@ -124,6 +124,11 @@ Parameters:
     Default: toiyabe/sky-publisher:latest
     Description: Container image for the Publisher service
 
+  PublisherPublicUrl:
+    Type: String
+    Default: ''
+    Description: Optional public URL for the Publisher site (used by the Editor); provide if no load balancer is used
+
 Mappings: {}
 
 Conditions:
@@ -131,20 +136,6 @@ Conditions:
   UseSendGrid: !Not [ !Equals [ !Ref SendGridApiKey, '' ] ]
 
 Resources:
-  AlbSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow HTTP/8080 to ALB
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp: 0.0.0.0/0
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -196,58 +187,6 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Sub "${StackName}-cluster"
-
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: !Sub "${StackName}-alb"
-      Scheme: internet-facing
-      Subnets: !Ref PublicSubnets
-      SecurityGroups: [ !Ref AlbSecurityGroup ]
-
-  TargetGroupEditor:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub "${StackName}-tg-editor"
-      TargetType: ip
-      Protocol: HTTP
-      Port: 80
-      VpcId: !Ref VpcId
-      HealthCheckPath: /
-      Matcher:
-        HttpCode: 200-399
-
-  TargetGroupPublisher:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub "${StackName}-tg-pub"
-      TargetType: ip
-      Protocol: HTTP
-      Port: 80
-      VpcId: !Ref VpcId
-      HealthCheckPath: /Identity/Account/Login
-      Matcher:
-        HttpCode: 200-399
-
-  ListenerEditor:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: HTTP
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroupEditor
-
-  ListenerPublisher:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 8080
-      Protocol: HTTP
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroupPublisher
 
   TaskExecutionRole:
     Type: AWS::IAM::Role
@@ -316,7 +255,7 @@ Resources:
             - Name: CosmosAllowSetup
               Value: 'true'
             - Name: CosmosPublisherUrl
-              Value: !Sub "http://${LoadBalancer.DNSName}:8080"
+              Value: !Ref PublisherPublicUrl
             - Name: AzureBlobStorageEndPoint
               Value: '/'
             - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
@@ -420,7 +359,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          SourceSecurityGroupId: !Ref AlbSecurityGroup
+          CidrIp: 0.0.0.0/0
 
   PublisherServiceSG:
     Type: AWS::EC2::SecurityGroup
@@ -431,22 +370,17 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          SourceSecurityGroupId: !Ref AlbSecurityGroup
+          CidrIp: 0.0.0.0/0
 
   EditorService:
     Type: AWS::ECS::Service
     DependsOn:
       - EfsMountTarget1
       - EfsMountTarget2
-      - ListenerEditor
     Properties:
       Cluster: !Ref EcsCluster
       DesiredCount: !Ref DesiredCount
       LaunchType: FARGATE
-      LoadBalancers:
-        - TargetGroupArn: !Ref TargetGroupEditor
-          ContainerName: editor
-          ContainerPort: 80
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -459,15 +393,10 @@ Resources:
     DependsOn:
       - EfsMountTarget1
       - EfsMountTarget2
-      - ListenerPublisher
     Properties:
       Cluster: !Ref EcsCluster
       DesiredCount: !Ref DesiredCount
       LaunchType: FARGATE
-      LoadBalancers:
-        - TargetGroupArn: !Ref TargetGroupPublisher
-          ContainerName: publisher
-          ContainerPort: 80
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -488,9 +417,3 @@ Outputs:
   S3Bucket:
     Description: S3 bucket used for blob storage
     Value: !Ref S3BucketName
-  EditorUrl:
-    Description: Public URL for the Editor app
-    Value: !Sub 'http://${LoadBalancer.DNSName}/'
-  PublisherUrl:
-    Description: Public URL for the Publisher app (used by Editor)
-    Value: !Sub 'http://${LoadBalancer.DNSName}:8080/'

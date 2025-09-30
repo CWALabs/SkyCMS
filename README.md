@@ -10,6 +10,10 @@
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMoonriseSoftwareCalifornia%2FSkyCMS%2Frefs%2Fheads%2Fmain%2FArmTemplates%2Fazuredeploy.json)
 
+(For AWS)
+
+[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://raw.githubusercontent.com/MoonriseSoftwareCalifornia/SkyCMS/main/AWS/cloudformation-skycms.yaml&stackName=skycms)
+
 (More click-to-deploy options coming soon)
 
 Also available: [AWS CloudFormation deployment guide](./AWS/README.md)
