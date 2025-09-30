@@ -157,7 +157,7 @@ Parameters:
   AssignPublicIp:
     Type: String
     AllowedValues: [ ENABLED, DISABLED ]
-    Default: ENABLED
+    Default: DISABLED
     Description: Whether to assign a public IP to ECS tasks. Enable if your subnets do not have NAT internet egress.
 
 
@@ -314,7 +314,7 @@ Resources:
       Name: !Sub "${StackName}/sqlite/connection"
       Description: SkyCMS SQLite connection string with generated password
       GenerateSecretString:
-        SecretStringTemplate: '{"Data Source":"/skycms/skycms.db"}'
+        SecretStringTemplate: '{"Data Source":"/data/sqlite/skycms.db"}'
         GenerateStringKey: Password
         PasswordLength: 24
         ExcludeCharacters: '"'  # avoid breaking JSON
@@ -344,7 +344,7 @@ Resources:
         Uid: "1000"
         Gid: "1000"
       RootDirectory:
-        Path: "/skycms"
+        Path: "/data/sqlite"
         CreationInfo:
           OwnerUid: "1000"
           OwnerGid: "1000"
@@ -378,6 +378,24 @@ Resources:
       FileSystemId: !Ref EfsFileSystem
       SubnetId: !Select [ 1, !Ref PublicSubnets ]
       SecurityGroups: [ !Ref EfsMountSecurityGroup ]
+
+  EditorToEfsNfsEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref EditorServiceSG
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      DestinationSecurityGroupId: !Ref EfsMountSecurityGroup
+
+  PublisherToEfsNfsEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref PublisherServiceSG
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      DestinationSecurityGroupId: !Ref EfsMountSecurityGroup
 
   EcsCluster:
     Type: AWS::ECS::Cluster
@@ -421,6 +439,22 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:s3:::${S3BucketName}"
                   - !Sub "arn:aws:s3:::${S3BucketName}/*"
+        - PolicyName: efs-client
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticfilesystem:ClientMount
+                Resource:
+                  - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/${EfsFileSystem}"
+              - Effect: Allow
+                Action:
+                  - elasticfilesystem:ClientMount
+                  - elasticfilesystem:ClientWrite
+                  - elasticfilesystem:ClientRootAccess
+                Resource:
+                  - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/${EfsAccessPoint}"
 
   EditorTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -474,7 +508,7 @@ Resources:
             - Name: SmtpEmailProviderOptions__Password
               Value: !If [ UseSMTP, !Ref SmtpPassword, '' ]
             - Name: ConnectionStrings__ApplicationDbContextConnection
-              Value: !Sub 'Data Source=/skycms/skycms.db;Password={{resolve:secretsmanager:${SqliteConnectionSecret}:SecretString:Password}};'
+              Value: !Sub 'Data Source=/data/sqlite/skycms.db;Password={{resolve:secretsmanager:${SqliteConnectionSecret}:SecretString:Password}};'
             - Name: ConnectionStrings__StorageConnectionString
               Value: !Sub 'Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};'
           LogConfiguration:
@@ -484,7 +518,7 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: editor
           MountPoints:
-            - ContainerPath: /skycms
+            - ContainerPath: /data/sqlite
               SourceVolume: sqlite
           LinuxParameters:
             InitProcessEnabled: true
@@ -539,7 +573,7 @@ Resources:
             - Name: SmtpEmailProviderOptions__Password
               Value: !If [ UseSMTP, !Ref SmtpPassword, '' ]
             - Name: ConnectionStrings__ApplicationDbContextConnection
-              Value: !Sub 'Data Source=/skycms/skycms.db;Password={{resolve:secretsmanager:${SqliteConnectionSecret}:SecretString:Password}};'
+              Value: !Sub 'Data Source=/data/sqlite/skycms.db;Password={{resolve:secretsmanager:${SqliteConnectionSecret}:SecretString:Password}};'
             - Name: ConnectionStrings__StorageConnectionString
               Value: !Sub 'Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};'
           LogConfiguration:
@@ -549,7 +583,7 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: publisher
           MountPoints:
-            - ContainerPath: /skycms
+            - ContainerPath: /data/sqlite
               SourceVolume: sqlite
           LinuxParameters:
             InitProcessEnabled: true
@@ -623,7 +657,9 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !Ref AssignPublicIp
-          Subnets: !Ref PublicSubnets
+          Subnets:
+            - !Select [ 0, !Ref PublicSubnets ]
+            - !Select [ 1, !Ref PublicSubnets ]
           SecurityGroups: [ !Ref EditorServiceSG ]
       TaskDefinition: !Ref EditorTaskDefinition
       LoadBalancers:
@@ -644,7 +680,9 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !Ref AssignPublicIp
-          Subnets: !Ref PublicSubnets
+          Subnets:
+            - !Select [ 0, !Ref PublicSubnets ]
+            - !Select [ 1, !Ref PublicSubnets ]
           SecurityGroups: [ !Ref PublisherServiceSG ]
       TaskDefinition: !Ref PublisherTaskDefinition
       LoadBalancers:
