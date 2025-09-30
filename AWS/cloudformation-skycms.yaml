@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), and EFS (SQLite persistence) without a load balancer
+Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), EFS (SQLite persistence), and an Application Load Balancer (host-based routing)
 
 Parameters:
   StackName:
@@ -129,14 +129,179 @@ Parameters:
     Default: ''
     Description: Optional public URL for the Publisher site (used by the Editor); provide if no load balancer is used
 
+  ACMCertificateArn:
+    Type: String
+    Default: ''
+    Description: Optional ACM certificate ARN for HTTPS (443) on the load balancer. Leave blank to skip HTTPS.
+
+  EditorHostName:
+    Type: String
+    Description: Fully qualified host name for the Editor (e.g., editor.example.com)
+
+  PublisherHostName:
+    Type: String
+    Default: ''
+    Description: Optional fully qualified host name for the Publisher (e.g., www.example.com). If blank, default action serves Publisher.
+
+  RedirectHttpToHttps:
+    Type: String
+    AllowedValues: ['true','false']
+    Default: 'false'
+    Description: If true and HTTPS is configured, HTTP (80) requests will be redirected to HTTPS (443) with 301.
+
+  HostedZoneId:
+    Type: String
+    Default: ''
+    Description: Optional Route 53 Hosted Zone ID to create DNS A-records for Editor/Publisher hostnames pointing to the ALB.
+
 
 Mappings: {}
 
 Conditions:
   UseSMTP: !Not [ !Equals [ !Ref SmtpHostName, '' ] ]
   UseSendGrid: !Not [ !Equals [ !Ref SendGridApiKey, '' ] ]
+  UseHTTPS: !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ]
+  UsePublisherHostName: !Not [ !Equals [ !Ref PublisherHostName, '' ] ]
+  RedirectToHTTPS: !And [ !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ], !Equals [ !Ref RedirectHttpToHttps, 'true' ] ]
+  CreateDNSRecords: !Not [ !Equals [ !Ref HostedZoneId, '' ] ]
+  CreatePublisherDNS: !And [ !Not [ !Equals [ !Ref HostedZoneId, '' ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
+  CreateHttpRules: !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ]
+  UseHTTPSAndPublisher: !And [ !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
+  CreateHttpRulesAndPublisher: !And [ !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
 
 Resources:
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for public ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - !If 
+          - UseHTTPS
+          - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+          - { Ref: AWS::NoValue }
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "${StackName}-alb"
+      Scheme: internet-facing
+      Type: application
+      Subnets: !Ref PublicSubnets
+      SecurityGroups: [ !Ref ALBSecurityGroup ]
+
+  PublisherTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${StackName}-pub-tg"
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VpcId
+      HealthCheckPath: '/'
+      Matcher:
+        HttpCode: '200-399'
+
+  EditorTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${StackName}-ed-tg"
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VpcId
+      HealthCheckPath: '/'
+      Matcher:
+        HttpCode: '200-399'
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - !If
+          - RedirectToHTTPS
+          - Type: redirect
+            RedirectConfig:
+              Protocol: HTTPS
+              Port: '443'
+              StatusCode: HTTP_301
+          - Type: forward
+            TargetGroupArn: !Ref PublisherTargetGroup
+
+  HttpsListener:
+    Condition: UseHTTPS
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref ACMCertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref PublisherTargetGroup
+
+  HttpEditorRule:
+    Condition: CreateHttpRules
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 10
+      Conditions:
+        - Field: host-header
+          HostHeaderConfig:
+            Values: [ !Ref EditorHostName ]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EditorTargetGroup
+
+  HttpPublisherRule:
+    Condition: CreateHttpRulesAndPublisher
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 20
+      Conditions:
+        - Field: host-header
+          HostHeaderConfig:
+            Values: [ !Ref PublisherHostName ]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref PublisherTargetGroup
+
+  HttpsEditorRule:
+    Condition: UseHTTPS
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 10
+      Conditions:
+        - Field: host-header
+          HostHeaderConfig:
+            Values: [ !Ref EditorHostName ]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EditorTargetGroup
+  HttpsPublisherRule:
+    Condition: UseHTTPSAndPublisher
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 20
+      Conditions:
+        - Field: host-header
+          HostHeaderConfig:
+            Values: [ !Ref PublisherHostName ]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref PublisherTargetGroup
   SqliteConnectionSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -282,6 +447,8 @@ Resources:
               Value: !Ref AdminEmailAddress
             - Name: CosmosAllowSetup
               Value: 'true'
+            - Name: ASPNETCORE_URLS
+              Value: 'http://+:80'
             - Name: CosmosPublisherUrl
               Value: !Ref PublisherPublicUrl
             - Name: AzureBlobStorageEndPoint
@@ -347,6 +514,8 @@ Resources:
               Value: !Ref AdminEmailAddress
             - Name: CosmosStaticWebPages
               Value: 'true'
+            - Name: ASPNETCORE_URLS
+              Value: 'http://+:80'
             - Name: AzureBlobStorageEndPoint
               Value: '/'
             - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
@@ -388,7 +557,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
 
   PublisherServiceSG:
     Type: AWS::EC2::SecurityGroup
@@ -399,41 +568,78 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
 
   EditorService:
     Type: AWS::ECS::Service
     DependsOn:
       - EfsMountTarget1
       - EfsMountTarget2
+      - HttpListener
     Properties:
       Cluster: !Ref EcsCluster
       DesiredCount: !Ref DesiredCount
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           Subnets: !Ref PublicSubnets
           SecurityGroups: [ !Ref EditorServiceSG ]
       TaskDefinition: !Ref EditorTaskDefinition
+      LoadBalancers:
+        - ContainerName: editor
+          ContainerPort: 80
+          TargetGroupArn: !Ref EditorTargetGroup
 
   PublisherService:
     Type: AWS::ECS::Service
     DependsOn:
       - EfsMountTarget1
       - EfsMountTarget2
+      - HttpListener
     Properties:
       Cluster: !Ref EcsCluster
       DesiredCount: !Ref DesiredCount
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           Subnets: !Ref PublicSubnets
           SecurityGroups: [ !Ref PublisherServiceSG ]
       TaskDefinition: !Ref PublisherTaskDefinition
+      LoadBalancers:
+        - ContainerName: publisher
+          ContainerPort: 80
+          TargetGroupArn: !Ref PublisherTargetGroup
+
+  EditorDNSRecord:
+    Condition: CreateDNSRecords
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref EditorHostName
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        EvaluateTargetHealth: false
+
+  PublisherDNSRecord:
+    Condition: CreatePublisherDNS
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref PublisherHostName
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        EvaluateTargetHealth: false
 
 Outputs:
+  LoadBalancerDNSName:
+    Description: Public DNS name of the Application Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
   EditorServiceName:
     Description: ECS service name for Editor
     Value: !Ref EditorService
@@ -446,3 +652,11 @@ Outputs:
   S3Bucket:
     Description: S3 bucket used for blob storage
     Value: !Ref S3BucketName
+  EditorDNSRecordName:
+    Condition: CreateDNSRecords
+    Description: Route 53 DNS name created for the Editor host (if HostedZoneId provided)
+    Value: !Ref EditorHostName
+  PublisherDNSRecordName:
+    Condition: CreatePublisherDNS
+    Description: Route 53 DNS name created for the Publisher host (if HostedZoneId and PublisherHostName provided)
+    Value: !Ref PublisherHostName
