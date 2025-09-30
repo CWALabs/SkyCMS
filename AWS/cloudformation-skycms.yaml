@@ -21,7 +21,46 @@ Parameters:
 
   S3Region:
     Type: String
-    Description: AWS region of the S3 bucket (e.g., us-west-2)
+    Description: AWS region of the S3 bucket (commercial AWS regions)
+    AllowedValues:
+      # Americas
+      - us-east-1      # N. Virginia
+      - us-east-2      # Ohio
+      - us-west-1      # N. California
+      - us-west-2      # Oregon
+      - ca-central-1   # Canada (Central)
+      - ca-west-1      # Canada West (Calgary)
+      - sa-east-1      # South America (Sao Paulo)
+
+      # Europe
+      - eu-west-1      # Ireland
+      - eu-west-2      # London
+      - eu-west-3      # Paris
+      - eu-central-1   # Frankfurt
+      - eu-central-2   # Zurich
+      - eu-north-1     # Stockholm
+      - eu-south-1     # Milan
+      - eu-south-2     # Spain
+
+      # Asia Pacific
+      - ap-south-1     # Mumbai
+      - ap-south-2     # Hyderabad
+      - ap-southeast-1 # Singapore
+      - ap-southeast-2 # Sydney
+      - ap-southeast-3 # Jakarta
+      - ap-southeast-4 # Melbourne
+      - ap-southeast-5 # Malaysia (Kuala Lumpur)
+      - ap-northeast-1 # Tokyo
+      - ap-northeast-2 # Seoul
+      - ap-northeast-3 # Osaka
+      - ap-east-1      # Hong Kong
+
+      # Middle East & Africa
+      - me-south-1     # Bahrain
+      - me-central-1   # UAE (Dubai)
+      - me-west-1      # Israel (Tel Aviv)
+      - af-south-1     # Cape Town
+    Default: us-west-2
 
   S3AccessKeyId:
     Type: String
