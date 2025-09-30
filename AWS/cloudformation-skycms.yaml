@@ -154,6 +154,12 @@ Parameters:
     Default: ''
     Description: Optional Route 53 Hosted Zone ID to create DNS A-records for Editor/Publisher hostnames pointing to the ALB.
 
+  AssignPublicIp:
+    Type: String
+    AllowedValues: [ ENABLED, DISABLED ]
+    Default: DISABLED
+    Description: Whether to assign a public IP to ECS tasks. Enable if your subnets do not have NAT internet egress.
+
 
 Mappings: {}
 
@@ -582,7 +588,7 @@ Resources:
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
+          AssignPublicIp: !Ref AssignPublicIp
           Subnets: !Ref PublicSubnets
           SecurityGroups: [ !Ref EditorServiceSG ]
       TaskDefinition: !Ref EditorTaskDefinition
@@ -603,7 +609,7 @@ Resources:
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
+          AssignPublicIp: !Ref AssignPublicIp
           Subnets: !Ref PublicSubnets
           SecurityGroups: [ !Ref PublisherServiceSG ]
       TaskDefinition: !Ref PublisherTaskDefinition
