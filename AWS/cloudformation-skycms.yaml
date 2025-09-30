@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, ALB, S3 (blob storage), and EFS (SQLite persistence)
+Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), and EFS (SQLite persistence) without a load balancer
 
 Parameters:
   StackName:
@@ -129,6 +129,7 @@ Parameters:
     Default: ''
     Description: Optional public URL for the Publisher site (used by the Editor); provide if no load balancer is used
 
+
 Mappings: {}
 
 Conditions:
@@ -136,6 +137,16 @@ Conditions:
   UseSendGrid: !Not [ !Equals [ !Ref SendGridApiKey, '' ] ]
 
 Resources:
+  SqliteConnectionSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${StackName}/sqlite/connection"
+      Description: SkyCMS SQLite connection string with generated password
+      GenerateSecretString:
+        SecretStringTemplate: '{"Data Source":"/skycms/skycms.db"}'
+        GenerateStringKey: Password
+        PasswordLength: 24
+        ExcludeCharacters: '"'  # avoid breaking JSON
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -153,6 +164,20 @@ Resources:
       FileSystemTags:
         - Key: Name
           Value: !Sub "${StackName}-sqlite"
+
+  EfsAccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref EfsFileSystem
+      PosixUser:
+        Uid: "1000"
+        Gid: "1000"
+      RootDirectory:
+        Path: "/skycms"
+        CreationInfo:
+          OwnerUid: "1000"
+          OwnerGid: "1000"
+          Permissions: "0777"
 
   EfsMountSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -241,6 +266,9 @@ Resources:
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystem
             TransitEncryption: ENABLED
+            AuthorizationConfig:
+              AccessPointId: !Ref EfsAccessPoint
+              IAM: ENABLED
             RootDirectory: '/'
       ContainerDefinitions:
         - Name: editor
@@ -273,10 +301,9 @@ Resources:
             - Name: SmtpEmailProviderOptions__Password
               Value: !If [ UseSMTP, !Ref SmtpPassword, '' ]
             - Name: ConnectionStrings__ApplicationDbContextConnection
-              Value: 'Data Source=/data/sqlite/skycms.db'
+              Value: !Sub 'Data Source=/skycms/skycms.db;Password={{resolve:secretsmanager:${SqliteConnectionSecret}:SecretString:Password}};'
             - Name: ConnectionStrings__StorageConnectionString
               Value: !Sub 'Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};'
-          Secrets: []
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -284,7 +311,7 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: editor
           MountPoints:
-            - ContainerPath: /data/sqlite
+            - ContainerPath: /skycms
               SourceVolume: sqlite
           LinuxParameters:
             InitProcessEnabled: true
@@ -304,6 +331,9 @@ Resources:
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystem
             TransitEncryption: ENABLED
+            AuthorizationConfig:
+              AccessPointId: !Ref EfsAccessPoint
+              IAM: ENABLED
             RootDirectory: '/'
       ContainerDefinitions:
         - Name: publisher
@@ -334,10 +364,9 @@ Resources:
             - Name: SmtpEmailProviderOptions__Password
               Value: !If [ UseSMTP, !Ref SmtpPassword, '' ]
             - Name: ConnectionStrings__ApplicationDbContextConnection
-              Value: 'Data Source=/data/sqlite/skycms.db'
+              Value: !Sub 'Data Source=/skycms/skycms.db;Password={{resolve:secretsmanager:${SqliteConnectionSecret}:SecretString:Password}};'
             - Name: ConnectionStrings__StorageConnectionString
               Value: !Sub 'Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};'
-          Secrets: []
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -345,7 +374,7 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: publisher
           MountPoints:
-            - ContainerPath: /data/sqlite
+            - ContainerPath: /skycms
               SourceVolume: sqlite
           LinuxParameters:
             InitProcessEnabled: true
