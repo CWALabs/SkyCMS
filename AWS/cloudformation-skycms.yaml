@@ -115,6 +115,7 @@ Resources:
 
   EfsFileSystem:
     Type: AWS::EFS::FileSystem
+    DeletionPolicy: Retain
     Properties:
       Encrypted: true
       PerformanceMode: generalPurpose
@@ -286,7 +287,7 @@ Resources:
             - Name: SmtpEmailProviderOptions__Host
               Value: !If [ UseSMTP, !Ref SmtpHostName, '' ]
             - Name: SmtpEmailProviderOptions__Port
-              Value: !If [ UseSMTP, !Ref SmtpPort, '587' ]
+              Value: !If [ UseSMTP, !Sub "${SmtpPort}", '587' ]
             - Name: SmtpEmailProviderOptions__EnableSsl
               Value: !If [ UseSMTP, !Ref SmtpEnableTls, 'true' ]
             - Name: SmtpEmailProviderOptions__UserName
@@ -347,7 +348,7 @@ Resources:
             - Name: SmtpEmailProviderOptions__Host
               Value: !If [ UseSMTP, !Ref SmtpHostName, '' ]
             - Name: SmtpEmailProviderOptions__Port
-              Value: !If [ UseSMTP, !Ref SmtpPort, '587' ]
+              Value: !If [ UseSMTP, !Sub "${SmtpPort}", '587' ]
             - Name: SmtpEmailProviderOptions__EnableSsl
               Value: !If [ UseSMTP, !Ref SmtpEnableTls, 'true' ]
             - Name: SmtpEmailProviderOptions__UserName
@@ -395,7 +396,10 @@ Resources:
 
   EditorService:
     Type: AWS::ECS::Service
-    DependsOn: [ EfsMountTarget1, EfsMountTarget2 ]
+    DependsOn:
+      - EfsMountTarget1
+      - EfsMountTarget2
+      - ListenerEditor
     Properties:
       Cluster: !Ref EcsCluster
       DesiredCount: !Ref DesiredCount
@@ -413,7 +417,10 @@ Resources:
 
   PublisherService:
     Type: AWS::ECS::Service
-    DependsOn: [ EfsMountTarget1, EfsMountTarget2 ]
+    DependsOn:
+      - EfsMountTarget1
+      - EfsMountTarget2
+      - ListenerPublisher
     Properties:
       Cluster: !Ref EcsCluster
       DesiredCount: !Ref DesiredCount
