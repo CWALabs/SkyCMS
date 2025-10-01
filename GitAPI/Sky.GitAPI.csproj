@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<UserSecretsId>aspnet-Sky.GitAPI-8EA5716F-3AA0-40C0-B742-C20FE7803188</UserSecretsId>
+		<AnalysisLevel>5.0</AnalysisLevel>
+		<EnableNETAnalyzers>false</EnableNETAnalyzers>
+		<RepositoryUrl>https://github.com/MoonriseSoftwareCalifornia/SkyCMS</RepositoryUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Version>9.0.16.1</Version>
+		<AssemblyVersion>9.0.16.1</AssemblyVersion>
+		<FileVersion>9.0.16.1</FileVersion>
+		<RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+		<Authors>Moonrise Software, LLC</Authors>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<SignAssembly>False</SignAssembly>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+		<PackageReference Include="System.Text.Json" Version="9.0.9" />
+		<PackageReference Include="LibGit2Sharp" Version="0.30.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Common\Cosmos.Common.csproj" />
+	  <ProjectReference Include="..\AspNetCore.Identity.FlexDb\AspNetCore.Identity.FlexDb.csproj" />
+	</ItemGroup>
+
+</Project>

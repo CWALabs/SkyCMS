@@ -5,45 +5,31 @@ Parameters:
   InstallId:
     Type: String
     Description: A short install name to tag all resources (used as value for tag key 'skycms-install-id')
-  CreateNewVPC:
-    Type: String
-    AllowedValues: ['true','false']
-    Default: 'true'
-    Description: When 'true', this template will create a new VPC with two public subnets and use it. When 'false', provide VpcId and PublicSubnets.
 
   VpcCidr:
     Type: String
     Default: 10.0.0.0/16
-    Description: CIDR block for the new VPC (used only when CreateNewVPC=true)
+    Description: CIDR block for the new VPC created by this template
 
   PublicSubnet1Cidr:
     Type: String
     Default: 10.0.0.0/24
-    Description: CIDR for public subnet 1 (AZ 1) when creating a new VPC
+    Description: CIDR for public subnet 1 (AZ 1)
 
   PublicSubnet2Cidr:
     Type: String
     Default: 10.0.1.0/24
-    Description: CIDR for public subnet 2 (AZ 2) when creating a new VPC
+    Description: CIDR for public subnet 2 (AZ 2)
   CreatePrivateSubnets:
     Type: String
     AllowedValues: ['true','false']
     Default: 'true'
-    Description: When 'true' and CreateNewVPC=true, create two private subnets with a NAT Gateway for egress (good for databases later)
+    Description: When 'true', also create two private subnets and a NAT Gateway for egress (good for databases later)
   StackName:
     Type: String
     Default: skycms
     Description: Logical name prefix for created resources
 
-  VpcId:
-    Type: String
-    Default: ''
-    Description: Existing VPC ID to deploy into (used only when CreateNewVPC=false). Leave blank when creating a new VPC.
-
-  PublicSubnets:
-    Type: CommaDelimitedList
-    Default: ','
-    Description: Comma-delimited list of two public subnet IDs (used only when CreateNewVPC=false). Leave blank when creating a new VPC.
 
   S3BucketName:
     Type: String
@@ -112,15 +98,14 @@ Parameters:
     Description: SMTP relay host (optional)
 
   SmtpPort:
-    Type: Number
-    Default: 587
-    Description: SMTP port (optional)
+    Type: String
+    Default: ''
+    Description: SMTP port (optional; leave blank to omit)
 
   SmtpEnableTls:
     Type: String
-    AllowedValues: ['true','false']
-    Default: 'true'
-    Description: Enable TLS for SMTP (optional)
+    Default: ''
+    Description: Enable TLS for SMTP (optional; set to 'true' or 'false', leave blank to omit)
 
   SmtpUserName:
     Type: String
@@ -154,11 +139,6 @@ Parameters:
     Default: toiyabe/sky-publisher:latest
     Description: Container image for the Publisher service
 
-  PublisherPublicUrl:
-    Type: String
-    Default: ''
-    Description: Optional public URL for the Publisher site (used by the Editor); provide if no load balancer is used
-
   ACMCertificateArn:
     Type: String
     Default: ''
@@ -179,11 +159,6 @@ Parameters:
     Default: 'false'
     Description: If true and HTTPS is configured, HTTP (80) requests will be redirected to HTTPS (443) with 301.
 
-  HostedZoneId:
-    Type: String
-    Default: ''
-    Description: Optional Route 53 Hosted Zone ID to create DNS A-records for Editor/Publisher hostnames pointing to the ALB.
-
   AssignPublicIp:
     Type: String
     AllowedValues: [ ENABLED, DISABLED ]
@@ -194,34 +169,21 @@ Parameters:
 Mappings: {}
 
 Conditions:
-  CreateNewVPCCond: !Equals [ !Ref CreateNewVPC, 'true' ]
-  PrivateEnabled: !And [ !Equals [ !Ref CreateNewVPC, 'true' ], !Equals [ !Ref CreatePrivateSubnets, 'true' ] ]
+  PrivateEnabled: !Equals [ !Ref CreatePrivateSubnets, 'true' ]
   UseSMTP: !Not [ !Equals [ !Ref SmtpHostName, '' ] ]
   UseSendGrid: !Not [ !Equals [ !Ref SendGridApiKey, '' ] ]
   UseHTTPS: !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ]
   UsePublisherHostName: !Not [ !Equals [ !Ref PublisherHostName, '' ] ]
   RedirectToHTTPS: !And [ !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ], !Equals [ !Ref RedirectHttpToHttps, 'true' ] ]
-  CreateDNSRecords: !Not [ !Equals [ !Ref HostedZoneId, '' ] ]
-  CreatePublisherDNS: !And [ !Not [ !Equals [ !Ref HostedZoneId, '' ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
   CreateHttpRules: !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ]
   UseHTTPSAndPublisher: !And [ !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
   CreateHttpRulesAndPublisher: !And [ !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
-
-Rules:
-  RequireExistingVpcParams:
-    RuleCondition: !Equals [ !Ref CreateNewVPC, 'false' ]
-    Assertions:
-      - Assert: !Not [ !Equals [ !Ref VpcId, '' ] ]
-        AssertDescription: Provide VpcId when CreateNewVPC is false.
-      - Assert: !Not [ !Equals [ !Select [ 0, !Ref PublicSubnets ], '' ] ]
-        AssertDescription: Provide at least two subnet IDs in PublicSubnets (first is empty).
-      - Assert: !Not [ !Equals [ !Select [ 1, !Ref PublicSubnets ], '' ] ]
-        AssertDescription: Provide at least two subnet IDs in PublicSubnets (second is empty).
+  UseSmtpPort: !And [ !Not [ !Equals [ !Ref SmtpHostName, '' ] ], !Not [ !Equals [ !Ref SmtpPort, '' ] ] ]
+  UseSmtpEnableTls: !And [ !Not [ !Equals [ !Ref SmtpHostName, '' ] ], !Not [ !Equals [ !Ref SmtpEnableTls, '' ] ] ]
 
 Resources:
-  # Optional new VPC with two public subnets and IGW for internet egress
+  # VPC with two public subnets and IGW for internet egress
   VPC:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref VpcCidr
@@ -234,7 +196,6 @@ Resources:
           Value: !Ref InstallId
 
   InternetGateway:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
@@ -244,17 +205,15 @@ Resources:
           Value: !Ref InstallId
 
   IGWAttachment:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       InternetGatewayId: !Ref InternetGateway
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
 
   PublicRouteTable:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-public-rt"
@@ -262,7 +221,6 @@ Resources:
           Value: !Ref InstallId
 
   PublicDefaultRoute:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::Route
     DependsOn: IGWAttachment
     Properties:
@@ -271,10 +229,9 @@ Resources:
       GatewayId: !Ref InternetGateway
 
   PublicSubnet1:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnet1Cidr
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       MapPublicIpOnLaunch: true
@@ -285,10 +242,9 @@ Resources:
           Value: !Ref InstallId
 
   PublicSubnet2:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnet2Cidr
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
       MapPublicIpOnLaunch: true
@@ -299,14 +255,12 @@ Resources:
           Value: !Ref InstallId
 
   PubSubnet1RouteAssoc:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet1
       RouteTableId: !Ref PublicRouteTable
 
   PubSubnet2RouteAssoc:
-    Condition: CreateNewVPCCond
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet2
@@ -340,7 +294,7 @@ Resources:
     Condition: PrivateEnabled
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-private-rt"
@@ -359,7 +313,7 @@ Resources:
     Condition: PrivateEnabled
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       CidrBlock: 10.0.100.0/24
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       MapPublicIpOnLaunch: false
@@ -373,7 +327,7 @@ Resources:
     Condition: PrivateEnabled
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       CidrBlock: 10.0.101.0/24
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
       MapPublicIpOnLaunch: false
@@ -401,7 +355,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for public ALB
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -421,7 +375,7 @@ Resources:
       Name: !Sub "${StackName}-alb"
       Scheme: internet-facing
       Type: application
-      Subnets: !If [ CreateNewVPCCond, [ !Ref PublicSubnet1, !Ref PublicSubnet2 ], !Ref PublicSubnets ]
+      Subnets: [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
       SecurityGroups: [ !Ref ALBSecurityGroup ]
       Tags:
         - Key: skycms-install-id
@@ -434,7 +388,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       TargetType: ip
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       HealthCheckPath: '/'
       Matcher:
         HttpCode: '200-399'
@@ -449,7 +403,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       TargetType: ip
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       HealthCheckPath: '/'
       Matcher:
         HttpCode: '200-399'
@@ -598,7 +552,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow NFS for EFS mounts
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 2049
@@ -616,14 +570,14 @@ Resources:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref EfsFileSystem
-      SubnetId: !If [ CreateNewVPCCond, !Ref PublicSubnet1, !Select [ 0, !Ref PublicSubnets ] ]
+      SubnetId: !Ref PublicSubnet1
       SecurityGroups: [ !Ref EfsMountSecurityGroup ]
 
   EfsMountTarget2:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref EfsFileSystem
-      SubnetId: !If [ CreateNewVPCCond, !Ref PublicSubnet2, !Select [ 1, !Ref PublicSubnets ] ]
+      SubnetId: !Ref PublicSubnet2
       SecurityGroups: [ !Ref EfsMountSecurityGroup ]
 
   EditorToEfsNfsEgress:
@@ -746,7 +700,13 @@ Resources:
             - Name: ASPNETCORE_URLS
               Value: 'http://+:80'
             - Name: CosmosPublisherUrl
-              Value: !Ref PublisherPublicUrl
+              Value: !If
+                - UsePublisherHostName
+                - !If
+                  - UseHTTPS
+                  - !Sub "https://${PublisherHostName}"
+                  - !Sub "http://${PublisherHostName}"
+                - ''
             - Name: AzureBlobStorageEndPoint
               Value: '/'
             - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
@@ -755,10 +715,14 @@ Resources:
               Value: !If [ UseSendGrid, !Ref SendGridApiKey, '' ]
             - Name: SmtpEmailProviderOptions__Host
               Value: !If [ UseSMTP, !Ref SmtpHostName, '' ]
-            - Name: SmtpEmailProviderOptions__Port
-              Value: !If [ UseSMTP, !Sub "${SmtpPort}", '587' ]
-            - Name: SmtpEmailProviderOptions__EnableSsl
-              Value: !If [ UseSMTP, !Ref SmtpEnableTls, 'true' ]
+            - !If
+              - UseSmtpPort
+              - { Name: SmtpEmailProviderOptions__Port, Value: !Ref SmtpPort }
+              - !Ref 'AWS::NoValue'
+            - !If
+              - UseSmtpEnableTls
+              - { Name: SmtpEmailProviderOptions__EnableSsl, Value: !Ref SmtpEnableTls }
+              - !Ref 'AWS::NoValue'
             - Name: SmtpEmailProviderOptions__UserName
               Value: !If [ UseSMTP, !Ref SmtpUserName, '' ]
             - Name: SmtpEmailProviderOptions__Password
@@ -823,10 +787,14 @@ Resources:
               Value: !If [ UseSendGrid, !Ref SendGridApiKey, '' ]
             - Name: SmtpEmailProviderOptions__Host
               Value: !If [ UseSMTP, !Ref SmtpHostName, '' ]
-            - Name: SmtpEmailProviderOptions__Port
-              Value: !If [ UseSMTP, !Sub "${SmtpPort}", '587' ]
-            - Name: SmtpEmailProviderOptions__EnableSsl
-              Value: !If [ UseSMTP, !Ref SmtpEnableTls, 'true' ]
+            - !If
+              - UseSmtpPort
+              - { Name: SmtpEmailProviderOptions__Port, Value: !Ref SmtpPort }
+              - !Ref 'AWS::NoValue'
+            - !If
+              - UseSmtpEnableTls
+              - { Name: SmtpEmailProviderOptions__EnableSsl, Value: !Ref SmtpEnableTls }
+              - !Ref 'AWS::NoValue'
             - Name: SmtpEmailProviderOptions__UserName
               Value: !If [ UseSMTP, !Ref SmtpUserName, '' ]
             - Name: SmtpEmailProviderOptions__Password
@@ -854,7 +822,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP to Editor ECS service
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -885,7 +853,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP to Publisher ECS service
-      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -925,10 +893,7 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !Ref AssignPublicIp
-          Subnets: !If
-            - CreateNewVPCCond
-            - [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
-            - [ !Select [ 0, !Ref PublicSubnets ], !Select [ 1, !Ref PublicSubnets ] ]
+          Subnets: [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
           SecurityGroups: [ !Ref EditorServiceSG ]
       TaskDefinition: !Ref EditorTaskDefinition
       LoadBalancers:
@@ -952,10 +917,7 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !Ref AssignPublicIp
-          Subnets: !If
-            - CreateNewVPCCond
-            - [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
-            - [ !Select [ 0, !Ref PublicSubnets ], !Select [ 1, !Ref PublicSubnets ] ]
+          Subnets: [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
           SecurityGroups: [ !Ref PublisherServiceSG ]
       TaskDefinition: !Ref PublisherTaskDefinition
       LoadBalancers:
@@ -966,34 +928,10 @@ Resources:
         - Key: skycms-install-id
           Value: !Ref InstallId
 
-  EditorDNSRecord:
-    Condition: CreateDNSRecords
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref EditorHostName
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
-        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
-        EvaluateTargetHealth: false
-
-  PublisherDNSRecord:
-    Condition: CreatePublisherDNS
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref PublisherHostName
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
-        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
-        EvaluateTargetHealth: false
 
 Outputs:
   CreatedVpcId:
-    Condition: CreateNewVPCCond
-    Description: VPC ID created by this stack (when CreateNewVPC=true)
+    Description: VPC ID created by this stack
     Value: !Ref VPC
   PrivateSubnet1Id:
     Condition: PrivateEnabled
@@ -1018,11 +956,3 @@ Outputs:
   S3Bucket:
     Description: S3 bucket used for blob storage
     Value: !Ref S3BucketName
-  EditorDNSRecordName:
-    Condition: CreateDNSRecords
-    Description: Route 53 DNS name created for the Editor host (if HostedZoneId provided)
-    Value: !Ref EditorHostName
-  PublisherDNSRecordName:
-    Condition: CreatePublisherDNS
-    Description: Route 53 DNS name created for the Publisher host (if HostedZoneId and PublisherHostName provided)
-    Value: !Ref PublisherHostName
