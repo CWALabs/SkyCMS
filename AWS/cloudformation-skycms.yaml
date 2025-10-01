@@ -33,12 +33,14 @@ Parameters:
     Description: Logical name prefix for created resources
 
   VpcId:
-    Type: AWS::EC2::VPC::Id
-    Description: Existing VPC ID to deploy into (used only when CreateNewVPC=false)
+    Type: String
+    Default: ''
+    Description: Existing VPC ID to deploy into (used only when CreateNewVPC=false). Leave blank when creating a new VPC.
 
   PublicSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Public subnets (in at least two AZs) for ALB and tasks (used only when CreateNewVPC=false)
+    Type: CommaDelimitedList
+    Default: ','
+    Description: Comma-delimited list of two public subnet IDs (used only when CreateNewVPC=false). Leave blank when creating a new VPC.
 
   S3BucketName:
     Type: String
@@ -201,6 +203,17 @@ Conditions:
   CreateHttpRules: !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ]
   UseHTTPSAndPublisher: !And [ !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
   CreateHttpRulesAndPublisher: !And [ !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
+
+Rules:
+  RequireExistingVpcParams:
+    RuleCondition: !Equals [ !Ref CreateNewVPC, 'false' ]
+    Assertions:
+      - Assert: !Not [ !Equals [ !Ref VpcId, '' ] ]
+        AssertDescription: Provide VpcId when CreateNewVPC is false.
+      - Assert: !Not [ !Equals [ !Select [ 0, !Ref PublicSubnets ], '' ] ]
+        AssertDescription: Provide at least two subnet IDs in PublicSubnets (first is empty).
+      - Assert: !Not [ !Equals [ !Select [ 1, !Ref PublicSubnets ], '' ] ]
+        AssertDescription: Provide at least two subnet IDs in PublicSubnets (second is empty).
 
 Resources:
   # Optional new VPC with two public subnets and IGW for internet egress

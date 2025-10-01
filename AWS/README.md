@@ -47,6 +47,7 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 ## DNS Automation (Optional)
 
 - If `HostedZoneId` is provided, Route 53 A-alias records are created for `EditorHostName` and (if set) `PublisherHostName`, pointing to the ALB.
+- If your DNS is hosted outside Route 53, you can leave `HostedZoneId` blank and create A/ALIAS records in your external DNS provider, targeting the ALB DNS name from the stack output (`LoadBalancerDNSName`). This achieves the same result: your hostnames point to the ALB.
 
 ## Secure SQLite
 
@@ -72,6 +73,8 @@ aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack
   ACMCertificateArn=arn:aws:acm:... HostedZoneId=Z1234567890 S3BucketName=your-bucket S3Region=us-west-2 \
   AssignPublicIp=ENABLED AdminEmailAddress=admin@example.com
 
+```
+
 ### Example CLI deployment (existing VPC)
 
 ```pwsh
@@ -82,7 +85,7 @@ aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack
   ACMCertificateArn=arn:aws:acm:... HostedZoneId=Z1234567890 S3BucketName=your-bucket S3Region=us-west-2 \
   AssignPublicIp=ENABLED AdminEmailAddress=admin@example.com
 ```
-```
+
 
 ## Outputs
 
