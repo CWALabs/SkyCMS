@@ -2,6 +2,31 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), EFS (SQLite persistence), and an Application Load Balancer (host-based routing)
 
 Parameters:
+  CreateNewVPC:
+    Type: String
+    AllowedValues: ['true','false']
+    Default: 'true'
+    Description: When 'true', this template will create a new VPC with two public subnets and use it. When 'false', provide VpcId and PublicSubnets.
+
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block for the new VPC (used only when CreateNewVPC=true)
+
+  PublicSubnet1Cidr:
+    Type: String
+    Default: 10.0.0.0/24
+    Description: CIDR for public subnet 1 (AZ 1) when creating a new VPC
+
+  PublicSubnet2Cidr:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CIDR for public subnet 2 (AZ 2) when creating a new VPC
+  CreatePrivateSubnets:
+    Type: String
+    AllowedValues: ['true','false']
+    Default: 'true'
+    Description: When 'true' and CreateNewVPC=true, create two private subnets with a NAT Gateway for egress (good for databases later)
   StackName:
     Type: String
     Default: skycms
@@ -9,11 +34,11 @@ Parameters:
 
   VpcId:
     Type: AWS::EC2::VPC::Id
-    Description: Existing VPC ID to deploy into
+    Description: Existing VPC ID to deploy into (used only when CreateNewVPC=false)
 
   PublicSubnets:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: Public subnets (in at least two AZs) for ALB and tasks
+    Description: Public subnets (in at least two AZs) for ALB and tasks (used only when CreateNewVPC=false)
 
   S3BucketName:
     Type: String
@@ -157,13 +182,15 @@ Parameters:
   AssignPublicIp:
     Type: String
     AllowedValues: [ ENABLED, DISABLED ]
-    Default: DISABLED
+    Default: ENABLED
     Description: Whether to assign a public IP to ECS tasks. Enable if your subnets do not have NAT internet egress.
 
 
 Mappings: {}
 
 Conditions:
+  CreateNewVPCCond: !Equals [ !Ref CreateNewVPC, 'true' ]
+  PrivateEnabled: !And [ !Equals [ !Ref CreateNewVPC, 'true' ], !Equals [ !Ref CreatePrivateSubnets, 'true' ] ]
   UseSMTP: !Not [ !Equals [ !Ref SmtpHostName, '' ] ]
   UseSendGrid: !Not [ !Equals [ !Ref SendGridApiKey, '' ] ]
   UseHTTPS: !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ]
@@ -176,11 +203,169 @@ Conditions:
   CreateHttpRulesAndPublisher: !And [ !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
 
 Resources:
+  # Optional new VPC with two public subnets and IGW for internet egress
+  VPC:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-vpc"
+
+  InternetGateway:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-igw"
+
+  IGWAttachment:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+
+  PublicRouteTable:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-public-rt"
+
+  PublicDefaultRoute:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::Route
+    DependsOn: IGWAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      CidrBlock: !Ref PublicSubnet1Cidr
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-public-a"
+
+  PublicSubnet2:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      CidrBlock: !Ref PublicSubnet2Cidr
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-public-b"
+
+  PubSubnet1RouteAssoc:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PubSubnet2RouteAssoc:
+    Condition: CreateNewVPCCond
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  # Private subnets and NAT for future database and private workloads
+  NatEip:
+    Condition: PrivateEnabled
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-nat-eip"
+
+  NatGateway:
+    Condition: PrivateEnabled
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      AllocationId: !GetAtt NatEip.AllocationId
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-nat"
+
+  PrivateRouteTable:
+    Condition: PrivateEnabled
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-private-rt"
+
+  PrivateDefaultRoute:
+    Condition: PrivateEnabled
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet1:
+    Condition: PrivateEnabled
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      CidrBlock: 10.0.100.0/24
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-private-a"
+
+  PrivateSubnet2:
+    Condition: PrivateEnabled
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
+      CidrBlock: 10.0.101.0/24
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${StackName}-private-b"
+
+  PrivSubnet1RouteAssoc:
+    Condition: PrivateEnabled
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivSubnet2RouteAssoc:
+    Condition: PrivateEnabled
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for public ALB
-      VpcId: !Ref VpcId
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -197,7 +382,7 @@ Resources:
       Name: !Sub "${StackName}-alb"
       Scheme: internet-facing
       Type: application
-      Subnets: !Ref PublicSubnets
+      Subnets: !If [ CreateNewVPCCond, [ !Ref PublicSubnet1, !Ref PublicSubnet2 ], !Ref PublicSubnets ]
       SecurityGroups: [ !Ref ALBSecurityGroup ]
 
   PublisherTargetGroup:
@@ -207,7 +392,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       TargetType: ip
-      VpcId: !Ref VpcId
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
       HealthCheckPath: '/'
       Matcher:
         HttpCode: '200-399'
@@ -219,7 +404,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       TargetType: ip
-      VpcId: !Ref VpcId
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
       HealthCheckPath: '/'
       Matcher:
         HttpCode: '200-399'
@@ -354,7 +539,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow NFS for EFS mounts
-      VpcId: !Ref VpcId
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 2049
@@ -369,14 +554,14 @@ Resources:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref EfsFileSystem
-      SubnetId: !Select [ 0, !Ref PublicSubnets ]
+      SubnetId: !If [ CreateNewVPCCond, !Ref PublicSubnet1, !Select [ 0, !Ref PublicSubnets ] ]
       SecurityGroups: [ !Ref EfsMountSecurityGroup ]
 
   EfsMountTarget2:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref EfsFileSystem
-      SubnetId: !Select [ 1, !Ref PublicSubnets ]
+      SubnetId: !If [ CreateNewVPCCond, !Ref PublicSubnet2, !Select [ 1, !Ref PublicSubnets ] ]
       SecurityGroups: [ !Ref EfsMountSecurityGroup ]
 
   EditorToEfsNfsEgress:
@@ -592,7 +777,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP to Editor ECS service
-      VpcId: !Ref VpcId
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -620,7 +805,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP to Publisher ECS service
-      VpcId: !Ref VpcId
+      VpcId: !If [ CreateNewVPCCond, !Ref VPC, !Ref VpcId ]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -657,9 +842,10 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !Ref AssignPublicIp
-          Subnets:
-            - !Select [ 0, !Ref PublicSubnets ]
-            - !Select [ 1, !Ref PublicSubnets ]
+          Subnets: !If
+            - CreateNewVPCCond
+            - [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
+            - [ !Select [ 0, !Ref PublicSubnets ], !Select [ 1, !Ref PublicSubnets ] ]
           SecurityGroups: [ !Ref EditorServiceSG ]
       TaskDefinition: !Ref EditorTaskDefinition
       LoadBalancers:
@@ -680,9 +866,10 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !Ref AssignPublicIp
-          Subnets:
-            - !Select [ 0, !Ref PublicSubnets ]
-            - !Select [ 1, !Ref PublicSubnets ]
+          Subnets: !If
+            - CreateNewVPCCond
+            - [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
+            - [ !Select [ 0, !Ref PublicSubnets ], !Select [ 1, !Ref PublicSubnets ] ]
           SecurityGroups: [ !Ref PublisherServiceSG ]
       TaskDefinition: !Ref PublisherTaskDefinition
       LoadBalancers:
@@ -715,6 +902,18 @@ Resources:
         EvaluateTargetHealth: false
 
 Outputs:
+  CreatedVpcId:
+    Condition: CreateNewVPCCond
+    Description: VPC ID created by this stack (when CreateNewVPC=true)
+    Value: !Ref VPC
+  PrivateSubnet1Id:
+    Condition: PrivateEnabled
+    Description: Private Subnet 1 ID (AZ 1)
+    Value: !Ref PrivateSubnet1
+  PrivateSubnet2Id:
+    Condition: PrivateEnabled
+    Description: Private Subnet 2 ID (AZ 2)
+    Value: !Ref PrivateSubnet2
   LoadBalancerDNSName:
     Description: Public DNS name of the Application Load Balancer
     Value: !GetAtt ApplicationLoadBalancer.DNSName

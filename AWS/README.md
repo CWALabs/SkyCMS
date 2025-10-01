@@ -1,7 +1,7 @@
 
 # SkyCMS AWS CloudFormation Deployment
 
-This folder contains the CloudFormation template to deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), EFS (SQLite persistence), and an Application Load Balancer (ALB) with host-based routing.
+This folder contains the CloudFormation template to deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), EFS (SQLite persistence), and an Application Load Balancer (ALB) with host-based routing. The template can also create a new VPC for you (two public subnets, optional private subnets + NAT).
 
 ## Features
 
@@ -10,7 +10,8 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 - **S3**: Blob storage for media and files.
 - **ALB**: Exposes HTTP (80) and optional HTTPS (443) endpoints, supports host-based routing.
 - **Route 53 (optional)**: Automatically creates DNS records for your hostnames.
-- **Secure by default**: No public IPs on containers; security groups restrict ingress to ALB only.
+- **Secure by default**: Security groups restrict ingress to ALB only; EFS uses an Access Point; IAM/Secrets Manager for credentials.
+- **Networking built-in (optional)**: Create a new VPC with two public subnets for ALB/ECS/EFS, plus optional private subnets and a NAT Gateway for future databases.
 
 ## Key Parameters
 
@@ -27,6 +28,11 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 | `EditorImage`          | Docker image for Editor.                                                                    |
 | `PublisherImage`       | Docker image for Publisher.                                                                 |
 | `AssignPublicIp`       | ENABLED/DISABLED. Enable if your subnets lack NAT egress so tasks can reach the internet.   |
+| `CreateNewVPC`         | `true`/`false`. Create and use a new VPC with two public subnets.                           |
+| `VpcCidr`              | CIDR for the new VPC (when `CreateNewVPC=true`).                                            |
+| `PublicSubnet1Cidr`    | CIDR for public subnet 1 (when `CreateNewVPC=true`).                                        |
+| `PublicSubnet2Cidr`    | CIDR for public subnet 2 (when `CreateNewVPC=true`).                                        |
+| `CreatePrivateSubnets` | `true`/`false`. Also create two private subnets + NAT (when `CreateNewVPC=true`).           |
 
 ## Host-Based Routing
 
@@ -45,25 +51,37 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 ## Secure SQLite
 
 - SQLite password is auto-generated and stored in AWS Secrets Manager.
-- Both containers mount EFS at `/skycms` and use `/skycms/skycms.db` for the database.
+- Both containers mount EFS at `/data/sqlite` and use `/data/sqlite/skycms.db` for the database.
 
 ## Deployment Checklist
 
 - **ACM Certificate**: Issue a certificate covering all hostnames (Editor/Publisher) in AWS Certificate Manager.
 - **Route 53 Hosted Zone**: Ensure your domain is managed in Route 53 and note the Hosted Zone ID.
 - **S3 Bucket**: Create or select an S3 bucket for blob storage.
-- **VPC/Subnets**: Identify your VPC and at least two public subnets for ALB/ECS/EFS.
+- **VPC/Subnets**: Either let the template create the VPC (set `CreateNewVPC=true`) or provide your own `VpcId` and two public subnets.
 - **Outbound access choice**: Either set `AssignPublicIp=ENABLED`, or keep it disabled and provide NAT; see “Outbound internet access and image pulls” below for options.
 - **Deploy**: Use AWS Console or CLI to launch the stack.
 - **DNS**: If you provided `HostedZoneId`, DNS records are created automatically. Otherwise, point your hostnames to the ALB DNS name (see stack outputs).
 
-### Example CLI deployment
+### Example CLI deployment (new VPC)
 
 ```pwsh
 aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack-name skycms \
-  --parameter-overrides EditorHostName=editor.example.com PublisherHostName=www.example.com \
+  --parameter-overrides CreateNewVPC=true CreatePrivateSubnets=true \
+  EditorHostName=editor.example.com PublisherHostName=www.example.com \
   ACMCertificateArn=arn:aws:acm:... HostedZoneId=Z1234567890 S3BucketName=your-bucket S3Region=us-west-2 \
   AssignPublicIp=ENABLED AdminEmailAddress=admin@example.com
+
+### Example CLI deployment (existing VPC)
+
+```pwsh
+aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack-name skycms \
+  --parameter-overrides CreateNewVPC=false \
+  VpcId=vpc-0123456789abcdef0 PublicSubnets='subnet-aaa,subnet-bbb' \
+  EditorHostName=editor.example.com PublisherHostName=www.example.com \
+  ACMCertificateArn=arn:aws:acm:... HostedZoneId=Z1234567890 S3BucketName=your-bucket S3Region=us-west-2 \
+  AssignPublicIp=ENABLED AdminEmailAddress=admin@example.com
+```
 ```
 
 ## Outputs
@@ -89,8 +107,9 @@ ECS tasks need outbound connectivity to pull container images and call external 
   - Easiest way to unblock image pulls from Docker Hub (dev/test).
 
 - **Option 2 — Private subnets + NAT Gateway**
-  - Keep `AssignPublicIp=DISABLED` and route 0.0.0.0/0 from your subnets to a NAT Gateway.
-  - Recommended for production when you still need general outbound access.
+  - For private workloads. With this template: set `CreateNewVPC=true` and `CreatePrivateSubnets=true`.
+  - Keep `AssignPublicIp=DISABLED` for private tasks and ensure they run in the private subnets.
+  - Public-facing ALB/ECS tasks (Editor/Publisher) can remain in public subnets.
 
 - **Option 3 — VPC endpoints (no NAT)**
   - Push images to Amazon ECR and add VPC Interface Endpoints for `com.amazonaws.<region>.ecr.api` and `com.amazonaws.<region>.ecr.dkr`.
