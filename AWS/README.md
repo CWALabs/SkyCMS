@@ -17,6 +17,7 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 
 | Parameter              | Description                                                                                 |
 |------------------------|---------------------------------------------------------------------------------------------|
+| `InstallId`            | Required. Short install name used to tag all resources with `skycms-install-id=<InstallId>`. |
 | `EditorHostName`       | Required. FQDN for the Editor (e.g., `editor.example.com`).                                 |
 | `PublisherHostName`    | Optional. FQDN for the Publisher (e.g., `www.example.com`). If blank, ALB default serves Publisher. |
 | `RedirectHttpToHttps`  | `true`/`false`. If true and ACM cert is provided, HTTP requests are 301-redirected to HTTPS. |
@@ -68,7 +69,7 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 
 ```pwsh
 aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack-name skycms \
-  --parameter-overrides CreateNewVPC=true CreatePrivateSubnets=true \
+  --parameter-overrides CreateNewVPC=true CreatePrivateSubnets=true InstallId=prod-west \
   EditorHostName=editor.example.com PublisherHostName=www.example.com \
   ACMCertificateArn=arn:aws:acm:... HostedZoneId=Z1234567890 S3BucketName=your-bucket S3Region=us-west-2 \
   AssignPublicIp=ENABLED AdminEmailAddress=admin@example.com
@@ -79,7 +80,7 @@ aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack
 
 ```pwsh
 aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack-name skycms \
-  --parameter-overrides CreateNewVPC=false \
+  --parameter-overrides CreateNewVPC=false InstallId=staging1 \
   VpcId=vpc-0123456789abcdef0 PublicSubnets='subnet-aaa,subnet-bbb' \
   EditorHostName=editor.example.com PublisherHostName=www.example.com \
   ACMCertificateArn=arn:aws:acm:... HostedZoneId=Z1234567890 S3BucketName=your-bucket S3Region=us-west-2 \
@@ -100,6 +101,11 @@ aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack
 - Both containers listen on port 80 internally; ALB handles external routing and TLS.
 - Security groups restrict traffic to only what is needed.
 - For troubleshooting, use AWS Console to inspect ECS tasks, ALB listeners/rules, and Route 53 records.
+
+### Resource tagging
+
+- All supported resources are tagged with `skycms-install-id=<InstallId>` to make it easy to search and cost-allocate per installation.
+- Examples of tagged resources: VPC/subnets/route tables, security groups, ALB and target groups, ECS cluster/services/task defs, EFS (filesystem and access point), NAT/EIP, CloudWatch log group, IAM roles, and Secrets Manager secret.
 
 ## Outbound internet access and image pulls
 

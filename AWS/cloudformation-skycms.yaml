@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), EFS (SQLite persistence), and an Application Load Balancer (host-based routing)
 
 Parameters:
+  InstallId:
+    Type: String
+    Description: A short install name to tag all resources (used as value for tag key 'skycms-install-id')
   CreateNewVPC:
     Type: String
     AllowedValues: ['true','false']
@@ -227,6 +230,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-vpc"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   InternetGateway:
     Condition: CreateNewVPCCond
@@ -235,6 +240,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-igw"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   IGWAttachment:
     Condition: CreateNewVPCCond
@@ -251,6 +258,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-public-rt"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PublicDefaultRoute:
     Condition: CreateNewVPCCond
@@ -272,6 +281,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-public-a"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PublicSubnet2:
     Condition: CreateNewVPCCond
@@ -284,6 +295,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-public-b"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PubSubnet1RouteAssoc:
     Condition: CreateNewVPCCond
@@ -308,6 +321,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-nat-eip"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   NatGateway:
     Condition: PrivateEnabled
@@ -318,6 +333,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-nat"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PrivateRouteTable:
     Condition: PrivateEnabled
@@ -327,6 +344,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-private-rt"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PrivateDefaultRoute:
     Condition: PrivateEnabled
@@ -347,6 +366,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-private-a"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PrivateSubnet2:
     Condition: PrivateEnabled
@@ -359,6 +380,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${StackName}-private-b"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PrivSubnet1RouteAssoc:
     Condition: PrivateEnabled
@@ -388,6 +411,9 @@ Resources:
           - UseHTTPS
           - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
           - { Ref: AWS::NoValue }
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -397,6 +423,9 @@ Resources:
       Type: application
       Subnets: !If [ CreateNewVPCCond, [ !Ref PublicSubnet1, !Ref PublicSubnet2 ], !Ref PublicSubnets ]
       SecurityGroups: [ !Ref ALBSecurityGroup ]
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PublisherTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -409,6 +438,9 @@ Resources:
       HealthCheckPath: '/'
       Matcher:
         HttpCode: '200-399'
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EditorTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -421,6 +453,9 @@ Resources:
       HealthCheckPath: '/'
       Matcher:
         HttpCode: '200-399'
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   HttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -516,12 +551,18 @@ Resources:
         GenerateStringKey: Password
         PasswordLength: 24
         ExcludeCharacters: '"'  # avoid breaking JSON
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/ecs/${StackName}"
       RetentionInDays: 14
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EfsFileSystem:
     Type: AWS::EFS::FileSystem
@@ -533,6 +574,8 @@ Resources:
       FileSystemTags:
         - Key: Name
           Value: !Sub "${StackName}-sqlite"
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EfsAccessPoint:
     Type: AWS::EFS::AccessPoint
@@ -547,6 +590,9 @@ Resources:
           OwnerUid: "1000"
           OwnerGid: "1000"
           Permissions: "0777"
+      AccessPointTags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EfsMountSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -562,6 +608,9 @@ Resources:
           FromPort: 2049
           ToPort: 2049
           SourceSecurityGroupId: !Ref PublisherServiceSG
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EfsMountTarget1:
     Type: AWS::EFS::MountTarget
@@ -599,6 +648,9 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Sub "${StackName}-cluster"
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   TaskExecutionRole:
     Type: AWS::IAM::Role
@@ -612,6 +664,9 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -653,6 +708,9 @@ Resources:
                   - elasticfilesystem:ClientRootAccess
                 Resource:
                   - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/${EfsAccessPoint}"
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EditorTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -720,6 +778,9 @@ Resources:
               SourceVolume: sqlite
           LinuxParameters:
             InitProcessEnabled: true
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PublisherTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -785,6 +846,9 @@ Resources:
               SourceVolume: sqlite
           LinuxParameters:
             InitProcessEnabled: true
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EditorServiceSG:
     Type: AWS::EC2::SecurityGroup
@@ -813,6 +877,9 @@ Resources:
           FromPort: 53
           ToPort: 53
           CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PublisherServiceSG:
     Type: AWS::EC2::SecurityGroup
@@ -841,6 +908,9 @@ Resources:
           FromPort: 53
           ToPort: 53
           CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EditorService:
     Type: AWS::ECS::Service
@@ -865,6 +935,9 @@ Resources:
         - ContainerName: editor
           ContainerPort: 80
           TargetGroupArn: !Ref EditorTargetGroup
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   PublisherService:
     Type: AWS::ECS::Service
@@ -889,6 +962,9 @@ Resources:
         - ContainerName: publisher
           ContainerPort: 80
           TargetGroupArn: !Ref PublisherTargetGroup
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
 
   EditorDNSRecord:
     Condition: CreateDNSRecords
