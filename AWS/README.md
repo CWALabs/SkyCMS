@@ -90,7 +90,7 @@ aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack
 
 ## Notes
 
-- Both containers listen on port 80 internally; ALB handles external routing and TLS.
+- Both containers listen on port 8080 internally; the public ALB listens on 80/443 and forwards to 8080 on the tasks.
 - Security groups restrict traffic to only what is needed.
 - For troubleshooting, use AWS Console to inspect ECS tasks and ALB listeners/rules.
 

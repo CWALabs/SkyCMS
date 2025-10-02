@@ -39,14 +39,10 @@
                 iframeContent.on('click', function(e) {
                     // Your onclick logic here
                     e.preventDefault(); // Prevent the default anchor behavior
-                    let anchor;
                     const target = $(e.target);
                     if (target.is('a')) {
-                        anchor = target;
-                    } else {
-                        anchor = target.closest('a');
+                        window.location.href = target.attr("href");
                     }
-                    window.location.href = anchor.attr("href")
                 });
             });
 
