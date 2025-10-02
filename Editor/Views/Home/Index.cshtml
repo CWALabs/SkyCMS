@@ -39,7 +39,6 @@
                 iframeContent.on('click', function(e) {
                     // Your onclick logic here
                     e.preventDefault(); // Prevent the default anchor behavior
-                    let anchor;
                     const target = $(e.target);
                     if (target.is('a')) {
                         window.location.href = target.attr("href");
