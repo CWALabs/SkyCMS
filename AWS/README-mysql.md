@@ -102,6 +102,7 @@ If `ACMCertificateArn` is set and covers your hostnames, browsing via HTTPS will
 - Storage: `ConnectionStrings__StorageConnectionString="Bucket=<S3BucketName>;Region=<S3Region>;KeyId=<S3AccessKeyId>;Key=<S3SecretAccessKey>;"`
 - Database: `ConnectionStrings__ApplicationDbContextConnection="Server=<RdsEndpoint>;Port=3306;Database=skycms;User Id=<secret Username>;Password=<secret Password>;"`
   - The template injects the `DbUsername` and `DbPassword` parameter values directly.
+  - RDS password rules: 8–41 printable ASCII characters; must not include space, `/`, `@`, or `"`.
 
 ## Outputs
 

@@ -2,9 +2,9 @@
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
-		<AssemblyVersion>9.0.16.4</AssemblyVersion>
-		<FileVersion>9.0.16.4</FileVersion>
-		<Version>9.0.16.4</Version>
+		<AssemblyVersion>9.0.16.5</AssemblyVersion>
+		<FileVersion>9.0.16.5</FileVersion>
+		<Version>9.0.16.5</Version>
 		<Title>Sky CMS Azure Storage Provider</Title>
 		<Authors>toiyabe62</Authors>
 		<Company>Moonrise Software LLC</Company>

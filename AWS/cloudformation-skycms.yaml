@@ -8,17 +8,17 @@ Parameters:
 
   VpcCidr:
     Type: String
-    Default: 10.0.0.0/16
+    Default: '10.0.0.0/16'
     Description: CIDR block for the new VPC created by this template
 
   PublicSubnet1Cidr:
     Type: String
-    Default: 10.0.0.0/24
+    Default: '10.0.0.0/24'
     Description: CIDR for public subnet 1 (AZ 1)
 
   PublicSubnet2Cidr:
     Type: String
-    Default: 10.0.1.0/24
+    Default: '10.0.1.0/24'
     Description: CIDR for public subnet 2 (AZ 2)
   CreatePrivateSubnets:
     Type: String
@@ -230,7 +230,7 @@ Resources:
     DependsOn: IGWAttachment
     Properties:
       RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
+      DestinationCidrBlock: '0.0.0.0/0'
       GatewayId: !Ref InternetGateway
 
   PublicSubnet1:
@@ -311,7 +311,7 @@ Resources:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref PrivateRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
+      DestinationCidrBlock: '0.0.0.0/0'
       NatGatewayId: !Ref NatGateway
 
   PrivateSubnet1:
@@ -365,10 +365,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - !If 
           - UseHTTPS
-          - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+          - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: '0.0.0.0/0' }
           - { Ref: AWS::NoValue }
       Tags:
         - Key: skycms-install-id
@@ -834,19 +834,19 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: udp
           FromPort: 53
           ToPort: 53
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: tcp
           FromPort: 53
           ToPort: 53
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -865,19 +865,19 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: udp
           FromPort: 53
           ToPort: 53
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: tcp
           FromPort: 53
           ToPort: 53
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId

@@ -14,23 +14,23 @@ Parameters:
   # Networking
   VpcCidr:
     Type: String
-    Default: 10.1.0.0/16
+    Default: '10.1.0.0/16'
     Description: CIDR block for the new VPC
   PublicSubnet1Cidr:
     Type: String
-    Default: 10.1.0.0/24
+    Default: '10.1.0.0/24'
     Description: CIDR for public subnet 1 (AZ 1)
   PublicSubnet2Cidr:
     Type: String
-    Default: 10.1.1.0/24
+    Default: '10.1.1.0/24'
     Description: CIDR for public subnet 2 (AZ 2)
   PrivateSubnet1Cidr:
     Type: String
-    Default: 10.1.100.0/24
+    Default: '10.1.100.0/24'
     Description: CIDR for private subnet 1 (AZ 1)
   PrivateSubnet2Cidr:
     Type: String
-    Default: 10.1.101.0/24
+    Default: '10.1.101.0/24'
     Description: CIDR for private subnet 2 (AZ 2)
 
   # S3
@@ -56,7 +56,7 @@ Parameters:
     Description: Administrator email for initial account and notifications
   DesiredCount:
     Type: Number
-    Default: 1
+    Default: '1'
     Description: Desired number of ECS tasks for each service
   EditorImage:
     Type: String
@@ -96,12 +96,12 @@ Parameters:
     Default: db.t3.micro
     Description: RDS instance class
   DBAllocatedStorage:
-    Type: Number
-    Default: 20
+    Type: String
+    Default: '20'
     Description: RDS storage (GB)
   DBBackupRetentionDays:
     Type: Number
-    Default: 3
+    Default: '3'
     Description: Backup retention days
 
   # Database credentials (no Secrets Manager)
@@ -118,9 +118,9 @@ Parameters:
     NoEcho: true
     Description: MySQL admin password (will be set on the RDS instance and injected into container env vars)
     MinLength: 8
-    MaxLength: 64
-    AllowedPattern: '^[\x20-\x7E]+$'
-    ConstraintDescription: '8-64 printable ASCII characters.'
+    MaxLength: 41
+    AllowedPattern: '^[^\s/@"]+$'
+    ConstraintDescription: '8-41 printable ASCII; cannot contain space, /, @, or " characters.'
 
 Mappings: {}
 
@@ -191,7 +191,7 @@ Resources:
     DependsOn: IGWAttachment
     Properties:
       RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
+      DestinationCidrBlock: '0.0.0.0/0'
       GatewayId: !Ref InternetGateway
 
   PrivateRouteTable1:
@@ -300,10 +300,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - !If
           - UseHTTPS
-          - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+          - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: '0.0.0.0/0' }
           - { Ref: AWS::NoValue }
       Tags:
         - Key: skycms-install-id
@@ -323,23 +323,27 @@ Resources:
         - IpProtocol: tcp
           FromPort: 3306
           ToPort: 3306
-          DestinationSecurityGroupId: !Ref DBSecurityGroup
+          CidrIp: !Ref PrivateSubnet1Cidr
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: !Ref PrivateSubnet2Cidr
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: udp
           FromPort: 53
           ToPort: 53
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: tcp
           FromPort: 53
           ToPort: 53
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -358,23 +362,27 @@ Resources:
         - IpProtocol: tcp
           FromPort: 3306
           ToPort: 3306
-          DestinationSecurityGroupId: !Ref DBSecurityGroup
+          CidrIp: !Ref PrivateSubnet1Cidr
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: !Ref PrivateSubnet2Cidr
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: udp
           FromPort: 53
           ToPort: 53
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
         - IpProtocol: tcp
           FromPort: 53
           ToPort: 53
-          CidrIp: 0.0.0.0/0
+          CidrIp: '0.0.0.0/0'
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -741,7 +749,6 @@ Resources:
     Type: AWS::ECS::Service
     DependsOn:
       - HttpListener
-      - MySqlDB
     Properties:
       Cluster: !Ref EcsCluster
       DesiredCount: !Ref DesiredCount
@@ -764,7 +771,6 @@ Resources:
     Type: AWS::ECS::Service
     DependsOn:
       - HttpListener
-      - MySqlDB
     Properties:
       Cluster: !Ref EcsCluster
       DesiredCount: !Ref DesiredCount
