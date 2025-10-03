@@ -1352,7 +1352,7 @@
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.CosmosDb": "[9.0.15.4, )",
+          "AspNetCore.Identity.CosmosDb": "[9.0.16.1, )",
           "Microsoft.AspNetCore.Http.Abstractions": "[2.3.0, )",
           "Microsoft.EntityFrameworkCore": "[9.0.9, )",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.9, )",
