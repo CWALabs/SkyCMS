@@ -390,7 +390,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: !Sub "${StackName}-pub-tg"
-      Port: 80
+      Port: 8080
       Protocol: HTTP
       TargetType: ip
       VpcId: !Ref VPC
@@ -405,7 +405,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: !Sub "${StackName}-ed-tg"
-      Port: 80
+      Port: 8080
       Protocol: HTTP
       TargetType: ip
       VpcId: !Ref VPC
@@ -682,7 +682,7 @@ Resources:
           Image: !Ref EditorImage
           Essential: true
           PortMappings:
-            - ContainerPort: 80
+            - ContainerPort: 8080
               Protocol: tcp
           Environment:
             - Name: AdminEmail
@@ -692,7 +692,7 @@ Resources:
             - Name: CosmosStaticWebPages
               Value: 'true'
             - Name: ASPNETCORE_URLS
-              Value: 'http://+:80'
+              Value: 'http://+:8080'
             - Name: CosmosPublisherUrl
               Value: !If
                 - UsePublisherHostName
@@ -768,7 +768,7 @@ Resources:
           Image: !Ref PublisherImage
           Essential: true
           PortMappings:
-            - ContainerPort: 80
+            - ContainerPort: 8080
               Protocol: tcp
           Environment:
             - Name: AdminEmail
@@ -776,7 +776,7 @@ Resources:
             - Name: CosmosStaticWebPages
               Value: 'true'
             - Name: ASPNETCORE_URLS
-              Value: 'http://+:80'
+              Value: 'http://+:8080'
             - Name: AzureBlobStorageEndPoint
               Value: '/'
             - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
@@ -827,8 +827,8 @@ Resources:
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: 8080
+          ToPort: 8080
           SourceSecurityGroupId: !Ref ALBSecurityGroup
       SecurityGroupEgress:
         - IpProtocol: tcp
@@ -858,8 +858,8 @@ Resources:
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: 8080
+          ToPort: 8080
           SourceSecurityGroupId: !Ref ALBSecurityGroup
       SecurityGroupEgress:
         - IpProtocol: tcp
@@ -900,7 +900,7 @@ Resources:
       TaskDefinition: !Ref EditorTaskDefinition
       LoadBalancers:
         - ContainerName: editor
-          ContainerPort: 80
+          ContainerPort: 8080
           TargetGroupArn: !Ref EditorTargetGroup
       Tags:
         - Key: skycms-install-id
@@ -924,7 +924,7 @@ Resources:
       TaskDefinition: !Ref PublisherTaskDefinition
       LoadBalancers:
         - ContainerName: publisher
-          ContainerPort: 80
+          ContainerPort: 8080
           TargetGroupArn: !Ref PublisherTargetGroup
       Tags:
         - Key: skycms-install-id
