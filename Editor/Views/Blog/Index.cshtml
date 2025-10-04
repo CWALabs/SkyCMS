@@ -4,7 +4,10 @@
 }
 <div class="cwps-editor-container pt-3">
     <div class="container">
-        <h2 class="text-light">@ViewData["Title"]</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="text-light">@ViewData["Title"]</h2>
+            <a class="btn btn-sm btn-outline-warning" href="/blog/rss" target="_blank">RSS</a>
+        </div>
         <div class="row">
             @foreach (var post in Model.Posts)
             {
@@ -18,7 +21,7 @@
                             <h5 class="card-title">@post.Title</h5>
                             <p class="card-subtitle mb-2 text-muted">@post.Published?.UtcDateTime.ToString("yyyy-MM-dd") @if(!string.IsNullOrEmpty(post.Category)){<span>| @post.Category</span>}</p>
                             <p class="card-text">@post.Introduction</p>
-                            <a class="btn btn-sm btn-primary" href="/@post.UrlPath">Read More</a>
+                            <a class="btn btn-sm btn-primary" href="/blog/post/@post.UrlPath">Read More</a>
                         </div>
                     </div>
                 </div>

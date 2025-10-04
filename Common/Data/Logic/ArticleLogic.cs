@@ -562,5 +562,39 @@ namespace Cosmos.Common.Data.Logic
 
             return publisherUrl.TrimEnd('/') + "/" + urlPath.TrimStart('/');
         }
+
+        public async Task<(TableOfContentsItem previous, TableOfContentsItem next)> GetAdjacentBlogPosts(DateTimeOffset published)
+        {
+            var prev = await DbContext.ArticleCatalog
+                .Where(a => a.Published < published && a.Published != null)
+                .OrderByDescending(a => a.Published)
+                .Select(a => new TableOfContentsItem { Title = a.Title, UrlPath = a.UrlPath, Published = a.Published.Value })
+                .FirstOrDefaultAsync();
+            var next = await DbContext.ArticleCatalog
+                .Where(a => a.Published > published && a.Published != null)
+                .OrderBy(a => a.Published)
+                .Select(a => new TableOfContentsItem { Title = a.Title, UrlPath = a.UrlPath, Published = a.Published.Value })
+                .FirstOrDefaultAsync();
+            return (prev, next);
+        }
+
+        public async Task EnrichBlogNavigation(ArticleViewModel model)
+        {
+            if (model == null || !model.IsBlogPost || !model.Published.HasValue)
+            {
+                return;
+            }
+            var (previous, next) = await GetAdjacentBlogPosts(model.Published.Value);
+            if (previous != null)
+            {
+                model.PreviousTitle = previous.Title;
+                model.PreviousUrl = previous.UrlPath == "root" ? "/" : "/" + previous.UrlPath.TrimStart('/');
+            }
+            if (next != null)
+            {
+                model.NextTitle = next.Title;
+                model.NextUrl = next.UrlPath == "root" ? "/" : "/" + next.UrlPath.TrimStart('/');
+            }
+        }
     }
 }

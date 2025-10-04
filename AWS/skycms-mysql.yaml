@@ -787,10 +787,7 @@ Resources:
         - Field: host-header
           HostHeaderConfig:
             Values:
-              - !If 
-                - !Equals [!Ref EditorHostName, '']
-                - editor-fallback.example.com
-                - !Ref EditorHostName
+              - !If [!Equals [!Ref EditorHostName, ''], editor-fallback.example.com, !Ref EditorHostName]
       Actions:
         - Type: forward
           TargetGroupArn: !Ref EditorTargetGroup
@@ -820,10 +817,7 @@ Resources:
         - Field: host-header
           HostHeaderConfig:
             Values:
-              - !If 
-                - !Equals [!Ref EditorHostName, '']
-                - editor-fallback.example.com
-                - !Ref EditorHostName
+              - !If [!Equals [!Ref EditorHostName, ''], editor-fallback.example.com, !Ref EditorHostName]
       Actions:
         - Type: forward
           TargetGroupArn: !Ref EditorTargetGroup
@@ -966,13 +960,7 @@ Resources:
             - Name: ASPNETCORE_URLS
               Value: http://+:8080
             - Name: CosmosPublisherUrl
-              Value: !If 
-                - UsePublisherHostName
-                - !If 
-                  - UseHTTPS
-                  - !Sub 'https://${PublisherHostName}'
-                  - !Sub 'http://${PublisherHostName}'
-                - !Sub 'https://${PublisherDistribution.DomainName}'
+              Value: !If [UsePublisherHostName, !If [UseHTTPS, !Sub 'https://${PublisherHostName}', !Sub 'http://${PublisherHostName}'], !Sub 'https://${PublisherDistribution.DomainName}']
             - Name: AzureBlobStorageEndPoint
               Value: /
             - Name: CosmosSendGridApiKey

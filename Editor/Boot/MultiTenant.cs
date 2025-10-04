@@ -351,6 +351,14 @@ namespace Cosmos.Editor.Boot
                 name: "blog",
                 pattern: "blog/{page?}",
                 defaults: new { controller = "Blog", action = "Index" });
+            app.MapControllerRoute(
+                name: "blog_post",
+                pattern: "blog/post/{*slug}",
+                defaults: new { controller = "Blog", action = "Post" });
+            app.MapControllerRoute(
+                name: "blog_rss",
+                pattern: "blog/rss",
+                defaults: new { controller = "Blog", action = "Rss" });
 
             app.MapControllerRoute(
                     "default",

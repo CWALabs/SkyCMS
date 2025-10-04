@@ -167,6 +167,12 @@ namespace Cosmos.Common.Models
         /// </summary>
         public string OGUrl { get; set; } = string.Empty;
 
+        // Blog navigation (not persisted)
+        public string PreviousTitle { get; set; } = string.Empty;
+        public string PreviousUrl { get; set; } = string.Empty;
+        public string NextTitle { get; set; } = string.Empty;
+        public string NextUrl { get; set; } = string.Empty;
+
         /// <summary>
         /// Gets or sets a value indicating whether article is a blog post.
         /// </summary>
