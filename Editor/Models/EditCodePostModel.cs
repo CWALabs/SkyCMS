@@ -144,5 +144,22 @@ namespace Sky.Cms.Models
         /// Gets or sets the article permissions properity.
         /// </summary>
         public List<ArticlePermission> ArticlePermissions { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this article is a blog post.
+        /// </summary>
+        public bool IsBlogPost { get; set; }
+
+        /// <summary>
+        /// Gets or sets blog category.
+        /// </summary>
+        [MaxLength(64)]
+        public string Category { get; set; }
+
+        /// <summary>
+        /// Gets or sets blog introduction/summary.
+        /// </summary>
+        [MaxLength(512)]
+        public string Introduction { get; set; }
     }
 }

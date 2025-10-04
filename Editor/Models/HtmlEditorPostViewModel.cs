@@ -88,5 +88,20 @@ namespace Sky.Cms.Models
         /// Gets or sets role access list.
         /// </summary>
         public string RoleList { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this is a blog post.
+        /// </summary>
+        public bool IsBlogPost { get; set; }
+
+        /// <summary>
+        /// Gets or sets blog category.
+        /// </summary>
+        public string Category { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets blog introduction.
+        /// </summary>
+        public string Introduction { get; set; } = string.Empty;
     }
 }

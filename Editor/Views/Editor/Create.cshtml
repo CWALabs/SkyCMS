@@ -83,6 +83,23 @@
                     <div class="form-group">
                         <button type="button" id="previewBtn" style="display:none" class="btn btn-primary" onclick="openPreview()">Full Page Preview</button>
                     </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" asp-for="IsBlogPost" />
+                        <label class="form-check-label" asp-for="IsBlogPost">Is Blog Post?</label>
+                    </div>
+                    <div id="blogFields" style="display:none;">
+                        <div class="mb-3">
+                            <label asp-for="Category" class="form-label">Category</label>
+                            <input asp-for="Category" class="form-control" placeholder="e.g. News" />
+                            <span asp-validation-for="Category" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Introduction" class="form-label">Introduction / Summary</label>
+                            <textarea asp-for="Introduction" class="form-control" rows="3" placeholder="Short teaser shown in blog listings."></textarea>
+                            <span asp-validation-for="Introduction" class="text-danger"></span>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -305,6 +322,14 @@
             return "";
         }
         return JSON.parse(data);
+    }
+
+    $(document).ready(function(){
+        toggleBlogFields();
+        $("#IsBlogPost").change(toggleBlogFields);
+    });
+    function toggleBlogFields(){
+        if($("#IsBlogPost").is(':checked')){ $('#blogFields').show(); } else { $('#blogFields').hide(); }
     }
 </script>
 @{

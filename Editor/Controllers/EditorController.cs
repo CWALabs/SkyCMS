@@ -660,6 +660,10 @@ namespace Sky.Cms.Controllers
                 }
 
                 var article = await articleLogic.CreateArticle(model.Title, Guid.Parse(await GetUserId()), model.TemplateId);
+                article.IsBlogPost = model.IsBlogPost;
+                article.Category = model.Category ?? string.Empty;
+                article.Introduction = model.Introduction ?? string.Empty;
+                await articleLogic.SaveArticle(article, Guid.Parse(await GetUserId()));
 
                 return RedirectToAction("Versions", "Editor", new { Id = article.ArticleNumber });
             }
@@ -1514,6 +1518,9 @@ namespace Sky.Cms.Controllers
 
             // Banner image
             article.BannerImage = model.BannerImage;
+            article.IsBlogPost = model.IsBlogPost;
+            article.Category = model.Category;
+            article.Introduction = model.Introduction;
 
             // Make sure we are setting to the orignal updated date/time
             // This is validated to make sure that someone else hasn't already edited this

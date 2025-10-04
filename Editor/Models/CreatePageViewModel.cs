@@ -55,5 +55,22 @@ namespace Sky.Cms.Models
         /// Gets or sets template list.
         /// </summary>
         public List<SelectListItem> Templates { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the new page is a blog post.
+        /// </summary>
+        public bool IsBlogPost { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets blog category.
+        /// </summary>
+        [MaxLength(64)]
+        public string Category { get; set; }
+
+        /// <summary>
+        /// Gets or sets introduction/summary for blog post.
+        /// </summary>
+        [MaxLength(512)]
+        public string Introduction { get; set; }
     }
 }
