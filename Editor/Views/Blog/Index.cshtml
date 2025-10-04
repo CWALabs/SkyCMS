@@ -1,0 +1,36 @@
+@model Cosmos.Common.Models.Blog.BlogIndexViewModel
+@{
+    ViewData["Title"] = string.IsNullOrEmpty(Model.Category)? "Blog" : $"Blog - {Model.Category}";
+}
+<div class="cwps-editor-container pt-3">
+    <div class="container">
+        <h2 class="text-light">@ViewData["Title"]</h2>
+        <div class="row">
+            @foreach (var post in Model.Posts)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        @if(!string.IsNullOrEmpty(post.BannerImage))
+                        {
+                            <img class="card-img-top" src="@post.BannerImage" alt="@post.Title" />
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">@post.Title</h5>
+                            <p class="card-subtitle mb-2 text-muted">@post.Published?.UtcDateTime.ToString("yyyy-MM-dd") @if(!string.IsNullOrEmpty(post.Category)){<span>| @post.Category</span>}</p>
+                            <p class="card-text">@post.Introduction</p>
+                            <a class="btn btn-sm btn-primary" href="/@post.UrlPath">Read More</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <nav aria-label="Blog pagination">
+            <ul class="pagination">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i==Model.Page?"active":"")"><a class="page-link" href="/blog/@i?category=@Model.Category">@i</a></li>
+                }
+            </ul>
+        </nav>
+    </div>
+</div>

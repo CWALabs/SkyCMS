@@ -766,7 +766,7 @@ namespace Sky.Editor.Data.Logic
                 Expires = newVersion.Expires,
                 FooterJavaScript = newVersion.FooterJavaScript,
                 HeaderJavaScript = newVersion.HeaderJavaScript,
-                Id = Guid.NewGuid(), // Use a new GUID
+                Id = Guid.NewGuid(),
                 Published = newVersion.Published,
                 StatusCode = newVersion.StatusCode,
                 Title = newVersion.Title,
@@ -774,7 +774,10 @@ namespace Sky.Editor.Data.Logic
                 UrlPath = newVersion.UrlPath,
                 ParentUrlPath = newVersion.UrlPath.Substring(0, Math.Max(newVersion.UrlPath.LastIndexOf('/'), 0)),
                 VersionNumber = newVersion.VersionNumber,
-                AuthorInfo = authorInfo == null ? string.Empty : JsonConvert.SerializeObject(authorInfo).Replace("\"", "'")
+                AuthorInfo = authorInfo == null ? string.Empty : JsonConvert.SerializeObject(authorInfo).Replace("\"", "'"),
+                IsBlogPost = newVersion.IsBlogPost,
+                Category = newVersion.Category,
+                Introduction = newVersion.Introduction
             };
 
             DbContext.Pages.Add(newPage);

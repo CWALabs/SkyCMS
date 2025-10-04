@@ -385,6 +385,11 @@ namespace Sky.Editor.Boot
                 defaults: new { controller = "Pub", action = "Index" });
 
             app.MapControllerRoute(
+                name: "blog",
+                pattern: "blog/{page?}",
+                defaults: new { controller = "Blog", action = "Index" });
+
+            app.MapControllerRoute(
                     "default",
                     "{controller=Home}/{action=Index}/{id?}");
 

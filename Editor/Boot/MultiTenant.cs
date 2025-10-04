@@ -348,6 +348,11 @@ namespace Cosmos.Editor.Boot
                 defaults: new { controller = "Cosmos___StoryDesk", action = "Index" });
 
             app.MapControllerRoute(
+                name: "blog",
+                pattern: "blog/{page?}",
+                defaults: new { controller = "Blog", action = "Index" });
+
+            app.MapControllerRoute(
                     "default",
                     "{controller=Home}/{action=Index}/{id?}");
 
