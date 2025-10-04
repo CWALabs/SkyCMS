@@ -166,5 +166,20 @@ namespace Cosmos.Common.Models
         /// Gets or sets the open graph URL.
         /// </summary>
         public string OGUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether article is a blog post.
+        /// </summary>
+        public bool IsBlogPost { get; set; }
+
+        /// <summary>
+        /// Gets or sets blog category (if a blog post).
+        /// </summary>
+        public string Category { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets article introduction/summary.
+        /// </summary>
+        public string Introduction { get; set; } = string.Empty;
     }
 }

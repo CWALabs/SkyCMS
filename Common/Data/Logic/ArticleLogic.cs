@@ -496,7 +496,10 @@ namespace Cosmos.Common.Data.Logic
                 ReadWriteMode = isEditor,
                 Expires = article.Expires ?? null,
                 BannerImage = article.BannerImage,
-                AuthorInfo = author
+                AuthorInfo = author,
+                IsBlogPost = article.IsBlogPost,
+                Category = article.Category,
+                Introduction = article.Introduction
             };
         }
 
@@ -544,6 +547,7 @@ namespace Cosmos.Common.Data.Logic
                 OGDescription = string.Empty,
                 OGImage = string.IsNullOrEmpty(article.BannerImage) ? string.Empty : article.BannerImage.StartsWith("http") ? article.BannerImage : publisherUrl.TrimEnd('/') + "/" + article.BannerImage.TrimStart('/'),
                 OGUrl = GetOGUrl(article.UrlPath),
+                // PublishedPage does not yet have blog fields; leave defaults.
             };
         }
 

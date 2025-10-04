@@ -446,6 +446,66 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
 
+  # Additional header-based rules so CloudFront can route without DNS/hostnames
+  HttpEditorHeaderRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 5
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
+            Values: [ editor ]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EditorTargetGroup
+
+  HttpPublisherHeaderRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 6
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
+            Values: [ publisher ]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref PublisherTargetGroup
+
+  # Optional HTTPS header rules (not used by CloudFront if origin policy is http-only, but kept for completeness)
+  HttpsEditorHeaderRule:
+    Condition: UseHTTPS
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 5
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
+            Values: [ editor ]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EditorTargetGroup
+
+  HttpsPublisherHeaderRule:
+    Condition: UseHTTPS
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 6
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
+            Values: [ publisher ]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref PublisherTargetGroup
+
   HttpEditorRule:
     Condition: CreateHttpRules
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -700,7 +760,7 @@ Resources:
                   - UseHTTPS
                   - !Sub "https://${PublisherHostName}"
                   - !Sub "http://${PublisherHostName}"
-                - ''
+                - !Sub "https://${PublisherDistribution.DomainName}"
             - Name: AzureBlobStorageEndPoint
               Value: '/'
             - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
@@ -743,6 +803,71 @@ Resources:
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
+
+  # CloudFront distributions to provide automatic TLS-enabled domains without DNS setup
+  EditorDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${StackName}-editor"
+        HttpVersion: http2
+        DefaultRootObject: ''
+        Origins:
+          - Id: alb-origin-editor
+            DomainName: !GetAtt ApplicationLoadBalancer.DNSName
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginSSLProtocols: [ TLSv1.2 ]
+            OriginCustomHeaders:
+              - HeaderName: x-sky-app
+                HeaderValue: editor
+        DefaultCacheBehavior:
+          TargetOriginId: alb-origin-editor
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [ GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE ]
+          CachedMethods: [ GET, HEAD, OPTIONS ]
+          ForwardedValues:
+            QueryString: true
+            Cookies: { Forward: all }
+          Compress: true
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+  PublisherDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${StackName}-publisher"
+        HttpVersion: http2
+        DefaultRootObject: ''
+        Origins:
+          - Id: alb-origin-publisher
+            DomainName: !GetAtt ApplicationLoadBalancer.DNSName
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginSSLProtocols: [ TLSv1.2 ]
+            OriginCustomHeaders:
+              - HeaderName: x-sky-app
+                HeaderValue: publisher
+        DefaultCacheBehavior:
+          TargetOriginId: alb-origin-publisher
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [ GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE ]
+          CachedMethods: [ GET, HEAD, OPTIONS ]
+          ForwardedValues:
+            QueryString: true
+            Cookies: { Forward: all }
+          Compress: true
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
 
   PublisherTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -946,6 +1071,12 @@ Outputs:
   LoadBalancerDNSName:
     Description: Public DNS name of the Application Load Balancer
     Value: !GetAtt ApplicationLoadBalancer.DNSName
+  EditorCloudFrontDomain:
+    Description: Public DNS name for the Editor via CloudFront (TLS-enabled)
+    Value: !GetAtt EditorDistribution.DomainName
+  PublisherCloudFrontDomain:
+    Description: Public DNS name for the Publisher via CloudFront (TLS-enabled)
+    Value: !GetAtt PublisherDistribution.DomainName
   EditorServiceName:
     Description: ECS service name for Editor
     Value: !Ref EditorService

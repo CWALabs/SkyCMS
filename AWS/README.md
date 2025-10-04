@@ -1,7 +1,7 @@
 
 # SkyCMS AWS CloudFormation Deployment
 
-This folder contains the CloudFormation template to deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), EFS (SQLite persistence), and an Application Load Balancer (ALB) with host-based routing. The template creates a new VPC (two public subnets, optional private subnets + NAT).
+This folder contains the CloudFormation template to deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3 (blob storage), EFS (SQLite persistence), and an Application Load Balancer (ALB) with host-based routing. It also creates two CloudFront distributions (one per app) that provide automatic TLS-enabled domains that work out-of-the-box without any DNS configuration. The template creates a new VPC (two public subnets, optional private subnets + NAT).
 
 ## Features
 
@@ -9,7 +9,8 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 - **EFS**: Shared SQLite database using a password you provide via parameter (no Secrets Manager).
 - **S3**: Blob storage for media and files.
 - **ALB**: Exposes HTTP (80) and optional HTTPS (443) endpoints, supports host-based routing.
-- **DNS guidance**: You will manually create DNS records for your hostnames after deployment.
+- **CloudFront (auto TLS + domains)**: Two distributions are created automatically (Editor/Publisher). Each has a `*.cloudfront.net` domain with TLS enabled that you can use immediately—no DNS or certificates required.
+- **DNS guidance (optional)**: You can still point your own domains at the ALB if you prefer custom hostnames.
 - **Secure by default**: Security groups restrict ingress to ALB only; EFS uses an Access Point; credentials are passed via NoEcho parameters.
 - **Networking built-in (optional)**: Create a new VPC with two public subnets for ALB/ECS/EFS, plus optional private subnets and a NAT Gateway for future databases.
 
@@ -44,9 +45,13 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 
 - If `ACMCertificateArn` is set and `RedirectHttpToHttps` is `true`, all HTTP (80) traffic is redirected to HTTPS (443).
 
-## Manual DNS setup
+## Optional DNS setup (if you want your own hostnames)
 
-After the stack is created, go to your DNS provider and create records pointing to the ALB:
+After the stack is created, you can use the CloudFront domains right away:
+
+- `EditorCloudFrontDomain` and `PublisherCloudFrontDomain` outputs give you two TLS-enabled domains that “just work.”
+
+If you want to use your own hostnames, go to your DNS provider and create records pointing to the ALB:
 
 - Create an A/ALIAS (or CNAME if ALIAS is not available) for `EditorHostName` -> the value should be the `LoadBalancerDNSName` output.
 - If you set `PublisherHostName`, create another A/ALIAS (or CNAME) for it -> also pointing to `LoadBalancerDNSName`.
@@ -106,8 +111,9 @@ pwsh AWS/examples/deploy-sqlite.ps1 -StackName skycms -Region us-west-2 -ParamsF
 
 ## Outputs
 
-- `LoadBalancerDNSName`: Public DNS name of the ALB.
-  After creation, use `LoadBalancerDNSName` to configure your DNS records as shown above.
+- `LoadBalancerDNSName`: Public DNS name of the ALB (useful if mapping your own DNS to the ALB).
+- `EditorCloudFrontDomain`: Public TLS-enabled domain for the Editor via CloudFront.
+- `PublisherCloudFrontDomain`: Public TLS-enabled domain for the Publisher via CloudFront.
 - `EditorServiceName` / `PublisherServiceName`: ECS service names.
 - `EfsFileSystemId`: EFS filesystem ID.
 - `S3Bucket`: S3 bucket name.
@@ -118,7 +124,7 @@ pwsh AWS/examples/deploy-sqlite.ps1 -StackName skycms -Region us-west-2 -ParamsF
 - Security groups restrict traffic to only what is needed.
 - For troubleshooting, use AWS Console to inspect ECS tasks and ALB listeners/rules.
 
-- Editor’s Publisher URL: If `PublisherHostName` is set, the Editor will automatically use `https://<PublisherHostName>` when an ACM certificate is provided (HTTPS enabled), otherwise `http://<PublisherHostName>`. If `PublisherHostName` is blank, the value will be left empty.
+- Editor’s Publisher URL: If `PublisherHostName` is set, the Editor will automatically use `https://<PublisherHostName>` when an ACM certificate is provided (HTTPS enabled), otherwise `http://<PublisherHostName>`. If `PublisherHostName` is blank, the Editor will automatically point to the Publisher CloudFront domain (TLS-enabled) from the stack output `PublisherCloudFrontDomain`.
 
 ### Resource tagging
 

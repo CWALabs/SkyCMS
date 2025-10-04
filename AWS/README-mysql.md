@@ -6,22 +6,43 @@ This template (`skycms-mysql.yaml`) deploys SkyCMS Editor and Publisher on AWS u
 - RDS MySQL (database name: `skycms`, in private subnets)
 - S3 bucket for blob storage
 - ALB with host-based routing and optional TLS termination
+- CloudFront distributions (auto TLS + domains) for Editor and Publisher that work out-of-the-box
 - New VPC with two public subnets (for ALB/ECS) and two private subnets (for RDS)
 
 Internal container port is 8080; the public ALB listens on 80/443 and forwards to 8080.
 
 ## Parameters (key)
 
-- InstallId: Tag value applied to resources as `skycms-install-id`.
-- EditorHostName: FQDN for the Editor (e.g., `editor.example.com`).
-- PublisherHostName: Optional FQDN for the Publisher (e.g., `www.example.com`). If blank, ALB default goes to Publisher.
-- RedirectHttpToHttps: `true`/`false`. If `true` and ACMCertificateArn is set, HTTP → HTTPS 301 redirect.
-- ACMCertificateArn: Optional. ACM cert for HTTPS on the ALB (must cover your hostnames).
-- S3BucketName / S3Region / S3AccessKeyId / S3SecretAccessKey: Bucket and credentials used by SkyCMS.
-- DesiredCount: ECS desired tasks per service (default 1).
-- AssignPublicIp: `ENABLED`/`DISABLED`. Enable to allow ECS tasks to pull images from Docker Hub.
-- DBInstanceClass / DBAllocatedStorage / DBBackupRetentionDays: RDS sizing controls.
-- DbUsername / DbPassword: MySQL admin credentials used for the RDS instance and app connection strings (DbPassword is NoEcho in CloudFormation).
+- **InstallId**: Tag value applied to resources as `skycms-install-id`.
+- **EditorHostName**: FQDN for the Editor (e.g., `editor.example.com`).
+- **PublisherHostName**: Optional FQDN for the Publisher (e.g., `www.example.com`). If blank, ALB default goes to Publisher.
+- **RedirectHttpToHttps**: `true`/`false`. If `true` and ACMCertificateArn is set, HTTP → HTTPS 301 redirect.
+- **ACMCertificateArn**: Optional. ACM cert for HTTPS on the ALB (must cover your hostnames).
+
+### Email Configuration (choose one)
+
+SkyCMS supports three email providers. Configure only one of the following:
+
+**SendGrid:**
+- **SendGridApiKey**: SendGrid API key for email notifications. Leave blank if using SMTP or Azure Communications.
+
+**SMTP:**
+- **SmtpHostName**: SMTP host name (e.g., `smtp.gmail.com`). Required if using SMTP.
+- **SmtpPort**: SMTP port number (e.g., `587`). Required if using SMTP.
+- **SmtpEnableSsl**: Set to `true` or `false` for SSL/TLS. Required if using SMTP.
+- **SmtpUserName**: SMTP username. Required if using SMTP.
+- **SmtpPassword**: SMTP password. Required if using SMTP.
+
+**Azure Communications:**
+- **AzureCommunicationsConnectionString**: Azure Communications connection string. Leave blank if using SendGrid or SMTP.
+
+### Infrastructure Settings
+
+- **S3BucketName / S3Region / S3AccessKeyId / S3SecretAccessKey**: Bucket and credentials used by SkyCMS.
+- **DesiredCount**: ECS desired tasks per service (default 1).
+- **AssignPublicIp**: `ENABLED`/`DISABLED`. Enable to allow ECS tasks to pull images from Docker Hub.
+- **DBInstanceClass / DBAllocatedStorage / DBBackupRetentionDays**: RDS sizing controls.
+- **DbUsername / DbPassword**: MySQL admin credentials used for the RDS instance and app connection strings (DbPassword is NoEcho in CloudFormation).
 
 Networking CIDRs are configurable via VpcCidr/PublicSubnet1Cidr/PublicSubnet2Cidr/PrivateSubnet1Cidr/PrivateSubnet2Cidr.
 
@@ -32,10 +53,35 @@ Networking CIDRs are configurable via VpcCidr/PublicSubnet1Cidr/PublicSubnet2Cid
 - Security groups for ALB, ECS services, and MySQL
 - RDS MySQL 8.0 in private subnets (DeletionPolicy: Snapshot)
 - S3 bucket (public access blocked; DeletionPolicy: Retain)
+- CloudFront distributions (one per app) providing automatic TLS-enabled `*.cloudfront.net` domains
 - ECS cluster, roles, task definitions, and services
 - ALB (HTTP and optional HTTPS), listeners, and host-based routing rules
 
 ## Deploy
+
+### AWS Console (Recommended)
+
+When deploying through the AWS CloudFormation Console, parameters are organized into logical groups for easier configuration:
+
+1. **Basic Configuration**: Installation ID, stack name, and admin email
+2. **S3 Storage Configuration**: Bucket name, region, and credentials (grouped together)
+3. **Email Provider - SendGrid (option 1)**: SendGrid API key configuration
+4. **Email Provider - SMTP (option 2)**: SMTP server settings
+5. **Email Provider - Azure Communications (option 3)**: Azure Communications connection string
+6. **Application Settings**: Container images and scaling settings
+7. **Custom Domain & TLS**: Optional custom domains and certificates
+8. **Database Configuration**: MySQL instance settings and credentials
+   - **Database Instance Class**: RDS instance size (e.g., db.t3.micro)
+   - **Database Storage (GB)**: Allocated storage amount
+   - **Backup Retention Days**: Database backup retention period
+   - **Database Name**: MySQL database name (default: skycms)
+   - **Database Username**: MySQL admin username
+   - **Database Password**: MySQL admin password
+9. **Network Configuration**: Advanced VPC and subnet settings
+
+**Note**: Choose only ONE email provider and configure its parameters. Leave the other email provider parameters blank.
+
+### AWS CLI
 
 Use AWS Console or CLI. Example PowerShell (replace values):
 
@@ -47,6 +93,7 @@ aws cloudformation deploy `
     InstallId=prod-west `
     DbUsername=skycmsadmin `
     DbPassword='P@ssw0rd-ChangeMe' `
+    DBName=skycms `
     S3BucketName=your-unique-bucket `
     S3Region=us-west-2 `
     S3AccessKeyId=AKIA... `
@@ -56,8 +103,19 @@ aws cloudformation deploy `
     ACMCertificateArn=arn:aws:acm:us-west-2:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx `
     RedirectHttpToHttps=true `
     AssignPublicIp=ENABLED `
-    DesiredCount=1
+    DesiredCount=1 `
+    SendGridApiKey='SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' `
+    SmtpHostName=smtp.gmail.com `
+    SmtpPort=587 `
+    SmtpEnableSsl=true `
+    SmtpUserName=your-email@gmail.com `
+    SmtpPassword='your-app-password'
 ```
+
+**Note on email parameters:** Configure only one email provider. For example:
+- **SendGrid only:** Set `SendGridApiKey`, leave SMTP and Azure Communications parameters blank
+- **SMTP only:** Set `SmtpHostName`, `SmtpPort`, `SmtpEnableSsl`, `SmtpUserName`, `SmtpPassword`, leave others blank
+- **Azure Communications only:** Set `AzureCommunicationsConnectionString`, leave others blank
 
 Note: Intrinsic function warnings like `!Ref`, `!Sub` in generic YAML linters are normal. For validation, prefer the CloudFormation validator or cfn-lint.
 
@@ -77,9 +135,13 @@ code AWS/examples/skycms-mysql-params.json
 pwsh AWS/examples/deploy-mysql.ps1 -StackName skycms-mysql -Region us-west-2 -ParamsFile AWS/examples/skycms-mysql-params.json
 ```
 
-## DNS setup
+## DNS setup (optional - for custom hostnames)
 
-After the stack completes, configure DNS with your provider:
+After the stack completes, you can use the CloudFront domains immediately:
+
+- `EditorCloudFrontDomain` and `PublisherCloudFrontDomain` outputs provide TLS-enabled domains that work out-of-the-box.
+
+For custom hostnames, configure DNS with your provider:
 
 - Create an A/ALIAS (or CNAME) for `EditorHostName` → the stack output `LoadBalancerDNSName`.
 - If you set `PublisherHostName`, create another A/ALIAS (or CNAME) → `LoadBalancerDNSName`.
@@ -98,11 +160,20 @@ If `ACMCertificateArn` is set and covers your hostnames, browsing via HTTPS will
   - `AzureBlobStorageEndPoint=/`
 
 - Internal listener: `ASPNETCORE_URLS=http://+:8080`
-- Editor `CosmosPublisherUrl` is derived from `PublisherHostName` (https if ACM is set, else http). Left empty if `PublisherHostName` is blank.
+- Editor `CosmosPublisherUrl` is derived from `PublisherHostName` (https if ACM is set, else http). If `PublisherHostName` is blank, automatically uses the Publisher CloudFront domain.
+
+## Stack outputs
+
+- `LoadBalancerDNSName`: ALB DNS name (for custom DNS setup)
+- `EditorCloudFrontDomain`: TLS-enabled CloudFront domain for the Editor
+- `PublisherCloudFrontDomain`: TLS-enabled CloudFront domain for the Publisher
+- `DbEndpoint`: RDS MySQL endpoint
+- `EditorServiceName` / `PublisherServiceName`: ECS service names
 - Storage: `ConnectionStrings__StorageConnectionString="Bucket=<S3BucketName>;Region=<S3Region>;KeyId=<S3AccessKeyId>;Key=<S3SecretAccessKey>;"`
 - Database: `ConnectionStrings__ApplicationDbContextConnection="Server=<RdsEndpoint>;Port=3306;Database=skycms;User Id=<secret Username>;Password=<secret Password>;"`
+  - Format used: `Server=<RdsEndpoint>;uid=<DbUsername>;pwd=<DbPassword>;database=skycms;`
   - The template injects the `DbUsername` and `DbPassword` parameter values directly.
-  - RDS password rules: 8–41 printable ASCII characters; must not include space, `/`, `@`, or `"`.
+  - RDS password rules: 8–41 printable ASCII characters; must not include space, `/`, `@`, or `"`. If migrating examples from Azure, remove any `@` in the password to satisfy AWS constraints.
 
 ## Outputs
 

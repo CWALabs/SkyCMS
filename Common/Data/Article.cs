@@ -111,5 +111,22 @@ namespace Cosmos.Common.Data
         /// Gets or sets the page template ID here.
         /// </summary>
         public Guid? TemplateId { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this article is a blog post.
+        /// </summary>
+        public bool IsBlogPost { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the blog category (if a blog post).
+        /// </summary>
+        [MaxLength(64)]
+        public string Category { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the article introduction/summary (used for blog listing excerpts).
+        /// </summary>
+        [MaxLength(512)]
+        public string Introduction { get; set; } = string.Empty;
     }
 }

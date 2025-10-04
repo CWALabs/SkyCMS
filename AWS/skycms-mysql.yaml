@@ -1,10 +1,144 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3, RDS MySQL, and an Application Load Balancer (ALB) with host-based routing (TLS optional).
+Description: Deploy SkyCMS Editor and Publisher on AWS using ECS Fargate, S3,
+  RDS MySQL, and an Application Load Balancer (ALB) with host-based routing (TLS
+  optional).
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Basic Configuration
+        Parameters:
+          - InstallId
+          - StackName
+          - AdminEmailAddress
+      - Label:
+          default: S3 Storage Configuration
+        Parameters:
+          - S3BucketName
+          - S3Region
+          - S3AccessKeyId
+          - S3SecretAccessKey
+      - Label:
+          default: Email Provider - SendGrid (option 1)
+        Parameters:
+          - SendGridApiKey
+      - Label:
+          default: Email Provider - SMTP (option 2)
+        Parameters:
+          - SmtpHostName
+          - SmtpPort
+          - SmtpEnableSsl
+          - SmtpUserName
+          - SmtpPassword
+      - Label:
+          default: Email Provider - Azure Communications (option 3)
+        Parameters:
+          - AzureCommunicationsConnectionString
+      - Label:
+          default: Application Settings
+        Parameters:
+          - EditorImage
+          - PublisherImage
+          - DesiredCount
+          - AssignPublicIp
+      - Label:
+          default: Custom Domain & TLS (optional)
+        Parameters:
+          - EditorHostName
+          - PublisherHostName
+          - ACMCertificateArn
+          - RedirectHttpToHttps
+      - Label:
+          default: Database Configuration
+        Parameters:
+          - DBInstanceClass
+          - DBAllocatedStorage
+          - DBBackupRetentionDays
+          - DBName
+          - DbUsername
+          - DbPassword
+      - Label:
+          default: Network Configuration (advanced)
+        Parameters:
+          - VpcCidr
+          - PublicSubnet1Cidr
+          - PublicSubnet2Cidr
+          - PrivateSubnet1Cidr
+          - PrivateSubnet2Cidr
+    ParameterLabels:
+      InstallId:
+        default: Installation ID
+      StackName:
+        default: Stack Name Prefix
+      AdminEmailAddress:
+        default: Administrator Email
+      S3BucketName:
+        default: S3 Bucket Name
+      S3Region:
+        default: S3 Region
+      S3AccessKeyId:
+        default: S3 Access Key ID
+      S3SecretAccessKey:
+        default: S3 Secret Access Key
+      SendGridApiKey:
+        default: API Key (leave blank if not using SendGrid)
+      AzureCommunicationsConnectionString:
+        default: Connection String (leave blank if not using Azure Communications)
+      SmtpHostName:
+        default: Host Name (e.g., smtp.gmail.com)
+      SmtpPort:
+        default: Port Number (e.g., 587)
+      SmtpEnableSsl:
+        default: Enable SSL/TLS (true/false)
+      SmtpUserName:
+        default: Username
+      SmtpPassword:
+        default: Password
+      EditorImage:
+        default: Editor Container Image
+      PublisherImage:
+        default: Publisher Container Image
+      DesiredCount:
+        default: Desired Task Count
+      AssignPublicIp:
+        default: Assign Public IP to Tasks
+      EditorHostName:
+        default: Editor Host Name
+      PublisherHostName:
+        default: Publisher Host Name
+      ACMCertificateArn:
+        default: ACM Certificate ARN
+      RedirectHttpToHttps:
+        default: Redirect HTTP to HTTPS
+      DBInstanceClass:
+        default: Database Instance Class
+      DBAllocatedStorage:
+        default: Database Storage (GB)
+      DBBackupRetentionDays:
+        default: Backup Retention Days
+      DBName:
+        default: Database Name
+      DbUsername:
+        default: Database Username
+      DbPassword:
+        default: Database Password
+      VpcCidr:
+        default: VPC CIDR Block
+      PublicSubnet1Cidr:
+        default: Public Subnet 1 CIDR
+      PublicSubnet2Cidr:
+        default: Public Subnet 2 CIDR
+      PrivateSubnet1Cidr:
+        default: Private Subnet 1 CIDR
+      PrivateSubnet2Cidr:
+        default: Private Subnet 2 CIDR
 
 Parameters:
   InstallId:
     Type: String
-    Description: A short install name to tag all resources (used as value for tag key 'skycms-install-id')
+    Description: A short install name to tag all resources (used as value for tag
+      key 'skycms-install-id')
 
   StackName:
     Type: String
@@ -14,23 +148,23 @@ Parameters:
   # Networking
   VpcCidr:
     Type: String
-    Default: '10.1.0.0/16'
+    Default: 10.1.0.0/16
     Description: CIDR block for the new VPC
   PublicSubnet1Cidr:
     Type: String
-    Default: '10.1.0.0/24'
+    Default: 10.1.0.0/24
     Description: CIDR for public subnet 1 (AZ 1)
   PublicSubnet2Cidr:
     Type: String
-    Default: '10.1.1.0/24'
+    Default: 10.1.1.0/24
     Description: CIDR for public subnet 2 (AZ 2)
   PrivateSubnet1Cidr:
     Type: String
-    Default: '10.1.100.0/24'
+    Default: 10.1.100.0/24
     Description: CIDR for private subnet 1 (AZ 1)
   PrivateSubnet2Cidr:
     Type: String
-    Default: '10.1.101.0/24'
+    Default: 10.1.101.0/24
     Description: CIDR for private subnet 2 (AZ 2)
 
   # S3
@@ -54,6 +188,49 @@ Parameters:
   AdminEmailAddress:
     Type: String
     Description: Administrator email for initial account and notifications
+
+  # Email provider settings (choose one)
+  SendGridApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Optional SendGrid API key for email notifications. Leave blank if
+      using SMTP or Azure Communications.
+  AzureCommunicationsConnectionString:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Optional Azure Communications connection string for email
+      notifications. Leave blank if using SendGrid or SMTP.
+  SmtpHostName:
+    Type: String
+    Default: ''
+    Description: Optional SMTP host name for email notifications (e.g.,
+      smtp.mycompany.com). Leave blank if using SendGrid or Azure
+      Communications.
+  SmtpPort:
+    Type: String
+    Default: ''
+    Description: Optional SMTP port number (e.g., 587). Required if SmtpHostName is
+      specified.
+  SmtpEnableSsl:
+    Type: String
+    AllowedValues:
+      - ''
+      - 'true'
+      - 'false'
+    Default: ''
+    Description: Optional SMTP SSL/TLS setting. Set to 'true' or 'false' if using SMTP.
+  SmtpUserName:
+    Type: String
+    Default: ''
+    Description: Optional SMTP username. Required if SmtpHostName is specified.
+  SmtpPassword:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Optional SMTP password. Required if SmtpHostName is specified.
+
   DesiredCount:
     Type: Number
     Default: '1'
@@ -68,27 +245,36 @@ Parameters:
     Description: Container image for the Publisher service
   AssignPublicIp:
     Type: String
-    AllowedValues: [ ENABLED, DISABLED ]
+    AllowedValues:
+      - ENABLED
+      - DISABLED
     Default: ENABLED
-    Description: Whether to assign a public IP to ECS tasks (enable to allow Docker Hub pulls in public subnets)
+    Description: Whether to assign a public IP to ECS tasks (enable to allow Docker
+      Hub pulls in public subnets)
 
   # Hostnames and TLS
   EditorHostName:
     Type: String
+    Default: editor.example.com
     Description: Fully qualified host name for the Editor (e.g., editor.example.com)
   PublisherHostName:
     Type: String
     Default: ''
-    Description: Optional fully qualified host name for the Publisher (e.g., www.example.com). If blank, default action serves Publisher.
+    Description: Optional fully qualified host name for the Publisher (e.g.,
+      www.example.com). If blank, default action serves Publisher.
   RedirectHttpToHttps:
     Type: String
-    AllowedValues: ['true','false']
+    AllowedValues:
+      - 'true'
+      - 'false'
     Default: 'false'
-    Description: If true and HTTPS is configured, HTTP (80) requests will be redirected to HTTPS (443) with 301.
+    Description: If true and HTTPS is configured, HTTP (80) requests will be
+      redirected to HTTPS (443) with 301.
   ACMCertificateArn:
     Type: String
     Default: ''
-    Description: Optional ACM certificate ARN for HTTPS (443) on the load balancer. Leave blank to skip HTTPS.
+    Description: Optional ACM certificate ARN for HTTPS (443) on the load balancer.
+      Leave blank to skip HTTPS.
 
   # Database
   DBInstanceClass:
@@ -103,34 +289,83 @@ Parameters:
     Type: Number
     Default: '3'
     Description: Backup retention days
+  DBName:
+    Type: String
+    Default: skycms
+    Description: MySQL database name
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: ^[A-Za-z0-9_]+$
+    ConstraintDescription: Letters, numbers, underscore; 1-64 chars.
 
   # Database credentials (no Secrets Manager)
   DbUsername:
     Type: String
     Default: skycmsadmin
     Description: MySQL admin username
-    MinLength: 1
-    MaxLength: 32
-    AllowedPattern: '^[A-Za-z0-9_]+$'
-    ConstraintDescription: 'Letters, numbers, underscore; 1-32 chars.'
+    MinLength: '1'
+    MaxLength: '32'
+    AllowedPattern: ^[A-Za-z0-9_]+$
+    ConstraintDescription: Letters, numbers, underscore; 1-32 chars.
   DbPassword:
     Type: String
     NoEcho: true
-    Description: MySQL admin password (will be set on the RDS instance and injected into container env vars)
-    MinLength: 8
-    MaxLength: 41
-    AllowedPattern: '^[^\s/@"]+$'
-    ConstraintDescription: '8-41 printable ASCII; cannot contain space, /, @, or " characters.'
+    Description: MySQL admin password (will be set on the RDS instance and injected
+      into container env vars)
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: ^[^\s/@"]+$
+    ConstraintDescription: 8-41 printable ASCII; cannot contain space, /, @, or " characters.
 
 Mappings: {}
 
 Conditions:
-  UseHTTPS: !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ]
-  UsePublisherHostName: !Not [ !Equals [ !Ref PublisherHostName, '' ] ]
-  RedirectToHTTPS: !And [ !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ], !Equals [ !Ref RedirectHttpToHttps, 'true' ] ]
-  CreateHttpRules: !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ]
-  UseHTTPSAndPublisher: !And [ !Not [ !Equals [ !Ref ACMCertificateArn, '' ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
-  CreateHttpRulesAndPublisher: !And [ !Or [ !Equals [ !Ref ACMCertificateArn, '' ], !Not [ !Equals [ !Ref RedirectHttpToHttps, 'true' ] ] ], !Not [ !Equals [ !Ref PublisherHostName, '' ] ] ]
+  UseHTTPS: !Not
+    - !Equals
+      - !Ref ACMCertificateArn
+      - ''
+  UsePublisherHostName: !Not
+    - !Equals
+      - !Ref PublisherHostName
+      - ''
+  RedirectToHTTPS: !And
+    - !Not
+      - !Equals
+        - !Ref ACMCertificateArn
+        - ''
+    - !Equals
+      - !Ref RedirectHttpToHttps
+      - 'true'
+  CreateHttpRules: !Or
+    - !Equals
+      - !Ref ACMCertificateArn
+      - ''
+    - !Not
+      - !Equals
+        - !Ref RedirectHttpToHttps
+        - 'true'
+  UseHTTPSAndPublisher: !And
+    - !Not
+      - !Equals
+        - !Ref ACMCertificateArn
+        - ''
+    - !Not
+      - !Equals
+        - !Ref PublisherHostName
+        - ''
+  CreateHttpRulesAndPublisher: !And
+    - !Or
+      - !Equals
+        - !Ref ACMCertificateArn
+        - ''
+      - !Not
+        - !Equals
+          - !Ref RedirectHttpToHttps
+          - 'true'
+    - !Not
+      - !Equals
+        - !Ref PublisherHostName
+        - ''
 
 Resources:
   # VPC and networking
@@ -157,7 +392,7 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-vpc"
+          Value: !Sub ${StackName}-vpc
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -166,7 +401,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-igw"
+          Value: !Sub ${StackName}-igw
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -182,7 +417,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-public-rt"
+          Value: !Sub ${StackName}-public-rt
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -191,7 +426,7 @@ Resources:
     DependsOn: IGWAttachment
     Properties:
       RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: '0.0.0.0/0'
+      DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
   PrivateRouteTable1:
@@ -200,7 +435,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-private-rt-a"
+          Value: !Sub ${StackName}-private-rt-a
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -210,7 +445,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-private-rt-b"
+          Value: !Sub ${StackName}-private-rt-b
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -219,11 +454,13 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnet1Cidr
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-public-a"
+          Value: !Sub ${StackName}-public-a
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -232,11 +469,13 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnet2Cidr
-      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-public-b"
+          Value: !Sub ${StackName}-public-b
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -245,11 +484,13 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref PrivateSubnet1Cidr
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-private-a"
+          Value: !Sub ${StackName}-private-a
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -258,11 +499,13 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref PrivateSubnet2Cidr
-      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub "${StackName}-private-b"
+          Value: !Sub ${StackName}-private-b
         - Key: skycms-install-id
           Value: !Ref InstallId
 
@@ -300,11 +543,8 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: '0.0.0.0/0'
-        - !If
-          - UseHTTPS
-          - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: '0.0.0.0/0' }
-          - { Ref: AWS::NoValue }
+          CidrIp: 0.0.0.0/0
+        - !If [UseHTTPS, {IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0}, !Ref 'AWS::NoValue']
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -331,19 +571,19 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: '0.0.0.0/0'
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: '0.0.0.0/0'
+          CidrIp: 0.0.0.0/0
         - IpProtocol: udp
           FromPort: 53
           ToPort: 53
-          CidrIp: '0.0.0.0/0'
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 53
           ToPort: 53
-          CidrIp: '0.0.0.0/0'
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -370,19 +610,19 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: '0.0.0.0/0'
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: '0.0.0.0/0'
+          CidrIp: 0.0.0.0/0
         - IpProtocol: udp
           FromPort: 53
           ToPort: 53
-          CidrIp: '0.0.0.0/0'
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 53
           ToPort: 53
-          CidrIp: '0.0.0.0/0'
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -409,11 +649,14 @@ Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub "${StackName}-alb"
+      Name: !Sub ${StackName}-alb
       Scheme: internet-facing
       Type: application
-      Subnets: [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
-      SecurityGroups: [ !Ref ALBSecurityGroup ]
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -421,14 +664,14 @@ Resources:
   PublisherTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub "${StackName}-pub-tg"
+      Name: !Sub ${StackName}-pub-tg
       Port: 8080
       Protocol: HTTP
       TargetType: ip
       VpcId: !Ref VPC
-      HealthCheckPath: '/'
+      HealthCheckPath: /
       Matcher:
-        HttpCode: '200-399'
+        HttpCode: 200-399
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -436,14 +679,14 @@ Resources:
   EditorTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub "${StackName}-ed-tg"
+      Name: !Sub ${StackName}-ed-tg
       Port: 8080
       Protocol: HTTP
       TargetType: ip
       VpcId: !Ref VPC
-      HealthCheckPath: '/'
+      HealthCheckPath: /
       Matcher:
-        HttpCode: '200-399'
+        HttpCode: 200-399
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -455,15 +698,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       DefaultActions:
-        - !If
-          - RedirectToHTTPS
-          - Type: redirect
-            RedirectConfig:
-              Protocol: HTTPS
-              Port: '443'
-              StatusCode: HTTP_301
-          - Type: forward
-            TargetGroupArn: !Ref PublisherTargetGroup
+        - !If [RedirectToHTTPS, {Type: redirect, RedirectConfig: {Protocol: HTTPS, Port: '443', StatusCode: HTTP_301}}, {Type: forward, TargetGroupArn: !Ref PublisherTargetGroup}]
 
   HttpsListener:
     Condition: UseHTTPS
@@ -478,6 +713,70 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
 
+  # Additional header-based rules so CloudFront can route without DNS/hostnames
+  HttpEditorHeaderRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 5
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
+            Values:
+              - editor
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EditorTargetGroup
+
+  HttpPublisherHeaderRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 6
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
+            Values:
+              - publisher
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref PublisherTargetGroup
+
+  # Optional HTTPS header rules (not used by CloudFront if origin policy is http-only, but kept for completeness)
+  HttpsEditorHeaderRule:
+    Condition: UseHTTPS
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 5
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
+            Values:
+              - editor
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EditorTargetGroup
+
+  HttpsPublisherHeaderRule:
+    Condition: UseHTTPS
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 6
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
+            Values:
+              - publisher
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref PublisherTargetGroup
+
   HttpEditorRule:
     Condition: CreateHttpRules
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -487,7 +786,8 @@ Resources:
       Conditions:
         - Field: host-header
           HostHeaderConfig:
-            Values: [ !Ref EditorHostName ]
+            Values:
+              - !If [!Equals [!Ref EditorHostName, ''], editor-fallback.example.com, !Ref EditorHostName]
       Actions:
         - Type: forward
           TargetGroupArn: !Ref EditorTargetGroup
@@ -501,7 +801,8 @@ Resources:
       Conditions:
         - Field: host-header
           HostHeaderConfig:
-            Values: [ !Ref PublisherHostName ]
+            Values:
+              - !If [UsePublisherHostName, !Ref PublisherHostName, unused.example.com]
       Actions:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
@@ -515,7 +816,8 @@ Resources:
       Conditions:
         - Field: host-header
           HostHeaderConfig:
-            Values: [ !Ref EditorHostName ]
+            Values:
+              - !If [!Equals [!Ref EditorHostName, ''], editor-fallback.example.com, !Ref EditorHostName]
       Actions:
         - Type: forward
           TargetGroupArn: !Ref EditorTargetGroup
@@ -529,7 +831,8 @@ Resources:
       Conditions:
         - Field: host-header
           HostHeaderConfig:
-            Values: [ !Ref PublisherHostName ]
+            Values:
+              - !If [UsePublisherHostName, !Ref PublisherHostName, unused.example.com]
       Actions:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
@@ -538,19 +841,20 @@ Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/ecs/${StackName}"
+      LogGroupName: !Sub /aws/ecs/${StackName}
       RetentionInDays: 14
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
-
 
   # RDS MySQL (in private subnets)
   DbSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: SkyCMS DB subnet group
-      SubnetIds: [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ]
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -559,7 +863,7 @@ Resources:
     Type: AWS::RDS::DBInstance
     DeletionPolicy: Snapshot
     Properties:
-      DBInstanceIdentifier: !Sub "${StackName}-mysql"
+      DBInstanceIdentifier: !Sub ${StackName}-mysql
       AllocatedStorage: !Ref DBAllocatedStorage
       DBInstanceClass: !Ref DBInstanceClass
       Engine: mysql
@@ -567,21 +871,19 @@ Resources:
       MultiAZ: false
       StorageType: gp3
       PubliclyAccessible: false
-      VPCSecurityGroups: [ !Ref DBSecurityGroup ]
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroup
       DBSubnetGroupName: !Ref DbSubnetGroup
-      DBName: skycms
+      DBName: !Ref DBName
       MasterUsername: !Ref DbUsername
       MasterUserPassword: !Ref DbPassword
       BackupRetentionPeriod: !Ref DBBackupRetentionDays
-      DeleteAutomatedBackups: true
-      EnableIAMDatabaseAuthentication: false
-      AutoMinorVersionUpgrade: true
 
   # ECS
   EcsCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub "${StackName}-cluster"
+      ClusterName: !Sub ${StackName}-cluster
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -624,8 +926,8 @@ Resources:
                   - s3:DeleteObject
                   - s3:ListBucket
                 Resource:
-                  - !Sub "arn:aws:s3:::${S3BucketName}"
-                  - !Sub "arn:aws:s3:::${S3BucketName}/*"
+                  - !Sub arn:aws:s3:::${S3BucketName}
+                  - !Sub arn:aws:s3:::${S3BucketName}/*
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -633,11 +935,12 @@ Resources:
   EditorTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: !Sub "${StackName}-editor"
+      Family: !Sub ${StackName}-editor
       Cpu: '256'
       Memory: '512'
       NetworkMode: awsvpc
-      RequiresCompatibilities: [ FARGATE ]
+      RequiresCompatibilities:
+        - FARGATE
       ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
       TaskRoleArn: !GetAtt TaskRole.Arn
       ContainerDefinitions:
@@ -655,31 +958,39 @@ Resources:
             - Name: CosmosStaticWebPages
               Value: 'true'
             - Name: ASPNETCORE_URLS
-              Value: 'http://+:8080'
+              Value: http://+:8080
             - Name: CosmosPublisherUrl
-              Value: !If
-                - UsePublisherHostName
-                - !If
-                  - UseHTTPS
-                  - !Sub "https://${PublisherHostName}"
-                  - !Sub "http://${PublisherHostName}"
-                - ''
+              Value: !If [UsePublisherHostName, !If [UseHTTPS, !Sub 'https://${PublisherHostName}', !Sub 'http://${PublisherHostName}'], !Sub 'https://${PublisherDistribution.DomainName}']
             - Name: AzureBlobStorageEndPoint
-              Value: '/'
-            - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
-              Value: 'false'
+              Value: /
+            - Name: CosmosSendGridApiKey
+              Value: !Ref SendGridApiKey
+            - Name: SmtpEmailProviderOptions__Host
+              Value: !Ref SmtpHostName
+            - Name: SmtpEmailProviderOptions__Port
+              Value: !Ref SmtpPort
+            - Name: SmtpEmailProviderOptions__EnableSsl
+              Value: !Ref SmtpEnableSsl
+            - Name: SmtpEmailProviderOptions__UserName
+              Value: !Ref SmtpUserName
+            - Name: SmtpEmailProviderOptions__Password
+              Value: !Ref SmtpPassword
             - Name: ConnectionStrings__StorageConnectionString
-              Value: !Sub 'Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};'
+              Value: !Sub Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};
             - Name: ConnectionStrings__ApplicationDbContextConnection
               Value: !Join
                 - ''
-                - - 'Server='
+                - - Server=
                   - !GetAtt MySqlDB.Endpoint.Address
-                  - ';Port=3306;Database=skycms;User Id='
+                  - ;uid=
                   - !Ref DbUsername
-                  - ';Password='
+                  - ;pwd=
                   - !Ref DbPassword
-                  - ';'
+                  - ;database=
+                  - !Ref DBName
+                  - ;
+            - Name: ConnectionStrings__AzureCommunicationConnection
+              Value: !Ref AzureCommunicationsConnectionString
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -695,11 +1006,12 @@ Resources:
   PublisherTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: !Sub "${StackName}-publisher"
+      Family: !Sub ${StackName}-publisher
       Cpu: '256'
       Memory: '512'
       NetworkMode: awsvpc
-      RequiresCompatibilities: [ FARGATE ]
+      RequiresCompatibilities:
+        - FARGATE
       ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
       TaskRoleArn: !GetAtt TaskRole.Arn
       ContainerDefinitions:
@@ -715,23 +1027,37 @@ Resources:
             - Name: CosmosStaticWebPages
               Value: 'true'
             - Name: ASPNETCORE_URLS
-              Value: 'http://+:8080'
+              Value: http://+:8080
             - Name: AzureBlobStorageEndPoint
-              Value: '/'
-            - Name: WEBSITES_ENABLE_APP_SERVICE_STORAGE
-              Value: 'false'
+              Value: /
+            - Name: CosmosSendGridApiKey
+              Value: !Ref SendGridApiKey
+            - Name: SmtpEmailProviderOptions__Host
+              Value: !Ref SmtpHostName
+            - Name: SmtpEmailProviderOptions__Port
+              Value: !Ref SmtpPort
+            - Name: SmtpEmailProviderOptions__EnableSsl
+              Value: !Ref SmtpEnableSsl
+            - Name: SmtpEmailProviderOptions__UserName
+              Value: !Ref SmtpUserName
+            - Name: SmtpEmailProviderOptions__Password
+              Value: !Ref SmtpPassword
             - Name: ConnectionStrings__StorageConnectionString
-              Value: !Sub 'Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};'
+              Value: !Sub Bucket=${S3BucketName};Region=${S3Region};KeyId=${S3AccessKeyId};Key=${S3SecretAccessKey};
             - Name: ConnectionStrings__ApplicationDbContextConnection
               Value: !Join
                 - ''
-                - - 'Server='
+                - - Server=
                   - !GetAtt MySqlDB.Endpoint.Address
-                  - ';Port=3306;Database=skycms;User Id='
+                  - ;uid=
                   - !Ref DbUsername
-                  - ';Password='
+                  - ;pwd=
                   - !Ref DbPassword
-                  - ';'
+                  - ;database=
+                  - !Ref DBName
+                  - ;
+            - Name: ConnectionStrings__AzureCommunicationConnection
+              Value: !Ref AzureCommunicationsConnectionString
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -756,8 +1082,11 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !Ref AssignPublicIp
-          Subnets: [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
-          SecurityGroups: [ !Ref EditorServiceSG ]
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref EditorServiceSG
       TaskDefinition: !Ref EditorTaskDefinition
       LoadBalancers:
         - ContainerName: editor
@@ -778,8 +1107,11 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !Ref AssignPublicIp
-          Subnets: [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
-          SecurityGroups: [ !Ref PublisherServiceSG ]
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref PublisherServiceSG
       TaskDefinition: !Ref PublisherTaskDefinition
       LoadBalancers:
         - ContainerName: publisher
@@ -788,6 +1120,95 @@ Resources:
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
+
+  # CloudFront distributions to provide automatic TLS-enabled domains without DNS setup
+  EditorDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub ${StackName}-editor
+        HttpVersion: http2
+        DefaultRootObject: ''
+        Origins:
+          - Id: alb-origin-editor
+            DomainName: !GetAtt ApplicationLoadBalancer.DNSName
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginSSLProtocols:
+                - TLSv1.2
+            OriginCustomHeaders:
+              - HeaderName: x-sky-app
+                HeaderValue: editor
+        DefaultCacheBehavior:
+          TargetOriginId: alb-origin-editor
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: all
+          Compress: true
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+  PublisherDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub ${StackName}-publisher
+        HttpVersion: http2
+        DefaultRootObject: ''
+        Origins:
+          - Id: alb-origin-publisher
+            DomainName: !GetAtt ApplicationLoadBalancer.DNSName
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginSSLProtocols:
+                - TLSv1.2
+            OriginCustomHeaders:
+              - HeaderName: x-sky-app
+                HeaderValue: publisher
+        DefaultCacheBehavior:
+          TargetOriginId: alb-origin-publisher
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: all
+          Compress: true
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
 
 Outputs:
   VpcId:
@@ -808,6 +1229,12 @@ Outputs:
   LoadBalancerDNSName:
     Description: Public DNS name of the Application Load Balancer
     Value: !GetAtt ApplicationLoadBalancer.DNSName
+  EditorCloudFrontDomain:
+    Description: Public DNS name for the Editor via CloudFront (TLS-enabled)
+    Value: !GetAtt EditorDistribution.DomainName
+  PublisherCloudFrontDomain:
+    Description: Public DNS name for the Publisher via CloudFront (TLS-enabled)
+    Value: !GetAtt PublisherDistribution.DomainName
   EditorServiceName:
     Description: ECS service name for Editor
     Value: !Ref EditorService
