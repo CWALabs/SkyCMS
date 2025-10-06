@@ -142,5 +142,15 @@ namespace Cosmos.Common.Data
         /// </remarks>
         [Timestamp]
         public byte[] RowVersion { get; set; }
+
+        /// <summary>
+        /// Gets or sets the blog key associated with the article.
+        /// </summary>
+        /// <remarks>
+        /// This value is used to associate the article with a specific blog or section
+        /// within the application. Default is "default" if not explicitly set.
+        /// </remarks>
+        [Display(Name = "Blog Key")]
+        public string BlogKey { get; set; } = "default";
     }
 }

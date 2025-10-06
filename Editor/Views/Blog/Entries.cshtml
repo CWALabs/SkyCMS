@@ -1,0 +1,33 @@
+@model Sky.Editor.Models.Blogs.BlogEntriesListViewModel
+@{
+    ViewData["Title"] = "Entries - " + Model.BlogKey;
+}
+<h2>Entries for '@Model.BlogKey'</h2>
+<p>
+    <a class="btn btn-primary" href="@Url.Action("CreateEntry", new { blogKey = Model.BlogKey })">New Blog Entry</a>
+    <a class="btn btn-secondary" href="@Url.Action("Index")">Back to Streams</a>
+</p>
+<table class="table table-hover">
+    <thead>
+    <tr>
+        <th>Title</th>
+        <th>Published</th>
+        <th>Updated</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var e in Model.Entries)
+    {
+        <tr>
+            <td>@e.Title</td>
+            <td>@(e.Published?.ToString("u") ?? "-")</td>
+            <td>@e.Updated.ToString("u")</td>
+            <td>
+                <a class="btn btn-sm btn-outline-primary" href="@Url.Action("EditEntry", new { blogKey = Model.BlogKey, articleNumber = e.ArticleNumber })">Edit</a>
+                <a class="btn btn-sm btn-outline-danger" href="@Url.Action("DeleteEntry", new { blogKey = Model.BlogKey, articleNumber = e.ArticleNumber })">Delete</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

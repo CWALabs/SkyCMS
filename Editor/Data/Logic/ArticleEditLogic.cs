@@ -514,8 +514,9 @@ namespace Sky.Editor.Data.Logic
         /// <param name="title">Title text.</param>
         /// <param name="userId">Author user id.</param>
         /// <param name="templateId">Optional template ID.</param>
+        /// <param name="blogKey">Optional blog key (default "default").</param>
         /// <returns>Article view model for editing.</returns>
-        public async Task<ArticleViewModel> CreateArticle(string title, Guid userId, Guid? templateId = null)
+        public async Task<ArticleViewModel> CreateArticle(string title, Guid userId, Guid? templateId = null, string blogKey = "default")
         {
             var isFirstArticle = (await DbContext.Articles.CountAsync()) == 0;
             var defaultTemplate = string.Empty;
@@ -551,6 +552,7 @@ namespace Sky.Editor.Data.Logic
 
             var article = new Article
             {
+                BlogKey = blogKey,
                 ArticleNumber = nextArticleNumber,
                 Content = Ensure_ContentEditable_IsMarked(defaultTemplate),
                 StatusCode = (int)StatusCodeEnum.Active,
@@ -880,7 +882,8 @@ namespace Sky.Editor.Data.Logic
                 AuthorInfo = authorInfo == null ? string.Empty : JsonConvert.SerializeObject(authorInfo).Replace("\"", "'"),
                 ArticleType = newVersion.ArticleType,
                 Category = newVersion.Category,
-                Introduction = newVersion.Introduction
+                Introduction = newVersion.Introduction,
+                BlogKey = newVersion.BlogKey,
             };
 
             DbContext.Pages.Add(newPage);
@@ -972,7 +975,8 @@ namespace Sky.Editor.Data.Logic
                 UrlPath = article.UrlPath,
                 TemplateId = article.TemplateId,
                 AuthorInfo = authorInfo == null ? string.Empty : JsonConvert.SerializeObject(authorInfo).Replace("\"", "'"),
-                Introduction = article.Introduction
+                Introduction = article.Introduction,
+                BlogKey = article.BlogKey,
             };
 
             DbContext.ArticleCatalog.Add(entry);

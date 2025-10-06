@@ -172,5 +172,14 @@ namespace Cosmos.Common.Data
         /// </remarks>
         [ConcurrencyCheck]
         public long? RowVersion { get; set; }
+
+        /// <summary>
+        /// Gets or sets the blog key for the article.
+        /// </summary>
+        /// <remarks>
+        /// Used to associate the article with a specific blog or grouping.
+        /// Defaults to "default" if not specified.
+        /// </remarks>
+        public string BlogKey { get; set; } = "default";
     }
 }

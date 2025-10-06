@@ -1,0 +1,18 @@
+@model Sky.Editor.Models.Blogs.BlogStreamViewModel
+@{
+    ViewData["Title"] = "Delete Blog Stream";
+}
+<h2>Delete Blog Stream</h2>
+<div class="alert alert-warning">
+    <strong>Warning:</strong> Deleting a blog stream will reassign its posts to the 'default' blog unless you uncheck the option below.
+</div>
+<form asp-action="ConfirmDelete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <p>Are you sure you want to delete blog stream: <strong>@Model.BlogKey</strong> ?</p>
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="reassign" value="true" checked id="reassignCheck" />
+        <label class="form-check-label" for="reassignCheck">Reassign posts to 'default'</label>
+    </div>
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
+</form>

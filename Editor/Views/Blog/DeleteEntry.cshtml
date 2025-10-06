@@ -1,0 +1,12 @@
+@model Sky.Editor.Models.Blogs.BlogEntryListItem
+@{
+    ViewData["Title"] = "Delete Blog Entry";
+}
+<h2>Delete Blog Entry</h2>
+<div class="alert alert-warning">
+    Are you sure you want to delete: <strong>@Model.Title</strong> ?
+</div>
+<form method="post">
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a class="btn btn-secondary" href="javascript:history.back()">Cancel</a>
+</form>

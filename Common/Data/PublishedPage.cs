@@ -212,5 +212,14 @@ namespace Cosmos.Common.Data
         /// Prefer an enum wrapper if the domain stabilizes.
         /// </remarks>
         public int? ArticleType { get; set; } = 0;
+
+        /// <summary>
+        /// Gets or sets the blog key associated with the content, used for filtering and categorization.
+        /// </summary>
+        /// <remarks>
+        /// This helps in classifying content under different blogs or sections within the CMS.
+        /// Default is "default" indicating the primary or fallback blog.
+        /// </remarks>
+        public string BlogKey { get; set; } = "default";
     }
 }

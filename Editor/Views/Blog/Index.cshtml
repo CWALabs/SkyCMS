@@ -1,39 +1,27 @@
-@model Cosmos.Common.Models.Blog.BlogIndexViewModel
+@model IEnumerable<Sky.Editor.Models.Blogs.BlogStreamViewModel>
 @{
-    ViewData["Title"] = string.IsNullOrEmpty(Model.Category)? "Blog" : $"Blog - {Model.Category}";
+    ViewData["Title"] = "Blog Streams";
 }
-<div class="cwps-editor-container pt-3">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="text-light">@ViewData["Title"]</h2>
-            <a class="btn btn-sm btn-outline-warning" href="/blog/rss" target="_blank">RSS</a>
-        </div>
-        <div class="row">
-            @foreach (var post in Model.Posts)
-            {
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100">
-                        @if(!string.IsNullOrEmpty(post.BannerImage))
-                        {
-                            <img class="card-img-top" src="@post.BannerImage" alt="@post.Title" />
-                        }
-                        <div class="card-body">
-                            <h5 class="card-title">@post.Title</h5>
-                            <p class="card-subtitle mb-2 text-muted">@post.Published?.UtcDateTime.ToString("yyyy-MM-dd") @if(!string.IsNullOrEmpty(post.Category)){<span>| @post.Category</span>}</p>
-                            <p class="card-text">@post.Introduction</p>
-                            <a class="btn btn-sm btn-primary" href="/blog/post/@post.UrlPath">Read More</a>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-        <nav aria-label="Blog pagination">
-            <ul class="pagination">
-                @for (int i = 1; i <= Model.TotalPages; i++)
-                {
-                    <li class="page-item @(i==Model.Page?"active":"")"><a class="page-link" href="/blog/@i?category=@Model.Category">@i</a></li>
-                }
-            </ul>
-        </nav>
-    </div>
-</div>
+<h2>Blog Streams</h2>
+<p><a class="btn btn-primary" href="@Url.Action("Create")">Create Blog Stream</a></p>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Blog Key</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var b in Model)
+    {
+        <tr>
+            <td>@b.BlogKey</td>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="@Url.Action("Entries", new { blogKey = b.BlogKey })">Entries</a>
+                <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Edit", new { id = b.Id })">Edit</a>
+                <a class="btn btn-sm btn-outline-danger" href="@Url.Action("Delete", new { id = b.Id })">Delete</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
