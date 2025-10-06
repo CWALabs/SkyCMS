@@ -6,11 +6,11 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 ## Features
 
 - **ECS Fargate**: Runs Editor and Publisher containers securely.
-- **EFS**: Shared SQLite database with secure password (AWS Secrets Manager).
+- **EFS**: Shared SQLite database using a password you provide via parameter (no Secrets Manager).
 - **S3**: Blob storage for media and files.
 - **ALB**: Exposes HTTP (80) and optional HTTPS (443) endpoints, supports host-based routing.
 - **DNS guidance**: You will manually create DNS records for your hostnames after deployment.
-- **Secure by default**: Security groups restrict ingress to ALB only; EFS uses an Access Point; IAM/Secrets Manager for credentials.
+- **Secure by default**: Security groups restrict ingress to ALB only; EFS uses an Access Point; credentials are passed via NoEcho parameters.
 - **Networking built-in (optional)**: Create a new VPC with two public subnets for ALB/ECS/EFS, plus optional private subnets and a NAT Gateway for future databases.
 
 ## Key Parameters
@@ -24,6 +24,7 @@ This folder contains the CloudFormation template to deploy SkyCMS Editor and Pub
 | `ACMCertificateArn`    | Optional. ACM certificate ARN for HTTPS (must cover all hostnames).                         |
 | `S3BucketName`         | S3 bucket for blob storage.                                                                 |
 | `S3Region`             | AWS region for S3 bucket.                                                                   |
+| `SqlitePassword`       | SQLite DB password used in the connection string.                                           |
 | `AdminEmailAddress`    | Initial admin email.                                                                        |
 | `EditorImage`          | Docker image for Editor.                                                                    |
 | `PublisherImage`       | Docker image for Publisher.                                                                 |
@@ -54,8 +55,18 @@ Tip: Use ALIAS if your DNS provider supports it to map the root/apex or subdomai
 
 ## Secure SQLite
 
-- SQLite password is auto-generated and stored in AWS Secrets Manager.
+- Provide `SqlitePassword` when deploying; it’s injected into the connection string for `/data/sqlite/skycms.db`.
 - Both containers mount EFS at `/data/sqlite` and use `/data/sqlite/skycms.db` for the database.
+
+## Default app environment variables
+
+- Editor defaults:
+  - `CosmosAllowSetup=true`
+  - `CosmosStaticWebPages=true`
+  - `AzureBlobStorageEndPoint=/`
+- Publisher defaults:
+  - `CosmosStaticWebPages=true`
+  - `AzureBlobStorageEndPoint=/`
 
 ## Deployment Checklist
 
@@ -73,8 +84,21 @@ aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack
   --parameter-overrides CreatePrivateSubnets=true InstallId=prod-west \
   EditorHostName=editor.example.com PublisherHostName=www.example.com \
   ACMCertificateArn=arn:aws:acm:... S3BucketName=your-bucket S3Region=us-west-2 \
+  SqlitePassword='REPLACE_ME_STRONG_PASSWORD' \
   AssignPublicIp=ENABLED AdminEmailAddress=admin@example.com
 
+```
+
+### Deploy with a parameters file (recommended)
+
+Use the sample file and script to avoid typing secrets into your shell:
+
+```pwsh
+# Edit the params JSON first
+code AWS/examples/skycms-sqlite-params.json
+
+# Deploy
+pwsh AWS/examples/deploy-sqlite.ps1 -StackName skycms -Region us-west-2 -ParamsFile AWS/examples/skycms-sqlite-params.json
 ```
 
 ###
@@ -99,7 +123,7 @@ aws cloudformation deploy --template-file AWS/cloudformation-skycms.yaml --stack
 ### Resource tagging
 
 - All supported resources are tagged with `skycms-install-id=<InstallId>` to make it easy to search and cost-allocate per installation.
-- Examples of tagged resources: VPC/subnets/route tables, security groups, ALB and target groups, ECS cluster/services/task defs, EFS (filesystem and access point), NAT/EIP, CloudWatch log group, IAM roles, and Secrets Manager secret.
+- Examples of tagged resources: VPC/subnets/route tables, security groups, ALB and target groups, ECS cluster/services/task defs, EFS (filesystem and access point), NAT/EIP, CloudWatch log group, and IAM roles.
 
 ## Outbound internet access and image pulls
 

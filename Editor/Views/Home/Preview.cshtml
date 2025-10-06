@@ -26,57 +26,69 @@
 </head>
 <body class="cwps-body" style="margin:0px;padding:0px;">
     <partial name="_CosmosPreviewMenuPartial" />
-    <iframe id="iFrameWebPage" src="@frameUrl" style="position: absolute; top: 52px; width: 100%; margin:0px; padding:0px;z-index:1;"></iframe>
     <script>
-
         const layoutId = '@layoutId';
         const articleId = '@articleId';
 
         function setupIframe() {
             const iframe = document.getElementById("iFrameWebPage");
-            const iframeWin = iframe.contentWindow || iframe.contentDocument.parentWindow;
-            if (iframeWin.document.body) {
-                iframe.height = window.innerHeight - document.getElementById("ccmsNavMenu").clientHeight;
-            }
-        };
+            if (!iframe) return;
 
-        window.addEventListener('resize', function (event) { setupIframe(); }, true);
+            const nav = document.getElementById("ccmsNavMenu");
+            const navHeight = nav ? nav.clientHeight : 0;
+            iframe.style.height = (window.innerHeight - navHeight) + 'px';
+        }
 
-        $(document).ready(function() {
-            var iframe = $('#iFrameWebPage');
+        window.addEventListener('resize', function () { setupIframe(); }, true);
 
-            iframe.on('load', function() {
-                var iframeContent = iframe.contents();
+        $(document).ready(function () {
+            const $iframe = $('#iFrameWebPage');
 
-                iframeContent.on('click', function(event) {
-                    const iframeBaseUrl = "/Home/CcmsContentIndex?target=";
-                    event.preventDefault();
-                    const target = $(event.target);
-                    if (target.is('a')) {
-                        window.location.href = target.attr("href");
+            $iframe.on('load', function () {
+                setupIframe();
+
+                const doc = $iframe[0].contentDocument || $iframe[0].contentWindow?.document;
+                if (!doc) return;
+
+                // Avoid duplicate handlers
+                $(doc).off('click.ccmsPreview', 'a');
+
+                // Delegate clicks on links inside the iframe
+                $(doc).on('click.ccmsPreview', 'a', function (event) {
+                    const anchor = $(this);
+                    const href = anchor.attr('href');
+
+                    if (!href || href === '#') {
+                        return;
                     }
-                });
 
-                    if (anchor.is('a')) {
-                        if (anchor.attr("href").toLowerCase().startsWith("http")) {
-                            window.location.href = anchor.attr("href");
+                    const isExternal = /^(https?:)?\/\//i.test(href);
+
+                    if (isExternal) {
+                        event.preventDefault();
+                        window.location.href = href;
+                    } else {
+                        event.preventDefault();
+                        const iframeBaseUrl = "/Home/CcmsContentIndex?target=";
+                        let newUrl = iframeBaseUrl + href;
+
+                        if (layoutId) {
+                            newUrl += "&layoutId=" + encodeURIComponent(layoutId);
                         }
-                        else {
-                            const href = anchor.attr("href");
-                            let newUrl = iframeBaseUrl + href;
-                            // Only add if not already present
-                            if (layoutId !== '') {
-                                newUrl += "&layoutId=" + layoutId;
-                            }
-                            if (articleNumber !== '') {
-                                newUrl += "&articleId=" + articleId;
-                            }
-                            iframe.attr('src', newUrl);
+                        if (articleId) {
+                            newUrl += "&articleId=" + encodeURIComponent(articleId);
                         }
+
+                        $iframe.attr('src', newUrl);
                     }
                 });
             });
+
+            // Initial sizing
+            setupIframe();
         });
     </script>
+    <iframe id="iFrameWebPage" src="@frameUrl" style="position: absolute; top: 52px; width: 100%; margin:0px; padding:0px;z-index:1;"></iframe>
+
 </body>
 </html>

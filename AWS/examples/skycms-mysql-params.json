@@ -1,0 +1,15 @@
+[
+  { "ParameterKey": "InstallId", "ParameterValue": "prod-west" },
+  { "ParameterKey": "DbUsername", "ParameterValue": "skycmsadmin" },
+  { "ParameterKey": "DbPassword", "ParameterValue": "REPLACE_ME_STRONG_PASSWORD" },
+  { "ParameterKey": "S3BucketName", "ParameterValue": "your-unique-bucket" },
+  { "ParameterKey": "S3Region", "ParameterValue": "us-west-2" },
+  { "ParameterKey": "S3AccessKeyId", "ParameterValue": "REPLACE_ME" },
+  { "ParameterKey": "S3SecretAccessKey", "ParameterValue": "REPLACE_ME" },
+  { "ParameterKey": "EditorHostName", "ParameterValue": "editor.example.com" },
+  { "ParameterKey": "PublisherHostName", "ParameterValue": "www.example.com" },
+  { "ParameterKey": "ACMCertificateArn", "ParameterValue": "arn:aws:acm:us-west-2:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" },
+  { "ParameterKey": "RedirectHttpToHttps", "ParameterValue": "true" },
+  { "ParameterKey": "AssignPublicIp", "ParameterValue": "ENABLED" },
+  { "ParameterKey": "DesiredCount", "ParameterValue": "1" }
+]
