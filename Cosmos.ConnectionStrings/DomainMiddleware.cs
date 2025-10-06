@@ -5,11 +5,10 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using Microsoft.AspNetCore.Http;
+
 namespace Cosmos.DynamicConfig
 {
-    using System.Threading.Tasks;
-    using Microsoft.AspNetCore.Http;
-
     /// <summary>
     /// Domain name middleware service. Gets the domain name of the current request.
     /// </summary>

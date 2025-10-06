@@ -4,26 +4,26 @@
 // See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
+using System.Text.RegularExpressions;
+using System.Threading.RateLimiting;
+using AspNetCore.Identity.FlexDb.Extensions;
+using Azure.Identity;
+using Cosmos.BlobService;
+using Cosmos.Cms.Common.Services.Configurations;
+using Cosmos.Common.Data;
+using Cosmos.Common.Data.Logic;
+using Cosmos.EmailServices;
+using Cosmos.MicrosoftGraph;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Azure.Cosmos.Fluent;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Serialization;
+
 namespace Cosmos.Publisher.Boot
 {
-    using System.Text.RegularExpressions;
-    using System.Threading.RateLimiting;
-    using AspNetCore.Identity.FlexDb.Extensions;
-    using Azure.Identity;
-    using Cosmos.BlobService;
-    using Cosmos.Cms.Common.Services.Configurations;
-    using Cosmos.Common.Data;
-    using Cosmos.Common.Data.Logic;
-    using Cosmos.EmailServices;
-    using Cosmos.MicrosoftGraph;
-    using Microsoft.AspNetCore.Antiforgery;
-    using Microsoft.AspNetCore.HttpOverrides;
-    using Microsoft.AspNetCore.Identity;
-    using Microsoft.AspNetCore.RateLimiting;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.EntityFrameworkCore;
-    using Newtonsoft.Json.Serialization;
-
     /// <summary>
     /// Configures and initializes the web application with the necessary services, middleware, and settings.
     /// </summary>

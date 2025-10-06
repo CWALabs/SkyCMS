@@ -7,7 +7,6 @@
 
 namespace Sky.Editor.Domain.Events
 {
-    using System;
     using Microsoft.Extensions.DependencyInjection;
 
     /// <summary>

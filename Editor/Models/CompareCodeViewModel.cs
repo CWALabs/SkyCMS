@@ -8,8 +8,8 @@
 namespace Sky.Cms.Models
 {
     using System.Collections.Generic;
-    using Sky.Cms.Models.Interfaces;
     using Cosmos.Common.Models;
+    using Sky.Cms.Models.Interfaces;
 
     /// <summary>
     /// Compare code between two pages.

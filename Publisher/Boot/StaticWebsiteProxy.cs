@@ -4,15 +4,15 @@
 // See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
+using System.Threading.RateLimiting;
+using Azure.Identity;
+using Cosmos.BlobService;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.RateLimiting;
+using Newtonsoft.Json.Serialization;
+
 namespace Cosmos.Publisher.Boot
 {
-    using System.Threading.RateLimiting;
-    using Azure.Identity;
-    using Cosmos.BlobService;
-    using Microsoft.AspNetCore.Antiforgery;
-    using Microsoft.AspNetCore.RateLimiting;
-    using Newtonsoft.Json.Serialization;
-
     /// <summary>
     /// Configures and starts a web application to serve static files from the "wwwroot" directory.
     /// </summary>

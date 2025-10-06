@@ -5,13 +5,12 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Sky.Editor.Services.Publishing;
-
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Cosmos.Common.Data;
 using Sky.Editor.Services.CDN;
 
+namespace Sky.Editor.Services.Publishing;
 /// <summary>
 /// Provides operations for publishing, redirecting, and removing article-based
 /// static artifacts (e.g., generated HTML/pages) and coordinating related CDN actions.

@@ -9,11 +9,11 @@ namespace Sky.Cms.Hubs
 {
     using System;
     using System.Threading.Tasks;
-    using Sky.Cms.Models;
     using Cosmos.Common.Services;
     using Microsoft.AspNetCore.SignalR;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
+    using Sky.Cms.Models;
 
     /// <summary>
     /// Live editor collaboration hub.

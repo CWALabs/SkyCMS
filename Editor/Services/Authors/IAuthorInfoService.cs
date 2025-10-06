@@ -5,12 +5,11 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Sky.Editor.Services.Authors;
-
 using System;
 using System.Threading.Tasks;
 using Cosmos.Common.Data;
 
+namespace Sky.Editor.Services.Authors;
 /// <summary>
 /// Service contract for retrieving or creating <see cref="AuthorInfo"/> records
 /// associated with a user account.

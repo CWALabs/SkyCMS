@@ -5,10 +5,10 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using Cosmos.BlobService;
+
 namespace Cosmos.Publisher.Models
 {
-    using Cosmos.BlobService;
-
     /// <summary>
     /// File cache object.
     /// </summary>

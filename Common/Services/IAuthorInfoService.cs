@@ -11,7 +11,6 @@ namespace Cosmos.Common.Services
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
-    using Cosmos.Common.Models;
 
     /// <summary>
     /// Provides author profile lookup, creation, and update operations used when attributing content.

@@ -14,13 +14,13 @@ namespace Sky.Cms.Hubs
     using System.Text;
     using System.Threading.Tasks;
     using Cosmos.BlobService;
-    using Sky.Cms.Models;
     using Cosmos.Common.Data;
-    using Sky.Editor.Data.Logic;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.SignalR;
     using Microsoft.EntityFrameworkCore;
     using Newtonsoft.Json;
+    using Sky.Cms.Models;
+    using Sky.Editor.Data.Logic;
 
     /// <summary>
     /// Chat hub.

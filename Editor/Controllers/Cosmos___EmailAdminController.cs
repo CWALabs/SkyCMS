@@ -9,12 +9,12 @@ namespace Sky.Editor.Controllers
 {
     using System;
     using System.Threading.Tasks;
-    using Sky.Editor.Models;
     using Cosmos.EmailServices;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Identity.UI.Services;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Logging;
+    using Sky.Editor.Models;
 
     /// <summary>
     /// Email administrator controller.

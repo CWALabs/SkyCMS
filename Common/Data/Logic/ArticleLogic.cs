@@ -14,7 +14,6 @@ namespace Cosmos.Common.Data.Logic
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Cosmos.Cms.Common.Services.Configurations;
-    using Cosmos.Common.Data;
     using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;

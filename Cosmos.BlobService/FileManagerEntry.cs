@@ -5,10 +5,9 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Cosmos.BlobService;
-
 using System;
 
+namespace Cosmos.BlobService;
 /// <summary>
 /// File manager entry.
 /// </summary>

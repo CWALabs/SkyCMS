@@ -8,13 +8,13 @@
 namespace Sky.Editor.Data.Logic
 {
     using System;
-    using Sky.Cms.Services;
     using Cosmos.Common.Data;
-    using Sky.Editor.Models;
     using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
+    using Sky.Cms.Services;
+    using Sky.Editor.Models;
 
     /// <summary>
     ///   Logic for managing settings in the application.

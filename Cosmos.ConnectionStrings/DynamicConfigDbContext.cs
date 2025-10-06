@@ -5,10 +5,10 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using Microsoft.EntityFrameworkCore;
+
 namespace Cosmos.DynamicConfig
 {
-    using Microsoft.EntityFrameworkCore;
-
     public class DynamicConfigDbContext : DbContext
     {
         public DynamicConfigDbContext(DbContextOptions<DynamicConfigDbContext> options)

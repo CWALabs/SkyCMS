@@ -42,15 +42,15 @@ namespace Sky.Editor.Boot
     using Sky.Cms.Hubs;
     using Sky.Cms.Services;
     using Sky.Editor.Data.Logic;
+    using Sky.Editor.Domain.Events;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services;
-    using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Catalog;
+    using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Publishing;
-    using Sky.Editor.Services.Titles;
     using Sky.Editor.Services.Redirects;
     using Sky.Editor.Services.Slugs;
-    using Sky.Editor.Domain.Events;
+    using Sky.Editor.Services.Titles;
 
     /// <summary>
     /// Boots up the multi-tenant editor.

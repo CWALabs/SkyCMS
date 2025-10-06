@@ -9,9 +9,9 @@ namespace Sky.Editor.Controllers
 {
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
-    using Sky.Editor.Data.Logic;
     using Cosmos.Publisher.Controllers;
     using Microsoft.AspNetCore.Mvc;
+    using Sky.Editor.Data.Logic;
 
     /// <summary>
     /// Secure file access controller and proxy.

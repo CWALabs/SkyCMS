@@ -9,8 +9,8 @@ namespace Sky.Editor.Data.Logic
 {
     using System.Collections.Generic;
     using System.Linq;
-    using Sky.Editor.Models;
     using HtmlAgilityPack;
+    using Sky.Editor.Models;
 
     /// <summary>
     /// Contains utility methods for the designer (GraphsJS) editor.

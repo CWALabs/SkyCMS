@@ -4,14 +4,14 @@
 // See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
+using System.Net.Mime;
+using Cosmos.BlobService;
+using Cosmos.Publisher.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+
 namespace Cosmos.Publisher.Controllers
 {
-    using System.Net.Mime;
-    using Cosmos.BlobService;
-    using Cosmos.Publisher.Models;
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.Extensions.Caching.Memory;
-
     /// <summary>
     /// Static proxy controller.
     /// </summary>
