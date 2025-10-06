@@ -107,6 +107,13 @@ namespace Sky.Editor.Controllers
                 return View("Create", model);
             }
 
+            var articleExists = await db.Articles.AnyAsync(a => a.UrlPath.StartsWith(model.BlogKey));
+            if (articleExists)
+            {
+                ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
+                return View("Create", model);
+            }
+
             if (model.IsDefault)
             {
                 // Unset any previous default

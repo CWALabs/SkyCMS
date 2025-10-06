@@ -30,7 +30,7 @@ namespace Cosmos.Common.Data
         /// Primary key (GUID). Generated on instantiation.
         /// </summary>
         [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; }
 
         /// <summary>
         /// Stable identifier used for routing and association with articles
