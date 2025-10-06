@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5B063402-7947-4E34-A638-E00FE81E3ACE}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		AddMigrationScript.ps1 = AddMigrationScript.ps1
 		GlobalSuppressions.cs = GlobalSuppressions.cs
 		stylecop.json = stylecop.json
 	EndProjectSection

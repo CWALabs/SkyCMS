@@ -1,0 +1,1 @@
+Add-Migration BlogEntities -Project Cosmos.Common -StartupProject Sky.Editor -Context ApplicationDbContext

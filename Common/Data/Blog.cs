@@ -9,6 +9,7 @@ namespace Cosmos.Common.Data
 {
     using System;
     using System.ComponentModel.DataAnnotations;
+    using Microsoft.EntityFrameworkCore;
 
     /// <summary>
     /// Represents a distinct blog stream (multi-blog root) that groups related
@@ -22,11 +23,13 @@ namespace Cosmos.Common.Data
     /// - IsDefault: marks the fallback stream for reassignment when deleting others.
     /// - CreatedUtc / UpdatedUtc: lifecycle timestamps (UTC).
     /// </remarks>
+    [Index(nameof(BlogKey), IsUnique = true)]
     public class Blog
     {
         /// <summary>
         /// Primary key (GUID). Generated on instantiation.
         /// </summary>
+        [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
@@ -69,7 +72,7 @@ namespace Cosmos.Common.Data
         /// <summary>
         /// UTC timestamp of last metadata update. (Set in code when edited.)
         /// </summary>
-        public DateTimeOffset UpdatedUtc { get; set; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset? UpdatedUtc { get; set; } = DateTimeOffset.UtcNow;
 
         /// <summary>
         /// Optional sort order (ascending) if you want deterministic ordering in UI.

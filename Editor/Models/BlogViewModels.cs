@@ -22,7 +22,7 @@ namespace Sky.Editor.Models.Blogs
         [Required, MaxLength(64)]
         [RegularExpression("^[a-z0-9-_]+$", ErrorMessage = "Lowercase letters, numbers, dash, underscore only.")]
         [Display(Name = "Blog Key")]
-        public string BlogKey { get; set; }
+        public string BlogKey { get; set; } = Guid.NewGuid().ToString();
 
         [Required, MaxLength(128)]
         [Display(Name = "Title")]

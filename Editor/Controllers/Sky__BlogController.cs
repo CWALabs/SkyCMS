@@ -16,21 +16,52 @@ using Microsoft.AspNetCore.Authorization;
 using Cosmos.Common.Data;
 using Sky.Editor.Models.Blogs;
 using Sky.Editor.Data.Logic;
+using Sky.Editor.Services;
+using Sky.Editor.Services.Slugs; // if you place ISlugService elsewhere adjust
 
 namespace Sky.Editor.Controllers
 {
     [Authorize]
     [Route("editor/blogs")]
-    public class BlogController : Controller
+    public class Sky__BlogController : Controller
     {
         private readonly ApplicationDbContext db;
         private readonly ArticleEditLogic articleLogic;
-        private const int BlogPostArticleType = 2;
+        private readonly ISlugService slugService; // NEW
 
-        public BlogController(ApplicationDbContext db, ArticleEditLogic articleLogic)
+        public Sky__BlogController(
+            ApplicationDbContext db,
+            ArticleEditLogic articleLogic,
+            ISlugService slugService) // NEW
         {
             this.db = db;
             this.articleLogic = articleLogic;
+            this.slugService = slugService;
+        }
+
+        // Helper to create a unique blog key (slug) from a title
+        private async Task<string> GenerateUniqueBlogKeyAsync(string title)
+        {
+            // Reuse existing slug normalizer. Fall back if service returns empty.
+            var baseSlug = slugService.Normalize(title) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(baseSlug))
+                baseSlug = "blog";
+
+            // Trim to max length (64) before uniqueness suffixing
+            const int max = 64;
+            if (baseSlug.Length > max)
+                baseSlug = baseSlug[..max];
+
+            var candidate = baseSlug;
+            var i = 2;
+            while (await db.Blogs.AnyAsync(b => b.BlogKey == candidate))
+            {
+                var suffix = "-" + i;
+                var cut = Math.Min(baseSlug.Length, max - suffix.Length);
+                candidate = baseSlug[..cut] + suffix;
+                i++;
+            }
+            return candidate;
         }
 
         [HttpGet("")]
@@ -62,6 +93,12 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> Create(BlogStreamViewModel model)
         {
             if (!ModelState.IsValid) return View("Create", model);
+
+            // Auto-generate if user left it blank
+            if (string.IsNullOrWhiteSpace(model.BlogKey))
+            {
+                model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title ?? "blog");
+            }
 
             var exists = await db.Blogs.AnyAsync(b => b.BlogKey == model.BlogKey);
             if (exists)
@@ -118,6 +155,7 @@ namespace Sky.Editor.Controllers
             var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
             if (blog == null) return NotFound();
 
+            // Do NOT silently regenerate BlogKey on title change (stability principle)
             var duplicateKey = await db.Blogs.AnyAsync(b => b.BlogKey == model.BlogKey && b.Id != id);
             if (duplicateKey)
             {
@@ -131,7 +169,7 @@ namespace Sky.Editor.Controllers
                 foreach (var d in oldDefaults) d.IsDefault = false;
             }
 
-            blog.BlogKey = model.BlogKey;
+            blog.BlogKey = model.BlogKey; // user-chosen or previously generated
             blog.Title = model.Title;
             blog.Description = model.Description;
             blog.HeroImage = model.HeroImage ?? string.Empty;
@@ -260,7 +298,7 @@ namespace Sky.Editor.Controllers
                 .OrderByDescending(a => a.VersionNumber)
                 .FirstOrDefaultAsync(a => a.ArticleNumber == articleVm.ArticleNumber);
 
-            entity.ArticleType = BlogPostArticleType;
+            entity.ArticleType = (int)ArticleType.BlogPost;
             entity.Introduction = model.Introduction ?? string.Empty;
             entity.Content = model.Content ?? entity.Content;
             entity.BannerImage = model.BannerImage ?? string.Empty;
@@ -374,7 +412,10 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> GenericBlogPage(string blogKey)
         {
             var blog = await db.Blogs.FirstOrDefaultAsync(b => b.BlogKey == blogKey);
-            if (blog == null) return NotFound();
+            if (blog == null)
+            {
+                return NotFound();
+            }
 
             var posts = await db.ArticleCatalog
                 .Where(c => c.BlogKey == blogKey)

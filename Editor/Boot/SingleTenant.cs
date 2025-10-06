@@ -128,8 +128,17 @@ namespace Sky.Editor.Boot
             if (option.Value.SiteSettings.AllowSetup)
             {
                 using var context = new ApplicationDbContext(connectionString);
-                var t = context.Database.EnsureCreatedAsync();
-                t.Wait();
+
+                if (context.Database.IsCosmos())
+                {
+                    // EnsureCreated is necessary for Cosmos DB to create the database and containers.
+                    // It does not support migrations.
+                    context.Database.EnsureCreatedAsync().Wait();
+                }
+                else
+                {
+                    context.Database.MigrateAsync().Wait();
+                }
             }
 
             // Add the DB context using this approach instead of AddDbContext.
