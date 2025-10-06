@@ -24,7 +24,6 @@ namespace Sky.Cms.Controllers
     using SixLabors.ImageSharp.Processing;
     using Sky.Cms.Models;
     using Sky.Cms.Services;
-    using Sky.Editor.Controllers;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models;
     using Sky.Editor.Services.CDN;

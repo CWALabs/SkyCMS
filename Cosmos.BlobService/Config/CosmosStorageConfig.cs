@@ -7,8 +7,6 @@
 
 namespace Cosmos.BlobService.Config
 {
-    using System.ComponentModel.DataAnnotations;
-
     /// <summary>
     ///     Cosmos configuration model.
     /// </summary>

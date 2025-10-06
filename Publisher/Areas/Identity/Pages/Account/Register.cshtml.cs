@@ -5,11 +5,8 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Cosmos.Common.Data;
 using Cosmos.EmailServices;
 using Microsoft.AspNetCore.Authentication;
@@ -21,7 +18,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Cosmos.Cms.Areas.Identity.Pages.Account
 {

@@ -16,7 +16,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Cms.Data;
     using Cosmos.Common.Data;
-    using Cosmos.DynamicConfig;
     using Cosmos.Editor.Services;
     using Cosmos.EmailServices;
     using Microsoft.AspNetCore.Authentication;
@@ -32,7 +31,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
-    using NUglify.Helpers;
 
     /// <summary>
     /// Register page model.

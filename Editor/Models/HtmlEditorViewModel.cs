@@ -44,7 +44,7 @@ namespace Sky.Cms.Models
             Content = model.Content;
             Updated = model.Updated;
             BannerImage = model.BannerImage;
-            IsBlogPost = model.IsBlogPost;
+            ArticleType = model.ArticleType;
             Category = model.Category;
             Introduction = model.Introduction;
         }
@@ -127,9 +127,9 @@ namespace Sky.Cms.Models
         public bool UpdateExisting { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether this is a blog post.
+        /// Gets or sets a value indicating whether this article is a blog post.
         /// </summary>
-        public bool IsBlogPost { get; set; }
+        public ArticleType ArticleType { get; set; } = ArticleType.General;
 
         /// <summary>
         /// Gets or sets blog category.

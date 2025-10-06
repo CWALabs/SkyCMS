@@ -11,7 +11,6 @@ namespace Sky.Cms.Hubs
     using System.Threading.Tasks;
     using Sky.Cms.Models;
     using Cosmos.Common.Services;
-    using Cosmos.Editor.Services;
     using Microsoft.AspNetCore.SignalR;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;

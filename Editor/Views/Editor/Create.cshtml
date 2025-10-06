@@ -80,14 +80,20 @@
                         </div>
                     </div>
 
+                    <div class="form-group mb-3">
+                        <label asp-for="ArticleType" class="form-label">Article Type</label>
+                        <select asp-for="ArticleType"
+                                class="form-select"
+                                asp-items="Html.GetEnumSelectList<ArticleType>()">
+                            <option value="">-- Select Article Type --</option>
+                        </select>
+                        <span asp-validation-for="ArticleType" class="text-danger"></span>
+                    </div>
+
                     <div class="form-group">
                         <button type="button" id="previewBtn" style="display:none" class="btn btn-primary" onclick="openPreview()">Full Page Preview</button>
                     </div>
 
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" asp-for="IsBlogPost" />
-                        <label class="form-check-label" asp-for="IsBlogPost">Is Blog Post?</label>
-                    </div>
                     <div id="blogFields" style="display:none;">
                         <div class="mb-3">
                             <label asp-for="Category" class="form-label">Category</label>
@@ -203,12 +209,10 @@
     var a = "\"";
     var b = "'";
     const reservedPaths = [@Html.Raw(string.Join(',', reservedPaths.Select(s => "\"" + s.Replace("\"","\'") + "\"")))];
-
     const modalAlert = new bootstrap.Modal(document.getElementById('modalAlert'));
 
     $("#frmCreate").submit(function (e) {
         var validTitle = validateTitle($("#Title").val());
-
         if (validTitle) {
             sessionStorage.setItem("sessionTitle", "");
             sessionStorage.setItem("templateId", "");
@@ -224,9 +228,8 @@
             return false;
         }
         var isValid = true;
-        //
-        if (title.indexOf(",") > -1 || 
-        title.indexOf(".") > -1 ||
+        if (title.indexOf(",") > -1 ||
+            title.indexOf(".") > -1 ||
             title.indexOf("'") > -1 ||
             title.indexOf("\"") > -1 ||
             title.indexOf("#") > -1 ||
@@ -256,7 +259,6 @@
                     return false;
                 }
             }
-
         });
         return isValid;
     }
@@ -273,7 +275,6 @@
     });
 
     $(".gridCheckBox").on("change", function () {
-
         const templateId = $(this).attr('data-ccms-tid');
         const isChecked = $(this).prop('checked');
         setTemplate("");
@@ -326,10 +327,17 @@
 
     $(document).ready(function(){
         toggleBlogFields();
-        $("#IsBlogPost").change(toggleBlogFields);
+        $("#ArticleType").change(toggleBlogFields);
     });
+
     function toggleBlogFields(){
-        if($("#IsBlogPost").is(':checked')){ $('#blogFields').show(); } else { $('#blogFields').hide(); }
+        // Adjust the comparison value ("BlogPost") to match your enum/string value for a blog article.
+        const val = $("#ArticleType").val();
+        if(val === "BlogPost"){
+            $('#blogFields').show();
+        } else {
+            $('#blogFields').hide();
+        }
     }
 </script>
 @{

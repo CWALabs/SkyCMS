@@ -148,7 +148,7 @@ namespace Sky.Cms.Models
         /// <summary>
         /// Gets or sets a value indicating whether this article is a blog post.
         /// </summary>
-        public bool IsBlogPost { get; set; }
+        public ArticleType ArticleType { get; set; } = ArticleType.General;
 
         /// <summary>
         /// Gets or sets blog category.

@@ -9,7 +9,6 @@ namespace Sky.Cms.Controllers
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
@@ -660,7 +659,7 @@ namespace Sky.Cms.Controllers
                 }
 
                 var article = await articleLogic.CreateArticle(model.Title, Guid.Parse(await GetUserId()), model.TemplateId);
-                article.IsBlogPost = model.IsBlogPost;
+                article.ArticleType = model.ArticleType;
                 article.Category = model.Category ?? string.Empty;
                 article.Introduction = model.Introduction ?? string.Empty;
                 await articleLogic.SaveArticle(article, Guid.Parse(await GetUserId()));
@@ -1265,12 +1264,6 @@ namespace Sky.Cms.Controllers
                         case "Path":
                             query = query.OrderByDescending(o => o.Path);
                             break;
-                        case "CosmosRequired":
-                            query = query.OrderByDescending(o => o.CosmosRequired);
-                            break;
-                        case "Notes":
-                            query = query.OrderByDescending(o => o.Notes);
-                            break;
                     }
                 }
             }
@@ -1321,32 +1314,6 @@ namespace Sky.Cms.Controllers
         }
 
         /// <summary>
-        /// Creates a new reserved path.
-        /// </summary>
-        /// <param name="model">Reserved path model.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [HttpPost]
-        public async Task<IActionResult> CreateReservedPath(ReservedPath model)
-        {
-            ViewData["Title"] = "Create a Reserved Path";
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    await articleLogic.SaveReservedPath(model);
-                    return RedirectToAction("ReservedPaths");
-                }
-                catch (Exception e)
-                {
-                    ModelState.AddModelError("Path", e.Message);
-                }
-            }
-
-            return View("~/Views/Editor/EditReservedPath.cshtml", model);
-        }
-
-        /// <summary>
         /// Edit a reserved path.
         /// </summary>
         /// <param name="id">Path ID.</param>
@@ -1370,57 +1337,6 @@ namespace Sky.Cms.Controllers
             }
 
             return View(path);
-        }
-
-        /// <summary>
-        /// Edit an existing reserved path.
-        /// </summary>
-        /// <param name="model">Reserved path model.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [HttpPost]
-        public async Task<IActionResult> EditReservedPath(ReservedPath model)
-        {
-            ViewData["Title"] = "Edit Reserved Path";
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    await articleLogic.SaveReservedPath(model);
-                    return RedirectToAction("ReservedPaths");
-                }
-                catch (Exception e)
-                {
-                    ModelState.AddModelError("Path", e.Message);
-                }
-            }
-
-            return View(model);
-        }
-
-        /// <summary>
-        /// Removes a reerved path.
-        /// </summary>
-        /// <param name="id">Path ID.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task<IActionResult> RemoveReservedPath(Guid id)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                await articleLogic.DeleteReservedPath(id);
-                return RedirectToAction("ReservedPaths");
-            }
-            catch (Exception e)
-            {
-                ModelState.AddModelError("Path", e.Message);
-            }
-
-            return RedirectToAction("ReservedPaths");
         }
 
         /// <summary>
@@ -1518,7 +1434,7 @@ namespace Sky.Cms.Controllers
 
             // Banner image
             article.BannerImage = model.BannerImage;
-            article.IsBlogPost = model.IsBlogPost;
+            article.ArticleType = model.ArticleType;
             article.Category = model.Category;
             article.Introduction = model.Introduction;
 

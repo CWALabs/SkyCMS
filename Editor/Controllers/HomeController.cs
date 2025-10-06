@@ -221,13 +221,7 @@ namespace Sky.Cms.Controllers
             // If yes, do NOT include headers that allow caching. 
             Response.Headers[HeaderNames.CacheControl] = "no-store";
 
-            if (string.IsNullOrEmpty(previewType))
-            {
-                ViewData["LoadEditList"] = true;
-                return View();
-            }
-
-            return View("~/Views/Home/Preview.cshtml");
+            return View();
         }
 
         /// <summary>

@@ -14,7 +14,6 @@ namespace Cosmos.Common.Metrics
     using Azure.Identity;
     using Azure.Monitor.Query;
     using Azure.Monitor.Query.Models;
-    using Azure.Storage.Blobs;
 
     /// <summary>
     /// Storage account metrics class.

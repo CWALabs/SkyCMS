@@ -8,11 +8,8 @@
 namespace Sky.Editor.Models
 {
     using System;
-    using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
     using Cosmos.Cms.Data;
-    using Sky.Editor.Models.GrapesJs;
-    using MailChimp.Net.Models;
 
     /// <summary>
     /// GrapesJs designer post data view model.

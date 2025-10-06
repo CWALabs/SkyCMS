@@ -5,9 +5,9 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Sky.Editor.Boot;
-using System.Reflection;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 

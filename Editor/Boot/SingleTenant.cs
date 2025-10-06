@@ -42,7 +42,15 @@ namespace Sky.Editor.Boot
     using Sky.Cms.Hubs;
     using Sky.Cms.Services;
     using Sky.Editor.Data.Logic;
+    using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services;
+    using Sky.Editor.Services.Html;
+    using Sky.Editor.Services.Catalog;
+    using Sky.Editor.Services.Publishing;
+    using Sky.Editor.Services.Titles;
+    using Sky.Editor.Services.Redirects;
+    using Sky.Editor.Services.Slugs;
+    using Sky.Editor.Domain.Events;
 
     /// <summary>
     /// Boots up the multi-tenant editor.
@@ -132,6 +140,15 @@ namespace Sky.Editor.Boot
 
             // This service has to appear right after DB Context.
             builder.Services.AddTransient<IEditorSettings, EditorSettings>();
+            builder.Services.AddTransient<IClock, SystemClock>();
+            builder.Services.AddTransient<ISlugService, SlugService>();
+            // Register required services for ArticleEditLogic
+            builder.Services.AddTransient<IArticleHtmlService, ArticleHtmlService>();
+            builder.Services.AddTransient<ICatalogService, CatalogService>();
+            builder.Services.AddTransient<IPublishingService, PublishingService>();
+            builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
+            builder.Services.AddTransient<IRedirectService, RedirectService>();
+            builder.Services.AddHttpContextAccessor();
 
             // Add Cosmos Identity here
             builder.Services.AddCosmosIdentity<ApplicationDbContext, IdentityUser, IdentityRole, string>(
@@ -327,6 +344,10 @@ namespace Sky.Editor.Boot
                     options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                     options.QueueLimit = 2;
                 }));
+
+            // Register DomainEventDispatcher as the implementation for IDomainEventDispatcher using DI, resolving handlers from the service provider.
+            builder.Services.AddTransient<IDomainEventDispatcher>(sp =>
+                new DomainEventDispatcher(type => sp.GetServices(type)));
 
             var app = builder.Build();
 

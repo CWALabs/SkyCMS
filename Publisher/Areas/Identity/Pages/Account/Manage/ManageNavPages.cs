@@ -5,8 +5,6 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-using System;
-using System.IO;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Cosmos.Cms.Areas.Identity.Pages.Account.Manage

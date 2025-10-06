@@ -10,12 +10,8 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Services;
-    using Cosmos.DynamicConfig;
-    using Cosmos.Editor.Boot;
-    using Cosmos.EmailServices;
     using Microsoft.AspNetCore.Authentication;
     using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.Identity.UI.Services;
     using Microsoft.AspNetCore.Mvc;
@@ -30,7 +26,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
     using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
 
     /// <summary>

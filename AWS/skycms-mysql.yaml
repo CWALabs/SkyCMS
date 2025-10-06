@@ -255,13 +255,12 @@ Parameters:
   # Hostnames and TLS
   EditorHostName:
     Type: String
-    Default: editor.example.com
-    Description: Fully qualified host name for the Editor (e.g., editor.example.com)
+    Default: ''
+    Description: Optional fully qualified host name for the Editor (e.g., editor.example.com). Leave blank to use CloudFront domain only.
   PublisherHostName:
     Type: String
     Default: ''
-    Description: Optional fully qualified host name for the Publisher (e.g.,
-      www.example.com). If blank, default action serves Publisher.
+    Description: Optional fully qualified host name for the Publisher (e.g., www.example.com). Leave blank to use CloudFront domain only.
   RedirectHttpToHttps:
     Type: String
     AllowedValues:
@@ -544,7 +543,10 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-        - !If [UseHTTPS, {IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0}, !Ref 'AWS::NoValue']
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -698,7 +700,8 @@ Resources:
       Port: 80
       Protocol: HTTP
       DefaultActions:
-        - !If [RedirectToHTTPS, {Type: redirect, RedirectConfig: {Protocol: HTTPS, Port: '443', StatusCode: HTTP_301}}, {Type: forward, TargetGroupArn: !Ref PublisherTargetGroup}]
+        - Type: forward
+          TargetGroupArn: !Ref PublisherTargetGroup
 
   HttpsListener:
     Condition: UseHTTPS
@@ -778,31 +781,31 @@ Resources:
           TargetGroupArn: !Ref PublisherTargetGroup
 
   HttpEditorRule:
-    Condition: CreateHttpRules
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       ListenerArn: !Ref HttpListener
       Priority: 10
       Conditions:
-        - Field: host-header
-          HostHeaderConfig:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
             Values:
-              - !If [!Equals [!Ref EditorHostName, ''], editor-fallback.example.com, !Ref EditorHostName]
+              - editor
       Actions:
         - Type: forward
           TargetGroupArn: !Ref EditorTargetGroup
 
   HttpPublisherRule:
-    Condition: CreateHttpRulesAndPublisher
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       ListenerArn: !Ref HttpListener
       Priority: 20
       Conditions:
-        - Field: host-header
-          HostHeaderConfig:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
             Values:
-              - !If [UsePublisherHostName, !Ref PublisherHostName, unused.example.com]
+              - publisher
       Actions:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
@@ -814,10 +817,11 @@ Resources:
       ListenerArn: !Ref HttpsListener
       Priority: 10
       Conditions:
-        - Field: host-header
-          HostHeaderConfig:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
             Values:
-              - !If [!Equals [!Ref EditorHostName, ''], editor-fallback.example.com, !Ref EditorHostName]
+              - editor
       Actions:
         - Type: forward
           TargetGroupArn: !Ref EditorTargetGroup
@@ -829,10 +833,11 @@ Resources:
       ListenerArn: !Ref HttpsListener
       Priority: 20
       Conditions:
-        - Field: host-header
-          HostHeaderConfig:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: x-sky-app
             Values:
-              - !If [UsePublisherHostName, !Ref PublisherHostName, unused.example.com]
+              - publisher
       Actions:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
@@ -960,7 +965,7 @@ Resources:
             - Name: ASPNETCORE_URLS
               Value: http://+:8080
             - Name: CosmosPublisherUrl
-              Value: !If [UsePublisherHostName, !If [UseHTTPS, !Sub 'https://${PublisherHostName}', !Sub 'http://${PublisherHostName}'], !Sub 'https://${PublisherDistribution.DomainName}']
+              Value: !Sub 'https://${PublisherDistribution.DomainName}'
             - Name: AzureBlobStorageEndPoint
               Value: /
             - Name: CosmosSendGridApiKey

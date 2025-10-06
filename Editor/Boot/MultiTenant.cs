@@ -37,7 +37,6 @@ namespace Cosmos.Editor.Boot
     using Sky.Cms.Hubs;
     using Sky.Cms.Services;
     using Sky.Editor.Data.Logic;
-    using Sky.Editor.Services.CDN;
 
     /// <summary>
     ///  Creates a multi-tenant web application.

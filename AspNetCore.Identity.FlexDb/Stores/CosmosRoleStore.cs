@@ -1,5 +1,4 @@
 ﻿using AspNetCore.Identity.FlexDb.Contracts;
-using Duende.IdentityServer.EntityFramework.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;

@@ -9,57 +9,77 @@ namespace Cosmos.Common.Models
 {
     using System;
     using System.ComponentModel.DataAnnotations;
+    using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Options;
 
     /// <summary>
-    ///     Article view model, used to display content on a web page.
+    /// View model used to render an article (page, blog post, or specialized content) within Razor Pages.
+    /// This model is the aggregation point of content (HTML), metadata (Open Graph, SEO),
+    /// publishing lifecycle state (status, version, temporal boundaries), layout selection,
+    /// and runtime behavioral flags (authoring vs. public rendering).
     /// </summary>
+    /// <remarks>
+    /// Typical usage:
+    /// <list type="bullet">
+    ///   <item>Loaded by a page handler or service layer when resolving a URL to content.</item>
+    ///   <item>Used to determine cache lifetime (via <see cref="Expires"/> / <see cref="CacheDuration"/>).</item>
+    ///   <item>Supports conditional editing surfaces when <see cref="ReadWriteMode"/> or <see cref="EditModeOn"/> are true.</item>
+    ///   <item>Allows client-side enrichment via injected HEAD / footer JavaScript blocks.</item>
+    /// </list>
+    /// Thread-safety: Instances are not thread-safe; treat as per-request scope DTO.
+    /// </remarks>
     [Serializable]
     public class ArticleViewModel
     {
         /// <summary>
-        ///     Gets or sets entity key for the article.
+        /// Gets or sets the stable unique identifier of the article (primary key).
         /// </summary>
         [Key]
         public Guid Id { get; set; }
 
         /// <summary>
-        ///     Gets or sets status code of the article.
+        /// Gets or sets the workflow / publication status of the article.
+        /// Controls visibility and routing behavior (e.g., <see cref="StatusCodeEnum.Redirect"/>).
         /// </summary>
         public StatusCodeEnum StatusCode { get; set; }
 
         /// <summary>
-        ///     Gets or sets article number.
+        /// Gets or sets the logical article number (business-facing sequence or grouping id).
+        /// Used in version lineage and uniqueness validations (see <see cref="Title"/> remote validation).
         /// </summary>
         public int ArticleNumber { get; set; }
 
         /// <summary>
-        ///     Gets or sets iSO language code of this article.
+        /// Gets or sets the ISO two-letter language code (e.g., en, fr, es) describing content locale.
+        /// Defaults to "en". Used for localization, routing, or language negotiation.
         /// </summary>
         public string LanguageCode { get; set; } = "en";
 
         /// <summary>
-        ///     Gets or sets language name.
+        /// Gets or sets the human friendly language display name (e.g., English, Français).
         /// </summary>
         public string LanguageName { get; set; } = "English";
 
         /// <summary>
-        ///     Gets or sets url of this page.
+        /// Gets or sets the relative URL path (slug) for this article (minus protocol/host).
+        /// Must be unique per language/versioning rules.
         /// </summary>
         [MaxLength(128)]
         [StringLength(128)]
         public string UrlPath { get; set; }
 
         /// <summary>
-        ///     Gets or sets version number of this article.
+        /// Gets or sets the sequential version number of the article (1 = first revision).
+        /// Incremented on content updates preserving immutable history when applicable.
         /// </summary>
         [Display(Name = "Article version")]
         public int VersionNumber { get; set; }
 
         /// <summary>
-        ///     Gets or sets article title.
+        /// Gets or sets the article title (display heading / primary semantic H1).
+        /// Remote validation ensures uniqueness within the <see cref="ArticleNumber"/> scope.
         /// </summary>
         [MaxLength(80)]
         [StringLength(80)]
@@ -68,42 +88,49 @@ namespace Cosmos.Common.Models
         public string Title { get; set; }
 
         /// <summary>
-        ///     Gets or sets hTML Content of the page.
+        /// Gets or sets the fully prepared (already sanitized/encoded as per pipeline) HTML body content.
+        /// May contain embedded components or server-side tokens depending on system capabilities.
         /// </summary>
         [DataType(DataType.Html)]
         public string Content { get; set; }
 
         /// <summary>
-        /// Gets or sets javaScript block injected into HEAD for this particular page (article).
+        /// Gets or sets optional custom JavaScript (raw) injected into the page HEAD.
+        /// Use sparingly—prefer bundling / static assets where possible.
         /// </summary>
         [DataType(DataType.Html)]
         public string HeadJavaScript { get; set; }
 
         /// <summary>
-        ///     Gets or sets javaScript block injected into the footer.
+        /// Gets or sets optional custom JavaScript (raw) injected just before closing BODY tag.
+        /// Suitable for deferred execution scripts or page-level enhancements.
         /// </summary>
         [DataType(DataType.Html)]
         public string FooterJavaScript { get; set; }
 
         /// <summary>
-        ///     Gets or sets layout used by this page.
+        /// Gets or sets the layout applied to this article (template container defining chrome).
+        /// When null, system default resolution heuristics may apply.
         /// </summary>
         public LayoutViewModel Layout { get; set; }
 
         /// <summary>
-        ///     Gets or sets date and time of when this article was last updated.
+        /// Gets or sets the last persisted modification timestamp (UTC or offset aware).
+        /// Value is updated upon save operations (content or metadata).
         /// </summary>
         [Display(Name = "Article last saved")]
         public virtual DateTimeOffset Updated { get; set; }
 
         /// <summary>
-        ///    Gets or sets information about the editor or author who created the article.
+        /// Gets or sets descriptive information about the article's author/editor (e.g., byline).
+        /// Can include plain text or light markup depending on rendering policies.
         /// </summary>
         [Display(Name = "Author information")]
         public virtual string AuthorInfo { get; set; } = string.Empty;
 
         /// <summary>
-        ///     Gets or sets date and time of when this was published.
+        /// Gets or sets the scheduled publish timestamp.
+        /// Article should not be publicly visible (unless previewed) before this instant.
         /// </summary>
         [Display(Name = "Publish on date/time (PST):")]
         [DataType(DataType.DateTime)]
@@ -111,81 +138,100 @@ namespace Cosmos.Common.Models
         public virtual DateTimeOffset? Published { get; set; }
 
         /// <summary>
-        ///     Gets or sets if set, is the date/time when this version of the article expires.
+        /// Gets or sets the time when this version should expire (stop serving from normal routes).
+        /// If null, caching / expiry may defer to global defaults or no-expiration semantics.
         /// </summary>
-        /// <remarks>
-        ///     This is calculated based on either this article's expiration date, or, the default cache duration set as a <see cref="DateTimeOffset"/>.
-        /// </remarks>
         [Display(Name = "Expires on (UTC):")]
         [DataType(DataType.DateTime)]
         public virtual DateTimeOffset? Expires { get; set; }
 
         /// <summary>
-        ///     Gets or sets a value indicating whether indicates if this is in authoring (true) or publishing (false) mode, Default is false.
+        /// Gets or sets a value indicating whether the site is currently in authoring (read/write) mode.
+        /// Typically reflects a global flag injected via <see cref="IOptions{TOptions}"/>.
         /// </summary>
-        /// <remarks>
-        ///     Is the value set by SiteSettings.ReadWriteMode which
-        ///     is set in Startup and injected into controllers using <see cref="IOptions{TOptions}" />.
-        /// </remarks>
         public bool ReadWriteMode { get; set; } = false;
 
         /// <summary>
-        ///     Gets or sets a value indicating whether indicates is page is in preview model. Default is false.
+        /// Gets or sets a value indicating whether the article is being rendered in preview (pre-publication) mode.
+        /// Enables display of unpublished / future-dated content to authorized users.
         /// </summary>
         public bool PreviewMode { get; set; } = false;
 
         /// <summary>
-        ///     Gets or sets a value indicating whether indicates if page is in edit, or authoring mode. Default is false.
+        /// Gets or sets a value indicating whether editing affordances (inline editors, toolbars) should be displayed.
+        /// True typically requires both <see cref="ReadWriteMode"/> and suitable user permissions.
         /// </summary>
         public bool EditModeOn { get; set; } = false;
 
         /// <summary>
-        ///     Gets or sets cache during for this article.
+        /// Gets or sets the effective cache duration in seconds derived from expiration or system defaults.
+        /// A value of 0 may indicate no explicit caching policy is applied.
         /// </summary>
-        /// <remarks>
-        /// Calculated using the expires value (if present).
-        /// </remarks>
         public int CacheDuration { get; set; } = 0;
 
         /// <summary>
-        /// Gets or sets article banner image.
+        /// Gets or sets the path or URL to the banner image associated with the article (hero / header image).
+        /// Empty string when not set.
         /// </summary>
         public string BannerImage { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the open graph image.
+        /// Gets or sets the Open Graph image (og:image) override improving social media link previews.
+        /// Fallback may be site default if left empty.
         /// </summary>
         public string OGImage { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the open graph description.
+        /// Gets or sets the Open Graph description (og:description) to enhance sharing snippets.
+        /// Should be concise (typically 140–200 characters).
         /// </summary>
         public string OGDescription { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the open graph URL.
+        /// Gets or sets the canonical Open Graph URL (og:url) representing this resource.
+        /// When empty, runtime generation may supply current route.
         /// </summary>
         public string OGUrl { get; set; } = string.Empty;
 
-        // Blog navigation (not persisted)
+        /// <summary>
+        /// Gets or sets the previous article's title in a navigable sequence (e.g., blog archive).
+        /// Runtime only (not persisted).
+        /// </summary>
         public string PreviousTitle { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the previous article's URL path in a navigable sequence.
+        /// Runtime only (not persisted).
+        /// </summary>
         public string PreviousUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the next article's title in a navigable sequence (e.g., blog archive).
+        /// Runtime only (not persisted).
+        /// </summary>
         public string NextTitle { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the next article's URL path in a navigable sequence.
+        /// Runtime only (not persisted).
+        /// </summary>
         public string NextUrl { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets a value indicating whether article is a blog post.
-        /// </summary>
-        public bool IsBlogPost { get; set; }
-
-        /// <summary>
-        /// Gets or sets blog category (if a blog post).
+        /// Gets or sets the blog category or taxonomy label. Empty when not categorized or not a blog.
         /// </summary>
         public string Category { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets article introduction/summary.
+        /// Gets or sets a short summary or introduction (excerpt) used in listings, teasers, or meta descriptions.
+        /// Recommended: keep concise and avoid raw HTML beyond minimal inline markup.
         /// </summary>
         public string Introduction { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the semantic classification of this article (e.g., General, BlogPost).
+        /// Guides template selection, routing, filtering and analytics grouping.
+        /// </summary>
+        public ArticleType ArticleType { get; set; } = ArticleType.General;
     }
 }

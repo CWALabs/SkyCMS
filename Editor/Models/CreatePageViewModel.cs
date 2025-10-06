@@ -11,6 +11,7 @@ namespace Sky.Cms.Models
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
     using Cosmos.Cms.Data;
+    using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Mvc.Rendering;
 
     /// <summary>
@@ -56,10 +57,7 @@ namespace Sky.Cms.Models
         /// </summary>
         public List<SelectListItem> Templates { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether the new page is a blog post.
-        /// </summary>
-        public bool IsBlogPost { get; set; } = false;
+        public ArticleType ArticleType { get; set; } = ArticleType.General;
 
         /// <summary>
         /// Gets or sets blog category.

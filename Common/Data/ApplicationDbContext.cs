@@ -245,6 +245,15 @@ namespace Cosmos.Common.Data
         }
 
         /// <summary>
+        ///     Determine if this service is configured.
+        /// </summary>
+        /// <returns>Indicates if context is configured and can connect.</returns>
+        public async Task<bool> IsConfigured()
+        {
+            return await this.Database.CanConnectAsync();
+        }
+
+        /// <summary>
         /// Determine if a Cosmos DB database exists.
         /// </summary>
         /// <param name="client">Cosmos DB client.</param>
@@ -266,15 +275,6 @@ namespace Cosmos.Common.Data
             }
 
             return false;
-        }
-
-        /// <summary>
-        ///     Determine if this service is configured.
-        /// </summary>
-        /// <returns>Indicates if context is configured and can connect.</returns>
-        public async Task<bool> IsConfigured()
-        {
-            return await this.Database.CanConnectAsync();
         }
 
         /// <summary>

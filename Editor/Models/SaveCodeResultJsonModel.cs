@@ -8,8 +8,6 @@
 namespace Sky.Cms.Models
 {
     using System.Collections.Generic;
-    using Azure.ResourceManager;
-    using Sky.Editor.Controllers;
     using Microsoft.AspNetCore.Mvc.ModelBinding;
 
     /// <summary>

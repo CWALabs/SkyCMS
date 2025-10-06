@@ -21,7 +21,6 @@ namespace Cosmos.Common
     using Microsoft.AspNetCore.RateLimiting;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
-    using Microsoft.PowerBI.Api.Models;
 
     /// <summary>
     /// Methods common to both the editor and publisher home controllers.
