@@ -112,15 +112,15 @@
       },
       "AWSSDK.Core": {
         "type": "Transitive",
-        "resolved": "4.0.0.30",
-        "contentHash": "VKyTzOCcOTiDWNsLdJupLsHzwtlET2cM+bsEn/7jv/J31SxYA1g2fePHnYlb7TvdhHLUNSekZiuAyotPQISveA=="
+        "resolved": "4.0.0.32",
+        "contentHash": "n6F8wdQA0ss0rxEUivp5U3L2RRmU1KLIUCmPEFwPsyIiUPS/XtsPaN4W3Ru09p7C9RCghbqmHLQchMARwGpfgQ=="
       },
       "AWSSDK.S3": {
         "type": "Transitive",
-        "resolved": "4.0.7.5",
-        "contentHash": "mEWoNz5PqNKBJ5vcOhleCjifHIj6Z5AzAz2kgfYmIT8K/E9AnWJ09voXfjF/aQWFyWKe4+dxu6wyZn5l4asdhg==",
+        "resolved": "4.0.7.7",
+        "contentHash": "weqERmihe8yL2pirRjtbOvCOcRd+W61i28IIso0RoJZNu+ImWjB57fCz+8WHk+0T8e4YgnS0iLYkgpNiNJBAVA==",
         "dependencies": {
-          "AWSSDK.Core": "[4.0.0.30, 5.0.0)"
+          "AWSSDK.Core": "[4.0.0.32, 5.0.0)"
         }
       },
       "Azure.Core": {
@@ -1455,7 +1455,7 @@
       "cosmos.blobservice": {
         "type": "Project",
         "dependencies": {
-          "AWSSDK.S3": "[4.0.7.5, )",
+          "AWSSDK.S3": "[4.0.7.7, )",
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.1, )",
           "Azure.Identity": "[1.16.0, )",
           "Azure.Storage.Files.Shares": "[12.23.0, )",
@@ -1465,7 +1465,7 @@
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.CosmosDb": "[9.0.16.3, )",
+          "AspNetCore.Identity.CosmosDb": "[9.0.16.4, )",
           "Microsoft.AspNetCore.Http.Abstractions": "[2.3.0, )",
           "Microsoft.EntityFrameworkCore": "[9.0.9, )",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.9, )",
