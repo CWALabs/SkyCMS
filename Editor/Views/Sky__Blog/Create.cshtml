@@ -2,23 +2,28 @@
 @{
     ViewData["Title"] = "Create Blog Stream";
 }
-<h2>Create Blog Stream</h2>
-<div class="container">
-    <div class="row align-content-center">
-        <div class="col-md-6 text-light">
-            <form asp-action="Create" method="post" id="createBlogForm" novalidate>
-                <div class="mb-3">
-                    <label asp-for="BlogKey" class="form-label">What is the name of your blog?</label>
-                    <input asp-for="BlogKey" class="form-control" autocomplete="off" aria-describedby="blogKeyHelp blogKeyFeedback" />
-                    <div id="blogKeyHelp" class="form-text">
-                        Tips: Use a short, descriptive title (3–60 chars). Letters, numbers, and hyphens only. Avoid special characters and extra words like "the", "a", "my".
+<div class="cwps-editor-container pt-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-light mb-3">
+                <h3>Create a Blog</h3>
+                <form asp-action="Create" method="post" id="createBlogForm" novalidate>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Blog Title: </span>
+                        <input asp-for="BlogKey" class="form-control" autocomplete="off" aria-describedby="blogKeyHelp blogKeyFeedback" />
+                        <button type="submit" class="btn btn-primary">Create</button>
+                        <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
                     </div>
-                    <div id="blogKeyFeedback" class="mt-1 small" aria-live="polite"></div>
                     <span asp-validation-for="BlogKey" class="text-danger"></span>
-                </div>
-                <button type="submit" class="btn btn-primary">Create</button>
-                <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
-            </form>
+                    <div class="mb-3">
+                        <div id="blogKeyHelp" class="form-text">
+                            Tips: Use a short, descriptive title (3–60 chars). Letters, numbers, and hyphens only. Avoid special characters and extra words like "the", "a", "my".
+                        </div>
+                        <div id="blogKeyFeedback" class="mt-1 small" aria-live="polite"></div>
+                    </div>
+                    
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -192,9 +197,11 @@
         #blogKeyFeedback .btn-outline-secondary {
             line-height: 1;
         }
+
         input.is-valid {
             border-color: #198754;
         }
+
         input.is-invalid {
             border-color: #dc3545;
         }

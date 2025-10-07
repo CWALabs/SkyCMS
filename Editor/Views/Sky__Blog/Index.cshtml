@@ -1,27 +1,162 @@
 @model IEnumerable<Sky.Editor.Models.Blogs.BlogStreamViewModel>
+@using Cosmos.Cms.Common.Services.Configurations;
+@using Sky.Cms.Services
+@using Sky.Editor.Data.Logic
+@using Microsoft.Extensions.Options;
+@inject IEditorSettings options
 @{
-    ViewData["Title"] = "Blog Streams";
+    ViewData["Title"] = "Blog List";
 }
-<h2>Blog Streams</h2>
-<p><a class="btn btn-primary" href="@Url.Action("Create")">Create Blog Stream</a></p>
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>Blog Key</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var b in Model)
-    {
-        <tr>
-            <td>@b.BlogKey</td>
-            <td>
-                <a class="btn btn-sm btn-secondary" href="@Url.Action("Entries", new { blogKey = b.BlogKey })">Entries</a>
-                <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Edit", new { id = b.Id })">Edit</a>
-                <a class="btn btn-sm btn-outline-danger" href="@Url.Action("Delete", new { id = b.Id })">Delete</a>
-            </td>
-        </tr>
+<link href="~/lib/tabulator-tables/dist/css/tabulator_midnight.css" rel="stylesheet" />
+<script src="~/lib/luxon/luxon.min.js"></script>
+<script src="~/lib/tabulator-tables/dist/js/tabulator.min.js"></script>
+<script src="~/js/clipboard.min.js"></script>
+<style>
+    .fs-small {
+        font-size: 0.8em;
     }
-    </tbody>
-</table>
+</style>
+
+<div class="pt-3">
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h3 class="text-light">@ViewData["Title"]</h3>
+                <p></p>
+
+            </div>
+        </div>
+        <div class="row cpws-table-pager-row-top">
+            <div class="col-md-6">
+                <div class="btn-group" role="group" aria-label="Actions">
+                    <a class="btn btn-sm btn-primary" title="Create a new blog" href="@Url.Action("Create")">Create</a>
+                </div>
+            </div>
+            <div class="col-md-6 d-flex justify-content-end">
+            </div>
+        </div>
+        <div class="row bg-dark">
+            <div class="col-md-12">
+                <div id="pagelist-table" class="table-dark"></div>
+            </div>
+        </div>
+        <div class="row cpws-table-pager-row-bottom">
+            <div class="col-md-12 d-flex justify-content-center">
+                &nbsp;
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const tblHeight = window.innerHeight - 200;
+    let pageSize = Math.round(tblHeight / 50) + 1;
+
+    function openArticleVersions(e, cell) {
+        const data = cell.getRow().getData();
+        window.location.href = "editor/blogs/" + data.Id + "entries";
+    }
+
+    function dateFilterFunction(headerValue, rowValue, rowData, filterParams){
+        if (rowValue === null || rowValue === "") {
+            return false;
+        }
+        return headerValue === rowValue.split("T")[0]; //must return a boolean, true if it passes the filter.
+    }
+
+    const trashBtn = function(cell, formatterParams){
+        data = cell.getRow().getData();
+        if (data.IsDefault === true){
+            return "";
+        }
+        return "<a title='Send page to trash' href='/editor/blogs/" + data.Id + "/delete class='btn btn-sm btn-secondary'><i class='fa-solid fa-trash'></i></a>";
+    };
+
+    const menuBar = function(cell, formatterParams){
+        data = cell.getRow().getData();
+        let html = "<div class='btn-group btn-group-sm' role='group' aria-label='Page actions.'>";
+        html += html += "<a href='/Editor/Versions/" + data.ArticleNumber + "' title='Click to edit page.' class='btn btn-sm btn-success'><i class='fa-solid fa-pen-to-square'></i></a>";
+        let url = data.UrlPath;
+        if (url === "root") {
+            url = "";
+        }
+
+        if (data.LastPublished !== null && data.LastPublished !== ""){
+            html += "<a target='_blank' href='" + publisherUrl + "/" + url + "' title='Open page on website.'  class='btn btn-sm btn-secondary'><i class='fa-solid fa-arrow-up-right-from-square'></i></a>";
+        }
+        else
+        {
+            html += "<a title='Cannot open page on website until it is published.' onclick='alert(\"Cannot open page on website until it is published.\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-arrow-up-right-from-square'></i></a>";
+        }
+
+        if (data.IsDefault === true){
+            html += "<div title='Current home page.' class='btn btn-sm btn-primary'><i class='fa-solid fa-house'></i></div>";
+        }
+        else if (data.LastPublished !== null && data.LastPublished !== ""){
+            html += "<a href='/Editor/NewHome/" + data.ArticleNumber + "' title='Make this the new home page.' class='btn btn-sm btn-secondary'><i class='fa-solid fa-house'></i></a>";
+        }
+        else
+        {
+            html += "<a title='Cannot make this the new home page until it is published.' onclick='alert(\"Cannot make this the home until it is published.\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-house'></i></a>";
+        }
+
+        html += "<a class='btn btn-sm btn-secondary' title='Create a clone of this page' href='/Editor/Clone/" + data.ArticleNumber + "'><i class='fa-solid fa-copy'></i></a>";
+
+        if (data.LastPublished !== null && canEdit && data.IsDefault === false)
+        {
+            html += "<button onclick='unpublish(" + data.ArticleNumber + ")' title='Unpublishes a this item, and makes it no longer accessible except for editing.' class='btn btn-sm btn-secondary'><i class='fa-solid fa-calendar-xmark'></i></button>";
+        }html += "</div>";
+        return html;
+    };
+
+     const pageTable = new Tabulator("#pagelist-table", {
+        height:tblHeight + "px",
+        pagination:true, //enable pagination
+        paginationMode:"local", //enable local pagination
+        paginationSize:pageSize, //optional parameter to request a certain number of rows per page
+        persistence:{
+            sort: true, //persist column sorting
+            filter: true, //persist filters
+            headerFilter: true, //persist header filters
+            group: false, //persist row grouping
+            page: true, //persist page
+            columns: false, //persist columns
+        },
+        persistenceWriterFunc:function(id, type, data){
+            //id - tables persistence id
+            //type - type of data being persisted ("sort", "filter", "group", "page" or "columns")
+            //data - array or object of data
+            sessionStorage.setItem(id + "-" + type, JSON.stringify(data));
+        },
+        persistenceReaderFunc:function(id, type){
+            //id - tables persistence id
+            //type - type of data being persisted ("sort", "filter", "group", "page" or "columns")
+            var data = sessionStorage.getItem(id + "-" + type);
+            return data ? JSON.parse(data) : false;
+        },
+        layout:"fitColumns",
+        ajaxURL:"@Url.Action("GetBlogs")", //ajax URL
+        columns:[
+            {title:"Id", field:"Id", visible: false },
+            {title:"BlogKey", field:"BlogKey", visible: false },
+
+            {title:"Actions", field:"IsDefault", formatter:menuBar, width:176, headerSort:false },
+
+            {title:"Title", field:"Title", sorter:"string", headerFilter:"input", cellClick:openArticleVersions },
+
+            {title:"Description", field:"Description", sorter:"string", headerFilter:"input", cellClick:openArticleVersions },
+
+            {title: "Trash", field:"Description", formatter:trashBtn, width:56, headerSort:false, hozAlign:"center", headerHozAlign:"center" }
+
+        ],
+    });
+
+     $(document).ready(function () {
+
+        $("body").addClass("cwps-editor-container");
+
+        $(".toLocalTimeZone").each(function (index, element) {
+            $(element).html(getLocalTime($(element).html()));
+        });
+
+    });
+</script>
