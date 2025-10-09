@@ -30,21 +30,23 @@ namespace Cosmos.Common.Data
         /// Primary key (GUID). Generated on instantiation.
         /// </summary>
         [Key]
-        public Guid Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
         /// Stable identifier used for routing and association with articles
         /// (e.g. all articles where <c>Article.BlogKey == BlogKey</c> belong to this stream).
         /// Constraints: lowercase letters, digits, dash, underscore.
         /// </summary>
-        [Required, MaxLength(64)]
+        [Required]
+        [MaxLength(64)]
         [RegularExpression("^[a-z0-9-_]+$", ErrorMessage = "Lowercase letters, numbers, dash, underscore only.")]
         public string BlogKey { get; set; }
 
         /// <summary>
         /// Human readable title of the blog stream (e.g. "Engineering Updates").
         /// </summary>
-        [Required, MaxLength(128)]
+        [Required]
+        [MaxLength(128)]
         public string Title { get; set; }
 
         /// <summary>

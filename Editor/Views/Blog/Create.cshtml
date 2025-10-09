@@ -11,36 +11,22 @@
                 <form asp-action="Create" method="post" id="createBlogForm" novalidate enctype="multipart/form-data">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                    @Html.HiddenFor(m => m.HeroImage) <!-- Ensure no requirement; value can remain empty -->
+                    @* Hidden fields (no user entry for BlogKey; it’s derived from Title) *@
+                    <input type="hidden" asp-for="BlogKey" />
+                    @Html.HiddenFor(m => m.HeroImage)
 
                     <div class="input-group mb-3">
                         <span class="input-group-text">Title:</span>
-                        <input asp-for="Title" class="form-control" placeholder="e.g. Engineering Updates" />
+                        <input asp-for="Title" class="form-control" id="Title" placeholder="e.g. Engineering Updates" />
                     </div>
                     <span asp-validation-for="Title" class="text-danger"></span>
-
-                    <div class="input-group mb-3">
-                        <span class="input-group-text">Blog Key:</span>
-                        <input asp-for="BlogKey" class="form-control" autocomplete="off" aria-describedby="blogKeyHelp blogKeyFeedback" />
-                    </div>
-                    <span asp-validation-for="BlogKey" class="text-danger"></span>
-
-                    <div class="mb-3">
-                        <div id="blogKeyHelp" class="form-text">
-                            Tips: Use a short, descriptive key (3–60 chars). Lowercase letters, numbers, and hyphens only. Avoid reserved words.
-                        </div>
-                        <div id="blogKeyFeedback" class="mt-1 small" aria-live="polite"></div>
-                    </div>
+                    <div id="titleFeedback" class="form-text mb-2" aria-live="polite"></div>
 
                     <div class="input-group mb-3">
                         <span class="input-group-text">Description:</span>
-                        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Short description (max 512 chars)"></textarea>
+                        <textarea asp-for="Description" class="form-control" rows="5"  placeholder="Short description (max 512 chars)"></textarea>
                     </div>
                     <span asp-validation-for="Description" class="text-danger"></span>
-
-                    <div class="form-text mb-3">
-                        Hero image is optional. You can add or upload one after creating the blog.
-                    </div>
 
                     <div class="form-text mb-3">
                         <button id="btnSubmit" type="submit" class="btn btn-primary">Create</button>
@@ -53,5 +39,59 @@
 </div>
 
 @section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('createBlogForm');
+            const titleInput = document.getElementById('Title');
+            const titleFeedback = document.getElementById('titleFeedback');
+            const hiddenKey = document.getElementById('BlogKey');
+            const keyPattern = /^[a-z0-9-_]+$/;
+            const maxLen = 64;
+
+            form.addEventListener('submit', (e) => {
+                const title = (titleInput.value || '').trim();
+                if (!title) {
+                    e.preventDefault();
+                    titleFeedback.textContent = 'A title is required.';
+                    titleFeedback.classList.remove('text-success'); titleFeedback.classList.add('text-danger');
+                    titleInput.classList.add('is-invalid');
+                    return;
+                }
+
+                const candidate = slugify(title);
+                if (!candidate) {
+                    e.preventDefault();
+                    titleFeedback.textContent = 'Title cannot produce a valid key. Use letters and numbers.';
+                    titleFeedback.classList.remove('text-success'); titleFeedback.classList.add('text-danger');
+                    titleInput.classList.add('is-invalid');
+                    return;
+                }
+
+                titleInput.classList.remove('is-invalid');
+                hiddenKey.value = candidate; // let server keep/validate uniqueness
+            });
+
+            function slugify(text) {
+                if (!text) return '';
+                let s = text.toLowerCase().trim();
+                s = s.replace(/[\s.]+/g, '-');      // spaces/dots -> hyphen
+                s = s.replace(/[^a-z0-9-_]/g, '-'); // disallow others
+                s = s.replace(/[-_]{2,}/g, '-');    // collapse
+                s = s.replace(/^[-_]+|[-_]+$/g, ''); // trim ends
+                if (s.length > maxLen) s = s.substring(0, maxLen).replace(/[-_]+$/g, '');
+                if (!s || !keyPattern.test(s)) return '';
+                return s;
+            }
+
+            // Initial feedback
+            (function init() {
+                const t = (titleInput.value || '').trim();
+                const c = slugify(t);
+                titleFeedback.textContent = c ? `Will create key: ${c}` : '';
+                if (c) { titleFeedback.classList.add('text-success'); }
+            })();
+        })();
+    </script>
+
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 }

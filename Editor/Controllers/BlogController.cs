@@ -130,13 +130,13 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BlogStreamViewModel model)
         {
-            if (!ModelState.IsValid) return View("Create", model);
-
-            // Auto-generate if user left it blank
-            if (string.IsNullOrWhiteSpace(model.BlogKey))
+            if (!ModelState.IsValid)
             {
-                model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title ?? "blog");
+                return View("Create", model);
             }
+
+            // Auto-generate key
+            model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title ?? "blog");
 
             var exists = await db.Blogs.AnyAsync(b => b.BlogKey == model.BlogKey);
             if (exists)
@@ -150,7 +150,7 @@ namespace Sky.Editor.Controllers
             {
                 ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
                 return View("Create", model);
-            }
+            }            
 
             if (model.IsDefault)
             {
@@ -210,6 +210,9 @@ namespace Sky.Editor.Controllers
 
             var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
             if (blog == null) return NotFound();
+
+            // Auto-generate key based on title.
+            model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title ?? "blog");
 
             // Do NOT silently regenerate BlogKey on title change (stability principle)
             var duplicateKey = await db.Blogs.AnyAsync(b => b.BlogKey == model.BlogKey && b.Id != id);

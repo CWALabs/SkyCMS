@@ -3,21 +3,18 @@
     ViewData["Title"] = "Edit Blog Stream";
 }
 <h2>Edit Blog Stream</h2>
-<form asp-action="Edit" method="post" enctype="multipart/form-data">
+<form asp-action="Edit" method="post" enctype="multipart/form-data" id="editBlogForm">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
     <input type="hidden" asp-for="Id" />
+    @* Keep BlogKey hidden so it posts back unchanged *@
+    <input type="hidden" asp-for="BlogKey" />
 
     <div class="input-group mb-3">
         <span class="input-group-text">Title:</span>
-        <input asp-for="Title" class="form-control" placeholder="e.g. Engineering Updates" />
+        <input asp-for="Title" class="form-control" id="Title" placeholder="e.g. Engineering Updates" />
     </div>
     <span asp-validation-for="Title" class="text-danger"></span>
-
-    <div class="input-group mb-3">
-        <span class="input-group-text">Blog Key:</span>
-        <input asp-for="BlogKey" class="form-control" />
-    </div>
-    <span asp-validation-for="BlogKey" class="text-danger"></span>
 
     <div class="input-group mb-3">
         <span class="input-group-text">Description:</span>
@@ -30,7 +27,6 @@
         <span class="input-group-text">Hero Image URL (optional):</span>
         <input asp-for="HeroImage" class="form-control" placeholder="/images/hero.jpg or https://..." aria-required="false" />
     </div>
-    <!-- Keeping the validation span is harmless; with no [Required] it won't force validation -->
     <span asp-validation-for="HeroImage" class="text-danger"></span>
 
     <div class="input-group mb-2">
@@ -56,6 +52,21 @@
 @section Scripts {
     <script>
         (function () {
+            // Basic title presence check
+            const form = document.getElementById('editBlogForm');
+            const titleInput = document.getElementById('Title');
+            form.addEventListener('submit', (e) => {
+                const title = (titleInput.value || '').trim();
+                if (!title) {
+                    e.preventDefault();
+                    alert('A title is required.');
+                    titleInput.classList.add('is-invalid');
+                } else {
+                    titleInput.classList.remove('is-invalid');
+                }
+            });
+
+            // Image upload wiring
             const fileInput = document.getElementById('heroFile');
             const uploadBtn = document.getElementById('btnUpload');
             const urlInput = document.getElementById('HeroImage');
@@ -79,35 +90,25 @@
                     alert('Unsupported image format. Please select a web image (PNG, JPEG/JPG, GIF, WEBP, AVIF, APNG, SVG).');
                     return;
                 }
-
                 if (file.size > 25 * 1024 * 1024) {
                     alert('The image is too large. Maximum size is 25MB.');
                     return;
                 }
 
                 setBusy(true);
-
                 try {
-                    const form = new FormData();
-                    form.append('file', file);
+                    const formData = new FormData();
+                    formData.append('file', file);
 
                     const endpoint = `${uploadUrl}?id=${encodeURIComponent(blogId)}&entityType=blog`;
-                    const res = await fetch(endpoint, { method: 'POST', body: form });
-
-                    if (!res.ok) {
-                        throw new Error(`Upload failed (${res.status})`);
-                    }
+                    const res = await fetch(endpoint, { method: 'POST', body: formData });
+                    if (!res.ok) throw new Error(`Upload failed (${res.status})`);
 
                     const data = await res.json();
-
-                    if (data?.error?.message) {
-                        throw new Error(data.error.message);
-                    }
+                    if (data?.error?.message) throw new Error(data.error.message);
 
                     const imageUrl = data?.url || (Array.isArray(data?.data) ? data.data[0] : '');
-                    if (!imageUrl) {
-                        throw new Error('Unexpected upload response.');
-                    }
+                    if (!imageUrl) throw new Error('Unexpected upload response.');
 
                     urlInput.value = imageUrl;
                     previewImg.src = imageUrl;
