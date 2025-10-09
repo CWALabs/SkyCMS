@@ -1,0 +1,57 @@
+@model Sky.Editor.Models.Blogs.BlogStreamViewModel
+@{
+    ViewData["Title"] = "Create Blog Stream";
+    var hasId = Model != null && Model.Id != Guid.Empty;
+}
+<div class="cwps-editor-container pt-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-light mb-3">
+                <h3>Create a Blog</h3>
+                <form asp-action="Create" method="post" id="createBlogForm" novalidate enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    @Html.HiddenFor(m => m.HeroImage) <!-- Ensure no requirement; value can remain empty -->
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Title:</span>
+                        <input asp-for="Title" class="form-control" placeholder="e.g. Engineering Updates" />
+                    </div>
+                    <span asp-validation-for="Title" class="text-danger"></span>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Blog Key:</span>
+                        <input asp-for="BlogKey" class="form-control" autocomplete="off" aria-describedby="blogKeyHelp blogKeyFeedback" />
+                    </div>
+                    <span asp-validation-for="BlogKey" class="text-danger"></span>
+
+                    <div class="mb-3">
+                        <div id="blogKeyHelp" class="form-text">
+                            Tips: Use a short, descriptive key (3–60 chars). Lowercase letters, numbers, and hyphens only. Avoid reserved words.
+                        </div>
+                        <div id="blogKeyFeedback" class="mt-1 small" aria-live="polite"></div>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Description:</span>
+                        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Short description (max 512 chars)"></textarea>
+                    </div>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+
+                    <div class="form-text mb-3">
+                        Hero image is optional. You can add or upload one after creating the blog.
+                    </div>
+
+                    <div class="form-text mb-3">
+                        <button id="btnSubmit" type="submit" class="btn btn-primary">Create</button>
+                        <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

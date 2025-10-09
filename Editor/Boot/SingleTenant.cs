@@ -137,7 +137,7 @@ namespace Sky.Editor.Boot
                 }
                 else
                 {
-                    context.Database.MigrateAsync().Wait();
+                    //context.Database.MigrateAsync().Wait();
                 }
             }
 

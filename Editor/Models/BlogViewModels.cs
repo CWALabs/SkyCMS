@@ -28,12 +28,13 @@ namespace Sky.Editor.Models.Blogs
         [Display(Name = "Title")]
         public string Title { get; set; }
 
-        [MaxLength(512)]
+        [Required, MaxLength(512)]
         [Display(Name = "Description")]
         public string Description { get; set; }
 
+        // Hero image is OPTIONAL
         [Display(Name = "Hero Image (URL / Path)")]
-        public string HeroImage { get; set; }
+        public string HeroImage { get; set; }  // no [Required]
 
         [Display(Name = "Default Stream")]
         public bool IsDefault { get; set; }

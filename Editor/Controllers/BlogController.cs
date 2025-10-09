@@ -38,19 +38,19 @@ namespace Sky.Editor.Controllers
     /// </remarks>
     [Authorize]
     [Route("editor/blogs")]
-    public class Sky__BlogController : Controller
+    public class BlogController : Controller
     {
         private readonly ApplicationDbContext db;
         private readonly ArticleEditLogic articleLogic;
         private readonly ISlugService slugService; // NEW
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Sky__BlogController"/> class.
+        /// Initializes a new instance of the <see cref="BlogController"/> class.
         /// </summary>
         /// <param name="db">Application database context.</param>
         /// <param name="articleLogic">Article editing / publishing logic service.</param>
         /// <param name="slugService">Slug normalization and uniqueness helper.</param>
-        public Sky__BlogController(
+        public BlogController(
             ApplicationDbContext db,
             ArticleEditLogic articleLogic,
             ISlugService slugService) // NEW

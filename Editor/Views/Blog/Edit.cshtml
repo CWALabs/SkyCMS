@@ -1,0 +1,127 @@
+@model Sky.Editor.Models.Blogs.BlogStreamViewModel
+@{
+    ViewData["Title"] = "Edit Blog Stream";
+}
+<h2>Edit Blog Stream</h2>
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="Id" />
+
+    <div class="input-group mb-3">
+        <span class="input-group-text">Title:</span>
+        <input asp-for="Title" class="form-control" placeholder="e.g. Engineering Updates" />
+    </div>
+    <span asp-validation-for="Title" class="text-danger"></span>
+
+    <div class="input-group mb-3">
+        <span class="input-group-text">Blog Key:</span>
+        <input asp-for="BlogKey" class="form-control" />
+    </div>
+    <span asp-validation-for="BlogKey" class="text-danger"></span>
+
+    <div class="input-group mb-3">
+        <span class="input-group-text">Description:</span>
+        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Short description (max 512 chars)"></textarea>
+    </div>
+    <span asp-validation-for="Description" class="text-danger"></span>
+
+    <!-- Hero image is OPTIONAL -->
+    <div class="input-group mb-2">
+        <span class="input-group-text">Hero Image URL (optional):</span>
+        <input asp-for="HeroImage" class="form-control" placeholder="/images/hero.jpg or https://..." aria-required="false" />
+    </div>
+    <!-- Keeping the validation span is harmless; with no [Required] it won't force validation -->
+    <span asp-validation-for="HeroImage" class="text-danger"></span>
+
+    <div class="input-group mb-2">
+        <span class="input-group-text">Upload Image (optional)</span>
+        <input id="heroFile" type="file"
+               class="form-control"
+               accept="image/apng,image/avif,image/gif,image/jpeg,image/png,image/svg+xml,image/webp" />
+        <button id="btnUpload" class="btn btn-secondary" type="button">Upload</button>
+    </div>
+    <div id="heroUploadHelp" class="form-text mb-3">
+        Optional. Supported: PNG, JPEG/JPG, GIF, WEBP, AVIF, APNG, SVG. Max 25MB.
+    </div>
+
+    <div class="mb-3">
+        <img id="heroPreview" src="@Model.HeroImage" alt="Hero preview"
+             style="max-width: 100%; height: auto; display:@(string.IsNullOrWhiteSpace(Model.HeroImage) ? "none" : "block");" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
+</form>
+
+@section Scripts {
+    <script>
+        (function () {
+            const fileInput = document.getElementById('heroFile');
+            const uploadBtn = document.getElementById('btnUpload');
+            const urlInput = document.getElementById('HeroImage');
+            const previewImg = document.getElementById('heroPreview');
+            const uploadUrl = '@Url.Action("SimpleUpload", "FileManager")';
+            const blogId = '@Model.Id';
+
+            const allowedTypes = new Set([
+                'image/apng', 'image/avif', 'image/gif', 'image/jpeg', 'image/png', 'image/svg+xml', 'image/webp'
+            ]);
+
+            function setBusy(busy) {
+                uploadBtn.disabled = busy;
+                uploadBtn.textContent = busy ? 'Uploading…' : 'Upload';
+            }
+
+            async function uploadImage(file) {
+                if (!file) return;
+
+                if (!allowedTypes.has(file.type)) {
+                    alert('Unsupported image format. Please select a web image (PNG, JPEG/JPG, GIF, WEBP, AVIF, APNG, SVG).');
+                    return;
+                }
+
+                if (file.size > 25 * 1024 * 1024) {
+                    alert('The image is too large. Maximum size is 25MB.');
+                    return;
+                }
+
+                setBusy(true);
+
+                try {
+                    const form = new FormData();
+                    form.append('file', file);
+
+                    const endpoint = `${uploadUrl}?id=${encodeURIComponent(blogId)}&entityType=blog`;
+                    const res = await fetch(endpoint, { method: 'POST', body: form });
+
+                    if (!res.ok) {
+                        throw new Error(`Upload failed (${res.status})`);
+                    }
+
+                    const data = await res.json();
+
+                    if (data?.error?.message) {
+                        throw new Error(data.error.message);
+                    }
+
+                    const imageUrl = data?.url || (Array.isArray(data?.data) ? data.data[0] : '');
+                    if (!imageUrl) {
+                        throw new Error('Unexpected upload response.');
+                    }
+
+                    urlInput.value = imageUrl;
+                    previewImg.src = imageUrl;
+                    previewImg.style.display = 'block';
+                } catch (err) {
+                    alert(err.message || 'Image upload failed.');
+                } finally {
+                    setBusy(false);
+                }
+            }
+
+            uploadBtn.addEventListener('click', () => uploadImage(fileInput.files?.[0]));
+        })();
+    </script>
+
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
