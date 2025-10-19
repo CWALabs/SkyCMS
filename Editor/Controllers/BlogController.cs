@@ -150,7 +150,7 @@ namespace Sky.Editor.Controllers
             {
                 ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
                 return View("Create", model);
-            }            
+            }
 
             if (model.IsDefault)
             {

@@ -7,10 +7,6 @@
 
 namespace Sky.Cms.Controllers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
@@ -26,6 +22,11 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
+    using Sky.Editor.Services.Html;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Templates controller.
@@ -38,6 +39,7 @@ namespace Sky.Cms.Controllers
         private readonly ApplicationDbContext dbContext;
         private readonly IEditorSettings options;
         private readonly StorageContext storageContext;
+        private readonly IArticleHtmlService htmlService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplatesController"/> class.
@@ -48,18 +50,21 @@ namespace Sky.Cms.Controllers
         /// <param name="storageContext">Storage context service.</param>
         /// <param name="articleLogic">Article edit logic.</param>
         /// <param name="options">Cosmos Options.</param>
+        /// <param name="htmlService">HTML service.</param>
         public TemplatesController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
             StorageContext storageContext,
             ArticleEditLogic articleLogic,
-            IEditorSettings options)
+            IEditorSettings options,
+            IArticleHtmlService htmlService)
             : base(dbContext, userManager)
         {
             this.dbContext = dbContext;
             this.articleLogic = articleLogic;
             this.options = options;
             this.storageContext = storageContext;
+            this.htmlService = htmlService;
         }
 
         /// <summary>
@@ -333,7 +338,7 @@ namespace Sky.Cms.Controllers
                 CommunityLayoutId = defautLayout?.CommunityLayoutId
             };
 
-            entity.Content = articleLogic.Ensure_ContentEditable_IsMarked(entity.Content);
+            entity.Content = htmlService.EnsureEditableMarkers(entity.Content);
 
             dbContext.Templates.Add(entity);
             await dbContext.SaveChangesAsync();
@@ -418,7 +423,7 @@ namespace Sky.Cms.Controllers
                     }
                 },
                 EditingField = "Content",
-                Content = articleLogic.Ensure_ContentEditable_IsMarked(entity.Content),
+                Content = htmlService.EnsureEditableMarkers(entity.Content),
                 Version = 0,
                 CustomButtons = new List<string>
                 {
@@ -455,7 +460,7 @@ namespace Sky.Cms.Controllers
 
                 entity.Title = model.Title;
 
-                entity.Content = articleLogic.Ensure_ContentEditable_IsMarked(model.Content);
+                entity.Content = htmlService.EnsureEditableMarkers(model.Content);
 
                 await dbContext.SaveChangesAsync();
 
@@ -533,7 +538,7 @@ namespace Sky.Cms.Controllers
 
             var entity = await dbContext.Templates.FirstOrDefaultAsync(f => f.Id == id);
 
-            var htmlContent = articleLogic.Ensure_ContentEditable_IsMarked(entity.Content);
+            var htmlContent = htmlService.EnsureEditableMarkers(entity.Content);
 
             return Json(new project(htmlContent));
         }
@@ -575,7 +580,7 @@ namespace Sky.Cms.Controllers
                 return NotFound();
             }
 
-            model.HtmlContent = articleLogic.Ensure_ContentEditable_IsMarked(model.HtmlContent);
+            model.HtmlContent = htmlService.EnsureEditableMarkers(model.HtmlContent);
 
             if (string.IsNullOrEmpty(model.Title))
             {
@@ -608,13 +613,13 @@ namespace Sky.Cms.Controllers
             var guid = Guid.NewGuid();
 
             // Template preview
-            ArticleViewModel model = new ()
+            ArticleViewModel model = new()
             {
                 ArticleNumber = 1,
                 LanguageCode = string.Empty,
                 LanguageName = string.Empty,
                 CacheDuration = 10,
-                Content = articleLogic.Ensure_ContentEditable_IsMarked(entity.Content),
+                Content = htmlService.EnsureEditableMarkers(entity.Content),
                 StatusCode = StatusCodeEnum.Active,
                 Id = entity.Id,
                 Published = DateTimeOffset.UtcNow,

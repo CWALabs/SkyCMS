@@ -10,7 +10,6 @@ namespace Sky.Editor.Data.Logic
     // PATCHED: orchestrates via services; legacy method names preserved
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
@@ -98,16 +97,16 @@ namespace Sky.Editor.Data.Logic
                 settings.BlobPublicUrl,
                 true)
         {
-            this.storageContext     = storageContext  ?? throw new ArgumentNullException(nameof(storageContext));
-            this.logger             = logger          ?? throw new ArgumentNullException(nameof(logger));
-            this.accessor           = accessor        ?? throw new ArgumentNullException(nameof(accessor));
-            this.settings           = (EditorSettings) settings ?? throw new ArgumentNullException(nameof(settings));
-            this.localCache         = memoryCache     ?? throw new ArgumentNullException(nameof(memoryCache));
-            this.clock              = clock           ?? throw new ArgumentNullException(nameof(clock));
-            this.slugService        = slugService     ?? throw new ArgumentNullException(nameof(slugService));
-            this.htmlService        = htmlService     ?? throw new ArgumentNullException(nameof(htmlService));
-            this.catalogService     = catalogService  ?? throw new ArgumentNullException(nameof(catalogService));
-            this.publishingService  = publishingService ?? throw new ArgumentNullException(nameof(publishingService));
+            this.storageContext = storageContext ?? throw new ArgumentNullException(nameof(storageContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
+            this.settings = (EditorSettings)settings ?? throw new ArgumentNullException(nameof(settings));
+            this.localCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+            this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
+            this.slugService = slugService ?? throw new ArgumentNullException(nameof(slugService));
+            this.htmlService = htmlService ?? throw new ArgumentNullException(nameof(htmlService));
+            this.catalogService = catalogService ?? throw new ArgumentNullException(nameof(catalogService));
+            this.publishingService = publishingService ?? throw new ArgumentNullException(nameof(publishingService));
             this.titleChangeService = titleChangeService ?? throw new ArgumentNullException(nameof(titleChangeService));
         }
 
@@ -127,13 +126,6 @@ namespace Sky.Editor.Data.Logic
                 .OrderByDescending(a => a.Published)
                 .Select(a => a.Published)
                 .FirstOrDefaultAsync();
-
-        /// <summary>
-        /// Legacy misspelled slug normalization (retained for backward compatibility). Prefer using services or a corrected method name.
-        /// </summary>
-        /// <param name="title">Raw title text.</param>
-        /// <returns>Normalized slug.</returns>
-        public string NormailizeArticleUrl(string title) => slugService.Normalize(title);
 
         /// <summary>
         /// Retrieves a specific version (or latest) of an article by logical article number for editing contexts.
@@ -208,13 +200,6 @@ namespace Sky.Editor.Data.Logic
             GetArticleByUrl(urlPath, EnumControllerName.Edit, Guid.Empty);
 
         /// <summary>
-        /// Ensures contenteditable regions have stable IDs for real-time editing features.
-        /// </summary>
-        /// <param name="html">Raw HTML.</param>
-        /// <returns>Processed HTML with markers.</returns>
-        public string Ensure_ContentEditable_IsMarked(string html) => htmlService.EnsureEditableMarkers(html);
-
-        /// <summary>
         /// Retrieves reserved paths (static + database-defined) for title validation. Results cached briefly.
         /// </summary>
         /// <returns>List of reserved path records.</returns>
@@ -278,14 +263,6 @@ namespace Sky.Editor.Data.Logic
                 });
 
         /// <summary>
-        /// Unpublishes all versions of the specified logical article number (removes static artifacts and pages).
-        /// </summary>
-        /// <param name="articleNumber">Article number to unpublish.</param>
-        /// <returns>Awaitable task.</returns>
-        public Task UnpublishArticle(int articleNumber) =>
-            publishingService.UnpublishAsync(articleNumber);
-
-        /// <summary>
         /// Produces a standalone HTML document for the provided article view model (no sanitization beyond what is stored).
         /// </summary>
         /// <param name="article">Article model.</param>
@@ -311,7 +288,7 @@ namespace Sky.Editor.Data.Logic
             }
 
             sb.AppendLine("</head><body>")
-              . AppendLine(article.Content);
+              .AppendLine(article.Content);
 
             if (!string.IsNullOrWhiteSpace(article.FooterJavaScript))
             {
@@ -320,154 +297,6 @@ namespace Sky.Editor.Data.Logic
 
             sb.AppendLine("</body></html>");
             return await Task.FromResult(sb.ToString());
-        }
-
-        /// <summary>
-        /// Creates a static HTML page artifact for a published page if static site mode is enabled.
-        /// </summary>
-        /// <param name="page">Published page entity.</param>
-        /// <returns>Awaitable task.</returns>
-        public async Task CreateStaticWebpage(PublishedPage page)
-        {
-            if (page == null || !settings.StaticWebPages)
-            {
-                return;
-            }
-
-            try
-            {
-                var relPath = page.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
-                    ? "/index.html"
-                    : "/" + page.UrlPath.TrimStart('/');
-
-                var html = new StringBuilder()
-                    .Append("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"/><title>")
-                    .Append(System.Net.WebUtility.HtmlEncode(page.Title))
-                    .Append("</title>");
-
-                if (!string.IsNullOrWhiteSpace(page.HeaderJavaScript))
-                {
-                    html.Append(page.HeaderJavaScript);
-                }
-
-                html.Append("</head><body>")
-                    .Append(page.Content);
-
-                if (!string.IsNullOrWhiteSpace(page.FooterJavaScript))
-                {
-                    html.Append(page.FooterJavaScript);
-                }
-
-                html.Append("</body></html>");
-
-                using var ms = new MemoryStream(Encoding.UTF8.GetBytes(html.ToString()));
-                await storageContext.AppendBlob(ms, new Cosmos.BlobService.Models.FileUploadMetaData
-                {
-                    ChunkIndex = 0,
-                    ContentType = "text/html",
-                    FileName = Path.GetFileName(relPath),
-                    RelativePath = relPath,
-                    TotalChunks = 1,
-                    TotalFileSize = ms.Length,
-                    UploadUid = Guid.NewGuid().ToString()
-                });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "CreateStaticWebpage failed for {Path}", page?.UrlPath);
-            }
-        }
-
-        /// <summary>
-        /// Creates or refreshes a static JSON table of contents file for a given prefix when static mode enabled.
-        /// </summary>
-        /// <param name="prefix">Root prefix (default "/").</param>
-        /// <returns>Awaitable task.</returns>
-        public async Task CreateStaticTableOfContentsJsonFile(string prefix = "/")
-        {
-            if (!settings.StaticWebPages)
-            {
-                return;
-            }
-
-            try
-            {
-                prefix = (prefix ?? "/").Trim('/');
-                var toc = await GetTableOfContents("/" + prefix, 0, 500, false);
-                if (toc == null)
-                {
-                    return;
-                }
-
-                var json = JsonConvert.SerializeObject(toc, Formatting.None);
-                var target = string.IsNullOrEmpty(prefix) ? "/toc.json" : "/" + prefix + "/toc.json";
-                using var ms = new MemoryStream(Encoding.UTF8.GetBytes(json));
-                await storageContext.AppendBlob(ms, new Cosmos.BlobService.Models.FileUploadMetaData
-                {
-                    ChunkIndex = 0,
-                    ContentType = "application/json",
-                    FileName = Path.GetFileName(target),
-                    RelativePath = target,
-                    TotalChunks = 1,
-                    TotalFileSize = ms.Length,
-                    UploadUid = Guid.NewGuid().ToString()
-                });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "CreateStaticTableOfContentsJsonFile failed for {Prefix}", prefix);
-            }
-        }
-
-        /// <summary>
-        /// Updates/angular-injects the base href tag in the head fragment of an article view model.
-        /// </summary>
-        /// <param name="model">Article view model.</param>
-        private void UpdateHeadBaseTag(ArticleViewModel model) =>
-            model.HeadJavaScript = htmlService.EnsureAngularBase(model.HeadJavaScript, model.UrlPath ?? string.Empty);
-
-        /// <summary>
-        /// Updates/angular-injects the base href tag in the entity header for an article entity.
-        /// </summary>
-        /// <param name="entity">Article entity.</param>
-        private void UpdateHeadBaseTag(Article entity) =>
-            entity.HeaderJavaScript = htmlService.EnsureAngularBase(entity.HeaderJavaScript, entity.UrlPath ?? string.Empty);
-
-        /// <summary>
-        /// Retrieves (or creates) cached author info for a given user id.
-        /// </summary>
-        /// <param name="userId">User identifier.</param>
-        /// <returns>Author info or null if user not found.</returns>
-        private async Task<AuthorInfo> GetAuthorInfoForUserId(Guid userId)
-        {
-            var key = userId.ToString();
-            var cacheKey = "authorinfo:" + key;
-            if (localCache.TryGetValue(cacheKey, out AuthorInfo cached))
-            {
-                return cached;
-            }
-
-            var existing = await DbContext.AuthorInfos.FirstOrDefaultAsync(a => a.Id == key);
-            if (existing == null)
-            {
-                var identity = await DbContext.Users.FirstOrDefaultAsync(u => u.Id == key);
-                if (identity == null)
-                {
-                    return null;
-                }
-
-                existing = new AuthorInfo
-                {
-                    Id = key,
-                    AuthorName = identity.UserName ?? identity.Email ?? key,
-                    AuthorDescription = string.Empty
-                };
-                DbContext.AuthorInfos.Add(existing);
-                await DbContext.SaveChangesAsync();
-            }
-
-            localCache.Set(cacheKey, existing, TimeSpan.FromMinutes(10));
-            return existing;
         }
 
         /// <summary>
@@ -526,12 +355,13 @@ namespace Sky.Editor.Data.Logic
                 var template = await DbContext.Templates.FirstOrDefaultAsync(f => f.Id == templateId.Value);
                 if (template != null)
                 {
-                    var content = Ensure_ContentEditable_IsMarked(template.Content);
+                    var content = htmlService.EnsureEditableMarkers(template.Content);
                     if (!content.Equals(template.Content))
                     {
                         template.Content = content;
                         await DbContext.SaveChangesAsync();
                     }
+
                     defaultTemplate = template.Content;
                 }
             }
@@ -554,11 +384,11 @@ namespace Sky.Editor.Data.Logic
             {
                 BlogKey = blogKey,
                 ArticleNumber = nextArticleNumber,
-                Content = Ensure_ContentEditable_IsMarked(defaultTemplate),
+                Content = htmlService.EnsureEditableMarkers(defaultTemplate),
                 StatusCode = (int)StatusCodeEnum.Active,
                 Title = title,
                 Updated = DateTimeOffset.UtcNow,
-                UrlPath = isFirstArticle ? "root" : NormailizeArticleUrl(title),
+                UrlPath = isFirstArticle ? "root" : slugService.Normalize(title),
                 VersionNumber = 1,
                 Published = isFirstArticle ? DateTimeOffset.UtcNow : null,
                 UserId = userId.ToString(),
@@ -625,7 +455,7 @@ namespace Sky.Editor.Data.Logic
                 throw new ArgumentException("New home page not found.");
             }
 
-            var newUrl = NormailizeArticleUrl(oldHomeArticle.First().Title);
+            var newUrl = slugService.Normalize(oldHomeArticle.First().Title);
             foreach (var article in oldHomeArticle)
             {
                 article.UrlPath = newUrl;
@@ -687,7 +517,7 @@ namespace Sky.Editor.Data.Logic
             await DbContext.SaveChangesAsync();
             await DeleteCatalogEntry(articleNumber);
             DeleteStaticWebpage(url);
-            await CreateStaticTableOfContentsJsonFile();
+            await publishingService.WriteTocAsync();
         }
 
         /// <summary>
@@ -712,7 +542,7 @@ namespace Sky.Editor.Data.Logic
                     a.StatusCode == (int)StatusCodeEnum.Deleted).CosmosAnyAsync())
             {
                 var newTitle = title + " (" + await DbContext.Articles.CountAsync() + ")";
-                var url = NormailizeArticleUrl(newTitle);
+                var url = slugService.Normalize(newTitle);
                 foreach (var article in redeemed)
                 {
                     article.Title = newTitle;
@@ -762,8 +592,9 @@ namespace Sky.Editor.Data.Logic
 
             var oldTitle = article.Title;
 
-            model.Content = Ensure_ContentEditable_IsMarked(model.Content);
-            UpdateHeadBaseTag(model);
+            model.Content = htmlService.EnsureEditableMarkers(model.Content);
+
+            htmlService.EnsureAngularBase(model.HeadJavaScript, model.UrlPath ?? string.Empty);
 
             article.Content = model.Content;
             article.Title = model.Title;
@@ -801,12 +632,81 @@ namespace Sky.Editor.Data.Logic
             await titleChangeService.HandleTitleChangeAsync(article, oldTitle);
             await catalogService.UpsertAsync(article);
 
+            if (article.Published.HasValue)
+            {
+                var cdnResults = await UpsertPublishedPage(article.Id);
+                return new ArticleUpdateResult
+                {
+                    ServerSideSuccess = true,
+                    Model = model,
+                    CdnResults = cdnResults
+                };
+            }
+
             return new ArticleUpdateResult
             {
                 ServerSideSuccess = true,
                 Model = model,
                 CdnResults = new List<CdnResult>()
             };
+        }
+
+        /// <summary>
+        /// Publishes the specified article version (unpublishing others), updates catalog, and refreshes published artifacts.
+        /// </summary>
+        /// <param name="articleId">Article row ID.</param>
+        /// <param name="dateTime">Optional explicit publish time (UTC); if null current time is used.</param>
+        /// <returns>List of CDN purge results (empty if none).</returns>
+        public async Task<List<CdnResult>> PublishArticle(Guid articleId, DateTimeOffset? dateTime)
+        {
+            var article = await DbContext.Articles.FirstOrDefaultAsync(a => a.Id == articleId);
+            if (article == null)
+            {
+                return new List<CdnResult>();
+            }
+
+            article.Published = dateTime ?? clock.UtcNow;
+            var cdnResults = await publishingService.PublishAsync(article);
+            await UpsertCatalogEntry(article);
+            //var cdnResults = await UpsertPublishedPage(article.Id) ?? new List<CdnResult>();
+            return cdnResults;
+        }
+
+        /// <summary>
+        /// Retrieves (or creates) cached author info for a given user id.
+        /// </summary>
+        /// <param name="userId">User identifier.</param>
+        /// <returns>Author info or null if user not found.</returns>
+        private async Task<AuthorInfo> GetAuthorInfoForUserId(Guid userId)
+        {
+            var key = userId.ToString();
+            var cacheKey = "authorinfo:" + key;
+            if (localCache.TryGetValue(cacheKey, out AuthorInfo cached))
+            {
+                return cached;
+            }
+
+            var existing = await DbContext.AuthorInfos.FirstOrDefaultAsync(a => a.Id == key);
+            if (existing == null)
+            {
+                var identity = await DbContext.Users.FirstOrDefaultAsync(u => u.Id == key);
+                if (identity == null)
+                {
+                    return null;
+                }
+
+                existing = new AuthorInfo
+                {
+                    Id = key,
+                    AuthorName = identity.UserName ?? identity.Email ?? key,
+                    AuthorDescription = string.Empty
+                };
+                DbContext.AuthorInfos.Add(existing);
+                await DbContext.SaveChangesAsync();
+            }
+
+            localCache.Set(cacheKey, existing, TimeSpan.FromMinutes(10));
+            return existing;
         }
 
         /// <summary>
@@ -896,9 +796,8 @@ namespace Sky.Editor.Data.Logic
                     : $"{settings.PublisherUrl.TrimEnd('/')}/{newVersion.UrlPath.TrimStart('/')}"
             };
 
-            await CreateStaticWebpage(newPage);
             await UpsertCatalogEntry(newVersion);
-            await CreateStaticTableOfContentsJsonFile("/");
+            await publishingService.WriteTocAsync();
 
             if (purgePaths.Count > 0)
             {
@@ -998,26 +897,6 @@ namespace Sky.Editor.Data.Logic
                 DbContext.ArticleCatalog.Remove(catalogEntry);
                 await DbContext.SaveChangesAsync();
             }
-        }
-
-        /// <summary>
-        /// Publishes the specified article version (unpublishing others), updates catalog, and refreshes published artifacts.
-        /// </summary>
-        /// <param name="articleId">Article row ID.</param>
-        /// <param name="dateTime">Optional explicit publish time (UTC); if null current time is used.</param>
-        /// <returns>List of CDN purge results (empty if none).</returns>
-        public async Task<List<CdnResult>> PublishArticle(Guid articleId, DateTimeOffset? dateTime)
-        {
-            var article = await DbContext.Articles.FirstOrDefaultAsync(a => a.Id == articleId);
-            if (article == null)
-            {
-                return new List<CdnResult>();
-            }
-
-            await publishingService.PublishAsync(article, dateTime);
-            await UpsertCatalogEntry(article);
-            var cdnResults = await UpsertPublishedPage(article.Id) ?? new List<CdnResult>();
-            return cdnResults;
         }
     }
 }

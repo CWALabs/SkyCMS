@@ -382,7 +382,7 @@ namespace Cosmos.BlobService.Drivers
             var results = new List<BlobItem>();
             var containerClient =
                 this.blobServiceClient.GetBlobContainerClient(this.containerName);
-            var items = containerClient.GetBlobsAsync(prefix: path);
+            var items = containerClient.GetBlobsAsync(prefix: path.Equals("/") ? null : path);
 
             await foreach (var item in items)
             {

@@ -175,7 +175,7 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         public async Task<IActionResult> OnPostAsync(string returnUrl = "", string website = "")
         {
             returnUrl = await GetReturnUrl(returnUrl);
-                        
+
             ExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             if (ModelState.IsValid)

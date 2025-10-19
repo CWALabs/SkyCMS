@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Sky.Editor.Data.Logic;
 using Sky.Editor.Domain.Events;
 using Sky.Editor.Infrastructure.Time;
+using Sky.Editor.Services.Authors;
 using Sky.Editor.Services.Catalog;
 using Sky.Editor.Services.Html;
 using Sky.Editor.Services.Publishing;
@@ -32,9 +33,12 @@ namespace Sky.Tests
         protected StorageContext Storage = null!;
         protected IMemoryCache Cache = null!;
         protected Guid TestUserId;
+        protected ISlugService SlugService = null!;
         protected EditorSettings EditorSettings = null!;
         protected IHttpContextAccessor HttpContextAccessor = null!;
         protected TestDomainEventDispatcher EventDispatcher = null!;
+        protected IPublishingService PublishingService = null!;
+        protected IArticleHtmlService ArticleHtmlService = null!;
 
         /// <summary>
         /// Initialize test context. Call from [TestInitialize].
@@ -85,14 +89,26 @@ namespace Sky.Tests
 
             // Core service graph.
             var clock = new SystemClock();
-            var slugService = new SlugService();
-            var htmlService = new ArticleHtmlService();
+            SlugService = new SlugService();
+            ArticleHtmlService = new ArticleHtmlService();
             var catalogLogger = new LoggerFactory().CreateLogger<CatalogService>();
-            var catalogService = new CatalogService(Db, htmlService, clock, catalogLogger);
+            var catalogService = new CatalogService(Db, ArticleHtmlService, clock, catalogLogger);
             EventDispatcher = new TestDomainEventDispatcher();
-            var redirectService = new RedirectService(Db, slugService, clock);
-            var publishingService = new PublishingService(Db, clock, EventDispatcher);
-            var titleChangeService = new TitleChangeService(Db, slugService, redirectService, clock, EventDispatcher);
+            var authorInfoService = new AuthorInfoService(Db, Cache);
+            PublishingService = new PublishingService(Db, Storage, EditorSettings,
+                new LoggerFactory().CreateLogger<PublishingService>(), HttpContextAccessor, authorInfoService);
+
+            var publishingArtifactService = new PublishingService(
+                Db,
+                Storage,
+                EditorSettings,
+                new NullLogger<PublishingService>(),
+                HttpContextAccessor,
+                authorInfoService
+            );
+            var redirectService = new RedirectService(Db, SlugService, clock, publishingArtifactService);
+
+            var titleChangeService = new TitleChangeService(Db, SlugService, redirectService, clock, EventDispatcher, publishingArtifactService);
 
             // Construct logic (using explicit DI constructor).
             Logic = new ArticleEditLogic(
@@ -104,13 +120,13 @@ namespace Sky.Tests
                 HttpContextAccessor,
                 EditorSettings,
                 clock,
-                slugService,
-                htmlService,
+                SlugService,
+                ArticleHtmlService,
                 catalogService,
-                publishingService,
+                PublishingService,
                 titleChangeService,
                 redirectService);
-            
+
             AfterInitialize();
         }
 

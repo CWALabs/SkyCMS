@@ -61,7 +61,7 @@ namespace Sky.Editor.Data.Logic
                 model.CssContent = styleNode.InnerHtml;
                 styleNode.Remove();
             }
-            
+
             model.HtmlContent = htmlEditor.DocumentNode.OuterHtml;
 
             return model;

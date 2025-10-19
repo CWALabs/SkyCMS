@@ -13,7 +13,7 @@ namespace Sky.Editor.Services.Authors
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
 
-    internal sealed class AuthorInfoService : IAuthorInfoService
+    public class AuthorInfoService : IAuthorInfoService
     {
         private readonly ApplicationDbContext _db;
         private readonly IMemoryCache _cache;

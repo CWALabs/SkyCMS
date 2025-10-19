@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Sky.Tests;
 
+[DoNotParallelize]
 [TestClass]
 public class ArticleEditLogicAdditionalTests : ArticleEditLogicTestBase
 {
@@ -21,7 +23,7 @@ public class ArticleEditLogicAdditionalTests : ArticleEditLogicTestBase
 
         Assert.IsTrue(await Db.Pages.AnyAsync(p => p.ArticleNumber == art.ArticleNumber));
 
-        await Logic.UnpublishArticle(art.ArticleNumber);
+        await PublishingService.UnpublishAsync(ent);
 
         Assert.IsFalse(await Db.Pages.AnyAsync(p => p.ArticleNumber == art.ArticleNumber));
         var versions = await Db.Articles.Where(a => a.ArticleNumber == art.ArticleNumber).ToListAsync();
@@ -77,7 +79,7 @@ public class ArticleEditLogicAdditionalTests : ArticleEditLogicTestBase
         await Logic.SaveArticle(parentVm, TestUserId);
 
         var childVm = await Logic.GetArticleByArticleNumber(child.ArticleNumber, null);
-        Assert.IsTrue(childVm.UrlPath.StartsWith("parent_renamed", StringComparison.OrdinalIgnoreCase),
+        Assert.IsTrue(childVm.UrlPath.StartsWith("parent-renamed", StringComparison.OrdinalIgnoreCase),
             "Expected child URL updated with new parent slug.");
     }
 }

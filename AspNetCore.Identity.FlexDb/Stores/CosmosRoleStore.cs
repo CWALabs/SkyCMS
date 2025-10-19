@@ -328,7 +328,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
                 };
                 _repo.Add(identityRoleClaim);
             }
-                await _repo.SaveChangesAsync().WaitAsync(cancellationToken);
+            await _repo.SaveChangesAsync().WaitAsync(cancellationToken);
         }
 
         // <inheritdoc />

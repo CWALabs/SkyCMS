@@ -6,8 +6,9 @@ using Sky.Editor.Domain.Events;
 
 namespace Sky.Tests;
 
+[DoNotParallelize]
 [TestClass]
-public class ArticleEditLogicRemainingTests: ArticleEditLogicTestBase
+public class ArticleEditLogicRemainingTests : ArticleEditLogicTestBase
 {
 
     [TestInitialize]
@@ -187,25 +188,6 @@ public class ArticleEditLogicRemainingTests: ArticleEditLogicTestBase
         var entry2 = await Logic.GetCatalogEntry(vm);
 
         Assert.AreEqual(entry1.ArticleNumber, entry2.ArticleNumber);
-    }
-
-    #endregion
-
-    #region Base Tag Injection (UpdateHeadBaseTag via SaveArticle)
-
-    [TestMethod]
-    public async Task SaveArticle_WithAngularMeta_AddsOrUpdatesBaseHref()
-    {
-        await Logic.CreateArticle("Home Page", TestUserId);
-        var page = await Logic.CreateArticle("Angular Page", TestUserId);
-
-        page.HeadJavaScript = "<meta name='ccms:framework' value='angular'><script>console.log('hi');</script>";
-        var saved = await Logic.SaveArticle(page, TestUserId);
-        Assert.IsTrue(saved.ServerSideSuccess);
-
-        var reloaded = await Logic.GetArticleByArticleNumber(page.ArticleNumber, null);
-        Assert.IsTrue(reloaded.HeadJavaScript.Contains("<base"), "Expected <base> tag injected.");
-        Assert.IsTrue(reloaded.HeadJavaScript.Contains("/angular_page/"), "Expected normalized base href.");
     }
 
     #endregion

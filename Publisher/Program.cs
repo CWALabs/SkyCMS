@@ -7,7 +7,7 @@
 
 var builder = WebApplication.CreateBuilder(args);
 
-var isStaticWebsite = 
+var isStaticWebsite =
     builder.Configuration.GetValue<bool?>("CosmosStaticWebPages") ?? false;
 
 if (isStaticWebsite)

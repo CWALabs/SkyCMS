@@ -39,12 +39,12 @@ namespace Cosmos.Publisher.Controllers
         public async Task<IActionResult> Index()
         {
             string path = string.IsNullOrWhiteSpace(HttpContext.Request.Path) || HttpContext.Request.Path == "/" ? "index.html" : HttpContext.Request.Path;
-            
+
             try
             {
                 memoryCache.TryGetValue(path, out FileCacheObject fileCacheObject);
 
-                if (fileCacheObject == null) 
+                if (fileCacheObject == null)
                 {
                     var properties = await storageContext.GetFileAsync(path);
                     if (properties == null)

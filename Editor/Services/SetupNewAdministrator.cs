@@ -101,7 +101,7 @@ namespace Cosmos.Editor.Services
         private static bool AreArraysEqual(List<string> array1, List<string> array2)
         {
             if (array1.Count != array2.Count)
-            { 
+            {
                 return false;
             }
 

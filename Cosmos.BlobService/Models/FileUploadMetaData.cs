@@ -62,5 +62,5 @@ namespace Cosmos.BlobService.Models
         /// </summary>
         /// <remarks>Defaults to "max-age=10, must-revalidate". After the 10 seconds are up, the cache must revalidate the content with the origin server before serving it again.</remarks>
         public string CacheControl { get; set; } = "max-age=10, must-revalidate";
-}
+    }
 }

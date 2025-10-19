@@ -136,7 +136,7 @@ namespace Sky.Cms.Services
                 if (nPercentH > nPercentW)
                 {
                     nPercent = nPercentH;
-                    destX = (int)Math.Round((width - 
+                    destX = (int)Math.Round((width -
                                               sourceWidth * nPercent) / 2);
                 }
                 else

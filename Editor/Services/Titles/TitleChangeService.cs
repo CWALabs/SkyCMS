@@ -14,6 +14,7 @@ namespace Sky.Editor.Services.Titles
     using Microsoft.EntityFrameworkCore;
     using Sky.Editor.Domain.Events;
     using Sky.Editor.Infrastructure.Time;
+    using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.Redirects;
     using Sky.Editor.Services.Slugs;
 
@@ -28,6 +29,7 @@ namespace Sky.Editor.Services.Titles
         private readonly IRedirectService redirects;
         private readonly IClock clock;
         private readonly IDomainEventDispatcher dispatcher;
+        private readonly IPublishingService publishingService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TitleChangeService"/> class.
@@ -37,18 +39,21 @@ namespace Sky.Editor.Services.Titles
         /// <param name="redirects">Redirect management service (for published title changes).</param>
         /// <param name="clock">Clock abstraction for testable timestamps.</param>
         /// <param name="dispatcher">Domain event dispatcher.</param>
+        /// <param name="publishingService">Publishing service.</param>
         public TitleChangeService(
             ApplicationDbContext db,
             ISlugService slugs,
             IRedirectService redirects,
             IClock clock,
-            IDomainEventDispatcher dispatcher)
+            IDomainEventDispatcher dispatcher,
+            IPublishingService publishingService)
         {
             this.db = db;
             this.slugs = slugs;
             this.redirects = redirects;
             this.clock = clock;
             this.dispatcher = dispatcher;
+            this.publishingService = publishingService;
         }
 
         /// <inheritdoc/>
@@ -64,38 +69,6 @@ namespace Sky.Editor.Services.Titles
             var oldSlug = slugs.Normalize(oldTitle);
             var newSlug = slugs.Normalize(article.Title);
 
-            // Update child articles & generate redirect if needed (except for root).
-            if (!string.Equals(article.UrlPath, "root", StringComparison.OrdinalIgnoreCase))
-            {
-                var children = await db.Articles
-                    .Where(a => a.UrlPath.StartsWith(oldSlug) && a.ArticleNumber != article.ArticleNumber)
-                    .ToListAsync();
-
-                foreach (var c in children)
-                {
-                    // Adjust child titles only if they derive from the old title and are not redirect placeholders.
-                    if (!c.Title.Equals("redirect", StringComparison.OrdinalIgnoreCase) &&
-                        c.Title.StartsWith(oldTitle, StringComparison.OrdinalIgnoreCase))
-                    {
-                        c.Title = article.Title + c.Title.Substring(oldTitle.Length);
-                    }
-
-                    if (c.UrlPath.StartsWith(oldSlug, StringComparison.OrdinalIgnoreCase))
-                    {
-                        c.UrlPath = newSlug + c.UrlPath.Substring(oldSlug.Length);
-                    }
-
-                    c.Updated = clock.UtcNow;
-                }
-
-                // Create redirect only if the current article was published.
-                if (article.Published.HasValue)
-                {
-                    await redirects.CreateOrUpdateRedirectAsync(oldSlug, newSlug, Guid.Parse(article.UserId));
-                    await dispatcher.DispatchAsync(new RedirectCreatedEvent(oldSlug, newSlug));
-                }
-            }
-
             // Update selected article and synchronize across versions of same logical article.
             article.UrlPath = newSlug;
             article.Updated = clock.UtcNow;
@@ -104,15 +77,89 @@ namespace Sky.Editor.Services.Titles
                 .Where(a => a.ArticleNumber == article.ArticleNumber)
                 .ToListAsync();
 
+            var counter = 0;
             foreach (var v in versions)
             {
                 v.Title = article.Title;
                 v.UrlPath = article.UrlPath;
                 v.Updated = clock.UtcNow;
+                counter++;
+                if (counter == 20)
+                {
+                    await db.SaveChangesAsync();
+                    counter = 0;
+                }
             }
 
             await db.SaveChangesAsync();
+
+            // Update the published articles if they exist.
+            var publishedArticles = await db.Articles.Where(p => p.ArticleNumber == article.ArticleNumber &&
+                  p.Published != null)
+                .ToListAsync();
+
+            if (publishedArticles.Any())
+            {
+                // Unpublish existing published articles.
+                foreach (var p in publishedArticles)
+                {
+                    await publishingService.UnpublishAsync(p);
+                }
+
+                // Republish with new URLs.
+                foreach (var p in publishedArticles)
+                {
+                    await publishingService.PublishAsync(p);
+                }
+
+                // Create a redirect for any published articles.
+                await redirects.CreateOrUpdateRedirectAsync(oldSlug, "/" + newSlug.Trim('/'), new Guid(article.UserId));
+
+            }
+
+            // Update child article URLs.
+            await UpdateChildUrlsAsync(article, oldSlug);
+
             await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
+        }
+
+        /// <summary>
+        ///  Updates the URLs of child articles, including all descendants, when a parent article's slug changes.
+        /// </summary>
+        /// <param name="article">Parent article.</param>
+        /// <param name="oldSlug">Old slug.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        private async Task UpdateChildUrlsAsync(Article article, string oldSlug)
+        {
+            // Find all child articles whose URLs start with the old slug.
+            // This includes all descendants, not just direct children.
+            var childArticles = await db.Articles
+                .Where(a => a.UrlPath.StartsWith(oldSlug))
+                .ToListAsync();
+
+            var c = 0;
+            foreach (var child in childArticles)
+            {
+                // Recalculate child URL based on new parent slug.
+                var oldPath = child.UrlPath;
+                var newPath = article.UrlPath.TrimEnd('/') + "/" + child.UrlPath.Substring(oldSlug.Length).TrimStart('/');
+                child.UrlPath = newPath;
+                child.Updated = clock.UtcNow;
+                c++;
+                if (c == 20)
+                {
+                    await db.SaveChangesAsync();
+                    c = 0;
+                }
+
+                if (child.Published != null)
+                {
+                    await redirects.CreateOrUpdateRedirectAsync(oldPath, newPath, new Guid(article.UserId));
+                    await publishingService.PublishAsync(child);
+                }
+            }
+
+            await db.SaveChangesAsync();
         }
     }
 }

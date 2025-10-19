@@ -20,9 +20,9 @@ namespace Sky.Editor.Services
         public bool Authorize(DashboardContext context)
         {
             var httpContext = context.GetHttpContext();
-            
+
             // Only allow access if user is authenticated and in Admin role
-            return httpContext.User.Identity.IsAuthenticated && 
+            return httpContext.User.Identity.IsAuthenticated &&
                    httpContext.User.IsInRole("Administrators");
         }
     }

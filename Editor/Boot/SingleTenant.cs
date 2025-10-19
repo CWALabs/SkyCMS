@@ -445,7 +445,7 @@ namespace Sky.Editor.Boot
                     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
                     var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
                     var dataSourcePart = Array.Find(parts, p => p.StartsWith("Data Source=", StringComparison.InvariantCultureIgnoreCase));
-                    
+
                     var databasefilePath = dataSourcePart.Split('=')[1];
                     var databaseFileName = Path.GetFileName(databasefilePath);
 

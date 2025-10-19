@@ -1,4 +1,4 @@
-﻿// <copyright file="PublishingService.cs" company="Moonrise Software, LLC">
+﻿// <copyright file="Class.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
 // See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
@@ -8,89 +8,327 @@
 namespace Sky.Editor.Services.Publishing
 {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Threading.Tasks;
+    using Cosmos.BlobService;
+    using Cosmos.BlobService.Models;
+    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
+    using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
-    using Sky.Editor.Domain.Events;
-    using Sky.Editor.Infrastructure.Time;
+    using Microsoft.Extensions.Caching.Memory;
+    using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
+    using Sky.Editor.Data.Logic;
+    using Sky.Editor.Services.CDN;
+    using Sky.Editor.Services.Html;
 
-    /// <summary>
-    /// Handles the publishing life‑cycle of articles (marking a single version as published,
-    /// clearing prior published versions, and raising publication events).
-    /// </summary>
-    public sealed class PublishingService : IPublishingService
+    /// <inheritdoc/>
+    public class PublishingService : IPublishingService
     {
-        private readonly ApplicationDbContext db;
-        private readonly IClock clock;
-        private readonly IDomainEventDispatcher dispatcher;
+        private readonly ApplicationDbContext _db;
+        private readonly StorageContext _storage;
+        private readonly EditorSettings _settings;
+        private readonly ILogger<PublishingService> _logger;
+        private readonly IHttpContextAccessor _accessor;
+        private readonly Authors.IAuthorInfoService _authors;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PublishingService"/> class.
         /// </summary>
-        /// <param name="db">EF Core database context.</param>
-        /// <param name="clock">Clock abstraction for testable UTC times.</param>
-        /// <param name="dispatcher">Dispatcher used to raise domain events after publishing.</param>
-        public PublishingService(ApplicationDbContext db, IClock clock, IDomainEventDispatcher dispatcher)
+        /// <param name="db">The database context.</param>
+        /// <param name="storage">The storage context.</param>
+        /// <param name="settings">The editor settings.</param>
+        /// <param name="logger">The logger.</param>
+        /// <param name="accessor">The HTTP context accessor.</param>
+        /// <param name="authors">The author information service.</param>
+        public PublishingService(
+            ApplicationDbContext db,
+            StorageContext storage,
+            EditorSettings settings,
+            ILogger<PublishingService> logger,
+            IHttpContextAccessor accessor,
+            Authors.IAuthorInfoService authors)
         {
-            this.db = db;
-            this.clock = clock;
-            this.dispatcher = dispatcher;
+            _db = db;
+            _storage = storage;
+            _settings = settings;
+            _logger = logger;
+            _accessor = accessor;
+            _authors = authors;
         }
 
-        /// <summary>
-        /// Publishes the specified article version and unpublishes any other versions in the same logical article series.
-        /// </summary>
-        /// <param name="article">The article entity (version) to publish.</param>
-        /// <param name="when">Optional publication timestamp; if null the current UTC time is used.</param>
-        public async Task PublishAsync(Article article, DateTimeOffset? when)
+        /// <inheritdoc/>
+        public async Task<List<CdnResult>> PublishAsync(Article article)
         {
-            var now = clock.UtcNow;
-            var publishTime = when ?? now;
-
-            // Unpublish other versions
-            var others = await db.Articles.Where(a =>
-                a.ArticleNumber == article.ArticleNumber &&
-                a.Published != null &&
-                a.Id != article.Id).ToListAsync();
-
-            foreach (var o in others)
+            if (article.Published == null)
             {
-                o.Published = null;
+                return new List<CdnResult>();
             }
 
-            article.Published = publishTime;
-            article.Updated = now;
+            // Unpublish other versions that are older than this one.
+            await UnpublishOlderVersions(article);
 
-            await db.SaveChangesAsync();
-            await dispatcher.DispatchAsync(new ArticlePublishedEvent(article.ArticleNumber, article.Id));
+            // Remove prior published (non-redirect) pages for this article number
+            var prior = await _db.Pages
+                .Where(p => p.ArticleNumber == article.ArticleNumber && p.StatusCode != (int)StatusCodeEnum.Redirect)
+                .ToListAsync();
+
+            if (prior.Any())
+            {
+                _db.Pages.RemoveRange(prior);
+                await _db.SaveChangesAsync();
+
+                DeleteStatic(prior);
+            }
+
+            var authorInfo = await _authors.GetOrCreateAsync(Guid.Parse(article.UserId));
+
+            var page = new PublishedPage
+            {
+                Id = Guid.NewGuid(),
+                ArticleNumber = article.ArticleNumber,
+                StatusCode = article.StatusCode,
+                UrlPath = article.UrlPath,
+                VersionNumber = article.VersionNumber,
+                Published = article.Published,
+                Expires = article.Expires,
+                Title = article.Title,
+                Content = article.Content,
+                Updated = article.Updated,
+                BannerImage = article.BannerImage,
+                HeaderJavaScript = article.HeaderJavaScript,
+                FooterJavaScript = article.FooterJavaScript,
+                ParentUrlPath = article.UrlPath.Contains('/')
+                    ? article.UrlPath[..article.UrlPath.LastIndexOf('/')]
+                    : string.Empty,
+                AuthorInfo = authorInfo == null ? string.Empty :
+                    JsonConvert.SerializeObject(authorInfo).Replace("\"", "'"),
+                ArticleType = article.ArticleType,
+                Category = article.Category,
+                Introduction = article.Introduction
+            };
+
+            _db.Pages.Add(page);
+            await _db.SaveChangesAsync();
+
+            await CreateStaticFile(page);
+            await WriteTocAsync("/");
+            return await PurgeCdnAsync(page);
         }
 
         /// <summary>
-        /// Unpublishes all versions of a logical article (by article number) and removes generated published page records (non‑redirects).
+        /// Publish multiple pages.
         /// </summary>
-        /// <param name="articleNumber">Logical article number.</param>
-        public async Task UnpublishAsync(int articleNumber)
+        /// <param name="ids">IDs of published pages.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public async Task CreateStaticPages(IEnumerable<Guid> ids)
         {
-            var versions = await db.Articles.Where(a => a.ArticleNumber == articleNumber).ToListAsync();
-            if (!versions.Any()) return;
+            var pages = await _db.Pages.Where(w => ids.Contains(w.Id)).ToListAsync();
+            foreach (var page in pages)
+            {
+                await CreateStaticFile(page);
+            }
+
+            // Write the table of contents.
+            await WriteTocAsync("/");
+
+            // Refresh the CDN if present.
+            var cdnService = CdnService.GetCdnService(_db, _logger, _accessor.HttpContext);
+            if (cdnService != null)
+            {
+                await cdnService.PurgeCdn();
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task UnpublishAsync(Article article)
+        {
+            var articleNumber = article.ArticleNumber;
+
+            var versions = await _db.Articles.Where(a => a.ArticleNumber == articleNumber && a.Published != null).ToListAsync();
+            if (!versions.Any())
+            {
+                return;
+            }
 
             foreach (var v in versions)
             {
                 v.Published = null;
             }
 
-            var pages = await db.Pages
+            var pages = await _db.Pages
                 .Where(p => p.ArticleNumber == articleNumber && p.StatusCode != (int)StatusCodeEnum.Redirect)
                 .ToListAsync();
 
-            if (pages.Any())
+            _db.Pages.RemoveRange(pages);
+            await _db.SaveChangesAsync();
+            DeleteStatic(pages);
+
+            foreach (var page in pages)
             {
-                db.Pages.RemoveRange(pages);
+                await PurgeCdnAsync(page);
             }
 
-            await db.SaveChangesAsync();
+            await WriteTocAsync("/");
         }
+
+        /// <inheritdoc/>
+        public async Task WriteTocAsync(string prefix = "/")
+        {
+            if (!_settings.StaticWebPages)
+            {
+                return;
+            }
+
+            var toc = await new ArticleLogic(
+                _db,
+                Microsoft.Extensions.Options.Options.Create(new CosmosConfig()),
+                new MemoryCache(new MemoryCacheOptions()),
+                _settings.PublisherUrl,
+                _settings.BlobPublicUrl,
+                true)
+                .GetTableOfContents("/", 0, 500, false);
+
+            if (toc == null)
+            {
+                return;
+            }
+
+            var json = JsonConvert.SerializeObject(toc);
+            var target = string.IsNullOrEmpty(prefix) ? "/toc.json" : "/" + prefix + "/toc.json";
+            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            await _storage.AppendBlob(ms, new FileUploadMetaData
+            {
+                ChunkIndex = 0,
+                ContentType = "application/json",
+                FileName = Path.GetFileName(target),
+                RelativePath = target,
+                TotalChunks = 1,
+                TotalFileSize = ms.Length,
+                UploadUid = Guid.NewGuid().ToString()
+            });
+        }
+
+        private async Task UnpublishOlderVersions(Article article)
+        {
+            var dateTime = article.Published;
+
+            // Unpublish other versions
+            var others = await _db.Articles.Where(a =>
+                a.ArticleNumber == article.ArticleNumber &&
+                a.Published < dateTime &&
+                a.Id != article.Id).ToListAsync();
+
+            var ids = others.Select(o => o.Id).ToList();
+
+            foreach (var o in others)
+            {
+                o.Published = null;
+            }
+
+            var doomedPages = await _db.Pages
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
+
+            _db.Pages.RemoveRange(doomedPages);
+            await _db.SaveChangesAsync();
+
+            DeleteStatic(doomedPages);
+        }
+
+        /// <summary>
+        /// Deletes the static file for the specified published page.
+        /// </summary>
+        /// <param name="pages">The published pages.</param>
+        private void DeleteStatic(IEnumerable<PublishedPage> pages)
+        {
+            if (!_settings.StaticWebPages)
+            {
+                return;
+            }
+
+            foreach (var page in pages)
+            {
+                var rel = page.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
+                ? "/index.html"
+                : "/" + page.UrlPath.TrimStart('/');
+                try
+                {
+                    _storage.DeleteFile(rel);
+                }
+                catch
+                {
+                    /* ignore */
+                }
+            }
+        }
+
+        private async Task CreateStaticFile(PublishedPage page)
+        {
+            if (!_settings.StaticWebPages)
+            {
+                return;
+            }
+
+            var rel = page.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
+                ? "/index.html"
+                : "/" + page.UrlPath.TrimStart('/');
+
+            var html = new StringBuilder()
+                .Append("<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><title>")
+                .Append(System.Net.WebUtility.HtmlEncode(page.Title))
+                .Append("</title>")
+                .Append(page.HeaderJavaScript)
+                .Append("</head><body>")
+                .Append(page.Content)
+                .Append(page.FooterJavaScript)
+                .Append("</body></html>")
+                .ToString();
+
+            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(html));
+            await _storage.AppendBlob(ms, new FileUploadMetaData
+            {
+                ChunkIndex = 0,
+                ContentType = "text/html",
+                FileName = Path.GetFileName(rel),
+                RelativePath = rel,
+                TotalChunks = 1,
+                TotalFileSize = ms.Length,
+                UploadUid = Guid.NewGuid().ToString()
+            });
+        }
+
+        private async Task<List<CdnResult>> PurgeCdnAsync(PublishedPage page)
+        {
+            var results = new List<CdnResult>();
+            try
+            {
+                var cdnService = CdnService.GetCdnService(_db, _logger, _accessor.HttpContext);
+                if (cdnService == null)
+                {
+                    return results;
+                }
+
+                var path = page.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
+                    ? "/"
+                    : $"{_settings.PublisherUrl.TrimEnd('/')}/{page.UrlPath.TrimStart('/')}";
+
+                var paths = new List<string> { path };
+
+                results = await cdnService.PurgeCdn(paths);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "CDN purge failed");
+            }
+
+            return results;
+        }
+
     }
 }

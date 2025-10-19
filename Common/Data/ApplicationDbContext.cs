@@ -276,8 +276,9 @@ namespace Cosmos.Common.Data
         }
 
         /// <summary>
-        /// Model creation & container / index configuration.
+        /// Model creation and container / index configuration.
         /// </summary>
+        /// <param name="modelBuilder">The model builder.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             if (this.Database.IsSqlite())

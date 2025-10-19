@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Sky.Tests;
 
+[DoNotParallelize]
 [TestClass]
 public class ArticleEditLogicTests : ArticleEditLogicTestBase
 {

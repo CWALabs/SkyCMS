@@ -7,12 +7,6 @@
 
 namespace Sky.Cms.Controllers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
     using Cosmos.BlobService;
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Cms.Data.Logic;
@@ -32,6 +26,13 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
+    using Sky.Editor.Services.Html;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
 
     /// <summary>
     /// Layouts controller.
@@ -46,6 +47,7 @@ namespace Sky.Cms.Controllers
         private readonly IViewRenderService viewRenderService;
         private readonly StorageContext storageContext;
         private readonly IEditorSettings editorSettings;
+        private readonly IArticleHtmlService htmlService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LayoutsController"/> class.
@@ -57,6 +59,7 @@ namespace Sky.Cms.Controllers
         /// <param name="storageContext">Storage context.</param>
         /// <param name="viewRenderService">View rendering service.</param>
         /// <param name="editorSettings">Editor settings.</param>
+        /// <param name="htmlService">Html service.</param>
         public LayoutsController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
@@ -64,13 +67,15 @@ namespace Sky.Cms.Controllers
             IEditorSettings options,
             StorageContext storageContext,
             IViewRenderService viewRenderService,
-            IEditorSettings editorSettings)
+            IEditorSettings editorSettings,
+            IArticleHtmlService htmlService)
             : base(dbContext, userManager)
         {
             this.dbContext = dbContext;
             this.articleLogic = articleLogic;
             this.storageContext = storageContext;
             this.editorSettings = editorSettings;
+            this.htmlService = htmlService;
 
             var htmlUtilities = new HtmlUtilities();
 
@@ -120,7 +125,7 @@ namespace Sky.Cms.Controllers
                 await dbContext.SaveChangesAsync();
             }
 
-            return Json(layouts.Select(s => new LayoutIndexViewModel ()
+            return Json(layouts.Select(s => new LayoutIndexViewModel()
             {
                 Id = s.Id,
                 IsDefault = s.IsDefault,
@@ -775,7 +780,7 @@ namespace Sky.Cms.Controllers
                         var template = new Template()
                         {
                             CommunityLayoutId = page.CommunityLayoutId,
-                            Content = articleLogic.Ensure_ContentEditable_IsMarked(page.Content),
+                            Content = htmlService.EnsureEditableMarkers(page.Content),
                             Description = page.Description,
                             LayoutId = layout.Id,
                             Title = page.Title,

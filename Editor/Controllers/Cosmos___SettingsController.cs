@@ -240,7 +240,7 @@ namespace Sky.Editor.Controllers
                 return result;
             }
             catch (Exception ex)
-            { 
+            {
                 logger.LogError(ex, "Error testing CDN connection.");
                 return new List<CdnResult> { new CdnResult { IsSuccessStatusCode = false, Message = ex.Message } };
             }

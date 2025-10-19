@@ -7,12 +7,6 @@
 
 namespace Sky.Cms.Controllers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
@@ -39,6 +33,14 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.CDN;
+    using Sky.Editor.Services.Html;
+    using Sky.Editor.Services.Publishing;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
 
     /// <summary>
     /// Editor controller.
@@ -50,14 +52,17 @@ namespace Sky.Cms.Controllers
     {
         private readonly ArticleEditLogic articleLogic;
         private readonly ApplicationDbContext dbContext;
-        private readonly ILogger<EditorController> logger;
-        private readonly IEditorSettings editorSettings;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly UserManager<IdentityUser> userManager;
         private readonly Uri blobPublicAbsoluteUrl;
-        private readonly IViewRenderService viewRenderService;
         private readonly StorageContext storageContext;
+
+        private readonly ILogger<EditorController> logger;
+        private readonly IEditorSettings editorSettings;
+        private readonly IViewRenderService viewRenderService;
         private readonly IHubContext<LiveEditorHub> hub;
+        private readonly IPublishingService publishingService;
+        private readonly IArticleHtmlService htmlService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorController"/> class.
@@ -71,6 +76,8 @@ namespace Sky.Cms.Controllers
         /// <param name="viewRenderService">View rendering service.</param>
         /// <param name="storageContext">Storage context.</param>
         /// <param name="hub">Editor SignalR hub.</param>
+        /// <param name="publishingService">Publishing service.</param>
+        /// <param name="htmlService">HTML service.</param>
         public EditorController(
             ILogger<EditorController> logger,
             ApplicationDbContext dbContext,
@@ -80,7 +87,9 @@ namespace Sky.Cms.Controllers
             IEditorSettings options,
             IViewRenderService viewRenderService,
             StorageContext storageContext,
-            IHubContext<LiveEditorHub> hub)
+            IHubContext<LiveEditorHub> hub,
+            IPublishingService publishingService,
+            IArticleHtmlService htmlService)
             : base(dbContext, userManager)
         {
             this.logger = logger;
@@ -91,6 +100,8 @@ namespace Sky.Cms.Controllers
             this.articleLogic = articleLogic;
             this.storageContext = storageContext;
             this.hub = hub;
+            this.publishingService = publishingService;
+            this.htmlService = htmlService;
 
             var htmlUtilities = new HtmlUtilities();
 
@@ -291,7 +302,7 @@ namespace Sky.Cms.Controllers
                 return NotFound();
             }
 
-            var htmlContent = articleLogic.Ensure_ContentEditable_IsMarked(article.Content);
+            var htmlContent = htmlService.EnsureEditableMarkers(article.Content);
 
             return Json(new project(htmlContent));
         }
@@ -953,7 +964,7 @@ namespace Sky.Cms.Controllers
 
                 var template = await dbContext.Templates.FirstOrDefaultAsync(f => f.Title.ToLower() == "home page");
                 var article = await articleLogic.CreateArticle(model.Title, Guid.Parse(await GetUserId()), template.Id);
-                
+
                 article.Published = DateTimeOffset.UtcNow;
                 article.StatusCode = (int)StatusCodeEnum.Active;
                 article.Content = template.Content;
@@ -1024,7 +1035,7 @@ namespace Sky.Cms.Controllers
         /// <summary>
         /// Un-publishes an article.
         /// </summary>
-        /// <param name="id">Article ID.</param>
+        /// <param name="id">Article number.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Authorize(Roles = "Administrators, Editors")]
         public async Task<IActionResult> UnpublishPage(int id)
@@ -1034,7 +1045,8 @@ namespace Sky.Cms.Controllers
                 return BadRequest(ModelState);
             }
 
-            await articleLogic.UnpublishArticle(id);
+            var article = await dbContext.Articles.Where(w => w.ArticleNumber == id).OrderByDescending(o => o.VersionNumber).FirstOrDefaultAsync();
+            await publishingService.UnpublishAsync(article);
 
             return Ok();
         }
@@ -1931,20 +1943,9 @@ namespace Sky.Cms.Controllers
         [Authorize(Roles = "Editors,Administrators")]
         public async Task<IActionResult> PublishStaticPages([FromBody] List<Guid> guids)
         {
-            var pages = await dbContext.Pages.Where(w => guids.Contains(w.Id) && w.Published.HasValue).ToListAsync();
-            foreach (var page in pages)
-            {
-                await articleLogic.CreateStaticWebpage(page);
-            }
+            await publishingService.CreateStaticPages(guids);
 
-            if (!string.IsNullOrEmpty(editorSettings.BackupStorageConnectionString))
-            {
-                var backupService = new FileBackupRestoreService(editorSettings.BackupStorageConnectionString, new MemoryCache(new MemoryCacheOptions()));
-                var connectionString = dbContext.Database.GetConnectionString();
-                await backupService.UploadAsync(connectionString);
-            }
-
-            return Json(new { pages.Count });
+            return Json(new { guids.Count });
         }
 
         /// <summary>
@@ -1956,7 +1957,7 @@ namespace Sky.Cms.Controllers
         [Authorize(Roles = "Editors,Administrators")]
         public async Task<IActionResult> PublishTOC(string path = "/")
         {
-            await articleLogic.CreateStaticTableOfContentsJsonFile(path);
+            await publishingService.WriteTocAsync(path);
             return Ok();
         }
 
@@ -2239,7 +2240,7 @@ namespace Sky.Cms.Controllers
             var article = await dbContext.Articles.Where(w => w.ArticleNumber == articleNumber).OrderByDescending(o => o.VersionNumber).FirstOrDefaultAsync();
             if (article == null)
             {
-               return null;
+                return null;
             }
 
             if (article.Published.HasValue)

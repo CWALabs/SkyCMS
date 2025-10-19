@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Sky.Cms.Controllers;
 using Sky.Cms.Services;
+using Sky.Editor.Services.Slugs;
 
 namespace Sky.Tests;
 
+[DoNotParallelize]
 [TestClass]
 public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
 {
@@ -18,8 +20,8 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
     [TestMethod]
     public void NormailizeArticleUrl_ConvertsToLowerUnderscores()
     {
-        var slug = Logic.NormailizeArticleUrl("  Hello World  2025  ");
-        Assert.AreEqual("hello_world__2025", slug);
+        var slug = SlugService.Normalize("  Hello World  2025  ");
+        Assert.AreEqual("hello-world-2025", slug);
     }
 
     #endregion
@@ -49,7 +51,7 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
             .OrderByDescending(a => a.VersionNumber)
             .FirstAsync();
 
-        var fetched = await Logic.GetArticleByUrl("sample_title");
+        var fetched = await Logic.GetArticleByUrl("sample-title");
         Assert.IsNotNull(fetched);
         Assert.AreEqual(latest.VersionNumber, fetched.VersionNumber);
     }
@@ -61,7 +63,7 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
     [TestMethod]
     public void EnsureContentEditable_Blank_AddsWrapper()
     {
-        var html = Logic.Ensure_ContentEditable_IsMarked(string.Empty);
+        var html = ArticleHtmlService.EnsureEditableMarkers(string.Empty);
         StringAssert.Contains(html, "contenteditable");
         StringAssert.Contains(html, "data-ccms-ceid");
     }
@@ -70,7 +72,7 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
     public void EnsureContentEditable_Existing_AddsMissingIds()
     {
         var original = "<section><div contenteditable='true'>Content</div></section>";
-        var processed = Logic.Ensure_ContentEditable_IsMarked(original);
+        var processed = ArticleHtmlService.EnsureEditableMarkers(original);
         StringAssert.Contains(processed, "data-ccms-ceid");
         StringAssert.Contains(processed, "data-ccms-index=\"0\"");
     }
@@ -93,27 +95,20 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
     [TestMethod]
     public async Task GetArticleRedirects_ContainsRedirectAfterTitleChange()
     {
-        // Root
-        await Logic.CreateArticle("Home Page", TestUserId);
-
-        // Second article
+        // Create article
         var article = await Logic.CreateArticle("Original Title", TestUserId);
-        var entity = await Db.Articles
-            .Where(a => a.ArticleNumber == article.ArticleNumber)
-            .OrderByDescending(a => a.VersionNumber)
-            .FirstAsync();
-
-        // Publish it
-        await Logic.PublishArticle(entity.Id, DateTimeOffset.UtcNow);
+        article.Published = DateTimeOffset.UtcNow;
+        await Logic.SaveArticle(article, TestUserId);
 
         // Trigger title change -> redirect
         article.Title = "New Title";
+        article.Published = DateTimeOffset.UtcNow;
         await Logic.SaveArticle(article, TestUserId);
 
         var redirects = Logic.GetArticleRedirects().ToList();
         Assert.IsTrue(redirects.Any(), "Expected at least one redirect after title change.");
 
-        var staticRedirect = await Storage.BlobExistsAsync("new_title");
+        var staticRedirect = await Storage.BlobExistsAsync("original-title");
         Assert.IsTrue(staticRedirect, "Expected static redirect file to exist.");
     }
 
@@ -133,7 +128,7 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
 
         Assert.IsTrue(await Db.Pages.AnyAsync(p => p.ArticleNumber == page.ArticleNumber));
 
-        await Logic.UnpublishArticle(page.ArticleNumber);
+        await PublishingService.UnpublishAsync(entity);
 
         Assert.IsFalse(await Db.Pages.AnyAsync(p => p.ArticleNumber == page.ArticleNumber));
         var versions = await Db.Articles.Where(a => a.ArticleNumber == page.ArticleNumber).ToListAsync();
@@ -167,7 +162,7 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
         await Logic.PublishArticle(publishedEntity.Id, DateTimeOffset.UtcNow);
 
         var publishedPage = await Db.Pages.FirstAsync(p => p.ArticleNumber == root.ArticleNumber);
-        await Logic.CreateStaticWebpage(publishedPage); // Should no-op with StaticWebPages=false
+        await PublishingService.CreateStaticPages(new List<Guid> { publishedPage.Id }); // Should no-op with StaticWebPages=false
         Assert.IsTrue(true); // Reached without exception
     }
 
@@ -175,7 +170,7 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
     public async Task CreateStaticTableOfContentsJsonFile_StaticDisabled_NoException()
     {
         await Logic.CreateArticle("Home Page", TestUserId);
-        await Logic.CreateStaticTableOfContentsJsonFile("/");
+        await PublishingService.WriteTocAsync();
         Assert.IsTrue(true);
     }
 
