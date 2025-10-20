@@ -37,7 +37,7 @@ namespace Sky.Editor.Models.Blogs
         public string HeroImage { get; set; }  // no [Required]
 
         [Display(Name = "Default Stream")]
-        public bool IsDefault { get; set; }
+        public bool IsDefault { get; set; } = false;
 
         [Display(Name = "Sort Order")]
         public int SortOrder { get; set; }
@@ -94,5 +94,8 @@ namespace Sky.Editor.Models.Blogs
 
         [Display(Name = "Publish Now?")]
         public bool PublishNow { get; set; }
+
+        [Display(Name = "Publishing Date/Time")]
+        public DateTimeOffset? Published { get; set; }
     }
 }

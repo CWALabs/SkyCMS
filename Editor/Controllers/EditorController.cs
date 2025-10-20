@@ -7,6 +7,12 @@
 
 namespace Sky.Cms.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
@@ -35,12 +41,8 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Services.CDN;
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Publishing;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
+    using Sky.Editor.Services.ReservedPaths;
+    using Sky.Editor.Services.Titles;
 
     /// <summary>
     /// Editor controller.
@@ -63,6 +65,8 @@ namespace Sky.Cms.Controllers
         private readonly IHubContext<LiveEditorHub> hub;
         private readonly IPublishingService publishingService;
         private readonly IArticleHtmlService htmlService;
+        private readonly IReservedPaths reservedPaths;
+        private readonly ITitleChangeService titleChangeService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorController"/> class.
@@ -78,6 +82,8 @@ namespace Sky.Cms.Controllers
         /// <param name="hub">Editor SignalR hub.</param>
         /// <param name="publishingService">Publishing service.</param>
         /// <param name="htmlService">HTML service.</param>
+        /// <param name="reservedPaths">Reserved path service.</param>
+        /// <param name="titleChangeService">Title change service.</param>
         public EditorController(
             ILogger<EditorController> logger,
             ApplicationDbContext dbContext,
@@ -89,7 +95,9 @@ namespace Sky.Cms.Controllers
             StorageContext storageContext,
             IHubContext<LiveEditorHub> hub,
             IPublishingService publishingService,
-            IArticleHtmlService htmlService)
+            IArticleHtmlService htmlService,
+            IReservedPaths reservedPaths,
+            ITitleChangeService titleChangeService)
             : base(dbContext, userManager)
         {
             this.logger = logger;
@@ -102,6 +110,8 @@ namespace Sky.Cms.Controllers
             this.hub = hub;
             this.publishingService = publishingService;
             this.htmlService = htmlService;
+            this.reservedPaths = reservedPaths;
+            this.titleChangeService = titleChangeService;
 
             var htmlUtilities = new HtmlUtilities();
 
@@ -577,7 +587,7 @@ namespace Sky.Cms.Controllers
             ViewData["currentSort"] = currentSort;
             ViewData["pageNo"] = pageNo;
             ViewData["pageSize"] = pageSize;
-            var reserved = await articleLogic.GetReservedPaths();
+            var reserved = await reservedPaths.GetReservedPaths();
             var existingUrls = await dbContext.Articles.Where(w => w.StatusCode == (int)StatusCodeEnum.Active).Select(s => s.Title).Distinct().ToListAsync();
             existingUrls.AddRange(reserved.Select(s => s.Path));
             ViewData["reservedPaths"] = existingUrls;
@@ -661,7 +671,7 @@ namespace Sky.Cms.Controllers
 
                 model.Title = model.Title.TrimStart('/');
 
-                var validTitle = await articleLogic.ValidateTitle(model.Title, null);
+                var validTitle = await titleChangeService.ValidateTitle(model.Title, null);
 
                 if (!validTitle)
                 {
@@ -954,7 +964,7 @@ namespace Sky.Cms.Controllers
 
                 model.Title = model.Title.TrimStart('/');
 
-                var validTitle = await articleLogic.ValidateTitle(model.Title, null);
+                var validTitle = await titleChangeService.ValidateTitle(model.Title, null);
 
                 if (!validTitle)
                 {
@@ -1249,7 +1259,7 @@ namespace Sky.Cms.Controllers
                 return BadRequest(ModelState);
             }
 
-            var paths = await articleLogic.GetReservedPaths();
+            var paths = await reservedPaths.GetReservedPaths();
 
             ViewData["RowCount"] = paths.Count;
 
@@ -1339,7 +1349,7 @@ namespace Sky.Cms.Controllers
 
             ViewData["Title"] = "Edit Reserved Path";
 
-            var paths = await articleLogic.GetReservedPaths();
+            var paths = await reservedPaths.GetReservedPaths();
 
             var path = paths.Find(f => f.Id == id);
 
@@ -1790,7 +1800,7 @@ namespace Sky.Cms.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await articleLogic.ValidateTitle(title, articleNumber);
+            var result = await titleChangeService.ValidateTitle(title, articleNumber);
 
             if (result)
             {

@@ -5,6 +5,7 @@
 @using Microsoft.Extensions.Options;
 @inject IEditorSettings options
 @{
+    var canEdit = User.IsInRole("Administrators") || User.IsInRole("Editors");
     ViewData["Title"] = "Blog List";
 }
 <link href="~/lib/tabulator-tables/dist/css/tabulator_midnight.css" rel="stylesheet" />
@@ -48,7 +49,10 @@
     </div>
 </div>
 <script>
+    const publisherUrl = "@options.PublisherUrl";
     const tblHeight = window.innerHeight - 200;
+    const canEdit = @Html.Raw(canEdit.ToString().ToLower());
+
     let pageSize = Math.round(tblHeight / 50) + 1;
 
     function openArticleVersions(e, cell) {
@@ -68,7 +72,7 @@
         if (data.IsDefault === true){
             return "";
         }
-        return "<a title='Send page to trash' href='/editor/blogs/" + data.Id + "/delete class='btn btn-sm btn-secondary'><i class='fa-solid fa-trash'></i></a>";
+        return "<a title='Send page to trash' href='/editor/blogs/" + data.Id + "/delete' class='btn btn-sm btn-secondary'><i class='fa-solid fa-trash'></i></a>";
     };
 
     const menuBar = function(cell, formatterParams){
@@ -89,7 +93,7 @@
         }
 
         if (data.IsDefault === true){
-            html += "<div title='Current home page.' class='btn btn-sm btn-primary'><i class='fa-solid fa-house'></i></div>";
+            html += "<div title='Is default blog.' class='btn btn-sm btn-primary'><i class='fa-solid fa-house'></i></div>";
         }
         else if (data.LastPublished !== null && data.LastPublished !== ""){
             html += "<a href='/Editor/NewHome/" + data.ArticleNumber + "' title='Make this the new home page.' class='btn btn-sm btn-secondary'><i class='fa-solid fa-house'></i></a>";

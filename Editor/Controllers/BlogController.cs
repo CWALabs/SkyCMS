@@ -13,11 +13,13 @@ namespace Sky.Editor.Controllers
     using System.Linq;
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
+    using Cosmos.Common.Data.Logic;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models.Blogs;
+    using Sky.Editor.Services.Redirects;
     using Sky.Editor.Services.Slugs; // if you place ISlugService elsewhere adjust
 
     /// <summary>
@@ -43,6 +45,7 @@ namespace Sky.Editor.Controllers
         private readonly ApplicationDbContext db;
         private readonly ArticleEditLogic articleLogic;
         private readonly ISlugService slugService; // NEW
+        private readonly IRedirectService redirectService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BlogController"/> class.
@@ -50,14 +53,17 @@ namespace Sky.Editor.Controllers
         /// <param name="db">Application database context.</param>
         /// <param name="articleLogic">Article editing / publishing logic service.</param>
         /// <param name="slugService">Slug normalization and uniqueness helper.</param>
+        /// <param name="redirectService">Redirect management service.</param>
         public BlogController(
             ApplicationDbContext db,
             ArticleEditLogic articleLogic,
-            ISlugService slugService) // NEW
+            ISlugService slugService,
+            IRedirectService redirectService) // NEW
         {
             this.db = db;
             this.articleLogic = articleLogic;
             this.slugService = slugService;
+            this.redirectService = redirectService;
         }
 
         /// <summary>
@@ -70,12 +76,16 @@ namespace Sky.Editor.Controllers
             // Reuse existing slug normalizer. Fall back if service returns empty.
             var baseSlug = slugService.Normalize(title) ?? string.Empty;
             if (string.IsNullOrWhiteSpace(baseSlug))
+            {
                 baseSlug = "blog";
+            }
 
             // Trim to max length (64) before uniqueness suffixing
             const int max = 64;
             if (baseSlug.Length > max)
+            {
                 baseSlug = baseSlug[..max];
+            }
 
             var candidate = baseSlug;
             var i = 2;
@@ -138,6 +148,11 @@ namespace Sky.Editor.Controllers
             // Auto-generate key
             model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title ?? "blog");
 
+            if (await db.Blogs.Where(w => w.IsDefault == true).CountAsync() < 1)
+            {
+                model.IsDefault = true;
+            }
+
             var exists = await db.Blogs.AnyAsync(b => b.BlogKey == model.BlogKey);
             if (exists)
             {
@@ -156,7 +171,10 @@ namespace Sky.Editor.Controllers
             {
                 // Unset any previous default
                 var oldDefaults = await db.Blogs.Where(b => b.IsDefault).ToListAsync();
-                foreach (var d in oldDefaults) d.IsDefault = false;
+                foreach (var d in oldDefaults)
+                {
+                    d.IsDefault = false;
+                }
             }
 
             db.Blogs.Add(new Blog
@@ -181,7 +199,10 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> Edit(Guid id)
         {
             var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
-            if (blog == null) return NotFound();
+            if (blog == null)
+            {
+                return NotFound();
+            }
 
             return View("Edit", new BlogStreamViewModel
             {
@@ -205,27 +226,64 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, BlogStreamViewModel model)
         {
-            if (id != model.Id) return BadRequest();
-            if (!ModelState.IsValid) return View("Edit", model);
+            if (id != model.Id)
+            {
+                return BadRequest();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View("Edit", model);
+            }
 
             var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
-            if (blog == null) return NotFound();
-
-            // Auto-generate key based on title.
-            model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title ?? "blog");
+            if (blog == null)
+            {
+                return NotFound();
+            }
 
             // Do NOT silently regenerate BlogKey on title change (stability principle)
-            var duplicateKey = await db.Blogs.AnyAsync(b => b.BlogKey == model.BlogKey && b.Id != id);
-            if (duplicateKey)
+            var duplicateKey = await db.Blogs.Where(b => b.Title.ToLower() == model.Title.ToLower() && b.Id != id).CountAsync();
+            if (duplicateKey > 0)
             {
                 ModelState.AddModelError(nameof(model.BlogKey), "Another blog with this key exists.");
                 return View("Edit", model);
             }
 
-            if (model.IsDefault && !blog.IsDefault)
+            // Detect if the title has changed and regenerate the BlogKey accordingly
+            if (blog.Title != model.Title)
             {
-                var oldDefaults = await db.Blogs.Where(b => b.IsDefault && b.Id != blog.Id).ToListAsync();
-                foreach (var d in oldDefaults) d.IsDefault = false;
+                // Check for conflicts with existing articles
+                var statusCodeDeleted = (int)StatusCodeEnum.Deleted;
+                var articleExists = await db.Articles.FirstOrDefaultAsync(a => a.UrlPath.StartsWith(model.BlogKey)
+                                            && a.StatusCode != statusCodeDeleted);
+                if (articleExists != null)
+                {
+                    ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
+                    return View("Edit", model);
+                }
+
+                model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title);
+            }
+
+            if (model.IsDefault)
+            {
+                // Check to see if there's another default already
+                var oldDefaults = await db.Blogs.Where(b => b.IsDefault == true && b.Id != blog.Id).ToListAsync();
+                foreach (var d in oldDefaults)
+                {
+                    d.IsDefault = false;
+                }
+            }
+            else
+            {
+                // This can be false if there is another blog set at the default.
+                var otherDefault = await db.Blogs.FirstOrDefaultAsync(b => b.IsDefault == true && b.Id != blog.Id);
+                if (otherDefault == null)
+                {
+                    ModelState.AddModelError(nameof(model.IsDefault), "There must be a default blog.");
+                    return View("Edit", model);
+                }
             }
 
             blog.BlogKey = model.BlogKey; // user-chosen or previously generated
@@ -237,7 +295,7 @@ namespace Sky.Editor.Controllers
             blog.UpdatedUtc = DateTimeOffset.UtcNow;
 
             await db.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return View(model);
         }
 
         /// <summary>
@@ -249,7 +307,11 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
-            if (blog == null) return NotFound();
+            if (blog == null)
+            {
+                return NotFound();
+            }
+
             return View("Delete", new BlogStreamViewModel
             {
                 Id = blog.Id,
@@ -269,7 +331,10 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> ConfirmDelete(Guid id, bool reassign = true)
         {
             var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
-            if (blog == null) return NotFound();
+            if (blog == null)
+            {
+                return NotFound();
+            }
 
             if (blog.IsDefault)
             {
@@ -290,7 +355,10 @@ namespace Sky.Editor.Controllers
                 }
 
                 var affected = await db.Articles.Where(a => a.BlogKey == blog.BlogKey).ToListAsync();
-                foreach (var a in affected) a.BlogKey = fallback.BlogKey;
+                foreach (var a in affected)
+                {
+                    a.BlogKey = fallback.BlogKey;
+                }
             }
             else if (hasArticles && !reassign)
             {
@@ -311,10 +379,16 @@ namespace Sky.Editor.Controllers
         [HttpGet("{blogKey}/entries")]
         public async Task<IActionResult> Entries(string blogKey)
         {
-            if (string.IsNullOrWhiteSpace(blogKey)) return BadRequest();
+            if (string.IsNullOrWhiteSpace(blogKey))
+            {
+                return BadRequest();
+            }
 
             var blog = await db.Blogs.FirstOrDefaultAsync(b => b.BlogKey == blogKey);
-            if (blog == null) return NotFound();
+            if (blog == null)
+            {
+                return NotFound();
+            }
 
             var entries = await db.ArticleCatalog
                 .Where(c => c.BlogKey == blogKey)
@@ -352,7 +426,10 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> CreateEntry(string blogKey)
         {
             var blogExists = await db.Blogs.AnyAsync(b => b.BlogKey == blogKey);
-            if (!blogExists) return NotFound();
+            if (!blogExists)
+            {
+                return NotFound();
+            }
 
             return View("CreateEntry", new BlogEntryEditViewModel
             {
@@ -371,11 +448,21 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateEntry(string blogKey, BlogEntryEditViewModel model)
         {
-            if (blogKey != model.BlogKey) return BadRequest();
-            var blogExists = await db.Blogs.AnyAsync(b => b.BlogKey == blogKey);
-            if (!blogExists) return NotFound();
+            if (blogKey != model.BlogKey)
+            {
+                return BadRequest();
+            }
 
-            if (!ModelState.IsValid) return View("CreateEntry", model);
+            var blogExists = await db.Blogs.AnyAsync(b => b.BlogKey == blogKey);
+            if (!blogExists)
+            {
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View("CreateEntry", model);
+            }
 
             var userId = Guid.Parse(User?.Claims?.FirstOrDefault(c => c.Type.EndsWith("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value ?? Guid.Empty.ToString());
             var articleVm = await articleLogic.CreateArticle(model.Title, userId, null, blogKey);
@@ -388,14 +475,15 @@ namespace Sky.Editor.Controllers
             entity.Introduction = model.Introduction ?? string.Empty;
             entity.Content = model.Content ?? entity.Content;
             entity.BannerImage = model.BannerImage ?? string.Empty;
-
-            if (model.PublishNow && entity.Published == null)
-            {
-                entity.Published = DateTimeOffset.UtcNow;
-            }
+            entity.Published = model.PublishNow ? DateTimeOffset.UtcNow : null;
 
             await db.SaveChangesAsync();
-            await articleLogic.PublishArticle(entity.Id, entity.Published ?? DateTimeOffset.UtcNow);
+
+            // Publish if requested
+            if (model.PublishNow || entity.Published != null)
+            {
+                await articleLogic.PublishArticle(entity.Id, entity.Published);
+            }
 
             return RedirectToAction(nameof(Entries), new { blogKey });
         }
@@ -414,7 +502,10 @@ namespace Sky.Editor.Controllers
                 .OrderByDescending(a => a.VersionNumber)
                 .FirstOrDefaultAsync();
 
-            if (article == null || article.BlogKey != blogKey) return NotFound();
+            if (article == null || article.BlogKey != blogKey)
+            {
+                return NotFound();
+            }
 
             var vm = new BlogEntryEditViewModel
             {
@@ -441,14 +532,24 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditEntry(string blogKey, int articleNumber, BlogEntryEditViewModel model)
         {
-            if (model.ArticleNumber != articleNumber || model.BlogKey != blogKey) return BadRequest();
-            if (!ModelState.IsValid) return View("EditEntry", model);
+            if (model.ArticleNumber != articleNumber || model.BlogKey != blogKey)
+            {
+                return BadRequest();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View("EditEntry", model);
+            }
 
             var article = await db.Articles
                 .Where(a => a.ArticleNumber == articleNumber)
                 .OrderByDescending(a => a.VersionNumber)
                 .FirstOrDefaultAsync();
-            if (article == null || article.BlogKey != blogKey) return NotFound();
+            if (article == null || article.BlogKey != blogKey)
+            {
+                return NotFound();
+            }
 
             var userId = Guid.Parse(User?.Claims?.FirstOrDefault(c => c.Type.EndsWith("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value ?? Guid.Empty.ToString());
 
@@ -485,7 +586,10 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> DeleteEntry(string blogKey, int articleNumber)
         {
             var catalog = await db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == articleNumber);
-            if (catalog == null || catalog.BlogKey != blogKey) return NotFound();
+            if (catalog == null || catalog.BlogKey != blogKey)
+            {
+                return NotFound();
+            }
 
             var vm = new BlogEntryListItem
             {
@@ -512,7 +616,10 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> ConfirmDeleteEntry(string blogKey, int articleNumber)
         {
             var catalog = await db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == articleNumber);
-            if (catalog == null || catalog.BlogKey != blogKey) return NotFound();
+            if (catalog == null || catalog.BlogKey != blogKey)
+            {
+                return NotFound();
+            }
 
             await articleLogic.DeleteArticle(articleNumber);
             return RedirectToAction(nameof(Entries), new { blogKey });

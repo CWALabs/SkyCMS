@@ -45,10 +45,12 @@ namespace Sky.Editor.Boot
     using Sky.Editor.Domain.Events;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services;
+    using Sky.Editor.Services.Authors;
     using Sky.Editor.Services.Catalog;
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.Redirects;
+    using Sky.Editor.Services.ReservedPaths;
     using Sky.Editor.Services.Slugs;
     using Sky.Editor.Services.Titles;
 
@@ -151,12 +153,14 @@ namespace Sky.Editor.Boot
             builder.Services.AddTransient<IEditorSettings, EditorSettings>();
             builder.Services.AddTransient<IClock, SystemClock>();
             builder.Services.AddTransient<ISlugService, SlugService>();
-            // Register required services for ArticleEditLogic
             builder.Services.AddTransient<IArticleHtmlService, ArticleHtmlService>();
             builder.Services.AddTransient<ICatalogService, CatalogService>();
             builder.Services.AddTransient<IPublishingService, PublishingService>();
             builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
             builder.Services.AddTransient<IRedirectService, RedirectService>();
+            builder.Services.AddTransient<IAuthorInfoService, AuthorInfoService>();
+            builder.Services.AddTransient<IReservedPaths,  ReservedPaths>();
+
             builder.Services.AddHttpContextAccessor();
 
             // Add Cosmos Identity here

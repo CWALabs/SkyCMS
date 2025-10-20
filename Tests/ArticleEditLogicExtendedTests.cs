@@ -84,7 +84,7 @@ public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
     [TestMethod]
     public async Task GetReservedPaths_Includes_System_Paths()
     {
-        var paths = await Logic.GetReservedPaths();
+        var paths = await ReservedPaths.GetReservedPaths();
         Assert.IsTrue(paths.Any(p => p.Path.Equals("root", StringComparison.OrdinalIgnoreCase)));
     }
 

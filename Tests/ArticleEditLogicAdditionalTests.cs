@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sky.Editor.Services.Titles;
 
 namespace Sky.Tests;
 
@@ -37,7 +38,7 @@ public class ArticleEditLogicAdditionalTests : ArticleEditLogicTestBase
         var a1 = await Logic.CreateArticle("Duplicate Title", TestUserId);
         var a2 = await Logic.CreateArticle("Another Page", TestUserId);
 
-        var valid = await Logic.ValidateTitle("Duplicate Title", a2.ArticleNumber);
+        var valid = await TitleChangeService.ValidateTitle("Duplicate Title", a2.ArticleNumber);
         Assert.IsFalse(valid);
     }
 

@@ -25,7 +25,7 @@ public class ArticleEditLogicTests : ArticleEditLogicTestBase
     public async Task ValidateTitle_ReturnsFalse_ForDuplicateTitle()
     {
         _ = await Logic.CreateArticle("Duplicate", TestUserId);
-        var valid = await Logic.ValidateTitle("Duplicate", null);
+        var valid = await TitleChangeService.ValidateTitle("Duplicate", null);
         Assert.IsFalse(valid, "Expected duplicate title to be invalid");
     }
 

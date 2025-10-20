@@ -144,7 +144,7 @@ public class ArticleEditLogicRemainingTests : ArticleEditLogicTestBase
         await Logic.CreateArticle("Home Page", TestUserId);
         var art = await Logic.CreateArticle("Case Title", TestUserId);
 
-        var valid = await Logic.ValidateTitle("Case Title", art.ArticleNumber);
+        var valid = await TitleChangeService.ValidateTitle("Case Title", art.ArticleNumber);
         Assert.IsTrue(valid);
     }
 
@@ -152,7 +152,7 @@ public class ArticleEditLogicRemainingTests : ArticleEditLogicTestBase
     public async Task ValidateTitle_ReservedCaseInsensitive_ReturnsFalse()
     {
         await Logic.CreateArticle("Home Page", TestUserId);
-        var valid = await Logic.ValidateTitle("ROOT", null);
+        var valid = await TitleChangeService.ValidateTitle("ROOT", null);
         Assert.IsFalse(valid);
     }
 

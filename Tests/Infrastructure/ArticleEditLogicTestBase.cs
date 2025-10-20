@@ -16,6 +16,7 @@ using Sky.Editor.Services.Catalog;
 using Sky.Editor.Services.Html;
 using Sky.Editor.Services.Publishing;
 using Sky.Editor.Services.Redirects;
+using Sky.Editor.Services.ReservedPaths;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Titles;
 
@@ -39,6 +40,9 @@ namespace Sky.Tests
         protected TestDomainEventDispatcher EventDispatcher = null!;
         protected IPublishingService PublishingService = null!;
         protected IArticleHtmlService ArticleHtmlService = null!;
+        protected IReservedPaths ReservedPaths = null!;
+        protected IRedirectService RedirectService = null!;
+        protected ITitleChangeService TitleChangeService = null!;
 
         /// <summary>
         /// Initialize test context. Call from [TestInitialize].
@@ -97,6 +101,9 @@ namespace Sky.Tests
             var authorInfoService = new AuthorInfoService(Db, Cache);
             PublishingService = new PublishingService(Db, Storage, EditorSettings,
                 new LoggerFactory().CreateLogger<PublishingService>(), HttpContextAccessor, authorInfoService);
+            ReservedPaths = new ReservedPaths(Db);
+            RedirectService = new RedirectService(Db, SlugService, clock, PublishingService);
+            TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, clock, EventDispatcher, PublishingService, ReservedPaths);
 
             var publishingArtifactService = new PublishingService(
                 Db,
@@ -108,7 +115,7 @@ namespace Sky.Tests
             );
             var redirectService = new RedirectService(Db, SlugService, clock, publishingArtifactService);
 
-            var titleChangeService = new TitleChangeService(Db, SlugService, redirectService, clock, EventDispatcher, publishingArtifactService);
+            var titleChangeService = new TitleChangeService(Db, SlugService, redirectService, clock, EventDispatcher, publishingArtifactService, ReservedPaths);
 
             // Construct logic (using explicit DI constructor).
             Logic = new ArticleEditLogic(

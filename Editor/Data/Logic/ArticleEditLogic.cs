@@ -200,55 +200,6 @@ namespace Sky.Editor.Data.Logic
             GetArticleByUrl(urlPath, EnumControllerName.Edit, Guid.Empty);
 
         /// <summary>
-        /// Retrieves reserved paths (static + database-defined) for title validation. Results cached briefly.
-        /// </summary>
-        /// <returns>List of reserved path records.</returns>
-        public async Task<List<ReservedPath>> GetReservedPaths()
-        {
-            const string cacheKey = "reserved-paths";
-            if (localCache.TryGetValue(cacheKey, out List<ReservedPath> cached))
-            {
-                return cached;
-            }
-
-            var staticReserved = new List<ReservedPath>
-            {
-                new () { Path = "root", CosmosRequired = true, Notes = "Home page alias" },
-                new () { Path = "admin", CosmosRequired = true, Notes = "Admin path" },
-                new () { Path = "account", CosmosRequired = true, Notes = "Identity path" },
-                new () { Path = "login", CosmosRequired = true, Notes = "Identity path" },
-                new () { Path = "logout", CosmosRequired = true, Notes = "Identity path" },
-                new () { Path = "register", CosmosRequired = true, Notes = "Identity path" },
-                new () { Path = "blog", CosmosRequired = true, Notes = "Blog root" },
-                new () { Path = "blog/rss", CosmosRequired = true, Notes = "Blog RSS" },
-                new () { Path = "api", CosmosRequired = true, Notes = "API route" },
-                new () { Path = "pub", CosmosRequired = true, Notes = "Static assets" },
-                new () { Path = "rss", CosmosRequired = true, Notes = "RSS" },
-                new () { Path = "sitemap.xml", CosmosRequired = true, Notes = "Sitemap" }
-            };
-
-            List<ReservedPath> dbReserved;
-            try
-            {
-                dbReserved = await DbContext.Set<ReservedPath>().ToListAsync();
-            }
-            catch
-            {
-                dbReserved = new List<ReservedPath>();
-            }
-
-            var result = staticReserved
-                .Concat(dbReserved)
-                .GroupBy(r => r.Path, StringComparer.OrdinalIgnoreCase)
-                .Select(g => g.First())
-                .OrderBy(r => r.Path)
-                .ToList();
-
-            localCache.Set(cacheKey, result, TimeSpan.FromMinutes(10));
-            return result;
-        }
-
-        /// <summary>
         /// Returns redirect items (articles whose status represents redirect entries).
         /// </summary>
         /// <returns>Queryable redirect view models.</returns>
@@ -297,43 +248,6 @@ namespace Sky.Editor.Data.Logic
 
             sb.AppendLine("</body></html>");
             return await Task.FromResult(sb.ToString());
-        }
-
-        /// <summary>
-        /// Validates whether a proposed title is usable (not reserved and not used by a different article).
-        /// </summary>
-        /// <param name="title">Proposed title.</param>
-        /// <param name="articleNumber">Current article number (null when creating new).</param>
-        /// <returns>True if available; false if conflict.</returns>
-        public async Task<bool> ValidateTitle(string title, int? articleNumber)
-        {
-            var reservedPaths = (await GetReservedPaths()).Select(s => s.Path.ToLower()).ToArray();
-            foreach (var reservedPath in reservedPaths)
-            {
-                if (reservedPath.EndsWith('*'))
-                {
-                    var value = reservedPath.TrimEnd('*');
-                    if (title.ToLower().StartsWith(value))
-                    {
-                        return false;
-                    }
-                }
-                else if (title.Equals(reservedPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-            }
-
-            Article article = articleNumber.HasValue
-                ? await DbContext.Articles.FirstOrDefaultAsync(a =>
-                    a.ArticleNumber != articleNumber &&
-                    a.Title.ToLower() == title.Trim().ToLower() &&
-                    a.StatusCode != (int)StatusCodeEnum.Deleted)
-                : await DbContext.Articles.FirstOrDefaultAsync(a =>
-                    a.Title.ToLower() == title.Trim().ToLower() &&
-                    a.StatusCode != (int)StatusCodeEnum.Deleted);
-
-            return article == null;
         }
 
         /// <summary>
@@ -664,8 +578,8 @@ namespace Sky.Editor.Data.Logic
             {
                 return new List<CdnResult>();
             }
-
             article.Published = dateTime ?? clock.UtcNow;
+
             var cdnResults = await publishingService.PublishAsync(article);
             await UpsertCatalogEntry(article);
             //var cdnResults = await UpsertPublishedPage(article.Id) ?? new List<CdnResult>();

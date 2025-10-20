@@ -25,14 +25,13 @@ namespace Sky.Editor.Services.Publishing
     using Newtonsoft.Json;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Services.CDN;
-    using Sky.Editor.Services.Html;
 
     /// <inheritdoc/>
     public class PublishingService : IPublishingService
     {
         private readonly ApplicationDbContext _db;
         private readonly StorageContext _storage;
-        private readonly EditorSettings _settings;
+        private readonly IEditorSettings _settings;
         private readonly ILogger<PublishingService> _logger;
         private readonly IHttpContextAccessor _accessor;
         private readonly Authors.IAuthorInfoService _authors;
@@ -49,7 +48,7 @@ namespace Sky.Editor.Services.Publishing
         public PublishingService(
             ApplicationDbContext db,
             StorageContext storage,
-            EditorSettings settings,
+            IEditorSettings settings,
             ILogger<PublishingService> logger,
             IHttpContextAccessor accessor,
             Authors.IAuthorInfoService authors)

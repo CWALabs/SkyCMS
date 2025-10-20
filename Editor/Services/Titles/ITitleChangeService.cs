@@ -20,6 +20,15 @@ namespace Sky.Editor.Services.Titles
         /// </summary>
         /// <param name="article">The article entity whose title has just been modified (unsaved or saved, per calling convention).</param>
         /// <param name="oldTitle">The prior title value used to detect changes and generate redirects if required.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         Task HandleTitleChangeAsync(Article article, string oldTitle);
+
+        /// <summary>
+        /// Validates whether a proposed title is usable (not reserved and not used by a different article).
+        /// </summary>
+        /// <param name="title">Proposed title.</param>
+        /// <param name="articleNumber">Current article number (null when creating new).</param>
+        /// <returns>True if available; false if conflict.</returns>
+        Task<bool> ValidateTitle(string title, int? articleNumber);
     }
 }

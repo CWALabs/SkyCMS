@@ -11,11 +11,13 @@ namespace Sky.Editor.Services.Titles
     using System.Linq;
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
+    using Cosmos.Common.Data.Logic;
     using Microsoft.EntityFrameworkCore;
     using Sky.Editor.Domain.Events;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.Redirects;
+    using Sky.Editor.Services.ReservedPaths;
     using Sky.Editor.Services.Slugs;
 
     /// <summary>
@@ -30,6 +32,7 @@ namespace Sky.Editor.Services.Titles
         private readonly IClock clock;
         private readonly IDomainEventDispatcher dispatcher;
         private readonly IPublishingService publishingService;
+        private readonly IReservedPaths reservedPaths;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TitleChangeService"/> class.
@@ -40,13 +43,15 @@ namespace Sky.Editor.Services.Titles
         /// <param name="clock">Clock abstraction for testable timestamps.</param>
         /// <param name="dispatcher">Domain event dispatcher.</param>
         /// <param name="publishingService">Publishing service.</param>
+        /// <param name="reservedPaths">Reserved paths service.</param>
         public TitleChangeService(
             ApplicationDbContext db,
             ISlugService slugs,
             IRedirectService redirects,
             IClock clock,
             IDomainEventDispatcher dispatcher,
-            IPublishingService publishingService)
+            IPublishingService publishingService,
+            IReservedPaths reservedPaths)
         {
             this.db = db;
             this.slugs = slugs;
@@ -54,6 +59,7 @@ namespace Sky.Editor.Services.Titles
             this.clock = clock;
             this.dispatcher = dispatcher;
             this.publishingService = publishingService;
+            this.reservedPaths = reservedPaths;
         }
 
         /// <inheritdoc/>
@@ -121,6 +127,43 @@ namespace Sky.Editor.Services.Titles
             await UpdateChildUrlsAsync(article, oldSlug);
 
             await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
+        }
+
+        /// <summary>
+        /// Validates whether a proposed title is usable (not reserved and not used by a different article).
+        /// </summary>
+        /// <param name="title">Proposed title.</param>
+        /// <param name="articleNumber">Current article number (null when creating new).</param>
+        /// <returns>True if available; false if conflict.</returns>
+        public async Task<bool> ValidateTitle(string title, int? articleNumber)
+        {
+            var paths = (await reservedPaths.GetReservedPaths()).Select(s => s.Path.ToLower()).ToArray();
+            foreach (var reservedPath in paths)
+            {
+                if (reservedPath.EndsWith('*'))
+                {
+                    var value = reservedPath.TrimEnd('*');
+                    if (title.ToLower().StartsWith(value))
+                    {
+                        return false;
+                    }
+                }
+                else if (title.Equals(reservedPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            Article article = articleNumber.HasValue
+                ? await db.Articles.FirstOrDefaultAsync(a =>
+                    a.ArticleNumber != articleNumber &&
+                    a.Title.ToLower() == title.Trim().ToLower() &&
+                    a.StatusCode != (int)StatusCodeEnum.Deleted)
+                : await db.Articles.FirstOrDefaultAsync(a =>
+                    a.Title.ToLower() == title.Trim().ToLower() &&
+                    a.StatusCode != (int)StatusCodeEnum.Deleted);
+
+            return article == null;
         }
 
         /// <summary>
