@@ -435,6 +435,37 @@ namespace Sky.Editor.Data.Logic
         }
 
         /// <summary>
+        ///  Creates a new article version from an existing one.
+        /// </summary>
+        /// <param name="article">Exiting article.</param>
+        /// <returns>New layout with an incremented version number.</returns>
+        public async Task<Article> NewVersion(Article article)
+        {
+            var nextVersion = new Article()
+            {
+                VersionNumber = (await DbContext.Articles.Where(a => a.ArticleNumber == article.ArticleNumber).CountAsync()) + 1,
+                Published = null,
+                Id = Guid.NewGuid(),
+                ArticleNumber = article.ArticleNumber,
+                BannerImage = article.BannerImage,
+                Content = article.Content,
+                FooterJavaScript = article.FooterJavaScript,
+                HeaderJavaScript = article.HeaderJavaScript,
+                StatusCode = article.StatusCode,
+                Title = article.Title,
+                UrlPath = article.UrlPath,
+                Updated = DateTimeOffset.UtcNow,
+                TemplateId = article.TemplateId,
+                UserId = article.UserId,
+                Expires = article.Expires,
+            };
+
+            DbContext.Articles.Add(nextVersion);
+            await DbContext.SaveChangesAsync();
+            return nextVersion;
+        }
+
+        /// <summary>
         /// Restores a previously deleted article (all versions) to active status, assigning new title if conflict exists.
         /// </summary>
         /// <param name="articleNumber">Article number.</param>
@@ -519,6 +550,8 @@ namespace Sky.Editor.Data.Logic
             article.UserId = userId.ToString();
             article.ArticleType = (int)model.ArticleType;
             article.Category = model.Category ?? string.Empty;
+            article.Published = model.Published;
+
             if (!string.IsNullOrWhiteSpace(model.Introduction))
             {
                 article.Introduction = model.Introduction;
@@ -548,7 +581,7 @@ namespace Sky.Editor.Data.Logic
 
             if (article.Published.HasValue)
             {
-                var cdnResults = await UpsertPublishedPage(article.Id);
+                var cdnResults = await publishingService.PublishAsync(article);
                 return new ArticleUpdateResult
                 {
                     ServerSideSuccess = true,
@@ -578,11 +611,12 @@ namespace Sky.Editor.Data.Logic
             {
                 return new List<CdnResult>();
             }
+
             article.Published = dateTime ?? clock.UtcNow;
 
             var cdnResults = await publishingService.PublishAsync(article);
             await UpsertCatalogEntry(article);
-            //var cdnResults = await UpsertPublishedPage(article.Id) ?? new List<CdnResult>();
+
             return cdnResults;
         }
 
@@ -648,86 +682,86 @@ namespace Sky.Editor.Data.Logic
         /// </summary>
         /// <param name="id">Article version ID.</param>
         /// <returns>List of CDN purge results or null.</returns>
-        private async Task<List<CdnResult>> UpsertPublishedPage(Guid id)
-        {
-            var doomed = await DbContext.Pages
-                .Where(w => w.Content == "" || w.Title == "").ToListAsync();
-            if (doomed.Any())
-            {
-                DbContext.Pages.RemoveRange(doomed);
-                await DbContext.SaveChangesAsync();
-            }
+        //private async Task<List<CdnResult>> UpsertPublishedPage(Guid id)
+        //{
+        //    var doomed = await DbContext.Pages
+        //        .Where(w => w.Content == "" || w.Title == "").ToListAsync();
+        //    if (doomed.Any())
+        //    {
+        //        DbContext.Pages.RemoveRange(doomed);
+        //        await DbContext.SaveChangesAsync();
+        //    }
 
-            var newVersion = await DbContext.Articles
-                .FirstOrDefaultAsync(w => w.Id == id && w.Published != null);
+        //    var newVersion = await DbContext.Articles
+        //        .FirstOrDefaultAsync(w => w.Id == id && w.Published != null);
 
-            var articleNumber = newVersion.ArticleNumber;
-            var publishedVersions = await DbContext.Pages.Where(
-                w => w.ArticleNumber == articleNumber &&
-                     w.StatusCode != (int)StatusCodeEnum.Redirect).ToListAsync();
+        //    var articleNumber = newVersion.ArticleNumber;
+        //    var publishedVersions = await DbContext.Pages.Where(
+        //        w => w.ArticleNumber == articleNumber &&
+        //             w.StatusCode != (int)StatusCodeEnum.Redirect).ToListAsync();
 
-            if (publishedVersions.Count > 0)
-            {
-                foreach (var item in publishedVersions)
-                {
-                    DbContext.Pages.Remove(item);
-                    await DbContext.SaveChangesAsync();
-                    DeleteStaticWebpage(item.UrlPath);
-                }
-            }
+        //    if (publishedVersions.Count > 0)
+        //    {
+        //        foreach (var item in publishedVersions)
+        //        {
+        //            DbContext.Pages.Remove(item);
+        //            await DbContext.SaveChangesAsync();
+        //            DeleteStaticWebpage(item.UrlPath);
+        //        }
+        //    }
 
-            var authorInfo = await GetAuthorInfoForUserId(Guid.Parse(newVersion.UserId));
-            var newPage = new PublishedPage
-            {
-                ArticleNumber = newVersion.ArticleNumber,
-                BannerImage = newVersion.BannerImage,
-                Content = newVersion.Content,
-                Expires = newVersion.Expires,
-                FooterJavaScript = newVersion.FooterJavaScript,
-                HeaderJavaScript = newVersion.HeaderJavaScript,
-                Id = Guid.NewGuid(),
-                Published = newVersion.Published,
-                StatusCode = newVersion.StatusCode,
-                Title = newVersion.Title,
-                Updated = newVersion.Updated,
-                UrlPath = newVersion.UrlPath,
-                ParentUrlPath = newVersion.UrlPath.Substring(0, Math.Max(newVersion.UrlPath.LastIndexOf('/'), 0)),
-                VersionNumber = newVersion.VersionNumber,
-                AuthorInfo = authorInfo == null ? string.Empty : JsonConvert.SerializeObject(authorInfo).Replace("\"", "'"),
-                ArticleType = newVersion.ArticleType,
-                Category = newVersion.Category,
-                Introduction = newVersion.Introduction,
-                BlogKey = newVersion.BlogKey,
-            };
+        //    var authorInfo = await GetAuthorInfoForUserId(Guid.Parse(newVersion.UserId));
+        //    var newPage = new PublishedPage
+        //    {
+        //        ArticleNumber = newVersion.ArticleNumber,
+        //        BannerImage = newVersion.BannerImage,
+        //        Content = newVersion.Content,
+        //        Expires = newVersion.Expires,
+        //        FooterJavaScript = newVersion.FooterJavaScript,
+        //        HeaderJavaScript = newVersion.HeaderJavaScript,
+        //        Id = Guid.NewGuid(),
+        //        Published = newVersion.Published,
+        //        StatusCode = newVersion.StatusCode,
+        //        Title = newVersion.Title,
+        //        Updated = newVersion.Updated,
+        //        UrlPath = newVersion.UrlPath,
+        //        ParentUrlPath = newVersion.UrlPath.Substring(0, Math.Max(newVersion.UrlPath.LastIndexOf('/'), 0)),
+        //        VersionNumber = newVersion.VersionNumber,
+        //        AuthorInfo = authorInfo == null ? string.Empty : JsonConvert.SerializeObject(authorInfo).Replace("\"", "'"),
+        //        ArticleType = newVersion.ArticleType,
+        //        Category = newVersion.Category,
+        //        Introduction = newVersion.Introduction,
+        //        BlogKey = newVersion.BlogKey,
+        //    };
 
-            DbContext.Pages.Add(newPage);
-            await DbContext.SaveChangesAsync();
+        //    DbContext.Pages.Add(newPage);
+        //    await DbContext.SaveChangesAsync();
 
-            var purgePaths = new List<string>
-            {
-                newVersion.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
-                    ? "/"
-                    : $"{settings.PublisherUrl.TrimEnd('/')}/{newVersion.UrlPath.TrimStart('/')}"
-            };
+        //    var purgePaths = new List<string>
+        //    {
+        //        newVersion.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
+        //            ? "/"
+        //            : $"{settings.PublisherUrl.TrimEnd('/')}/{newVersion.UrlPath.TrimStart('/')}"
+        //    };
 
-            await UpsertCatalogEntry(newVersion);
-            await publishingService.WriteTocAsync();
+        //    await UpsertCatalogEntry(newVersion);
+        //    await publishingService.WriteTocAsync();
 
-            if (purgePaths.Count > 0)
-            {
-                var cdnService = CdnService.GetCdnService(DbContext, logger, accessor.HttpContext);
-                try
-                {
-                    return await cdnService.PurgeCdn(purgePaths);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "CDN purge failed.");
-                }
-            }
+        //    if (purgePaths.Count > 0)
+        //    {
+        //        var cdnService = CdnService.GetCdnService(DbContext, logger, accessor.HttpContext);
+        //        try
+        //        {
+        //            return await cdnService.PurgeCdn(purgePaths);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            logger.LogWarning(ex, "CDN purge failed.");
+        //        }
+        //    }
 
-            return null;
-        }
+        //    return null;
+        //}
 
         /// <summary>
         /// Creates or replaces a catalog entry for the supplied article based on current top version state.

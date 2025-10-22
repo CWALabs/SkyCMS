@@ -394,7 +394,8 @@ public class BlogControllerTests : ArticleEditLogicTestBase
     public async Task Edit_Post_ValidModel_RegeneratesKeyFromTitleAndUpdates()
     {
         // Arrange
-        var blog = await CreateTestBlog("original-title", "Original Title");
+        var isDefault = Db.Blogs.Count(a => a.IsDefault == true) == 0;
+        var blog = await CreateTestBlog("original-title", "Original Title", isDefault: isDefault);
         var model = new BlogStreamViewModel
         {
             Id = blog.Id,
@@ -402,7 +403,8 @@ public class BlogControllerTests : ArticleEditLogicTestBase
             Description = "Updated description",
             HeroImage = "/new-hero.jpg",
             SortOrder = 10,
-            BlogKey = "manually-set-key" // Controller ignores this and regenerates from Title
+            BlogKey = "manually-set-key", // Controller ignores this and regenerates from Title
+            IsDefault = blog.IsDefault
         };
 
         // Act
@@ -466,7 +468,7 @@ public class BlogControllerTests : ArticleEditLogicTestBase
         // Arrange
         var blog = await CreateTestBlog("test", "Test");
         _controller.ModelState.AddModelError("Title", "Required");
-        
+
         var model = new BlogStreamViewModel
         {
             Id = blog.Id,
@@ -488,7 +490,7 @@ public class BlogControllerTests : ArticleEditLogicTestBase
     {
         // Arrange
         var blog = await CreateTestBlog("only-default", "Only Default", isDefault: true);
-        
+
         var model = new BlogStreamViewModel
         {
             Id = blog.Id,
@@ -684,15 +686,15 @@ public class BlogControllerTests : ArticleEditLogicTestBase
         // Arrange
         await Logic.CreateArticle("Home Page", TestUserId);
         var blog = await CreateTestBlog("test", "Test");
-        
+
         var old = await Logic.CreateArticle("Old Post", TestUserId, null, blog.BlogKey);
         var oldEntity = await Db.Articles.FirstAsync(a => a.ArticleNumber == old.ArticleNumber);
         oldEntity.Published = DateTimeOffset.UtcNow.AddDays(-5);
-        
+
         var recent = await Logic.CreateArticle("Recent Post", TestUserId, null, blog.BlogKey);
         var recentEntity = await Db.Articles.FirstAsync(a => a.ArticleNumber == recent.ArticleNumber);
         recentEntity.Published = DateTimeOffset.UtcNow;
-        
+
         await Db.SaveChangesAsync();
 
         // Act
@@ -766,7 +768,7 @@ public class BlogControllerTests : ArticleEditLogicTestBase
         // Arrange
         await Logic.CreateArticle("Home Page", TestUserId);
         var blog = await CreateTestBlog("test-blog", "Test");
-        
+
         var model = new BlogEntryEditViewModel
         {
             BlogKey = blog.BlogKey,
@@ -820,17 +822,17 @@ public class BlogControllerTests : ArticleEditLogicTestBase
         await Logic.CreateArticle("Home Page", TestUserId);
         var blog = await CreateTestBlog("test", "Test");
         var post = await Logic.CreateArticle("Published", TestUserId, null, blog.BlogKey);
-        
+
         var entity = await Db.Articles.FirstAsync(a => a.ArticleNumber == post.ArticleNumber);
         entity.Published = DateTimeOffset.UtcNow;
         await Db.SaveChangesAsync();
 
         var model = new BlogEntryEditViewModel
         {
-        BlogKey = blog.BlogKey,
-        ArticleNumber = post.ArticleNumber,
-        Title = "Published",
-        PublishNow = false // Unpublish
+            BlogKey = blog.BlogKey,
+            ArticleNumber = post.ArticleNumber,
+            Title = "Published",
+            PublishNow = false // Unpublish
         };
 
         // Act
@@ -916,7 +918,7 @@ public class BlogControllerTests : ArticleEditLogicTestBase
         // Arrange
         await Logic.CreateArticle("Home Page", TestUserId);
         var blog = await CreateTestBlog("popular", "Popular");
-    
+
         for (int i = 0; i < 30; i++)
         {
             await Logic.CreateArticle($"Post {i}", TestUserId, null, blog.BlogKey);
@@ -935,8 +937,8 @@ public class BlogControllerTests : ArticleEditLogicTestBase
     {
         // Arrange
         await Logic.CreateArticle("Home Page", TestUserId);
-        var blog = await CreateTestBlog("test", "Test Blog", 
-            description: "Test Description", 
+        var blog = await CreateTestBlog("test", "Test Blog",
+            description: "Test Description",
             sortOrder: 0);
         blog.HeroImage = "/hero.jpg";
         await Db.SaveChangesAsync();

@@ -2255,41 +2255,10 @@ namespace Sky.Cms.Controllers
 
             if (article.Published.HasValue)
             {
-                return await NewVersion(article);
+                return await this.articleLogic.NewVersion(article);
             }
 
             return article;
-        }
-
-        /// <summary>
-        ///  Creates a new layout from an existing layout.
-        /// </summary>
-        /// <param name="article">Exiting article.</param>
-        /// <returns>New layout with an incremented version number.</returns>
-        private async Task<Article> NewVersion(Article article)
-        {
-            var nextVersion = new Article()
-            {
-                VersionNumber = (await dbContext.Articles.Where(a => a.ArticleNumber == article.ArticleNumber).CountAsync()) + 1,
-                Published = null,
-                Id = Guid.NewGuid(),
-                ArticleNumber = article.ArticleNumber,
-                BannerImage = article.BannerImage,
-                Content = article.Content,
-                FooterJavaScript = article.FooterJavaScript,
-                HeaderJavaScript = article.HeaderJavaScript,
-                StatusCode = article.StatusCode,
-                Title = article.Title,
-                UrlPath = article.UrlPath,
-                Updated = DateTimeOffset.UtcNow,
-                TemplateId = article.TemplateId,
-                UserId = article.UserId,
-                Expires = article.Expires,
-            };
-
-            dbContext.Articles.Add(nextVersion);
-            await dbContext.SaveChangesAsync();
-            return nextVersion;
         }
 
     }

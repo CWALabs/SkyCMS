@@ -263,7 +263,9 @@ namespace Sky.Editor.Controllers
                     return View("Edit", model);
                 }
 
-                model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title);
+                // Regenerate BlogKey
+                blog.Title = model.Title;
+                blog.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title);
             }
 
             if (model.IsDefault)
@@ -274,6 +276,8 @@ namespace Sky.Editor.Controllers
                 {
                     d.IsDefault = false;
                 }
+
+                blog.IsDefault = true;
             }
             else
             {
@@ -286,8 +290,6 @@ namespace Sky.Editor.Controllers
                 }
             }
 
-            blog.BlogKey = model.BlogKey; // user-chosen or previously generated
-            blog.Title = model.Title;
             blog.Description = model.Description;
             blog.HeroImage = model.HeroImage ?? string.Empty;
             blog.IsDefault = model.IsDefault;

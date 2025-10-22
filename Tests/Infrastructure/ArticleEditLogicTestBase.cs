@@ -43,6 +43,7 @@ namespace Sky.Tests
         protected IReservedPaths ReservedPaths = null!;
         protected IRedirectService RedirectService = null!;
         protected ITitleChangeService TitleChangeService = null!;
+        protected IClock Clock { get; } = new SystemClock();
 
         /// <summary>
         /// Initialize test context. Call from [TestInitialize].
@@ -92,18 +93,17 @@ namespace Sky.Tests
             Storage = new StorageContext(storageConnectionString, Cache);
 
             // Core service graph.
-            var clock = new SystemClock();
             SlugService = new SlugService();
             ArticleHtmlService = new ArticleHtmlService();
             var catalogLogger = new LoggerFactory().CreateLogger<CatalogService>();
-            var catalogService = new CatalogService(Db, ArticleHtmlService, clock, catalogLogger);
+            var catalogService = new CatalogService(Db, ArticleHtmlService, Clock, catalogLogger);
             EventDispatcher = new TestDomainEventDispatcher();
             var authorInfoService = new AuthorInfoService(Db, Cache);
             PublishingService = new PublishingService(Db, Storage, EditorSettings,
-                new LoggerFactory().CreateLogger<PublishingService>(), HttpContextAccessor, authorInfoService);
+                new LoggerFactory().CreateLogger<PublishingService>(), HttpContextAccessor, authorInfoService, Clock);
             ReservedPaths = new ReservedPaths(Db);
-            RedirectService = new RedirectService(Db, SlugService, clock, PublishingService);
-            TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, clock, EventDispatcher, PublishingService, ReservedPaths);
+            RedirectService = new RedirectService(Db, SlugService, Clock, PublishingService);
+            TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, Clock, EventDispatcher, PublishingService, ReservedPaths);
 
             var publishingArtifactService = new PublishingService(
                 Db,
@@ -111,11 +111,11 @@ namespace Sky.Tests
                 EditorSettings,
                 new NullLogger<PublishingService>(),
                 HttpContextAccessor,
-                authorInfoService
+                authorInfoService, Clock
             );
-            var redirectService = new RedirectService(Db, SlugService, clock, publishingArtifactService);
+            var redirectService = new RedirectService(Db, SlugService, Clock, publishingArtifactService);
 
-            var titleChangeService = new TitleChangeService(Db, SlugService, redirectService, clock, EventDispatcher, publishingArtifactService, ReservedPaths);
+            var titleChangeService = new TitleChangeService(Db, SlugService, redirectService, Clock, EventDispatcher, publishingArtifactService, ReservedPaths);
 
             // Construct logic (using explicit DI constructor).
             Logic = new ArticleEditLogic(
@@ -126,7 +126,7 @@ namespace Sky.Tests
                 new NullLogger<ArticleEditLogic>(),
                 HttpContextAccessor,
                 EditorSettings,
-                clock,
+                Clock,
                 SlugService,
                 ArticleHtmlService,
                 catalogService,
