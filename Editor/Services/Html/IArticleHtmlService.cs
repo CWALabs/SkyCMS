@@ -14,7 +14,7 @@ namespace Sky.Editor.Services.Html
     /// Provides operations for manipulating and analyzing article HTML fragments.
     /// Responsibilities include:
     /// - Ensuring editor (contenteditable) markers and stable identifiers exist.
-    /// - Normalizing Angular application <base> href values based on a URL path.
+    /// - Normalizing Angular application href values based on a URL path.
     /// - Extracting an introductory text snippet from article body HTML.
     /// </summary>
     public interface IArticleHtmlService
@@ -30,12 +30,12 @@ namespace Sky.Editor.Services.Html
 
         /// <summary>
         /// For Angular-based articles (detected via meta name='ccms:framework' value='angular'),
-        /// ensures a <base> element exists (or is updated) with an href derived from the provided URL path.
+        /// ensures a element exists (or is updated) with an href derived from the provided URL path.
         /// If the fragment is not Angular-marked, the original fragment is returned unchanged.
         /// </summary>
         /// <param name="headerFragment">HTML header fragment (head-level markup or similar).</param>
         /// <param name="urlPath">Logical URL path used to construct the base href.</param>
-        /// <returns>Header fragment with a normalized <base> element when applicable.</returns>
+        /// <returns>Header fragment with a normalized element when applicable.</returns>
         string EnsureAngularBase(string headerFragment, string urlPath);
 
         /// <summary>

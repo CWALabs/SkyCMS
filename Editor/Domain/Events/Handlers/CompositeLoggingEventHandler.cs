@@ -17,7 +17,7 @@ namespace Sky.Editor.Domain.Events.Handlers
     /// </summary>
     /// <remarks>
     /// Intended primarily for diagnostics and observability. Registering this as an open generic
-    /// (e.g. services.AddTransient(typeof(IDomainEventHandler<>), typeof(CompositeLoggingEventHandler<>)))
+    /// (e.g. services.AddTransient(typeof(IDomainEventHandler), typeof(CompositeLoggingEventHandler)))
     /// enables basic logging for all events without creating dedicated handlers.
     /// This handler does not modify state and completes synchronously.
     /// </remarks>
@@ -31,7 +31,7 @@ namespace Sky.Editor.Domain.Events.Handlers
         private readonly ILogger<CompositeLoggingEventHandler<TEvent>> _logger;
 
         /// <summary>
-        /// Creates a new instance of the logging event handler.
+        /// Initializes a new instance of the <see cref="CompositeLoggingEventHandler{TEvent}"/> class.
         /// </summary>
         /// <param name="logger">The logger instance injected from DI.</param>
         public CompositeLoggingEventHandler(ILogger<CompositeLoggingEventHandler<TEvent>> logger) =>

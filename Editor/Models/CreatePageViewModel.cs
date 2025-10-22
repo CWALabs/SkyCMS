@@ -57,6 +57,9 @@ namespace Sky.Cms.Models
         /// </summary>
         public List<SelectListItem> Templates { get; set; }
 
+        /// <summary>
+        /// Gets or sets the type of article.
+        /// </summary>
         public ArticleType ArticleType { get; set; } = ArticleType.General;
 
         /// <summary>
