@@ -2,25 +2,39 @@
 @{
     ViewData["Title"] = "Edit Blog Stream";
 }
-<h2>Edit Blog Stream</h2>
+<link href="~/lib/cosmos/image-widget/image-widget.css" rel="stylesheet" />
+<script src="~/lib/cosmos/image-widget/image-widget.js"></script>
 <form asp-action="Edit" method="post" enctype="multipart/form-data" id="editBlogForm">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
     <input type="hidden" asp-for="Id" />
     @* Keep BlogKey hidden so it posts back unchanged *@
     <input type="hidden" asp-for="BlogKey" />
+    <div class="cwps-editor-container pt-3">
+        <div class="container">
+            <div class="row">
+                <div class="col mb-3">
+                    <div id="imgWidget">
 
-    <div class="input-group mb-3">
-        <span class="input-group-text">Title:</span>
-        <input asp-for="Title" class="form-control" id="Title" placeholder="e.g. Engineering Updates" />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">Title:</span>
+                        <input asp-for="Title" class="form-control" id="Title" placeholder="e.g. Engineering Updates" />
+                    </div>
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                </div>
+            </div>
+        </div>
     </div>
+    <h2>Edit Blog Stream</h2>
+
+
+
+
+
     <span asp-validation-for="Title" class="text-danger"></span>
-
-    <div class="input-group mb-3">
-        <span class="input-group-text">Description:</span>
-        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Short description (max 512 chars)"></textarea>
-    </div>
-    <span asp-validation-for="Description" class="text-danger"></span>
 
     <!-- Hero image is OPTIONAL -->
     <div class="input-group mb-2">
@@ -28,6 +42,12 @@
         <input asp-for="HeroImage" class="form-control" placeholder="/images/hero.jpg or https://..." aria-required="false" />
     </div>
     <span asp-validation-for="HeroImage" class="text-danger"></span>
+
+    <div class="input-group mb-3">
+        <span class="input-group-text">Description:</span>
+        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Short description (max 512 chars)"></textarea>
+    </div>
+    <span asp-validation-for="Description" class="text-danger"></span>
 
     <div class="input-group mb-2">
         <span class="input-group-text">Upload Image (optional)</span>
@@ -124,5 +144,7 @@
         })();
     </script>
 
-    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

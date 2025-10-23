@@ -141,17 +141,22 @@ namespace Cosmos.DynamicConfig
         /// </remarks>
         public string GetTenantDomainNameFromRequest(bool useReferer = false)
         {
-            var httpContext = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HTTP context is not available.");
-            var request = httpContext.Request;
+            if (httpContextAccessor.HttpContext == null)
+            {
+                return string.Empty;
+            }
+             
             if (useReferer)
             {
-                var referer = request.Headers["Referer"].ToString();
+                var referer = httpContextAccessor.HttpContext.Request.Headers.Referer.ToString();
                 if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
                 {
                     return refererUri.Host.ToLower();
                 }
             }
-            return request == null ? throw new InvalidOperationException("HTTP request is not available.") : request.Host.Host;
+            return httpContextAccessor.HttpContext.Request == null ?
+                throw new InvalidOperationException("HTTP request is not available.") :
+                httpContextAccessor.HttpContext.Request.Host.Host;
         }
 
         /// <summary>

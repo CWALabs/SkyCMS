@@ -1,14 +1,78 @@
-﻿function ccms___onClickTrashCan(id, element) {
-    // Clean things up.
-    while (element.hasChildNodes()) {
-        element.removeChild(element.firstChild);
-    }
-    parent.saveChanges(element.innerHTML, id);
+﻿image - widget\image - widget.js
+/**
+ * Cosmos CMS Image Widget (Enhanced)
+ * 
+ * Provides an interactive image upload and management widget for the Cosmos CMS editor.
+ * Uses FilePond for drag-and-drop file uploads with automatic save integration.
+ * 
+ * REQUIREMENTS:
+ * - FilePond library and FilePondPluginFileMetadata plugin must be loaded before this script
+ * - Parent page must define:
+ *   - parent.saveChanges(html, elementId) - Called when image is removed
+ *   - parent.saveEditorRegion(html, elementId) - Called when image is uploaded
+ *   - parent.saving() [optional] - Called when upload starts
+ *   - parent.saveInProgress [optional] - Boolean flag set during upload
+ *   - articleNumber [optional] - Global variable for article context (determines upload path)
+ * 
+ * USAGE:
+ * 1. Add a div with data-editor-config="image-widget" and data-ccms-ceid="unique-id"
+ *    Example: <div data-editor-config="image-widget" data-ccms-ceid="img-123"></div>
+ * 
+ * 2. For new widgets (will auto-generate ID), use: data-ccms-new="true"
+ *    Example: <div data-editor-config="image-widget" data-ccms-new="true"></div>
+ * 
+ * 3. To pre-populate with an image, include an <img> tag inside:
+ *    <div data-editor-config="image-widget" data-ccms-ceid="img-123">
+ *      <img src="/pub/images/photo.jpg" class="ccms-img-widget-img" alt="Description" />
+ *    </div>
+ * 
+ * CONFIGURATION:
+ * - Upload endpoint: /FileManager/UploadImage
+ * - Image library endpoint: /FileManager/GetImageAssets
+ * - Accepted file types: PNG, JPG, JPEG, WebP, GIF
+ * - Max file size: 25MB (enforced server-side)
+ * - Upload path: /pub/articles/{articleNumber}/ (if articleNumber exists) or /pub/images/
+ * 
+ * NEW FEATURES:
+ * - Alt text editor for accessibility
+ * - Drag-and-drop image replacement
+ * - Upload progress indicator
+ * - Image library browser for reusing uploaded images
+ * - Enhanced error handling with user-friendly messages
+ */
 
-    ccms___initializePond(element);
-}
+// ============================================================================
+// CONSTANTS AND CONFIGURATION
+// ============================================================================
 
-function newGuid() {
+const CCMS_IMAGE_WIDGET_CONFIG = {
+    uploadEndpoint: '/FileManager/UploadImage',
+    imageLibraryEndpoint: '/FileManager/GetImageAssets',
+    acceptedFileTypes: ['image/png', 'image/jpg', 'image/jpeg', 'image/webp', 'image/gif'],
+    maxFileSize: 26214400, // 25MB in bytes (server enforces, this is for reference)
+    defaultUploadPath: '/pub/images/',
+    articleUploadPath: '/pub/articles/',
+    trashIconHtml: '<i class="fa-solid fa-trash"></i>',
+    editIconHtml: '<i class="fa-solid fa-edit"></i>',
+    libraryIconHtml: '<i class="fa-solid fa-images"></i>',
+    replaceIconHtml: '<i class="fa-solid fa-sync"></i>',
+    placeholderImage: '/images/AddImageHere.webp',
+    zIndexOffset: 1000, // Safe z-index for overlays
+    showProgressBar: true,
+    enableImageLibrary: true,
+    enableAltTextEditor: true,
+    enableDragReplace: true
+};
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Generates a random GUID/UUID for unique element identification.
+ * @returns {string} A UUID v4 formatted string
+ */
+function ccms___newGuid() {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000)
             .toString(16)
@@ -17,7 +81,13 @@ function newGuid() {
     return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 
-function debounce(func, wait) {
+/**
+ * Creates a debounced version of a function that delays execution.
+ * @param {Function} func - The function to debounce
+ * @param {number} wait - Milliseconds to wait before execution
+ * @returns {Function} The debounced function
+ */
+function ccms___debounce(func, wait) {
     let timeout;
     return function (...args) {
         clearTimeout(timeout);
@@ -25,6 +95,11 @@ function debounce(func, wait) {
     };
 }
 
+/**
+ * Extracts image dimensions from a file blob using the Image API.
+ * @param {Blob} blob - The image file blob
+ * @param {Function} callback - Callback receiving {width, height} object
+ */
 function ccms___getImageDimensions(blob, callback) {
     const reader = new FileReader();
     reader.onload = function (e) {
@@ -36,224 +111,820 @@ function ccms___getImageDimensions(blob, callback) {
             };
             callback(dimensions);
         };
+        img.onerror = function () {
+            console.error('Failed to load image for dimension detection');
+            callback({ width: 0, height: 0 });
+        };
         img.src = e.target.result;
+    };
+    reader.onerror = function () {
+        console.error('Failed to read image file');
+        callback({ width: 0, height: 0 });
     };
     reader.readAsDataURL(blob);
 }
 
-function ccms___handleWidgetMouseLeave(event) {
+/**
+ * Shows a user-friendly error notification.
+ * @param {string} message - Error message to display
+ * @param {HTMLElement} container - Container to show error in
+ */
+function ccms___showError(message, container) {
+    const errorDiv = document.createElement('div');
+    errorDiv.classList.add('ccms-img-widget-error');
+    errorDiv.innerHTML = `
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
 
-    // Ensure image element exists.
-    const element = event.currentTarget;
-    const trashCan = element.querySelector(".ccms-img-trashcan");
+    container.appendChild(errorDiv);
 
-    // Check if the mouse is moving to the trashCan or its children
-    if (trashCan && trashCan === event.relatedTarget) {
-        return;
-    }
-
-    if (trashCan) {
-        trashCan.remove();
-    }
-
-    element.removeEventListener('mouseleave', ccms___handleWidgetMouseLeave);
-    element.removeEventListener('mouseover', ccms___handleWidgetMouseOver);
-    element.addEventListener('mouseover', ccms___handleWidgetMouseOver, { once: true });
-    console.log("Mouse over event reset.");
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 5000);
 }
 
-function ccms___handleWidgetMouseOver(event) {
-    // Ensure image element exists.
-    const img = this.querySelector("img");
-    const element = event.currentTarget;
-    if (img !== null && img.src !== "") {
+/**
+ * Validates a file before upload.
+ * @param {File} file - File to validate
+ * @returns {{valid: boolean, error: string|null}} Validation result
+ */
+function ccms___validateFile(file) {
+    // Check file size
+    if (file.size > CCMS_IMAGE_WIDGET_CONFIG.maxFileSize) {
+        return {
+            valid: false,
+            error: `File size (${(file.size / 1048576).toFixed(2)}MB) exceeds maximum allowed size (25MB).`
+        };
+    }
 
-        // If an image already present add the remove image option.
-        const id = element.getAttribute("data-ccms-ceid");
-        let a = element.querySelector(".ccms-img-trashcan");
+    // Check file type
+    const extension = '.' + file.name.split('.').pop().toLowerCase();
+    const validExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
 
-        if (a !== null) {
+    if (!validExtensions.includes(extension)) {
+        return {
+            valid: false,
+            error: `File type "${extension}" is not supported. Please use: ${validExtensions.join(', ')}`
+        };
+    }
+
+    return { valid: true, error: null };
+}
+
+// ============================================================================
+// ALT TEXT EDITOR
+// ============================================================================
+
+/**
+ * Shows the alt text editor modal for an image.
+ * @param {HTMLElement} imageElement - The image element to edit
+ * @param {HTMLElement} widgetContainer - The widget container element
+ */
+function ccms___showAltTextEditor(imageElement, widgetContainer) {
+    const id = widgetContainer.getAttribute('data-ccms-ceid');
+    const currentAlt = imageElement.getAttribute('alt') || '';
+    const currentTitle = imageElement.getAttribute('title') || '';
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.classList.add('ccms-img-widget-modal');
+    modal.innerHTML = `
+        <div class="ccms-modal-overlay"></div>
+        <div class="ccms-modal-dialog">
+            <div class="ccms-modal-content">
+                <div class="ccms-modal-header">
+                    <h5>Edit Image Properties</h5>
+                    <button type="button" class="ccms-modal-close" aria-label="Close">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="ccms-modal-body">
+                    <div class="mb-3">
+                        <label for="ccms-alt-text-${id}" class="form-label">
+                            Alt Text <span class="text-danger">*</span>
+                            <small class="text-muted">(Required for accessibility)</small>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="ccms-alt-text-${id}" 
+                            value="${currentAlt}"
+                            placeholder="Describe this image..."
+                            maxlength="255"
+                        />
+                        <small class="form-text text-muted">
+                            Describe the image for screen readers and SEO (max 255 characters).
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ccms-title-text-${id}" class="form-label">
+                            Title (Optional)
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="ccms-title-text-${id}" 
+                            value="${currentTitle}"
+                            placeholder="Additional information..."
+                            maxlength="255"
+                        />
+                        <small class="form-text text-muted">
+                            Appears as a tooltip when hovering over the image.
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <img src="${imageElement.src}" class="img-thumbnail" style="max-width: 100%; max-height: 200px;" alt="Preview" />
+                    </div>
+                </div>
+                <div class="ccms-modal-footer">
+                    <button type="button" class="btn btn-secondary ccms-modal-cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary ccms-modal-save">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Focus the alt text input
+    const altInput = modal.querySelector(`#ccms-alt-text-${id}`);
+    altInput.focus();
+    altInput.select();
+
+    // Close handlers
+    const closeModal = () => modal.remove();
+    modal.querySelector('.ccms-modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.ccms-modal-cancel').addEventListener('click', closeModal);
+    modal.querySelector('.ccms-modal-overlay').addEventListener('click', closeModal);
+
+    // Save handler
+    modal.querySelector('.ccms-modal-save').addEventListener('click', () => {
+        const newAlt = modal.querySelector(`#ccms-alt-text-${id}`).value.trim();
+        const newTitle = modal.querySelector(`#ccms-title-text-${id}`).value.trim();
+
+        if (!newAlt) {
+            altInput.classList.add('is-invalid');
             return;
         }
 
-        a = document.createElement("button");
+        // Update image attributes
+        imageElement.setAttribute('alt', newAlt);
 
-        a.id = "ccms___trash-" + id;
-        a.classList.add("ccms-img-trashcan");
-        a.innerHTML = '<i class="fa-solid fa-trash"></i>';
-        a.title = "Click to remove image.";
-        a.style.position = "absolute";
-        a.style.top = "50%";
-        a.style.left = "50%";
-        a.style.transform = "translate(-50%, -50%)";
-        a.style.zIndex = window.getComputedStyle(element).zIndex + 10;
-
-        a.onclick = function (e) {
-            e.preventDefault();
-            ccms___onClickTrashCan(id, element);
+        if (newTitle) {
+            imageElement.setAttribute('title', newTitle);
+        } else {
+            imageElement.removeAttribute('title');
         }
-        element.appendChild(a);
 
-        console.log("Mouse over image widget. Added trash can.");
+        // Save to parent
+        if (typeof parent !== 'undefined' && typeof parent.saveEditorRegion === 'function') {
+            parent.saveEditorRegion(widgetContainer.innerHTML, id);
+        }
+
+        closeModal();
+    });
+
+    // Enter key to save
+    altInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            modal.querySelector('.ccms-modal-save').click();
+        }
+    });
+}
+
+// ============================================================================
+// IMAGE LIBRARY BROWSER
+// ============================================================================
+
+/**
+ * Shows the image library browser modal.
+ * @param {HTMLElement} widgetContainer - The widget container element
+ * @param {Function} onSelect - Callback when image is selected
+ */
+async function ccms___showImageLibrary(widgetContainer, onSelect) {
+    const id = widgetContainer.getAttribute('data-ccms-ceid');
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.classList.add('ccms-img-widget-modal', 'ccms-img-library-modal');
+    modal.innerHTML = `
+        <div class="ccms-modal-overlay"></div>
+        <div class="ccms-modal-dialog ccms-modal-lg">
+            <div class="ccms-modal-content">
+                <div class="ccms-modal-header">
+                    <h5>Image Library</h5>
+                    <button type="button" class="ccms-modal-close" aria-label="Close">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="ccms-modal-body">
+                    <div class="mb-3">
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="ccms-library-search-${id}" 
+                            placeholder="Search images..."
+                        />
+                    </div>
+                    <div class="ccms-library-loading text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading images...</p>
+                    </div>
+                    <div class="ccms-library-grid" style="display: none;"></div>
+                    <div class="ccms-library-empty text-center py-5" style="display: none;">
+                        <p class="text-muted">No images found in library.</p>
+                    </div>
+                </div>
+                <div class="ccms-modal-footer">
+                    <button type="button" class="btn btn-secondary ccms-modal-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const closeModal = () => modal.remove();
+    modal.querySelector('.ccms-modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.ccms-modal-cancel').addEventListener('click', closeModal);
+    modal.querySelector('.ccms-modal-overlay').addEventListener('click', closeModal);
+
+    // Load images from library
+    try {
+        const uploadPath = (typeof articleNumber !== 'undefined' && articleNumber)
+            ? `${CCMS_IMAGE_WIDGET_CONFIG.articleUploadPath}${articleNumber}/`
+            : CCMS_IMAGE_WIDGET_CONFIG.defaultUploadPath;
+
+        const response = await fetch(`${CCMS_IMAGE_WIDGET_CONFIG.imageLibraryEndpoint}?path=${encodeURIComponent(uploadPath)}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to load images: ${response.statusText}`);
+        }
+
+        const images = await response.json();
+
+        const loadingDiv = modal.querySelector('.ccms-library-loading');
+        const gridDiv = modal.querySelector('.ccms-library-grid');
+        const emptyDiv = modal.querySelector('.ccms-library-empty');
+
+        loadingDiv.style.display = 'none';
+
+        if (images && images.length > 0) {
+            gridDiv.style.display = 'grid';
+
+            images.forEach(imagePath => {
+                const imageCard = document.createElement('div');
+                imageCard.classList.add('ccms-library-item');
+                imageCard.innerHTML = `
+                    <img src="${imagePath}" alt="Library image" />
+                    <div class="ccms-library-item-overlay">
+                        <button type="button" class="btn btn-sm btn-primary">Select</button>
+                    </div>
+                `;
+
+                imageCard.querySelector('button').addEventListener('click', () => {
+                    onSelect(imagePath);
+                    closeModal();
+                });
+
+                gridDiv.appendChild(imageCard);
+            });
+
+            // Search functionality
+            const searchInput = modal.querySelector(`#ccms-library-search-${id}`);
+            searchInput.addEventListener('input', ccms___debounce((e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const items = gridDiv.querySelectorAll('.ccms-library-item');
+
+                items.forEach(item => {
+                    const imageSrc = item.querySelector('img').src.toLowerCase();
+                    item.style.display = imageSrc.includes(searchTerm) ? 'block' : 'none';
+                });
+            }, 300));
+        } else {
+            emptyDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading image library:', error);
+        modal.querySelector('.ccms-library-loading').innerHTML = `
+            <div class="alert alert-danger">
+                <strong>Error:</strong> Failed to load image library. ${error.message}
+            </div>
+        `;
     }
-    console.log("Mouse over image widget. Removed mouse over event.");
-    console.log("Mouse out event reset.");
+}
+
+// ============================================================================
+// TRASH CAN AND ACTION BUTTONS
+// ============================================================================
+
+/**
+ * Handles click on the trash can icon - removes the image and resets the widget.
+ * @param {string} id - The widget's data-ccms-ceid value
+ * @param {HTMLElement} element - The widget container element
+ */
+function ccms___onClickTrashCan(id, element) {
+    console.log(`Removing image from widget: ${id}`);
+
+    // Clean up all child elements
+    while (element.hasChildNodes()) {
+        element.removeChild(element.firstChild);
+    }
+
+    // Notify parent page of change
+    if (typeof parent !== 'undefined' && typeof parent.saveChanges === 'function') {
+        parent.saveChanges(element.innerHTML, id);
+    } else {
+        console.warn('parent.saveChanges is not available');
+    }
+
+    // Reinitialize the upload widget
+    ccms___initializePond(element);
+}
+
+/**
+ * Mouse leave handler for the image widget - removes the action buttons overlay.
+ * @param {MouseEvent} event - The mouseleave event
+ */
+function ccms___handleWidgetMouseLeave(event) {
+    const element = event.currentTarget;
+    const toolbar = element.querySelector('.ccms-img-toolbar');
+
+    // Check if mouse is moving to the toolbar itself
+    if (toolbar && (toolbar === event.relatedTarget || toolbar.contains(event.relatedTarget))) {
+        return;
+    }
+
+    // Remove the toolbar
+    if (toolbar) {
+        toolbar.remove();
+    }
+
+    // Reset event listeners for next hover
+    element.removeEventListener('mouseleave', ccms___handleWidgetMouseLeave);
+    element.removeEventListener('mouseover', ccms___handleWidgetMouseOver);
+    element.addEventListener('mouseover', ccms___handleWidgetMouseOver, { once: true });
+}
+
+/**
+ * Mouse over handler for the image widget - shows the action buttons.
+ * @param {MouseEvent} event - The mouseover event
+ */
+function ccms___handleWidgetMouseOver(event) {
+    const element = event.currentTarget;
+    const img = element.querySelector('img');
+
+    // Only show toolbar if an image is present
+    if (!img || !img.src) {
+        return;
+    }
+
+    const id = element.getAttribute('data-ccms-ceid');
+
+    // Don't create duplicate toolbars
+    let toolbar = element.querySelector('.ccms-img-toolbar');
+    if (toolbar) {
+        return;
+    }
+
+    // Create the toolbar overlay
+    toolbar = document.createElement('div');
+    toolbar.classList.add('ccms-img-toolbar');
+
+    // Calculate a safe z-index
+    const computedZIndex = window.getComputedStyle(element).zIndex;
+    const baseZIndex = (computedZIndex === 'auto' || isNaN(parseInt(computedZIndex)))
+        ? 0
+        : parseInt(computedZIndex);
+    toolbar.style.zIndex = baseZIndex + CCMS_IMAGE_WIDGET_CONFIG.zIndexOffset;
+
+    // Edit Alt Text button
+    if (CCMS_IMAGE_WIDGET_CONFIG.enableAltTextEditor) {
+        const editBtn = document.createElement('button');
+        editBtn.classList.add('ccms-img-toolbar-btn', 'ccms-img-edit-btn');
+        editBtn.innerHTML = CCMS_IMAGE_WIDGET_CONFIG.editIconHtml;
+        editBtn.title = 'Edit alt text';
+        editBtn.setAttribute('type', 'button');
+        editBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            ccms___showAltTextEditor(img, element);
+        };
+        toolbar.appendChild(editBtn);
+    }
+
+    // Replace Image button
+    if (CCMS_IMAGE_WIDGET_CONFIG.enableDragReplace) {
+        const replaceBtn = document.createElement('button');
+        replaceBtn.classList.add('ccms-img-toolbar-btn', 'ccms-img-replace-btn');
+        replaceBtn.innerHTML = CCMS_IMAGE_WIDGET_CONFIG.replaceIconHtml;
+        replaceBtn.title = 'Replace image';
+        replaceBtn.setAttribute('type', 'button');
+        replaceBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            ccms___replaceImage(element);
+        };
+        toolbar.appendChild(replaceBtn);
+    }
+
+    // Image Library button
+    if (CCMS_IMAGE_WIDGET_CONFIG.enableImageLibrary) {
+        const libraryBtn = document.createElement('button');
+        libraryBtn.classList.add('ccms-img-toolbar-btn', 'ccms-img-library-btn');
+        libraryBtn.innerHTML = CCMS_IMAGE_WIDGET_CONFIG.libraryIconHtml;
+        libraryBtn.title = 'Choose from library';
+        libraryBtn.setAttribute('type', 'button');
+        libraryBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            ccms___showImageLibrary(element, (imagePath) => {
+                img.src = imagePath;
+                const widgetId = element.getAttribute('data-ccms-ceid');
+                if (typeof parent !== 'undefined' && typeof parent.saveEditorRegion === 'function') {
+                    parent.saveEditorRegion(element.innerHTML, widgetId);
+                }
+            });
+        };
+        toolbar.appendChild(libraryBtn);
+    }
+
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.classList.add('ccms-img-toolbar-btn', 'ccms-img-delete-btn');
+    deleteBtn.innerHTML = CCMS_IMAGE_WIDGET_CONFIG.trashIconHtml;
+    deleteBtn.title = 'Remove image';
+    deleteBtn.setAttribute('type', 'button');
+    deleteBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        ccms___onClickTrashCan(id, element);
+    };
+    toolbar.appendChild(deleteBtn);
+
+    element.appendChild(toolbar);
+
+    // Set up mouseleave to remove toolbar
     element.addEventListener('mouseleave', ccms___handleWidgetMouseLeave);
     element.removeEventListener('mouseover', ccms___handleWidgetMouseOver);
 }
 
-function ccms___setupImageWidget(element) {
+/**
+ * Replaces the current image by triggering upload.
+ * @param {HTMLElement} element - The widget container element
+ */
+function ccms___replaceImage(element) {
+    const img = element.querySelector('img');
+    const altText = img ? img.getAttribute('alt') : '';
+    const titleText = img ? img.getAttribute('title') : '';
 
-    // Setup the style for the image container.
-    element.style.position = "relative";
-    element.display = "inline-block";
+    // Store metadata for restoration after upload
+    element.dataset.preservedAlt = altText || '';
+    element.dataset.preservedTitle = titleText || '';
 
-    const isNew = element.getAttribute("data-ccms-new");
-    // Clear out placeholder image.
-    const placeHolder = element.querySelector(".ccms___placeHolder");
-    if (placeHolder) { placeHolder.remove(); }
+    // Clear and reinitialize
+    while (element.hasChildNodes()) {
+        element.removeChild(element.firstChild);
+    }
 
-    // Clear out filepond drop area if it exists.
-    const ponds = element.querySelectorAll(".filepond--root");
-    ponds.forEach(pond => { pond.remove(); });
+    ccms___initializePond(element);
+}
 
-    let id = element.getAttribute("data-ccms-ceid");
+// ============================================================================
+// FILEPOND UPLOAD WIDGET INITIALIZATION
+// ============================================================================
 
-    if (typeof id === "undefined" && isNew === "undefined") {
+/**
+ * Initializes a FilePond upload widget within the given container element.
+ * @param {HTMLElement} element - The widget container element
+ */
+function ccms___initializePond(element) {
+    const id = element.getAttribute('data-ccms-ceid');
+
+    if (!id) {
+        console.error('Cannot initialize FilePond: missing data-ccms-ceid attribute');
         return;
     }
 
-    if (isNew) {
-        const guid = newGuid(); // This function is defined in the Editor/wwwroot/lib/cosmos/dublicator/dublicator.js file.
-        element.setAttribute("data-ccms-ceid", guid);
-        element.removeAttribute("data-ccms-new");
-        id = element.getAttribute("data-ccms-ceid");
-    }
-
-    const img = element.querySelector("img");
-    if (img !== null) {
-        element.addEventListener('mouseleave', ccms___handleWidgetMouseLeave);
-        element.addEventListener('mouseover', ccms___handleWidgetMouseOver, { once: true });
-        console.log("Mouse events added.");
-    } else {
-        element.childNodes.forEach(node => {
-            node.remove();
-        });
-        element.removeEventListener('mouseleave', ccms___handleWidgetMouseLeave);
-        element.removeEventListener('mouseover', ccms___handleWidgetMouseOver);
-        ccms___initializePond(element);
-    }
-}
-
-function ccms___initializePond(element) {
-
-    const id = element.getAttribute("data-ccms-ceid");
-
-    input = document.createElement("input");
-    input.type = "file";
-    input.id = "inp-" + id;
-    input.classList.add("filepond");
-    input.name = "files";
+    // Create the file input element that FilePond will enhance
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.id = `inp-${id}`;
+    input.classList.add('filepond');
+    input.name = 'files';
     element.appendChild(input);
 
-    const pond = FilePond.create(input,
-        {
-            acceptedFileTypes: ['image/png', 'image/jpg', 'image/jpeg', 'image/webp', 'image/gif'],
-            labelIdle: '<span class="filepond--label-action">upload image</span>',
-            allowDrop: false
-        });
+    // Initialize FilePond
+    const pond = FilePond.create(input, {
+        acceptedFileTypes: CCMS_IMAGE_WIDGET_CONFIG.acceptedFileTypes,
+        labelIdle: '<span class="filepond--label-action">Drop image here or click to browse</span>',
+        allowDrop: true,
+        allowBrowse: true,
+        allowMultiple: false,
+        maxFileSize: CCMS_IMAGE_WIDGET_CONFIG.maxFileSize,
+        labelMaxFileSizeExceeded: 'File is too large',
+        labelMaxFileSize: 'Maximum file size is 25MB'
+    });
 
+    // Store references for access in event handlers
     pond.editorElement = element;
     pond.editorId = id;
     pond.inputElement = input;
 
+    // Configure the server endpoint
     pond.setOptions({
-        server: "/FileManager/UploadImage"
+        server: CCMS_IMAGE_WIDGET_CONFIG.uploadEndpoint
     });
 
-    pond.on('addfile', (error, file) => {
-        const savingMsg = document.createElement("span");
-        savingMsg.innerHTML = "Uploading image ... ";
-        savingMsg.id = "saving-" + pond.editorId;
+    // Progress indicator
+    if (CCMS_IMAGE_WIDGET_CONFIG.showProgressBar) {
+        const progressContainer = document.createElement('div');
+        progressContainer.classList.add('ccms-upload-progress');
+        progressContainer.style.display = 'none';
+        progressContainer.innerHTML = `
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <small class="text-muted mt-1">Uploading...</small>
+        `;
+        element.appendChild(progressContainer);
+        pond.progressContainer = progressContainer;
+    }
 
-        if (typeof parent.saving !== "undefined") {
+    // ========================================================================
+    // EVENT: File Added (before upload starts)
+    // ========================================================================
+    pond.on('addfile', (error, file) => {
+        if (error) {
+            console.error('Error adding file:', error);
+            ccms___showError(error.main || 'Failed to add file', element);
+            return;
+        }
+
+        // Validate file
+        const validation = ccms___validateFile(file.file);
+        if (!validation.valid) {
+            pond.removeFile(file.id);
+            ccms___showError(validation.error, element);
+            return;
+        }
+
+        console.log(`File added to pond: ${file.filename}`);
+
+        // Show progress indicator
+        if (pond.progressContainer) {
+            pond.progressContainer.style.display = 'block';
+        }
+
+        // Notify parent page that save is in progress
+        if (typeof parent !== 'undefined' && typeof parent.saving === 'function') {
             parent.saving();
+        }
+        if (typeof parent !== 'undefined') {
             parent.saveInProgress = true;
         }
 
-        if (articleNumber) {
-            file.setMetadata("Path", "/pub/articles/" + articleNumber + "/");
-        } else {
-            file.setMetadata("Path", "/pub/images/");
-        }
-        file.setMetadata("RelativePath", "");
-        file.setMetadata("fileName", file.filename.toLowerCase());
+        // Determine upload path based on context
+        const uploadPath = (typeof articleNumber !== 'undefined' && articleNumber)
+            ? `${CCMS_IMAGE_WIDGET_CONFIG.articleUploadPath}${articleNumber}/`
+            : CCMS_IMAGE_WIDGET_CONFIG.defaultUploadPath;
+
+        // Set metadata that the server expects
+        file.setMetadata('Path', uploadPath);
+        file.setMetadata('RelativePath', '');
+        file.setMetadata('fileName', file.filename.toLowerCase());
+
+        // Extract image dimensions asynchronously
         ccms___getImageDimensions(file.file, function (dimensions) {
             file.setMetadata('imageWidth', dimensions.width);
             file.setMetadata('imageHeight', dimensions.height);
         });
     });
 
-    pond.on('processfilestart', (e) => {
-        const metadata = e.getMetadata();
+    // ========================================================================
+    // EVENT: File Processing Started
+    // ========================================================================
+    pond.on('processfilestart', (file) => {
+        console.log(`Upload started: ${file.filename}`);
     });
 
+    // ========================================================================
+    // EVENT: Upload Progress
+    // ========================================================================
+    pond.on('processfileprogress', (file) => {
+        if (pond.progressContainer) {
+            const percent = Math.round(file.progress * 100);
+            const progressBar = pond.progressContainer.querySelector('.progress-bar');
+            progressBar.style.width = `${percent}%`;
+            progressBar.textContent = `${percent}%`;
+        }
+    });
+
+    // ========================================================================
+    // EVENT: File Processing Complete (upload successful)
+    // ========================================================================
     pond.on('processfile', (error, file) => {
-        const fileName = file.getMetadata("fileName");
-        //const relativePath = "/pub/articles/" + articleNumber + "/" + fileName;
+        if (error) {
+            console.error('Error processing file:', error);
+            ccms___showError('Upload failed: ' + (error.main || 'Unknown error'), element);
+
+            if (typeof parent !== 'undefined') {
+                parent.saveInProgress = false;
+            }
+
+            // Hide progress
+            if (pond.progressContainer) {
+                pond.progressContainer.style.display = 'none';
+            }
+            return;
+        }
+
+        console.log(`Upload complete: ${file.filename}`);
         const element = pond.editorElement;
         const id = pond.editorId;
 
-        // Clean things up.
-        ccms___removePond(pond.inputElement.id)
+        // Clean up the FilePond widget
+        ccms___removePond(pond.inputElement.id);
+
+        // Remove all children from container
         while (element.hasChildNodes()) {
             element.removeChild(element.firstChild);
         }
 
-        const image = document.createElement("img");
-        image.id = "img-" + id;
+        // Create and insert the uploaded image
+        const image = document.createElement('img');
+        image.id = `img-${id}`;
+        // Server returns the path with quotes sometimes, strip them
         image.src = file.serverId.replace(/['"]+/g, '');
-        image.classList.add("ccms-img-widget-img");
+        image.classList.add('ccms-img-widget-img');
+
+        // Restore or set default alt text
+        const preservedAlt = element.dataset.preservedAlt;
+        const preservedTitle = element.dataset.preservedTitle;
+
+        image.alt = preservedAlt || file.filename.replace(/\.[^/.]+$/, ''); // Use filename without extension as default
+
+        if (preservedTitle) {
+            image.setAttribute('title', preservedTitle);
+        }
+
+        // Clean up preserved data
+        delete element.dataset.preservedAlt;
+        delete element.dataset.preservedTitle;
 
         element.appendChild(image);
 
-        if (typeof parent.saveEditorRegion == "function") {
-            const id = element.getAttribute("data-ccms-ceid");
+        // Notify parent page to save the new HTML
+        if (typeof parent !== 'undefined' && typeof parent.saveEditorRegion === 'function') {
             parent.saveEditorRegion(element.innerHTML, id);
+        } else {
+            console.warn('parent.saveEditorRegion is not available');
         }
 
+        // Mark save as complete
+        if (typeof parent !== 'undefined') {
+            parent.saveInProgress = false;
+        }
+
+        // Re-setup the widget for future interactions
         ccms___setupImageWidget(element);
+
+        // Show alt text editor for new uploads
+        if (CCMS_IMAGE_WIDGET_CONFIG.enableAltTextEditor && !preservedAlt) {
+            setTimeout(() => {
+                ccms___showAltTextEditor(image, element);
+            }, 500);
+        }
     });
 
-    pond.on('removefile', (file) => {
-        const f = file;
+    // ========================================================================
+    // EVENT: File Removed (user canceled upload)
+    // ========================================================================
+    pond.on('removefile', (error, file) => {
+        console.log(`File removed from pond: ${file.filename}`);
+        if (typeof parent !== 'undefined') {
+            parent.saveInProgress = false;
+        }
+
+        // Hide progress
+        if (pond.progressContainer) {
+            pond.progressContainer.style.display = 'none';
+        }
     });
 }
 
-function ccms___removePond(id) {
-    // Clean things up.
-    const element = document.getElementById(id);
-    const pond = FilePond.find(element);
-    element.remove();
-    pond.destroy();
+/**
+ * Destroys a FilePond instance and cleans up the input element.
+ * @param {string} inputId - The ID of the file input element used by FilePond
+ */
+function ccms___removePond(inputId) {
+    const element = document.getElementById(inputId);
+    if (!element) {
+        console.warn(`Cannot remove pond: input element ${inputId} not found`);
+        return;
+    }
 
-    if (!element.hasChildNodes()) {
-        const img = document.createElement('img');
-        img.classList.add("ccms___placeHolder");
-        img.style.display = "block";
-        img.style.margin = "auto";
-        img.style.height = "60px";
-        img.src = "/images/AddImageHere.webp";
-        element.appendChild(img);
+    const pond = FilePond.find(element);
+    if (pond) {
+        pond.destroy();
+    }
+    element.remove();
+}
+
+// ============================================================================
+// WIDGET SETUP AND INITIALIZATION
+// ============================================================================
+
+/**
+ * Sets up an image widget container, initializing either the image display
+ * (with hover delete) or the upload interface.
+ * @param {HTMLElement} element - The widget container element
+ */
+function ccms___setupImageWidget(element) {
+    // Ensure container is positioned for absolute overlays
+    element.style.position = 'relative';
+    element.style.display = 'inline-block';
+
+    const isNew = element.getAttribute('data-ccms-new');
+
+    // Clean up any placeholder images
+    const placeHolder = element.querySelector('.ccms___placeHolder');
+    if (placeHolder) {
+        placeHolder.remove();
+    }
+
+    // Clean up any existing FilePond instances
+    const existingPonds = element.querySelectorAll('.filepond--root');
+    existingPonds.forEach(pond => pond.remove());
+
+    let id = element.getAttribute('data-ccms-ceid');
+
+    // Validate or generate element ID
+    if (!id && !isNew) {
+        console.warn('Image widget missing both data-ccms-ceid and data-ccms-new attributes');
+        return;
+    }
+
+    // Generate ID for new widgets
+    if (isNew) {
+        const guid = ccms___newGuid();
+        element.setAttribute('data-ccms-ceid', guid);
+        element.removeAttribute('data-ccms-new');
+        id = guid;
+        console.log(`Generated new widget ID: ${id}`);
+    }
+
+    // Check if widget already contains an image
+    const img = element.querySelector('img');
+    if (img && img.src) {
+        // Image exists - set up hover functionality
+        element.addEventListener('mouseleave', ccms___handleWidgetMouseLeave);
+        element.addEventListener('mouseover', ccms___handleWidgetMouseOver, { once: true });
+        console.log(`Image widget initialized with existing image: ${id}`);
+    } else {
+        // No image - set up upload interface
+        // Clear any existing content first
+        while (element.hasChildNodes()) {
+            element.removeChild(element.firstChild);
+        }
+
+        element.removeEventListener('mouseleave', ccms___handleWidgetMouseLeave);
+        element.removeEventListener('mouseover', ccms___handleWidgetMouseOver);
+        ccms___initializePond(element);
+        console.log(`Image widget initialized for upload: ${id}`);
     }
 }
 
+// ============================================================================
+// DOCUMENT READY - AUTO-INITIALIZATION
+// ============================================================================
+
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('Initializing Cosmos CMS Image Widgets (Enhanced)...');
 
-    FilePond.registerPlugin(
-        FilePondPluginFileMetadata,
-    );
+    // Register required FilePond plugins
+    if (typeof FilePond === 'undefined') {
+        console.error('FilePond library is not loaded. Image widgets will not function.');
+        return;
+    }
 
+    if (typeof FilePondPluginFileMetadata === 'undefined') {
+        console.error('FilePondPluginFileMetadata is not loaded. Image widgets will not function.');
+        return;
+    }
+
+    FilePond.registerPlugin(FilePondPluginFileMetadata);
+
+    // Find and initialize all image widgets on the page
     const imageContainers = document.querySelectorAll('div[data-editor-config="image-widget"]');
+    console.log(`Found ${imageContainers.length} image widget(s) to initialize`);
+
     imageContainers.forEach(ccms___setupImageWidget);
 });

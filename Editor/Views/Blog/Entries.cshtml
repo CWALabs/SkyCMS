@@ -2,32 +2,44 @@
 @{
     ViewData["Title"] = "Entries - " + Model.BlogKey;
 }
-<h2>Entries for '@Model.BlogKey'</h2>
-<p>
-    <a class="btn btn-primary" href="@Url.Action("CreateEntry", new { blogKey = Model.BlogKey })">New Blog Entry</a>
-    <a class="btn btn-secondary" href="@Url.Action("Index")">Back to Streams</a>
-</p>
-<table class="table table-hover">
-    <thead>
-    <tr>
-        <th>Title</th>
-        <th>Published</th>
-        <th>Updated</th>
-        <th></th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var e in Model.Entries)
-    {
-        <tr>
-            <td>@e.Title</td>
-            <td>@(e.Published?.ToString("u") ?? "-")</td>
-            <td>@e.Updated.ToString("u")</td>
-            <td>
-                <a class="btn btn-sm btn-outline-primary" href="@Url.Action("EditEntry", new { blogKey = Model.BlogKey, articleNumber = e.ArticleNumber })">Edit</a>
-                <a class="btn btn-sm btn-outline-danger" href="@Url.Action("DeleteEntry", new { blogKey = Model.BlogKey, articleNumber = e.ArticleNumber })">Delete</a>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+<div class="pt-3">
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                @if (!string.IsNullOrWhiteSpace(Model.HeroImage))
+                {
+                    <img src="@Model.HeroImage" class="img-fluid mb-3" alt="Blog Hero Image" />
+                }
+                <h2>Entries for '@Model.BlogKey'</h2>
+                <p>@Html.Raw(Model.BlogDescription)</p>
+                <p>
+                    <a class="btn btn-sm btn-primary" href="@Url.Action("CreateEntry", new { blogKey = Model.BlogKey })">New Blog Entry</a>
+                    <a class="btn btn-sm btn-secondary" href="@Url.Action("Index")">Back to Streams</a>
+                </p>
+            </div>
+        </div>
+        @foreach (var e in Model.Entries)
+        {
+            <div class="row">
+                <div class="col">
+                    <h3>@e.Title</h3>
+                    @if (!string.IsNullOrEmpty(e.BannerImage))
+                    {
+                        <img src="@e.BannerImage" class="img-fluid mb-3" alt="Entry Banner Image" />
+                    }
+                    <div>
+                    @(e.Published?.ToString("u") ?? "-")
+                        @e.Updated.ToString("u")
+                    </div>
+                    <div>
+                        @Html.Raw(e.Introduction)
+                    </div>
+                    <div>
+                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("EditEntry", new { blogKey = Model.BlogKey, articleNumber = e.ArticleNumber })">Edit</a>
+                        <a class="btn btn-sm btn-outline-danger" href="@Url.Action("DeleteEntry", new { blogKey = Model.BlogKey, articleNumber = e.ArticleNumber })">Delete</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

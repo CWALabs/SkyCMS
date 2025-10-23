@@ -23,8 +23,6 @@
         <div class="row">
             <div class="col">
                 <h3 class="text-light">@ViewData["Title"]</h3>
-                <p></p>
-
             </div>
         </div>
         <div class="row cpws-table-pager-row-top">
@@ -57,7 +55,7 @@
 
     function openArticleVersions(e, cell) {
         const data = cell.getRow().getData();
-        window.location.href = "editor/blogs/" + data.Id + "entries";
+        window.location.href = "/editor/blogs/" + data.BlogKey + "/entries";
     }
 
     function dateFilterFunction(headerValue, rowValue, rowData, filterParams){
@@ -78,7 +76,7 @@
     const menuBar = function(cell, formatterParams){
         data = cell.getRow().getData();
         let html = "<div class='btn-group btn-group-sm' role='group' aria-label='Page actions.'>";
-        html += html += "<a href='/Editor/Versions/" + data.ArticleNumber + "' title='Click to edit page.' class='btn btn-sm btn-success'><i class='fa-solid fa-pen-to-square'></i></a>";
+        html += html += "<a href='/editor/blogs/" + data.Id + "/edit' title='Click to edit page.' class='btn btn-sm btn-success'><i class='fa-solid fa-pen-to-square'></i></a>";
         let url = data.UrlPath;
         if (url === "root") {
             url = "";

@@ -383,7 +383,6 @@ namespace Sky.Editor.Controllers
 
             var entries = await db.ArticleCatalog
                 .Where(c => c.BlogKey == blogKey)
-                .OrderByDescending(c => c.Published ?? c.Updated)
                 .Select(c => new BlogEntryListItem
                 {
                     BlogKey = c.BlogKey,
@@ -403,7 +402,7 @@ namespace Sky.Editor.Controllers
                 BlogTitle = blog.Title,
                 BlogDescription = blog.Description,
                 HeroImage = blog.HeroImage,
-                Entries = entries
+                Entries = entries.OrderByDescending(c => c.Published ?? c.Updated).ToList()
             };
             return View("Entries", vm);
         }

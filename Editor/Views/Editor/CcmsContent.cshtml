@@ -3,6 +3,7 @@
 @{
     Layout = null;
     ViewData["Title"] = Model.Title;
+    var isBlogPost = Model.ArticleType == ArticleType.BlogPost;
 
     var data = new ImportMapDefinition(
         new Dictionary<string, string>()
