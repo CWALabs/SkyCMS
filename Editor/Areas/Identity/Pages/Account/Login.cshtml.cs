@@ -306,7 +306,7 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
                     return false;
                 }
             }
-            catch
+            catch (Exception e)
             {
                 return false;
             }

@@ -198,10 +198,10 @@ namespace Cosmos.Common.Data
         /// Gets or sets the optimistic concurrency token.
         /// </summary>
         /// <remarks>
-        /// Automatically managed by the underlying ORM (e.g., EF Core). Used to detect conflicting updates.
+        /// For SQL databases, this value is automatically managed by the underlying ORM (e.g., EF Core).
+        /// Used to detect conflicting updates.
         /// Clients should include this token when updating an existing record to avoid lost updates.
         /// </remarks>
-        [Timestamp]
         public long? RowVersion { get; set; }
 
         /// <summary>

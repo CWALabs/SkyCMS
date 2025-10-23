@@ -325,6 +325,11 @@ namespace Cosmos.Common.Data
                     .HasPartitionKey(k => k.Id)
                     .HasKey(log => log.Id);
 
+                modelBuilder.Entity<Blog>()
+                    .ToContainer("Blogs")
+                    .HasPartitionKey(p => p.Id)
+                    .HasKey(k => k.Id);
+
                 modelBuilder.Entity<CatalogEntry>().OwnsMany(o => o.ArticlePermissions);
 
                 modelBuilder.Entity<CatalogEntry>()
@@ -371,31 +376,26 @@ namespace Cosmos.Common.Data
                     .HasPartitionKey(k => k.Id)
                     .HasKey(k => k.Id);
             }
-            else if (Database.IsMySql())
+            else
             {
-                modelBuilder.Entity<Article>()
-                    .HasIndex(a => a.ArticleNumber);
+                if (Database.IsMySql())
+                {
+                    modelBuilder.Entity<Article>()
+                        .HasIndex(a => a.ArticleNumber);
 
-                modelBuilder.Entity<PublishedPage>()
-                    .HasIndex(p => p.UrlPath);
+                    modelBuilder.Entity<PublishedPage>()
+                        .HasIndex(p => p.UrlPath);
 
-                modelBuilder.Entity<CatalogEntry>()
-                    .HasIndex(p => new { p.UrlPath });
+                    modelBuilder.Entity<CatalogEntry>()
+                        .HasIndex(p => new { p.UrlPath });
+                }
+
+                // All SQL providers.
+                modelBuilder.Entity<Article>().Property(e => e.RowVersion).IsETagConcurrency();
+                modelBuilder.Entity<CatalogEntry>().Property(e => e.RowVersion).IsRowVersion();
+                modelBuilder.Entity<PublishedPage>().Property(e => e.RowVersion).IsRowVersion();
+
             }
-
-            // Multi-blog indexes & relationships.
-            modelBuilder.Entity<Blog>()
-                .HasIndex(b => b.BlogKey)
-                .IsUnique();
-
-            modelBuilder.Entity<Article>()
-                .HasIndex(a => new { a.BlogKey, a.ArticleType, a.Published });
-
-            modelBuilder.Entity<PublishedPage>()
-                .HasIndex(p => new { p.BlogKey, p.ArticleType, p.Published });
-
-            modelBuilder.Entity<CatalogEntry>()
-                .HasIndex(c => new { c.BlogKey, c.Published });
 
             base.OnModelCreating(modelBuilder);
         }

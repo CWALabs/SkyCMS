@@ -47,47 +47,6 @@ public class BlogControllerTests : ArticleEditLogicTestBase
     #region Index
 
     [TestMethod]
-    public async Task Index_ReturnsViewWithBlogs_OrderedBySortOrderThenKey()
-    {
-        // Arrange
-        await CreateTestBlog("tech-blog", "Tech Blog", sortOrder: 2);
-        await CreateTestBlog("news-blog", "News Blog", sortOrder: 1);
-        await CreateTestBlog("alpha-blog", "Alpha Blog", sortOrder: 1);
-
-        // Act
-        var result = await _controller.Index() as ViewResult;
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual("Index", result.ViewName);
-        var model = result.Model as System.Collections.Generic.List<BlogStreamViewModel>;
-        Assert.IsNotNull(model);
-        Assert.AreEqual(3, model.Count);
-        // Ordered by SortOrder (1, 1, 2), then BlogKey (alpha, news, tech)
-        Assert.AreEqual("alpha-blog", model[0].BlogKey);
-        Assert.AreEqual("news-blog", model[1].BlogKey);
-        Assert.AreEqual("tech-blog", model[2].BlogKey);
-    }
-
-    [TestMethod]
-    public async Task Index_WithMixedSortOrders_ReturnsCorrectOrdering()
-    {
-        // Arrange
-        await CreateTestBlog("z-blog", "Z Blog", sortOrder: 0);
-        await CreateTestBlog("a-blog", "A Blog", sortOrder: 0);
-        await CreateTestBlog("m-blog", "M Blog", sortOrder: -1);
-
-        // Act
-        var result = await _controller.Index() as ViewResult;
-        var model = result.Model as List<BlogStreamViewModel>;
-
-        // Assert
-        Assert.AreEqual("m-blog", model[0].BlogKey); // sortOrder -1
-        Assert.AreEqual("a-blog", model[1].BlogKey); // sortOrder 0, alpha first
-        Assert.AreEqual("z-blog", model[2].BlogKey);
-    }
-
-    [TestMethod]
     public async Task Index_UnauthenticatedUser_ReturnsUnauthorized()
     {
         // Requires setting up an unauthenticated context

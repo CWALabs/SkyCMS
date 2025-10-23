@@ -7,13 +7,9 @@
 
 namespace Sky.Editor.Controllers
 {
-    // UPDATED: sync with enhanced Blog entity & view models (Title, Description, HeroImage, IsDefault, SortOrder)
-    // Added mapping & update of UpdatedUtc when editing a blog stream.
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
+    using MailChimp.Net.Models;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
@@ -21,6 +17,12 @@ namespace Sky.Editor.Controllers
     using Sky.Editor.Models.Blogs;
     using Sky.Editor.Services.Redirects;
     using Sky.Editor.Services.Slugs; // if you place ISlugService elsewhere adjust
+    // UPDATED: sync with enhanced Blog entity & view models (Title, Description, HeroImage, IsDefault, SortOrder)
+    // Added mapping & update of UpdatedUtc when editing a blog stream.
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Editor-facing controller for managing blog streams (multi-blog support) and their entries (blog posts).
@@ -89,13 +91,14 @@ namespace Sky.Editor.Controllers
 
             var candidate = baseSlug;
             var i = 2;
-            while (await db.Blogs.AnyAsync(b => b.BlogKey == candidate))
+            while ((await db.Blogs.CountAsync(b => b.BlogKey == candidate)) > 0)
             {
                 var suffix = "-" + i;
                 var cut = Math.Min(baseSlug.Length, max - suffix.Length);
                 candidate = baseSlug[..cut] + suffix;
                 i++;
             }
+
             return candidate;
         }
 
@@ -104,23 +107,9 @@ namespace Sky.Editor.Controllers
         /// </summary>
         /// <returns>Index view containing a list of <see cref="BlogStreamViewModel"/>.</returns>
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var blogs = await db.Blogs
-                .OrderBy(b => b.SortOrder)
-                .ThenBy(b => b.BlogKey)
-                .Select(b => new BlogStreamViewModel
-                {
-                    Id = b.Id,
-                    BlogKey = b.BlogKey,
-                    Title = b.Title,
-                    Description = b.Description,
-                    HeroImage = b.HeroImage,
-                    IsDefault = b.IsDefault,
-                    SortOrder = b.SortOrder
-                })
-                .ToListAsync();
-            return View("Index", blogs);
+            return View("Index");
         }
 
         /// <summary>
@@ -153,15 +142,15 @@ namespace Sky.Editor.Controllers
                 model.IsDefault = true;
             }
 
-            var exists = await db.Blogs.AnyAsync(b => b.BlogKey == model.BlogKey);
+            var exists = (await db.Blogs.CountAsync(b => b.BlogKey == model.BlogKey)) > 0;
             if (exists)
             {
                 ModelState.AddModelError(nameof(model.BlogKey), "Blog key already exists.");
                 return View("Create", model);
             }
 
-            var articleExists = await db.Articles.AnyAsync(a => a.UrlPath.StartsWith(model.BlogKey));
-            if (articleExists)
+            var articleExists = await db.Articles.CountAsync(a => a.UrlPath.StartsWith(model.BlogKey));
+            if (articleExists > 0)
             {
                 ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
                 return View("Create", model);
@@ -344,7 +333,7 @@ namespace Sky.Editor.Controllers
                 return View("Delete", new BlogStreamViewModel { Id = blog.Id, BlogKey = blog.BlogKey, Title = blog.Title });
             }
 
-            var hasArticles = await db.Articles.AnyAsync(a => a.BlogKey == blog.BlogKey);
+            var hasArticles = (await db.Articles.CountAsync(a => a.BlogKey == blog.BlogKey)) > 0;
             if (hasArticles && reassign)
             {
                 var fallback = await db.Blogs.FirstOrDefaultAsync(b => b.IsDefault && b.Id != blog.Id)
@@ -427,7 +416,7 @@ namespace Sky.Editor.Controllers
         [HttpGet("{blogKey}/entries/create")]
         public async Task<IActionResult> CreateEntry(string blogKey)
         {
-            var blogExists = await db.Blogs.AnyAsync(b => b.BlogKey == blogKey);
+            var blogExists = (await db.Blogs.CountAsync(b => b.BlogKey == blogKey)) > 0;
             if (!blogExists)
             {
                 return NotFound();
@@ -455,7 +444,7 @@ namespace Sky.Editor.Controllers
                 return BadRequest();
             }
 
-            var blogExists = await db.Blogs.AnyAsync(b => b.BlogKey == blogKey);
+            var blogExists = (await db.Blogs.CountAsync(b => b.BlogKey == blogKey)) > 0;
             if (!blogExists)
             {
                 return NotFound();
@@ -663,8 +652,6 @@ namespace Sky.Editor.Controllers
         public async Task<IActionResult> GetBlogs()
         {
             var blogs = await db.Blogs
-                .OrderBy(b => b.SortOrder)
-                .ThenBy(b => b.BlogKey)
                 .Select(b => new BlogStreamViewModel
                 {
                     Id = b.Id,
@@ -676,7 +663,9 @@ namespace Sky.Editor.Controllers
                     SortOrder = b.SortOrder
                 })
                 .ToListAsync();
-            return Json(blogs);
+            return Json(blogs
+                .OrderBy(b => b.SortOrder)
+                .ThenBy(b => b.BlogKey).ToList());
         }
     }
 }

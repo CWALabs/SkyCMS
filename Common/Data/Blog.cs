@@ -23,17 +23,16 @@ namespace Cosmos.Common.Data
     /// - IsDefault: marks the fallback stream for reassignment when deleting others.
     /// - CreatedUtc / UpdatedUtc: lifecycle timestamps (UTC).
     /// </remarks>
-    [Index(nameof(BlogKey), IsUnique = true)]
     public class Blog
     {
         /// <summary>
-        /// Primary key (GUID). Generated on instantiation.
+        /// Gets or sets primary key (GUID). Generated on instantiation.
         /// </summary>
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
-        /// Stable identifier used for routing and association with articles
+        /// Gets or sets stable identifier used for routing and association with articles
         /// (e.g. all articles where <c>Article.BlogKey == BlogKey</c> belong to this stream).
         /// Constraints: lowercase letters, digits, dash, underscore.
         /// </summary>
@@ -43,41 +42,41 @@ namespace Cosmos.Common.Data
         public string BlogKey { get; set; }
 
         /// <summary>
-        /// Human readable title of the blog stream (e.g. "Engineering Updates").
+        /// Gets or sets human readable title of the blog stream (e.g. "Engineering Updates").
         /// </summary>
         [Required]
         [MaxLength(128)]
         public string Title { get; set; }
 
         /// <summary>
-        /// Optional descriptive text (teaser or SEO meta source). Soft limit 512 chars.
+        /// Gets or sets optional descriptive text (teaser or SEO meta source). Soft limit 512 chars.
         /// </summary>
         [MaxLength(512)]
         public string Description { get; set; }
 
         /// <summary>
-        /// Optional hero/cover image path or URL (stored as-is, not validated here).
+        /// Gets or sets optional hero/cover image path or URL (stored as-is, not validated here).
         /// </summary>
         public string HeroImage { get; set; } = string.Empty;
 
         /// <summary>
-        /// Flag indicating this is the default (fallback) blog stream.
+        /// Gets or sets a value indicating whether flag indicating this is the default (fallback) blog stream.
         /// Only one should typically be true. Enforced at application logic level.
         /// </summary>
         public bool IsDefault { get; set; } = false;
 
         /// <summary>
-        /// UTC timestamp when the blog was created.
+        /// Gets or sets uTC timestamp when the blog was created.
         /// </summary>
         public DateTimeOffset CreatedUtc { get; set; } = DateTimeOffset.UtcNow;
 
         /// <summary>
-        /// UTC timestamp of last metadata update. (Set in code when edited.)
+        /// Gets or sets uTC timestamp of last metadata update. (Set in code when edited.)
         /// </summary>
         public DateTimeOffset? UpdatedUtc { get; set; } = DateTimeOffset.UtcNow;
 
         /// <summary>
-        /// Optional sort order (ascending) if you want deterministic ordering in UI.
+        /// Gets or sets optional sort order (ascending) if you want deterministic ordering in UI.
         /// </summary>
         public int SortOrder { get; set; } = 0;
     }

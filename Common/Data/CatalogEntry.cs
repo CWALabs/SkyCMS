@@ -137,10 +137,9 @@ namespace Cosmos.Common.Data
         /// Gets or sets the optimistic concurrency token (row version) maintained by the data store.
         /// </summary>
         /// <remarks>
-        /// This value is automatically generated/updated by the underlying persistence provider (e.g., EF Core).
+        /// For SQL databases, this value is automatically generated/updated by the underlying persistence provider (e.g., EF Core).
         /// Clients must supply the last known token when updating to prevent lost updates.
         /// </remarks>
-        [Timestamp]
         public byte[] RowVersion { get; set; }
 
         /// <summary>

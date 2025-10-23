@@ -167,10 +167,9 @@ namespace Cosmos.Common.Data
         /// Gets or sets a numeric concurrency token used for optimistic concurrency control.
         /// </summary>
         /// <remarks>
-        /// This is incremented (or otherwise changed) on each update. EF Core's <see cref="ConcurrencyCheckAttribute"/>
+        /// For SQL databases, this is incremented (or otherwise changed) on each update. EF Core's <see cref="ConcurrencyCheckAttribute"/>
         /// ensures stale writes are detected. Null indicates token may not yet have been assigned.
         /// </remarks>
-        [ConcurrencyCheck]
         public long? RowVersion { get; set; }
 
         /// <summary>
