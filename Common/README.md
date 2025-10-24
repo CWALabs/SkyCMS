@@ -495,5 +495,5 @@ Licensed under the MIT License. See the LICENSE file for details.
 
 ## Contributing
 
-This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/CosmosCMS).
+This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
 

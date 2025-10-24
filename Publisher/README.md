@@ -280,7 +280,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0. See the [LICENSE.md](../LICENSE.md) file for details.
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE.md](../Docs/License.md) file for details.
 
 ## Support
 

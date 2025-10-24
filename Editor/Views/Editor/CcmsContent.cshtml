@@ -58,8 +58,6 @@
     @Html.Raw(Model.HeadJavaScript)
     @Html.Raw(JavaScriptSnippet.FullScript)
     <link asp-append-version="true" href="~/lib/cosmos/image-widget/image-widget.css" rel="stylesheet" />
-    <script asp-append-version="true" src="~/lib/filepond-plugin-file-metadata/dist/filepond-plugin-file-metadata.js"></script>
-    <script asp-append-version="true" src="~/lib/filepond/filepond.js"></script>
     <script asp-append-version="true" src="~/lib/cosmos/dublicator/componets/components.js"></script>
     <script asp-append-version="true" src="~/lib/cosmos/dublicator/dublicator.js"></script>
 </head>
@@ -135,7 +133,6 @@
     <script asp-append-version="true" src="~/lib/popper/umd/popper.min.js"></script>
     <script asp-append-version="true" src="~/lib/tippy/tippy.umd.min.js"></script>
     <script asp-append-version="true" type="module" src="~/lib/cosmos/ckeditor/ckeditor-widget.301.js"></script>
-    <script asp-append-version="true" src="/lib/cosmos/image-widget/image-widget.js"></script>
 
     <script>
         const elements = document.querySelectorAll('[data-ccms-ceid]');
@@ -156,5 +153,9 @@
             });
         });
     </script>
+    @* FilePond and Image Widget *@
+    <script asp-append-version="true" src="~/lib/filepond-plugin-file-metadata/dist/filepond-plugin-file-metadata.js"></script>
+    <script asp-append-version="true" src="~/lib/filepond/filepond.js"></script>
+    <script asp-append-version="true" src="/lib/cosmos/image-widget/image-widget.js"></script>
 </body>
 </html>

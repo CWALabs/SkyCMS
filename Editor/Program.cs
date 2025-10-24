@@ -1,7 +1,7 @@
 ﻿// <copyright file="Program.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -42,6 +42,7 @@ using Sky.Editor.Services.Redirects;
 using Sky.Editor.Services.ReservedPaths;
 using Sky.Editor.Services.Scheduling;
 using Sky.Editor.Services.Slugs;
+using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
 using System;
 using System.IO;
@@ -120,6 +121,7 @@ builder.Services.AddTransient<IPublishingService, PublishingService>();
 builder.Services.AddTransient<IRedirectService, RedirectService>();
 builder.Services.AddTransient<IReservedPaths, ReservedPaths>();
 builder.Services.AddTransient<ISlugService, SlugService>();
+builder.Services.AddSingleton<ITemplateService, TemplateService>();
 builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IViewRenderService, ViewRenderService>();
 builder.Services.AddHttpContextAccessor();

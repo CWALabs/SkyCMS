@@ -48,7 +48,7 @@
 		<DisableImplicitAspNetCoreAnalyzers>true</DisableImplicitAspNetCoreAnalyzers>
 		<Title>Sky CMS Common Objects</Title>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryUrl>https://github.com/MoonriseSoftwareCalifornia/CosmosCMS</RepositoryUrl>
+		<RepositoryUrl>https://github.com/MoonriseSoftwareCalifornia/SkyCMS</RepositoryUrl>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

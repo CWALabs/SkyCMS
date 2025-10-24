@@ -45,6 +45,44 @@ SkyCMS was built with the following core objectives:
 - **Flexible Deployment**: Support for static, decoupled, and headless modes
 - **Cloud-Native**: Built for modern cloud infrastructure with global scalability
 
+## ✨ Key Features
+
+### Content Management
+
+- **Multiple Content Types**: Standard pages, blog posts, and custom article types
+- **Rich Editing Tools**: CKEditor 5, GrapesJS, Monaco Editor, and Filerobot image editor
+- **Version Control**: Full versioning system with restore capabilities
+- **Template System**: Reusable page templates with editable regions
+- **Multi-Mode Publishing**: Static, headless, and decoupled content delivery
+
+### Blogging Platform
+
+SkyCMS includes robust blogging capabilities built on its flexible article system:
+
+- **Blog Post Management**: Create and manage blog posts with categories and introductions
+- **Article Versioning**: Full version history for all blog posts
+- **Publishing Workflow**: Draft, schedule, and publish blog content
+- **Catalog System**: Organized listing of blog posts with metadata
+- **Future Enhancements**: RSS feeds, category archives, tagging system, and more
+
+[Learn more about Blog Features](./Docs/blog/BlogPostLifecycle.md) | [Planned Blog Enhancements](./Docs/blog/BlogFutureEnhancements.md)
+
+### Performance & Scalability
+
+- **Static Site Generation**: Automatic static file creation for maximum performance
+- **CDN Integration**: Built-in support for content delivery networks
+- **Edge Hosting**: Origin-less deployment via Cloudflare Workers
+- **Multi-Cloud Storage**: Azure Blob, AWS S3, Cloudflare R2 support
+- **Caching Strategies**: Intelligent caching for optimal performance
+
+### Security & Access Control
+
+- **Role-Based Access**: Administrator and Editor roles
+- **Identity Integration**: ASP.NET Core Identity with Azure B2C support
+- **External Providers**: Google and Microsoft authentication
+- **Permission System**: Article-level access control
+- **Secure File Storage**: Encrypted and authenticated storage access
+
 ## 🚀 Use Cases
 
 SkyCMS excels in demanding scenarios:
@@ -61,29 +99,35 @@ SkyCMS integrates the best web content creation tools to provide a comprehensive
 
 ### CKEditor 5
 
-![CKEditor](ckeditor.webp)
+![CKEditor](./Docs/ckeditor.webp)
 
 Industry-standard WYSIWYG editor with rich text formatting, extensive plugin support, and intuitive interface. Perfect for non-technical users who want Word-like editing capabilities.
 
+[Learn more about the Live Editor](./Docs/Editors/LiveEditor/README.md)
+
 ### GrapesJS
 
-![GrapesJS](grapesjs.png)
+![GrapesJS](./Docs/grapesjs.png)
 
 Visual web builder with drag-and-drop interface for creating complex layouts without coding. Ideal for designing landing pages, newsletters, and custom templates.
 
-[Watch our GrapesJS demo video](https://www.youtube.com/watch?v=mVGPlbnbC5c)
+[Watch our GrapesJS demo video](https://www.youtube.com/watch?v=mVGPlbnbC5c) | [Designer Documentation](./Docs/Editors/Designer/README.md)
 
 ### Monaco Editor (Visual Studio Code)
 
-![Monaco Editor](CodeEditor.png)
+![Monaco Editor](./Docs/CodeEditor.png)
 
 Powerful code editor for developers, featuring syntax highlighting, IntelliSense, and advanced editing capabilities. Includes diff tools and Emmet notation support.
 
+[Code Editor Documentation](./Docs/Editors/CodeEditor/README.md)
+
 ### Filerobot Image Editor
 
-![Filerobot](Filerobot.png)
+![Filerobot](./Docs/Filerobot.png)
 
 Integrated image editing with resizing, cropping, filtering, and annotation capabilities. Edit images directly within the CMS without external tools.
+
+[Image Editing Documentation](./Docs/Editors/ImageEditing/README.md)
 
 ### FilePond File Uploader
 
@@ -232,16 +276,40 @@ dotnet run --project Editor
 
 ## 📖 Documentation
 
+### Getting Started
+
 - **Installation Guide**: [sky.moonrise.net/install](/ArmTemplates/README.md)
+- **Azure Deployment**: [Azure Installation Guide](./Docs/AzureInstall.md)
+- **AWS Deployment (CloudFormation + ECS Fargate)**: [AWS/README.md](./AWS/README.md)
+
+### Configuration
+
 - **Storage Configuration**: [Docs/StorageConfig.md](./Docs/StorageConfig.md) — Supported providers (Azure Blob, AWS S3, Cloudflare R2), container/bucket naming, CDN integration, and recommended settings
   - AWS: [AWS S3 access keys (quick guide)](./Docs/AWS-S3-AccessKeys.md)
   - Cloudflare: [Cloudflare R2 access keys (quick guide)](./Docs/Cloudflare-R2-AccessKeys.md)
   - Cloudflare: [Edge/origin-less hosting guide (R2 + Worker)](./Docs/CloudflareEdgeHosting.md)
 - **Database Configuration**: [Docs/DatabaseConfig.md](./Docs/DatabaseConfig.md) — Provider options (Cosmos DB, SQL Server, MySQL, SQLite), connection strings, EF configuration, and migration guidance
-- **AWS Deployment (CloudFormation + ECS Fargate)**: [AWS/README.md](./AWS/README.md)
-- **Developer Documentation**: sky.moonrise.net/docs (coming soon)
+
+### Content Creation
+
+- **Page Templates**: [Templates Guide](./Docs/Templates/Readme.md) — Creating and managing reusable page templates
+- **Live Editor**: [Live Editor Documentation](./Docs/Editors/LiveEditor/README.md) — WYSIWYG content editing with CKEditor 5
+- **Designer**: [Designer Documentation](./Docs/Editors/Designer/README.md) — Visual page building with GrapesJS
+- **Code Editor**: [Code Editor Documentation](./Docs/Editors/CodeEditor/README.md) — HTML editing with Monaco Editor
+- **Image Editing**: [Image Editing Documentation](./Docs/Editors/ImageEditing/README.md) — Filerobot image editor guide
+- **File Management**: [File Management Guide](./Docs/FileManagement/README.md) — Managing media and files
+
+### Blogging
+
+- **Blog Post Lifecycle**: [Blog Features](./Docs/blog/BlogPostLifecycle.md) — Understanding blog post creation, editing, and publishing
+- **Future Blog Enhancements**: [Planned Features](./Docs/blog/BlogFutureEnhancements.md) — Upcoming blog functionality
+
+### Additional Resources
+
+- **Cosmos vs Headless CMS**: [Comparison Guide](./Docs/CosmosVsHeadless.md)
 - **API Reference**: Available in the running application
-- **Video Tutorials**: YouTube Channel (coming soon)
+- **Video Tutorials**: [YouTube Channel](https://www.youtube.com/@Sky-cms)
+- **Developer Documentation**: sky.moonrise.net/docs (coming soon)
 
 ## 🤝 Contributing
 
@@ -281,7 +349,7 @@ See the [deployment documentation](./ArmTemplates/README.md) for configuration d
 
 ## 📄 License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE.md](./Docs/License.md) file for details.
 
 ## 🙏 Acknowledgments
 

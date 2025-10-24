@@ -45,7 +45,6 @@
 	  <Content Remove="wwwroot\images\skycms\SkyCMSLogoDarkBackground.jpeg" />
 	  <Content Remove="wwwroot\images\skycms\SkyCMSLogoLightBackground.jpeg" />
 	  <Content Remove="wwwroot\lib\cosmos\ckeditor\ckeditor-widget.301.js" />
-	  <Content Remove="wwwroot\lib\cosmos\image-widget\README.md" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -108,7 +107,11 @@
 	<ItemGroup>
 	  <ContainerPort Include="8081" />
 	</ItemGroup>
-
+	
+	<ItemGroup>
+		<EmbeddedResource Include="Templates\**\*.html" />
+	</ItemGroup>
+	
 	<ItemGroup>
 		<None Include="wwwroot\**\*">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -170,7 +170,7 @@ Parameters:
   # S3
   S3BucketName:
     Type: String
-    Description: S3 bucket name for blob storage (must be globally unique)
+    Description: S3 bucket name for blob storage (must be globally unique). WARNING - The bucket will be created by this template. Ensure the name does not already exist.
   S3Region:
     Type: String
     Default: us-west-2
@@ -286,8 +286,8 @@ Parameters:
     Description: RDS storage (GB)
   DBBackupRetentionDays:
     Type: Number
-    Default: '3'
-    Description: Backup retention days
+    Default: '7'
+    Description: Backup retention days (minimum 7 recommended for production)
   DBName:
     Type: String
     Default: skycms
@@ -647,9 +647,44 @@ Resources:
         - Key: skycms-install-id
           Value: !Ref InstallId
 
+  # S3 Bucket for ALB Access Logs
+  ALBLogsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub ${StackName}-alb-logs-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldLogs
+            Status: Enabled
+            ExpirationInDays: 30
+      Tags:
+        - Key: skycms-install-id
+          Value: !Ref InstallId
+
+  ALBLogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ALBLogsBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AWSLogDeliveryWrite
+            Effect: Allow
+            Principal:
+              Service: elasticloadbalancing.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub ${ALBLogsBucket.Arn}/*
+
   # ALB
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: ALBLogsBucketPolicy
     Properties:
       Name: !Sub ${StackName}-alb
       Scheme: internet-facing
@@ -659,6 +694,15 @@ Resources:
         - !Ref PublicSubnet2
       SecurityGroups:
         - !Ref ALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: 'true'
+        - Key: access_logs.s3.bucket
+          Value: !Ref ALBLogsBucket
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
+        - Key: deletion_protection.enabled
+          Value: 'false'
       Tags:
         - Key: skycms-install-id
           Value: !Ref InstallId
@@ -671,7 +715,13 @@ Resources:
       Protocol: HTTP
       TargetType: ip
       VpcId: !Ref VPC
+      HealthCheckEnabled: true
       HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
       Matcher:
         HttpCode: 200-399
       Tags:
@@ -686,7 +736,13 @@ Resources:
       Protocol: HTTP
       TargetType: ip
       VpcId: !Ref VPC
+      HealthCheckEnabled: true
       HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
       Matcher:
         HttpCode: 200-399
       Tags:
@@ -716,7 +772,7 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
 
-  # Additional header-based rules so CloudFront can route without DNS/hostnames
+  # Header-based rules for CloudFront routing (x-sky-app header)
   HttpEditorHeaderRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
@@ -747,7 +803,58 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
 
-  # Optional HTTPS header rules (not used by CloudFront if origin policy is http-only, but kept for completeness)
+  # Host-based rules for custom domains (when provided)
+  HttpEditorHostRule:
+    Condition: CreateHttpRules
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 10
+      Conditions:
+        - Field: host-header
+          HostHeaderConfig:
+            Values:
+              - !Ref EditorHostName
+      Actions:
+        - !If
+          - RedirectToHTTPS
+          - Type: redirect
+            RedirectConfig:
+              Protocol: HTTPS
+              Port: '443'
+              Host: '#{host}'
+              Path: '/#{path}'
+              Query: '#{query}'
+              StatusCode: HTTP_301
+          - Type: forward
+            TargetGroupArn: !Ref EditorTargetGroup
+
+  HttpPublisherHostRule:
+    Condition: CreateHttpRulesAndPublisher
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 11
+      Conditions:
+        - Field: host-header
+          HostHeaderConfig:
+            Values:
+              - !Ref PublisherHostName
+      Actions:
+        - !If
+          - RedirectToHTTPS
+          - Type: redirect
+            RedirectConfig:
+              Protocol: HTTPS
+              Port: '443'
+              Host: '#{host}'
+              Path: '/#{path}'
+              Query: '#{query}'
+              StatusCode: HTTP_301
+          - Type: forward
+            TargetGroupArn: !Ref PublisherTargetGroup
+
+  # HTTPS header-based rules
   HttpsEditorHeaderRule:
     Condition: UseHTTPS
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -780,64 +887,33 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
 
-  HttpEditorRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      ListenerArn: !Ref HttpListener
-      Priority: 10
-      Conditions:
-        - Field: http-header
-          HttpHeaderConfig:
-            HttpHeaderName: x-sky-app
-            Values:
-              - editor
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref EditorTargetGroup
-
-  HttpPublisherRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      ListenerArn: !Ref HttpListener
-      Priority: 20
-      Conditions:
-        - Field: http-header
-          HttpHeaderConfig:
-            HttpHeaderName: x-sky-app
-            Values:
-              - publisher
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref PublisherTargetGroup
-
-  HttpsEditorRule:
+  # HTTPS host-based rules for custom domains
+  HttpsEditorHostRule:
     Condition: UseHTTPS
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       ListenerArn: !Ref HttpsListener
       Priority: 10
       Conditions:
-        - Field: http-header
-          HttpHeaderConfig:
-            HttpHeaderName: x-sky-app
+        - Field: host-header
+          HostHeaderConfig:
             Values:
-              - editor
+              - !Ref EditorHostName
       Actions:
         - Type: forward
           TargetGroupArn: !Ref EditorTargetGroup
 
-  HttpsPublisherRule:
+  HttpsPublisherHostRule:
     Condition: UseHTTPSAndPublisher
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       ListenerArn: !Ref HttpsListener
-      Priority: 20
+      Priority: 11
       Conditions:
-        - Field: http-header
-          HttpHeaderConfig:
-            HttpHeaderName: x-sky-app
+        - Field: host-header
+          HostHeaderConfig:
             Values:
-              - publisher
+              - !Ref PublisherHostName
       Actions:
         - Type: forward
           TargetGroupArn: !Ref PublisherTargetGroup
@@ -867,6 +943,7 @@ Resources:
   MySqlDB:
     Type: AWS::RDS::DBInstance
     DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
     Properties:
       DBInstanceIdentifier: !Sub ${StackName}-mysql
       AllocatedStorage: !Ref DBAllocatedStorage
@@ -875,6 +952,7 @@ Resources:
       EngineVersion: '8.0'
       MultiAZ: false
       StorageType: gp3
+      StorageEncrypted: true
       PubliclyAccessible: false
       VPCSecurityGroups:
         - !Ref DBSecurityGroup
@@ -883,6 +961,13 @@ Resources:
       MasterUsername: !Ref DbUsername
       MasterUserPassword: !Ref DbPassword
       BackupRetentionPeriod: !Ref DBBackupRetentionDays
+      PreferredBackupWindow: 03:00-04:00
+      PreferredMaintenanceWindow: sun:04:00-sun:05:00
+      EnableCloudwatchLogsExports:
+        - error
+        - general
+        - slowquery
+      DeletionProtection: false
 
   # ECS
   EcsCluster:
@@ -941,8 +1026,8 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Sub ${StackName}-editor
-      Cpu: '256'
-      Memory: '512'
+      Cpu: '512'
+      Memory: '1024'
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -1012,8 +1097,8 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Sub ${StackName}-publisher
-      Cpu: '256'
-      Memory: '512'
+      Cpu: '512'
+      Memory: '1024'
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -1133,7 +1218,7 @@ Resources:
       DistributionConfig:
         Enabled: true
         Comment: !Sub ${StackName}-editor
-        HttpVersion: http2
+        HttpVersion: http2and3
         DefaultRootObject: ''
         Origins:
           - Id: alb-origin-editor
@@ -1144,6 +1229,8 @@ Resources:
               HTTPSPort: 443
               OriginSSLProtocols:
                 - TLSv1.2
+              OriginReadTimeout: 60
+              OriginKeepaliveTimeout: 5
             OriginCustomHeaders:
               - HeaderName: x-sky-app
                 HeaderValue: editor
@@ -1162,12 +1249,10 @@ Resources:
             - GET
             - HEAD
             - OPTIONS
-          ForwardedValues:
-            QueryString: true
-            Cookies:
-              Forward: all
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # CachingDisabled managed policy
+          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3  # AllViewer managed policy
           Compress: true
-        PriceClass: PriceClass_100
+        PriceClass: PriceClass_All
         ViewerCertificate:
           CloudFrontDefaultCertificate: true
 
@@ -1177,7 +1262,7 @@ Resources:
       DistributionConfig:
         Enabled: true
         Comment: !Sub ${StackName}-publisher
-        HttpVersion: http2
+        HttpVersion: http2and3
         DefaultRootObject: ''
         Origins:
           - Id: alb-origin-publisher
@@ -1188,6 +1273,8 @@ Resources:
               HTTPSPort: 443
               OriginSSLProtocols:
                 - TLSv1.2
+              OriginReadTimeout: 60
+              OriginKeepaliveTimeout: 5
             OriginCustomHeaders:
               - HeaderName: x-sky-app
                 HeaderValue: publisher
@@ -1206,12 +1293,10 @@ Resources:
             - GET
             - HEAD
             - OPTIONS
-          ForwardedValues:
-            QueryString: true
-            Cookies:
-              Forward: all
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized managed policy
+          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3  # AllViewer managed policy
           Compress: true
-        PriceClass: PriceClass_100
+        PriceClass: PriceClass_All
         ViewerCertificate:
           CloudFrontDefaultCertificate: true
 
