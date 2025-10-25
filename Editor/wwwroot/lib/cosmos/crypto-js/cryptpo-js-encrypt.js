@@ -7,7 +7,7 @@ function encryptData(plainText) {
     if (typeof plainText === 'undefined' || plainText === null || plainText === "") {
         return "";
     }
-    const keyText = "1234567890123456";
+    const keyText = "1234567890123456"; // TODO: Make this random and secure.
     const key = CryptoJS.enc.Utf8.parse(keyText); // 16 bytes key for AES-128
     const iv = CryptoJS.enc.Utf8.parse(keyText);
     // Encrypt the plaintext

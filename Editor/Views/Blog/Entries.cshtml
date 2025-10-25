@@ -1,45 +1,150 @@
+@using Sky.Editor.Data.Logic
 @model Sky.Editor.Models.Blogs.BlogEntriesListViewModel
+@inject IEditorSettings options
 @{
+    var canEdit = User.IsInRole("Administrators") || User.IsInRole("Editors");
     ViewData["Title"] = "Entries - " + Model.BlogKey;
 }
+<link href="~/lib/tabulator-tables/dist/css/tabulator_midnight.css" rel="stylesheet" />
+<script src="~/lib/luxon/luxon.min.js"></script>
+<script src="~/lib/tabulator-tables/dist/js/tabulator.min.js"></script>
+<script src="~/js/clipboard.min.js"></script>
+<style>
+    .fs-small {
+        font-size: 0.8em;
+    }
+</style>
 <div class="pt-3">
     <div class="container">
         <div class="row">
             <div class="col">
-                @if (!string.IsNullOrWhiteSpace(Model.HeroImage))
-                {
-                    <img src="@Model.HeroImage" class="img-fluid mb-3" alt="Blog Hero Image" />
-                }
-                <h2>Entries for '@Model.BlogKey'</h2>
+                <h3 class="text-light">Entries for '@Model.BlogKey'</h3>
                 <p>@Html.Raw(Model.BlogDescription)</p>
-                <p>
-                    <a class="btn btn-sm btn-primary" href="@Url.Action("CreateEntry", new { blogKey = Model.BlogKey })">New Blog Entry</a>
-                    <a class="btn btn-sm btn-secondary" href="@Url.Action("Index")">Back to Streams</a>
-                </p>
             </div>
         </div>
-        @foreach (var e in Model.Entries)
-        {
-            <div class="row">
-                <div class="col">
-                    <h3>@e.Title</h3>
-                    @if (!string.IsNullOrEmpty(e.BannerImage))
-                    {
-                        <img src="@e.BannerImage" class="img-fluid mb-3" alt="Entry Banner Image" />
-                    }
-                    <div>
-                    @(e.Published?.ToString("u") ?? "-")
-                        @e.Updated.ToString("u")
-                    </div>
-                    <div>
-                        @Html.Raw(e.Introduction)
-                    </div>
-                    <div>
-                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("EditEntry", new { blogKey = Model.BlogKey, articleNumber = e.ArticleNumber })">Edit</a>
-                        <a class="btn btn-sm btn-outline-danger" href="@Url.Action("DeleteEntry", new { blogKey = Model.BlogKey, articleNumber = e.ArticleNumber })">Delete</a>
-                    </div>
+        <div class="row cpws-table-pager-row-top">
+            <div class="col-md-6">
+                <div class="btn-group" role="group" aria-label="Actions">
+                    <a class="btn btn-sm btn-primary" href="@Url.Action("CreateEntry", new { blogKey = Model.BlogKey })">New Entry</a>
+                    <a class="btn btn-sm btn-secondary" href="@Url.Action("Index")">Back to Streams</a>
                 </div>
             </div>
-        }
+            <div class="col-md-6 d-flex justify-content-end">
+            </div>
+        </div>
+        <div class="row bg-dark">
+            <div class="col-md-12">
+                <div id="pagelist-table" class="table-dark"></div>
+            </div>
+        </div>
+        <div class="row cpws-table-pager-row-bottom">
+            <div class="col-md-12 d-flex justify-content-center">
+                &nbsp;
+            </div>
+        </div>
     </div>
 </div>
+<script>
+    const publisherUrl = "@options.PublisherUrl";
+    const tblHeight = window.innerHeight - 200;
+    const canEdit = @Html.Raw(canEdit.ToString().ToLower());
+
+    let pageSize = Math.round(tblHeight / 50) + 1;
+
+    function openArticleVersions(e, cell) {
+        const data = cell.getRow().getData();
+        window.location.href = "/editor/blogs/" + data.BlogKey + "/entries";
+    }
+
+    function dateFilterFunction(headerValue, rowValue, rowData, filterParams){
+        if (rowValue === null || rowValue === "") {
+            return false;
+        }
+        return headerValue === rowValue.split("T")[0]; //must return a boolean, true if it passes the filter.
+    }
+
+    const trashBtn = function(cell, formatterParams){
+        data = cell.getRow().getData();
+        if (data.IsDefault === true){
+            return "";
+        }
+        return "<a title='Send post to trash' href='/editor/blogs/" + data.Id + "/delete' class='btn btn-sm btn-secondary'><i class='fa-solid fa-trash'></i></a>";
+    };
+
+    const menuBar = function(cell, formatterParams){
+        data = cell.getRow().getData();
+        let html = "<div class='btn-group btn-group-sm' role='group' aria-label='Page actions.'>";
+        html += html += "<a href='/Editor/Edit/" + data.ArticleNumber + "' title='Click to edit post.' class='btn btn-sm btn-success'><i class='fa-solid fa-pen-to-square'></i></a>";
+        let url = data.UrlPath;
+        if (url === "root") {
+            url = "";
+        }
+
+        if (data.LastPublished !== null && data.LastPublished !== ""){
+            html += "<a target='_blank' href='" + publisherUrl + "/" + url + "' title='Open blog post on website.'  class='btn btn-sm btn-secondary'><i class='fa-solid fa-arrow-up-right-from-square'></i></a>";
+        }
+        else
+        {
+            html += "<a title='Cannot open blog post on website until it is published.' onclick='alert(\"Cannot open page on website until it is published.\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-arrow-up-right-from-square'></i></a>";
+        }
+
+        if (data.LastPublished !== null && canEdit && data.IsDefault === false)
+        {
+            html += "<button onclick='unpublish(" + data.ArticleNumber + ")' title='Unpublishes a this item, and makes it no longer accessible except for editing.' class='btn btn-sm btn-secondary'><i class='fa-solid fa-calendar-xmark'></i></button>";
+        }html += "</div>";
+        return html;
+    };
+
+     const pageTable = new Tabulator("#pagelist-table", {
+        height:tblHeight + "px",
+        pagination:true, //enable pagination
+        paginationMode:"local", //enable local pagination
+        paginationSize:pageSize, //optional parameter to request a certain number of rows per page
+        persistence:{
+            sort: true, //persist column sorting
+            filter: true, //persist filters
+            headerFilter: true, //persist header filters
+            group: false, //persist row grouping
+            page: true, //persist page
+            columns: false, //persist columns
+        },
+        persistenceWriterFunc:function(id, type, data){
+            //id - tables persistence id
+            //type - type of data being persisted ("sort", "filter", "group", "page" or "columns")
+            //data - array or object of data
+            sessionStorage.setItem(id + "-" + type, JSON.stringify(data));
+        },
+        persistenceReaderFunc:function(id, type){
+            //id - tables persistence id
+            //type - type of data being persisted ("sort", "filter", "group", "page" or "columns")
+            var data = sessionStorage.getItem(id + "-" + type);
+            return data ? JSON.parse(data) : false;
+        },
+        layout:"fitColumns",
+        ajaxURL:"@Url.Action("GetBlogs")/@Model.BlogKey", //ajax URL
+        columns:[
+            {title:"ArticleNumber", field:"ArticleNumber", visible: false },
+            {title:"BlogKey", field:"BlogKey", visible: false },
+
+            {title:"Actions", field:"ArticleNumber", formatter:menuBar, width:176, headerSort:false },
+
+            {title:"Title", field:"Title", sorter:"string", headerFilter:"input", cellClick:openArticleVersions },
+
+            {title:"Published", field:"Published", sorter:"string", headerFilter:dateFilterFunction, cellClick:openArticleVersions },
+            {title:"Updated", field:"Updated", sorter:"string", headerFilter:dateFilterFunction, cellClick:openArticleVersions },
+
+            {title: "Trash", field:"ArticleNumber", formatter:trashBtn, width:56, headerSort:false, hozAlign:"center", headerHozAlign:"center" }
+
+        ],
+    });
+
+     $(document).ready(function () {
+
+        $("body").addClass("cwps-editor-container");
+
+        $(".toLocalTimeZone").each(function (index, element) {
+            $(element).html(getLocalTime($(element).html()));
+        });
+
+    });
+</script>

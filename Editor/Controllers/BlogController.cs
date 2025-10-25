@@ -7,22 +7,23 @@
 
 namespace Sky.Editor.Controllers
 {
+    // if you place ISlugService elsewhere adjust
+    // UPDATED: sync with enhanced Blog entity & view models (Title, Description, HeroImage, IsDefault, SortOrder)
+    // Added mapping & update of UpdatedUtc when editing a blog stream.
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
-    using MailChimp.Net.Models;
     using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models.Blogs;
     using Sky.Editor.Services.Redirects;
-    using Sky.Editor.Services.Slugs; // if you place ISlugService elsewhere adjust
-    // UPDATED: sync with enhanced Blog entity & view models (Title, Description, HeroImage, IsDefault, SortOrder)
-    // Added mapping & update of UpdatedUtc when editing a blog stream.
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
+    using Sky.Editor.Services.Slugs;
+    using Sky.Editor.Services.Templates;
 
     /// <summary>
     /// Editor-facing controller for managing blog streams (multi-blog support) and their entries (blog posts).
@@ -42,12 +43,13 @@ namespace Sky.Editor.Controllers
     /// </remarks>
     [Authorize]
     [Route("editor/blogs")]
-    public class BlogController : Controller
+    public class BlogController : Cms.Controllers.BaseController
     {
         private readonly ApplicationDbContext db;
         private readonly ArticleEditLogic articleLogic;
         private readonly ISlugService slugService; // NEW
         private readonly IRedirectService redirectService;
+        private readonly ITemplateService templateService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BlogController"/> class.
@@ -56,50 +58,22 @@ namespace Sky.Editor.Controllers
         /// <param name="articleLogic">Article editing / publishing logic service.</param>
         /// <param name="slugService">Slug normalization and uniqueness helper.</param>
         /// <param name="redirectService">Redirect management service.</param>
+        /// <param name="templateService">Template management service.</param>
+        /// <param name="userManager">User management service.</param>
         public BlogController(
             ApplicationDbContext db,
             ArticleEditLogic articleLogic,
             ISlugService slugService,
-            IRedirectService redirectService) // NEW
+            IRedirectService redirectService,
+            ITemplateService templateService,
+            UserManager<IdentityUser> userManager)
+            : base(db, userManager)
         {
             this.db = db;
             this.articleLogic = articleLogic;
             this.slugService = slugService;
             this.redirectService = redirectService;
-        }
-
-        /// <summary>
-        /// Generates a unique blog key (slug) from a supplied title.
-        /// </summary>
-        /// <param name="title">Source title text.</param>
-        /// <returns>Unique route-safe slug (lowercase, max length 64) not currently in use.</returns>
-        private async Task<string> GenerateUniqueBlogKeyAsync(string title)
-        {
-            // Reuse existing slug normalizer. Fall back if service returns empty.
-            var baseSlug = slugService.Normalize(title) ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(baseSlug))
-            {
-                baseSlug = "blog";
-            }
-
-            // Trim to max length (64) before uniqueness suffixing
-            const int max = 64;
-            if (baseSlug.Length > max)
-            {
-                baseSlug = baseSlug[..max];
-            }
-
-            var candidate = baseSlug;
-            var i = 2;
-            while ((await db.Blogs.CountAsync(b => b.BlogKey == candidate)) > 0)
-            {
-                var suffix = "-" + i;
-                var cut = Math.Min(baseSlug.Length, max - suffix.Length);
-                candidate = baseSlug[..cut] + suffix;
-                i++;
-            }
-
-            return candidate;
+            this.templateService = templateService;
         }
 
         /// <summary>
@@ -421,61 +395,24 @@ namespace Sky.Editor.Controllers
                 return NotFound();
             }
 
-            return View("CreateEntry", new BlogEntryEditViewModel
-            {
-                BlogKey = blogKey,
-                PublishNow = true
-            });
-        }
+            var html = await templateService.GetTemplateByKeyAsync("blog-post");
 
-        /// <summary>
-        /// Handles creation of a new blog entry (article). Automatically publishes if requested.
-        /// </summary>
-        /// <param name="blogKey">Blog key (must match model).</param>
-        /// <param name="model">Entry edit model.</param>
-        /// <returns>Redirect to entries list on success; same form on validation errors.</returns>
-        [HttpPost("{blogKey}/entries/create")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateEntry(string blogKey, BlogEntryEditViewModel model)
-        {
-            if (blogKey != model.BlogKey)
+            if (html == null)
             {
-                return BadRequest();
+                throw new InvalidOperationException("Blog entry template not found.");
             }
 
-            var blogExists = (await db.Blogs.CountAsync(b => b.BlogKey == blogKey)) > 0;
-            if (!blogExists)
-            {
-                return NotFound();
-            }
+            var userId = Guid.Parse(await GetUserId());
 
-            if (!ModelState.IsValid)
-            {
-                return View("CreateEntry", model);
-            }
+            var article = await articleLogic.CreateArticle("New Blog Entry", userId, null, blogKey);
 
-            var userId = Guid.Parse(User?.Claims?.FirstOrDefault(c => c.Type.EndsWith("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value ?? Guid.Empty.ToString());
-            var articleVm = await articleLogic.CreateArticle(model.Title, userId, null, blogKey);
+            article.ArticleType = ArticleType.BlogPost;
+            article.Content = html.Content;
+            article.Published = null;
 
-            var entity = await db.Articles
-                .OrderByDescending(a => a.VersionNumber)
-                .FirstOrDefaultAsync(a => a.ArticleNumber == articleVm.ArticleNumber);
+            await articleLogic.SaveArticle(article, userId);
 
-            entity.ArticleType = (int)ArticleType.BlogPost;
-            entity.Introduction = model.Introduction ?? string.Empty;
-            entity.Content = model.Content ?? entity.Content;
-            entity.BannerImage = model.BannerImage ?? string.Empty;
-            entity.Published = model.PublishNow ? DateTimeOffset.UtcNow : null;
-
-            await db.SaveChangesAsync();
-
-            // Publish if requested
-            if (model.PublishNow || entity.Published != null)
-            {
-                await articleLogic.PublishArticle(entity.Id, entity.Published);
-            }
-
-            return RedirectToAction(nameof(Entries), new { blogKey });
+            return RedirectToAction("Edit", "Editor", new { id = article.ArticleNumber });
         }
 
         /// <summary>
@@ -666,5 +603,78 @@ namespace Sky.Editor.Controllers
                 .OrderBy(b => b.SortOrder)
                 .ThenBy(b => b.BlogKey).ToList());
         }
+
+
+        /// <summary>
+        /// Lists entries (articles) for a specific blog stream.
+        /// </summary>
+        /// <param name="blogKey">Unique blog key.</param>
+        /// <returns>Entries view with listing model or 400/404 on invalid key.</returns>
+        [HttpGet("GetEntries/{blogKey}")]
+        public async Task<IActionResult> GetEntries(string blogKey)
+        {
+            if (string.IsNullOrWhiteSpace(blogKey))
+            {
+                return BadRequest();
+            }
+
+            var blog = await db.Blogs.FirstOrDefaultAsync(b => b.BlogKey == blogKey);
+            if (blog == null)
+            {
+                return NotFound();
+            }
+
+            var entries = await db.ArticleCatalog
+                .Where(c => c.BlogKey == blogKey)
+                .Select(c => new BlogEntryListItem
+                {
+                    BlogKey = c.BlogKey,
+                    ArticleNumber = c.ArticleNumber,
+                    Title = c.Title,
+                    Published = c.Published,
+                    Updated = c.Updated,
+                    UrlPath = c.UrlPath,
+                    Introduction = c.Introduction,
+                    BannerImage = c.BannerImage
+                })
+                .ToListAsync();
+
+            return Json(entries.OrderByDescending(c => c.Published ?? c.Updated).ToList());
+        }
+
+        /// <summary>
+        /// Generates a unique blog key (slug) from a supplied title.
+        /// </summary>
+        /// <param name="title">Source title text.</param>
+        /// <returns>Unique route-safe slug (lowercase, max length 64) not currently in use.</returns>
+        private async Task<string> GenerateUniqueBlogKeyAsync(string title)
+        {
+            // Reuse existing slug normalizer. Fall back if service returns empty.
+            var baseSlug = slugService.Normalize(title) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(baseSlug))
+            {
+                baseSlug = "blog";
+            }
+
+            // Trim to max length (64) before uniqueness suffixing
+            const int max = 64;
+            if (baseSlug.Length > max)
+            {
+                baseSlug = baseSlug[..max];
+            }
+
+            var candidate = baseSlug;
+            var i = 2;
+            while ((await db.Blogs.CountAsync(b => b.BlogKey == candidate)) > 0)
+            {
+                var suffix = "-" + i;
+                var cut = Math.Min(baseSlug.Length, max - suffix.Length);
+                candidate = baseSlug[..cut] + suffix;
+                i++;
+            }
+
+            return candidate;
+        }
+
     }
 }
