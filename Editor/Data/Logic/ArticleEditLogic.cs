@@ -35,6 +35,7 @@ namespace Sky.Editor.Data.Logic
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.Redirects;
     using Sky.Editor.Services.Slugs;
+    using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
 
     /// <summary>
@@ -56,6 +57,7 @@ namespace Sky.Editor.Data.Logic
         private readonly ICatalogService catalogService;
         private readonly IPublishingService publishingService;
         private readonly ITitleChangeService titleChangeService;
+        private readonly ITemplateService templateService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ArticleEditLogic"/> class.
@@ -74,6 +76,7 @@ namespace Sky.Editor.Data.Logic
         /// <param name="publishingService">Publishing state manager.</param>
         /// <param name="titleChangeService">Title change coordinator (redirects, child slugs, events).</param>
         /// <param name="redirectService">Redirect service (kept for DI compatibility; not directly used here).</param>
+        /// <param name="templateService">Template service for managing article templates.</param>
         public ArticleEditLogic(
             ApplicationDbContext dbContext,
             IOptions<CosmosConfig> config,
@@ -88,7 +91,8 @@ namespace Sky.Editor.Data.Logic
             ICatalogService catalogService,
             IPublishingService publishingService,
             ITitleChangeService titleChangeService,
-            IRedirectService redirectService)
+            IRedirectService redirectService,
+            ITemplateService templateService)
             : base(
                 dbContext,
                 config,
@@ -108,6 +112,7 @@ namespace Sky.Editor.Data.Logic
             this.catalogService = catalogService ?? throw new ArgumentNullException(nameof(catalogService));
             this.publishingService = publishingService ?? throw new ArgumentNullException(nameof(publishingService));
             this.titleChangeService = titleChangeService ?? throw new ArgumentNullException(nameof(titleChangeService));
+            this.templateService = templateService ?? throw new ArgumentNullException(nameof(templateService));
         }
 
         /// <summary>
@@ -258,8 +263,9 @@ namespace Sky.Editor.Data.Logic
         /// <param name="userId">Author user id.</param>
         /// <param name="templateId">Optional template ID.</param>
         /// <param name="blogKey">Optional blog key (default "default").</param>
+        /// <param name="articleType">Optional article type (default "General").S</param>
         /// <returns>Article view model for editing.</returns>
-        public async Task<ArticleViewModel> CreateArticle(string title, Guid userId, Guid? templateId = null, string blogKey = "default")
+        public async Task<ArticleViewModel> CreateArticle(string title, Guid userId, Guid? templateId = null, string blogKey = "default", ArticleType articleType = ArticleType.General)
         {
             var isFirstArticle = (await DbContext.Articles.CountAsync()) == 0;
             var defaultTemplate = string.Empty;
@@ -280,14 +286,6 @@ namespace Sky.Editor.Data.Logic
                 }
             }
 
-            if (string.IsNullOrEmpty(defaultTemplate))
-            {
-                defaultTemplate =
-                    "<div style='width: 100%;padding-left: 20px;padding-right: 20px;margin-left: auto;margin-right: auto;'>" +
-                    "<div contenteditable='true'><h1>Why Lorem Ipsum?</h1><p>" +
-                    LoremIpsum.WhyLoremIpsum + "</p></div></div></div>";
-            }
-
             int nextArticleNumber = isFirstArticle
                 ? 1
                 : (await DbContext.ArticleNumbers.MaxAsync(m => m.LastNumber)) + 1;
@@ -298,11 +296,11 @@ namespace Sky.Editor.Data.Logic
             {
                 BlogKey = blogKey,
                 ArticleNumber = nextArticleNumber,
+                ArticleType = (int)articleType,
                 Content = htmlService.EnsureEditableMarkers(defaultTemplate),
                 StatusCode = (int)StatusCodeEnum.Active,
                 Title = title,
                 Updated = DateTimeOffset.UtcNow,
-                UrlPath = isFirstArticle ? "root" : slugService.Normalize(title),
                 VersionNumber = 1,
                 Published = isFirstArticle ? DateTimeOffset.UtcNow : null,
                 UserId = userId.ToString(),
@@ -310,8 +308,25 @@ namespace Sky.Editor.Data.Logic
                 BannerImage = string.Empty
             };
 
+            // Generate initial URL path/slug
+            article.UrlPath = isFirstArticle ? "root" : this.titleChangeService.BuildArticleUrl(article);
+
             DbContext.Articles.Add(article);
             DbContext.ArticleNumbers.Add(new ArticleNumber { LastNumber = nextArticleNumber });
+
+            if (articleType == ArticleType.BlogPost)
+            {
+                var html = await templateService.GetTemplateContentAsync("blog-post");
+            }
+
+            if (string.IsNullOrEmpty(defaultTemplate))
+            {
+                defaultTemplate =
+                    "<div style='width: 100%;padding-left: 20px;padding-right: 20px;margin-left: auto;margin-right: auto;'>" +
+                    "<div contenteditable='true'><h1>Why Lorem Ipsum?</h1><p>" +
+                    LoremIpsum.WhyLoremIpsum + "</p></div></div></div>";
+            }
+
             await DbContext.SaveChangesAsync();
 
             await UpsertCatalogEntry(article);
@@ -576,7 +591,11 @@ namespace Sky.Editor.Data.Logic
                 }
             }
 
-            await titleChangeService.HandleTitleChangeAsync(article, oldTitle);
+            if (!oldTitle.Equals(article.Title, StringComparison.OrdinalIgnoreCase))
+            {
+                await titleChangeService.HandleTitleChangeAsync(article, oldTitle);
+            }
+
             await catalogService.UpsertAsync(article);
 
             if (article.Published.HasValue)

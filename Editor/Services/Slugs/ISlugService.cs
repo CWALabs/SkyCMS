@@ -1,7 +1,3 @@
-using System.Globalization;
-using System.Text;
-using System.Text.RegularExpressions;
-
 // <copyright file="ISlugService.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
@@ -11,6 +7,10 @@ using System.Text.RegularExpressions;
 
 namespace Sky.Editor.Services.Slugs
 {
+    using System.Globalization;
+    using System.Text;
+    using System.Text.RegularExpressions;
+
     /// <summary>
     /// Provides slug (URL segment) normalization utilities.
     /// </summary>
@@ -20,8 +20,9 @@ namespace Sky.Editor.Services.Slugs
         ///  Normalizes the input string into a URL-safe slug.
         /// </summary>
         /// <param name="input">Input string.</param>
+        /// <param name="blogKey">Blog key (if is a blog entry).</param>
         /// <returns>Normalized slug.</returns>
-        string Normalize(string input);
+        string Normalize(string input, string blogKey = "");
     }
 
     /// <summary>
@@ -33,8 +34,8 @@ namespace Sky.Editor.Services.Slugs
         // Choose your separator to match your style/SEO: '-' (common) or '_' (your original).
         private const char Separator = '-';
 
-        /// <inheritdoc cref="Sky.Editor.Services.Slugs.ISlugService.Normalize(string)"/>
-        public string Normalize(string input)
+        /// <inheritdoc cref="Sky.Editor.Services.Slugs.ISlugService.Normalize(string, string)"/>
+        public string Normalize(string input, string blogKey = "")
         {
             if (string.IsNullOrWhiteSpace(input))
             {
@@ -72,6 +73,11 @@ namespace Sky.Editor.Services.Slugs
             if (slug is "." or "..")
             {
                 slug = slug.Replace('.', Separator);
+            }
+
+            if (!string.IsNullOrWhiteSpace(blogKey))
+            {
+                slug = $"{blogKey}/{slug}";
             }
 
             return slug;

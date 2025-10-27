@@ -16,12 +16,20 @@ namespace Sky.Editor.Services.Titles
     public interface ITitleChangeService
     {
         /// <summary>
+        /// Constructs a URL for the specified article based on its properties.
+        /// </summary>
+        /// <param name="article">The article for which to build the URL. Must not be <see langword="null"/>.</param>
+        /// <remarks>The URL is constructed using the article's title and if a blog post, uses the blog's URL as a prefix path.</remarks>
+        /// <returns>A string representing the URL of the article.</returns>
+        string BuildArticleUrl(Article article);
+
+        /// <summary>
         /// Processes a title change for the supplied <paramref name="article"/>, given the previous title.
         /// </summary>
         /// <param name="article">The article entity whose title has just been modified (unsaved or saved, per calling convention).</param>
-        /// <param name="oldTitle">The prior title value used to detect changes and generate redirects if required.</param>
+        /// <param name="oldUrlPath">The prior URL path used to detect changes and generate redirects if required.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task HandleTitleChangeAsync(Article article, string oldTitle);
+        Task HandleTitleChangeAsync(Article article, string oldUrlPath);
 
         /// <summary>
         /// Validates whether a proposed title is usable (not reserved and not used by a different article).

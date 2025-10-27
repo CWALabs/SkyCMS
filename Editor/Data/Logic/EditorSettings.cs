@@ -175,7 +175,8 @@ namespace Sky.Editor.Data.Logic
         /// <returns>Editor configuration.</returns>
         public EditorConfig GetEditorConfig()
         {
-            if (memoryCache.TryGetValue($"{this.httpContextAccessor.HttpContext.Request.Host.Host}-conf", out EditorConfig config))
+            EditorConfig config = null;
+            if (this.httpContextAccessor.HttpContext != null && this.memoryCache.TryGetValue($"{this.httpContextAccessor.HttpContext.Request.Host.Host}-conf", out config))
             {
                 return config;
             }

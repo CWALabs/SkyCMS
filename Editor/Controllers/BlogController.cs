@@ -610,7 +610,7 @@ namespace Sky.Editor.Controllers
         /// </summary>
         /// <param name="blogKey">Unique blog key.</param>
         /// <returns>Entries view with listing model or 400/404 on invalid key.</returns>
-        [HttpGet("GetEntries/{blogKey}")]
+        [HttpGet("{blogKey}/getentries")]
         public async Task<IActionResult> GetEntries(string blogKey)
         {
             if (string.IsNullOrWhiteSpace(blogKey))
@@ -622,6 +622,11 @@ namespace Sky.Editor.Controllers
             if (blog == null)
             {
                 return NotFound();
+            }
+
+            if (blog.IsDefault)
+            {
+                blogKey = "default";
             }
 
             var entries = await db.ArticleCatalog

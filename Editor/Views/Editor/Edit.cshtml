@@ -19,8 +19,8 @@
     <input type="hidden" asp-for="BannerImage" />
 </form>
 
-<script src="/lib/monaco-editor/min/vs/loader.js"></script>
-<script src="/lib/emmet-monaco-es/dist/emmet-monaco.min.js"></script>
+<script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
+<script src="https://unpkg.com/emmet-monaco-es/dist/emmet-monaco.min.js"></script>
 
 <iframe id="ccmsContFrame" src="/Editor/CcmsContent/@Model.ArticleNumber" style="position: absolute; top: 52px; width: 100%; margin:0px; padding:0px;z-index:1;" onload="setupFrame()" frameBorder="0" scrolling="yes"></iframe>
 
@@ -262,7 +262,7 @@
             }
         });
 
-        signalRConnection = new signalR.HubConnectionBuilder()
+        @* signalRConnection = new signalR.HubConnectionBuilder()
             .configureLogging(signalR.LogLevel.Information)
             .withUrl("/___cwps_hubs_live_editor")
             .withAutomaticReconnect().build();
@@ -352,7 +352,7 @@
             }
 
             const iframe = document.getElementById("ccmsContFrame");
-        });
+        }); *@
 
 
         $("#ccmsContFrame").click(function () {

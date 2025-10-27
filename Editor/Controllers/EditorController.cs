@@ -1827,7 +1827,7 @@ namespace Sky.Cms.Controllers
             if (dbContext.Database.IsCosmos())
             {
                 var whereClause = publishedOnly ? $"WHERE c.Published != null AND " : "WHERE ";
-                whereClause += $"c.StatusCode = {(int)StatusCodeEnum.Active}";
+                whereClause += $"c.StatusCode = {(int)StatusCodeEnum.Active} AND c.ArticleType = 0";
 
                 if (!string.IsNullOrEmpty(term))
                 {
@@ -1856,9 +1856,9 @@ namespace Sky.Cms.Controllers
             {
                 // LINQ equivalent for the SQL GROUP BY and MAX aggregate
                 var query = publishedOnly ? dbContext.Articles
-                    .Where(a => a.Published != null && a.StatusCode == (int)StatusCodeEnum.Active) :
+                    .Where(a => a.Published != null && a.StatusCode == (int)StatusCodeEnum.Active && a.ArticleType == 0) :
                     dbContext.Articles
-                    .Where(a => a.StatusCode == (int)StatusCodeEnum.Active);
+                    .Where(a => a.StatusCode == (int)StatusCodeEnum.Active && a.ArticleType == 0);
 
                 if (!string.IsNullOrEmpty(term))
                 {

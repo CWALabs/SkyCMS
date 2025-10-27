@@ -63,17 +63,23 @@ namespace Sky.Editor.Services.Titles
         }
 
         /// <inheritdoc/>
-        public async Task HandleTitleChangeAsync(Article article, string oldTitle)
+        public string BuildArticleUrl(Article article)
         {
-            // If only case changed and URL already set, skip heavy work.
-            if (string.Equals(article.Title, oldTitle, StringComparison.OrdinalIgnoreCase) &&
-                !string.IsNullOrEmpty(article.UrlPath))
+            if (article.ArticleType == (int)ArticleType.BlogPost)
             {
-                return;
+                return slugs.Normalize(article.Title, article.BlogKey);
             }
 
-            var oldSlug = slugs.Normalize(oldTitle);
-            var newSlug = slugs.Normalize(article.Title);
+            return slugs.Normalize(article.Title);
+        }
+
+        /// <inheritdoc/>
+        public async Task HandleTitleChangeAsync(Article article, string oldTitle)
+        {
+            var blogKey = (article.ArticleType == (int)ArticleType.BlogPost) ? article.BlogKey : string.Empty;
+
+            var oldSlug = slugs.Normalize(oldTitle, blogKey);
+            var newSlug = BuildArticleUrl(article);
 
             // Update selected article and synchronize across versions of same logical article.
             article.UrlPath = newSlug;

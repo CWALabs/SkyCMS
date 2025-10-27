@@ -1,13 +1,17 @@
 ﻿using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
 using Cosmos.Common.Data;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 using Sky.Editor.Data.Logic;
 using Sky.Editor.Domain.Events;
 using Sky.Editor.Infrastructure.Time;
@@ -18,6 +22,7 @@ using Sky.Editor.Services.Publishing;
 using Sky.Editor.Services.Redirects;
 using Sky.Editor.Services.ReservedPaths;
 using Sky.Editor.Services.Slugs;
+using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
 
 namespace Sky.Tests
@@ -44,6 +49,8 @@ namespace Sky.Tests
         protected IRedirectService RedirectService = null!;
         protected ITitleChangeService TitleChangeService = null!;
         protected IClock Clock { get; } = new SystemClock();
+        protected UserManager<IdentityUser> UserManager = null!;
+        protected ITemplateService TemplateService = null!;
 
         /// <summary>
         /// Initialize test context. Call from [TestInitialize].
@@ -104,6 +111,8 @@ namespace Sky.Tests
             ReservedPaths = new ReservedPaths(Db);
             RedirectService = new RedirectService(Db, SlugService, Clock, PublishingService);
             TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, Clock, EventDispatcher, PublishingService, ReservedPaths);
+            var webHostEnvironment = new Mock<IWebHostEnvironment>().Object;
+            TemplateService = new TemplateService(webHostEnvironment, new LoggerFactory().CreateLogger<TemplateService>());
 
             var publishingArtifactService = new PublishingService(
                 Db,
@@ -132,7 +141,21 @@ namespace Sky.Tests
                 catalogService,
                 PublishingService,
                 titleChangeService,
-                redirectService);
+                redirectService,
+                TemplateService);
+
+            // User manager setup.
+            var userStore = new UserStore<IdentityUser>(Db);
+            UserManager = new UserManager<IdentityUser>(
+                    userStore,
+                    Options.Create(new IdentityOptions()),
+                    new PasswordHasher<IdentityUser>(),
+                    Array.Empty<IUserValidator<IdentityUser>>(),
+                    Array.Empty<IPasswordValidator<IdentityUser>>(),
+                    new UpperInvariantLookupNormalizer(),
+                    new IdentityErrorDescriber(),
+                    null!,
+                    new NullLogger<UserManager<IdentityUser>>());
 
             AfterInitialize();
         }

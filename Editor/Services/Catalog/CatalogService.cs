@@ -120,6 +120,7 @@ namespace Sky.Editor.Services.Catalog
             {
                 ArticleNumber = article.ArticleNumber,
                 BannerImage = article.BannerImage,
+                BlogKey = article.BlogKey,
                 Published = article.Published,
                 Status = article.StatusCode == 0 ? "Inactive" : "Active",
                 Title = article.Title,

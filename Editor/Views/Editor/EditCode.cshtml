@@ -74,13 +74,17 @@
         
     </script>
 }
+
+<script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
+<script src="https://unpkg.com/emmet-monaco-es/dist/emmet-monaco.min.js"></script>
+
 <script>
     var editor;
     var fieldId;
     var fieldName;
     var ccmsEditorIsLocked = false;
     const versionNumber = @Model.VersionNumber;
-    
+
     // Current user
     const ccms_editor_userid = "@this.Context.User.Identity.Name";
     const hasModel = @((Model != null).ToString().ToLower());
@@ -111,7 +115,7 @@
                 editor.getModel().dispose();
             }
             $("#msgBox").html("Loading...");
-            
+
             editor.dispose();
             editor = null;
 
@@ -152,7 +156,7 @@
             $("#EditingField").val(fieldId);
             var hiddenInput = $("#" + fieldId);
             var code = hiddenInput.val();
-
+             
             emmetMonaco.emmetHTML(monaco);
 
             editor = monaco.editor.create(document.getElementById('editspace'),
@@ -169,7 +173,7 @@
 
             // Close loading spiner and display saved status
             $("#spinLoading").hide();
-            
+
             $("#btnSavingStatus").show();
             checkDisplayLiveEditorButton('Content'); // Check after load data.
         });
@@ -227,7 +231,7 @@
                 doneSaving();
 
                 if (response.IsValid) {
-                                       
+
                     checkDisplayLiveEditorButton('Content'); // Check after post data.
 
                     if (next !== null && typeof next  === 'function') {
@@ -456,6 +460,3 @@
     }
 
 </script>
-
-<script src="/lib/monaco-editor/min/vs/loader.js"></script>
-<script src="/lib/emmet-monaco-es/dist/emmet-monaco.min.js"></script>

@@ -6,6 +6,10 @@ using Microsoft.EntityFrameworkCore;
 using Sky.Editor.Controllers;
 using Sky.Editor.Models.Blogs;
 using System.Security.Claims;
+using Moq;
+using Sky.Editor.Services;
+using Microsoft.AspNetCore.Identity;
+using Sky.Editor.Services.Templates;
 
 // BlogControllerTests.cs
 
@@ -19,12 +23,17 @@ namespace Sky.Tests;
 public class BlogControllerTests : ArticleEditLogicTestBase
 {
     private BlogController _controller;
+    private Mock<ITemplateService> _mockTemplateService;
 
     [TestInitialize]
     public void Setup()
     {
         InitializeTestContext(seedLayout: true);
-        _controller = new BlogController(Db, Logic, SlugService, RedirectService);
+        
+        // Create mock for ITemplateService
+        _mockTemplateService = new Mock<ITemplateService>();
+
+        _controller = new BlogController(Db, Logic, SlugService, RedirectService, _mockTemplateService.Object, UserManager);
 
         // Mock user context for authenticated actions
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -708,7 +717,7 @@ public class BlogControllerTests : ArticleEditLogicTestBase
         };
 
         // Act
-        var result = await _controller.CreateEntry(blog.BlogKey, model) as RedirectToActionResult;
+        var result = await _controller.CreateEntry(blog.BlogKey) as RedirectToActionResult;
 
         // Assert
         Assert.IsNotNull(result);
@@ -737,7 +746,7 @@ public class BlogControllerTests : ArticleEditLogicTestBase
         };
 
         // Act
-        await _controller.CreateEntry(blog.BlogKey, model);
+        await _controller.CreateEntry(blog.BlogKey);
 
         // Assert
         var article = await Db.Articles.FirstAsync(a => a.Title == "Draft Post");
@@ -811,7 +820,7 @@ public class BlogControllerTests : ArticleEditLogicTestBase
         };
 
         // Act
-        var result = await _controller.CreateEntry("nonexistent", model);
+        var result = await _controller.CreateEntry("nonexistent");
 
         // Assert
         Assert.IsInstanceOfType(result, typeof(NotFoundResult));

@@ -19,7 +19,7 @@
         <div class="row">
             <div class="col">
                 <h3 class="text-light">Entries for '@Model.BlogKey'</h3>
-                <p>@Html.Raw(Model.BlogDescription)</p>
+                <p class="text-light">@Html.Raw(Model.BlogDescription)</p>
             </div>
         </div>
         <div class="row cpws-table-pager-row-top">
@@ -53,13 +53,18 @@
 
     function openArticleVersions(e, cell) {
         const data = cell.getRow().getData();
-        window.location.href = "/editor/blogs/" + data.BlogKey + "/entries";
+        window.location.href = "/Editor/Versions/" + data.ArticleNumber;
     }
 
     function dateFilterFunction(headerValue, rowValue, rowData, filterParams){
         if (rowValue === null || rowValue === "") {
             return false;
         }
+
+        if (typeof(rowValue.split) === "undefined") {
+            return false;
+        }
+
         return headerValue === rowValue.split("T")[0]; //must return a boolean, true if it passes the filter.
     }
 
@@ -68,7 +73,8 @@
         if (data.IsDefault === true){
             return "";
         }
-        return "<a title='Send post to trash' href='/editor/blogs/" + data.Id + "/delete' class='btn btn-sm btn-secondary'><i class='fa-solid fa-trash'></i></a>";
+        // "{blogKey}/entries/{articleNumber:int}/delete"
+        return "<a title='Send post to trash' href='/editor/blogs/" + data.BlogKey + "/entries/" + data.ArticleNumber + "/delete' class='btn btn-sm btn-secondary'><i class='fa-solid fa-trash'></i></a>";
     };
 
     const menuBar = function(cell, formatterParams){
@@ -121,7 +127,7 @@
             return data ? JSON.parse(data) : false;
         },
         layout:"fitColumns",
-        ajaxURL:"@Url.Action("GetBlogs")/@Model.BlogKey", //ajax URL
+        ajaxURL:"/editor/blogs/@Model.BlogKey/getentries", //ajax URL
         columns:[
             {title:"ArticleNumber", field:"ArticleNumber", visible: false },
             {title:"BlogKey", field:"BlogKey", visible: false },
