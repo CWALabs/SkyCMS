@@ -142,5 +142,21 @@ namespace Cosmos.BlobService.Drivers
         /// <param name="uploadDateTime">Upload date and time.</param>
         /// <returns>A <see cref="Task"/> indicating success as a <see cref="bool"/>.</returns>
         Task<bool> UploadStreamAsync(Stream readStream, FileUploadMetaData fileMetaData, DateTimeOffset uploadDateTime);
+
+        /// <summary>
+        /// Asynchronously retrieves a collection of properties for the specified target.
+        /// </summary>
+        /// <param name="target">The identifier of the target for which properties are to be retrieved. Cannot be null or empty.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a dictionary where the keys are
+        /// property names and the values are property values.</returns>
+        Task<Dictionary<string, string>> GetPropertiesAsync(string target);
+
+        /// <summary>
+        ///  Saves properties for a given target.
+        /// </summary>
+        /// <param name="target">Path to target.</param>
+        /// <param name="properties">Properties to save.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task SavePropertiesAsync(string target, Dictionary<string, string> properties);
     }
 }

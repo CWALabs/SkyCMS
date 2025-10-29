@@ -72,7 +72,7 @@ namespace Cosmos.Common.Data
         /// Must be unique within its logical scope. Leading slash conventions should be standardized externally.
         /// Max length enforced by <see cref="MaxLengthAttribute"/>.
         /// </remarks>
-        [MaxLength(128)]
+        [MaxLength(1999)]
         public string UrlPath { get; set; }
 
         /// <summary>
@@ -81,6 +81,7 @@ namespace Cosmos.Common.Data
         /// <remarks>
         /// May be null or empty for root-level content. Used for breadcrumb generation and hierarchical navigation.
         /// </remarks>
+        [MaxLength(1999)]
         public string ParentUrlPath { get; set; }
 
         /// <summary>
@@ -220,6 +221,7 @@ namespace Cosmos.Common.Data
         /// This helps in classifying content under different blogs or sections within the CMS.
         /// Default is "default" indicating the primary or fallback blog.
         /// </remarks>
+        [MaxLength(128)]
         public string BlogKey { get; set; } = "default";
     }
 }

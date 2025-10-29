@@ -2,72 +2,63 @@
 @{
     ViewData["Title"] = "Edit Blog Stream";
 }
-<link href="~/lib/cosmos/image-widget/image-widget.css" rel="stylesheet" />
-<script src="~/lib/cosmos/image-widget/image-widget.js"></script>
-<form asp-action="Edit" method="post" enctype="multipart/form-data" id="editBlogForm">
-    <input type="hidden" asp-for="Id" />
-    @* Keep BlogKey hidden so it posts back unchanged *@
-    <input type="hidden" asp-for="BlogKey" />
-    <div class="cwps-editor-container pt-3">
-        <div class="container">
-            <div class="row">
-                <div class="col mb-3">
-                    <div id="imgWidget">
+<!-- FilePond -->
+<link rel="stylesheet" href="/lib/filepond/filepond.min.css" />
+<!-- Image Widget styles -->
+<link rel="stylesheet" href="/lib/cosmos/image-widget/image-widget.css" />
+<style>
+    .ccms-img-widget-img {
+        max-height: 20vh;
+        border: 1px dashed #ccc;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+</style>
+<div class="cwps-editor-container pt-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-light mb-3">
+                <h3>Create a Blog</h3>
+                <form asp-action="Edit" method="post" id="editBlogForm" novalidate enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
+                    @* Hidden fields (no user entry for BlogKey; it’s derived from Title) *@
+                    <input type="hidden" asp-for="BlogKey" />
+                    @Html.HiddenFor(m => m.HeroImage)
+
+                    <p class="text-light">Blog banner image (optional):</p>
+                    <div class="ccms-img-widget-container"
+                         data-editor-config="image-widget"
+                         data-ccms-new="true">
+                        @if (!string.IsNullOrEmpty(Model.HeroImage))
+                        {
+                            <img id="heroPreview" class="ccms-img-widget-img" src="@Model.HeroImage" alt="Hero Image Preview" />
+                        }
                     </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col mb-3">
-                    <div class="input-group">
+
+                    <div class="input-group mb-3">
                         <span class="input-group-text">Title:</span>
                         <input asp-for="Title" class="form-control" id="Title" placeholder="e.g. Engineering Updates" />
                     </div>
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                </div>
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                    <div id="titleFeedback" class="form-text mb-2" aria-live="polite"></div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Description:</span>
+                        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Short description (max 512 chars)"></textarea>
+                    </div>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+
+                    <div class="form-text mb-3">
+                        <button id="btnSubmit" type="submit" class="btn btn-primary">Create</button>
+                        <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    <h2>Edit Blog Stream</h2>
-
-
-
-
-
-    <span asp-validation-for="Title" class="text-danger"></span>
-
-    <!-- Hero image is OPTIONAL -->
-    <div class="input-group mb-2">
-        <span class="input-group-text">Hero Image URL (optional):</span>
-        <input asp-for="HeroImage" class="form-control" placeholder="/images/hero.jpg or https://..." aria-required="false" />
-    </div>
-    <span asp-validation-for="HeroImage" class="text-danger"></span>
-
-    <div class="input-group mb-3">
-        <span class="input-group-text">Description:</span>
-        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Short description (max 512 chars)"></textarea>
-    </div>
-    <span asp-validation-for="Description" class="text-danger"></span>
-
-    <div class="input-group mb-2">
-        <span class="input-group-text">Upload Image (optional)</span>
-        <input id="heroFile" type="file"
-               class="form-control"
-               accept="image/apng,image/avif,image/gif,image/jpeg,image/png,image/svg+xml,image/webp" />
-        <button id="btnUpload" class="btn btn-secondary" type="button">Upload</button>
-    </div>
-    <div id="heroUploadHelp" class="form-text mb-3">
-        Optional. Supported: PNG, JPEG/JPG, GIF, WEBP, AVIF, APNG, SVG. Max 25MB.
-    </div>
-
-    <div class="mb-3">
-        <img id="heroPreview" src="@Model.HeroImage" alt="Hero preview"
-             style="max-width: 100%; height: auto; display:@(string.IsNullOrWhiteSpace(Model.HeroImage) ? "none" : "block");" />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
-</form>
+</div>
 
 @section Scripts {
     <script>
@@ -142,8 +133,30 @@
 
             uploadBtn.addEventListener('click', () => uploadImage(fileInput.files?.[0]));
         })();
+
+        // Optional: route uploads under articles/{articleNumber}
+        // window.articleNumber = 123;
+        // Handles the image widget events.
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle the image changed event.
+            if (window.CCMSImageWidgetEvents && typeof window.CCMSImageWidgetEvents.on === 'function') {
+                window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+                    // Update a hidden input to track the current image URL
+                    const hiddenField = document.getElementById('HeroImage');
+                    if (hiddenField) {
+                        hiddenField.value = info.type === 'uploaded' ? info.imageSrc : '';
+                    } else {
+                        console.warn('Hidden field for HeroImage not found.');
+                    }
+                });
+            }
+        });
     </script>
 
+    @* FilePond and Image Widget *@
+    <script asp-append-version="true" src="~/lib/filepond-plugin-file-metadata/dist/filepond-plugin-file-metadata.js"></script>
+    <script asp-append-version="true" src="~/lib/filepond/filepond.js"></script>
+    <script asp-append-version="true" src="/lib/cosmos/image-widget/image-widget.js"></script>
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }

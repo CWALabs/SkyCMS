@@ -1,5 +1,4 @@
-﻿image - widget\image - widget.js
-/**
+﻿/**
  * Cosmos CMS Image Widget (Enhanced)
  * 
  * Provides an interactive image upload and management widget for the Cosmos CMS editor.
@@ -7,11 +6,8 @@
  * 
  * REQUIREMENTS:
  * - FilePond library and FilePondPluginFileMetadata plugin must be loaded before this script
- * - Parent page must define:
- *   - parent.saveChanges(html, elementId) - Called when image is removed
- *   - parent.saveEditorRegion(html, elementId) - Called when image is uploaded
- *   - parent.saving() [optional] - Called when upload starts
- *   - parent.saveInProgress [optional] - Boolean flag set during upload
+ * - Parent page may optionally define:
+ *   - parent.saveInProgress [optional] - Boolean flag set to false after upload completes
  *   - articleNumber [optional] - Global variable for article context (determines upload path)
  * 
  * USAGE:
@@ -33,12 +29,32 @@
  * - Max file size: 25MB (enforced server-side)
  * - Upload path: /pub/articles/{articleNumber}/ (if articleNumber exists) or /pub/images/
  * 
- * NEW FEATURES:
+ * FEATURES:
  * - Alt text editor for accessibility
  * - Drag-and-drop image replacement
  * - Upload progress indicator
  * - Image library browser for reusing uploaded images
  * - Enhanced error handling with user-friendly messages
+ * - Custom event system (CCMSImageWidgetEvents) for responding to image lifecycle events
+ * 
+ * CUSTOM EVENTS:
+ * - The widget exposes a global event dispatcher: window.CCMSImageWidgetEvents
+ *   - Use this to register custom functions that trigger after an image is uploaded or deleted.
+ *   - Supported event: 'imageChanged'
+ *     - Fired after an image is uploaded or deleted.
+ *     - Callback receives an object: { type, id, element, imageSrc }
+ *         - type: 'uploaded' or 'deleted'
+ *         - id: widget id (data-ccms-ceid)
+ *         - element: widget container HTMLElement
+ *         - imageSrc: image src (for uploaded), undefined for deleted
+ *   - Example usage:
+ *       window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+ *           // info.type: 'uploaded' or 'deleted'
+ *           // info.id: widget id
+ *           // info.element: widget container
+ *           // info.imageSrc: image src (for uploaded), undefined for deleted
+ *           // Your custom logic here
+ *       });
  */
 
 // ============================================================================
@@ -189,6 +205,16 @@ function ccms___showAltTextEditor(imageElement, widgetContainer) {
     const currentAlt = imageElement.getAttribute('alt') || '';
     const currentTitle = imageElement.getAttribute('title') || '';
 
+    // Escape HTML entities for safe attribute insertion
+    const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+
+    const escapedAlt = escapeHtml(currentAlt);
+    const escapedTitle = escapeHtml(currentTitle);
+
     // Create modal
     const modal = document.createElement('div');
     modal.classList.add('ccms-img-widget-modal');
@@ -212,7 +238,7 @@ function ccms___showAltTextEditor(imageElement, widgetContainer) {
                             type="text" 
                             class="form-control" 
                             id="ccms-alt-text-${id}" 
-                            value="${currentAlt}"
+                            value="${escapedAlt}"
                             placeholder="Describe this image..."
                             maxlength="255"
                         />
@@ -228,7 +254,7 @@ function ccms___showAltTextEditor(imageElement, widgetContainer) {
                             type="text" 
                             class="form-control" 
                             id="ccms-title-text-${id}" 
-                            value="${currentTitle}"
+                            value="${escapedTitle}"
                             placeholder="Additional information..."
                             maxlength="255"
                         />
@@ -278,11 +304,6 @@ function ccms___showAltTextEditor(imageElement, widgetContainer) {
             imageElement.setAttribute('title', newTitle);
         } else {
             imageElement.removeAttribute('title');
-        }
-
-        // Save to parent
-        if (typeof parent !== 'undefined' && typeof parent.saveEditorRegion === 'function') {
-            parent.saveEditorRegion(widgetContainer.innerHTML, id);
         }
 
         closeModal();
@@ -422,6 +443,27 @@ async function ccms___showImageLibrary(widgetContainer, onSelect) {
 }
 
 // ============================================================================
+// EVENT DISPATCHER FOR CUSTOM EVENTS
+// ============================================================================
+window.CCMSImageWidgetEvents = (function () {
+    const listeners = {};
+    return {
+        on: function (event, callback) {
+            if (!listeners[event]) listeners[event] = [];
+            listeners[event].push(callback);
+        },
+        off: function (event, callback) {
+            if (!listeners[event]) return;
+            listeners[event] = listeners[event].filter(cb => cb !== callback);
+        },
+        trigger: function (event, data) {
+            if (!listeners[event]) return;
+            listeners[event].forEach(cb => cb(data));
+        }
+    };
+})();
+
+// ============================================================================
 // TRASH CAN AND ACTION BUTTONS
 // ============================================================================
 
@@ -438,12 +480,13 @@ function ccms___onClickTrashCan(id, element) {
         element.removeChild(element.firstChild);
     }
 
-    // Notify parent page of change
-    if (typeof parent !== 'undefined' && typeof parent.saveChanges === 'function') {
-        parent.saveChanges(element.innerHTML, id);
-    } else {
-        console.warn('parent.saveChanges is not available');
-    }
+    // Trigger custom event for deletion
+    window.CCMSImageWidgetEvents.trigger('imageChanged', {
+        type: 'deleted',
+        id,
+        element,
+        imageSrc: undefined
+    });
 
     // Reinitialize the upload widget
     ccms___initializePond(element);
@@ -548,9 +591,13 @@ function ccms___handleWidgetMouseOver(event) {
             ccms___showImageLibrary(element, (imagePath) => {
                 img.src = imagePath;
                 const widgetId = element.getAttribute('data-ccms-ceid');
-                if (typeof parent !== 'undefined' && typeof parent.saveEditorRegion === 'function') {
-                    parent.saveEditorRegion(element.innerHTML, widgetId);
-                }
+                // Trigger custom event for library selection
+                window.CCMSImageWidgetEvents.trigger('imageChanged', {
+                    type: 'uploaded',
+                    id: widgetId,
+                    element,
+                    imageSrc: imagePath
+                });
             });
         };
         toolbar.appendChild(libraryBtn);
@@ -582,12 +629,14 @@ function ccms___handleWidgetMouseOver(event) {
  */
 function ccms___replaceImage(element) {
     const img = element.querySelector('img');
-    const altText = img ? img.getAttribute('alt') : '';
-    const titleText = img ? img.getAttribute('title') : '';
+    
+    // Safely get alt and title text with null checks
+    const altText = img ? (img.getAttribute('alt') || '') : '';
+    const titleText = img ? (img.getAttribute('title') || '') : '';
 
     // Store metadata for restoration after upload
-    element.dataset.preservedAlt = altText || '';
-    element.dataset.preservedTitle = titleText || '';
+    element.dataset.preservedAlt = altText;
+    element.dataset.preservedTitle = titleText;
 
     // Clear and reinitialize
     while (element.hasChildNodes()) {
@@ -683,14 +732,6 @@ function ccms___initializePond(element) {
             pond.progressContainer.style.display = 'block';
         }
 
-        // Notify parent page that save is in progress
-        if (typeof parent !== 'undefined' && typeof parent.saving === 'function') {
-            parent.saving();
-        }
-        if (typeof parent !== 'undefined') {
-            parent.saveInProgress = true;
-        }
-
         // Determine upload path based on context
         const uploadPath = (typeof articleNumber !== 'undefined' && articleNumber)
             ? `${CCMS_IMAGE_WIDGET_CONFIG.articleUploadPath}${articleNumber}/`
@@ -781,12 +822,13 @@ function ccms___initializePond(element) {
 
         element.appendChild(image);
 
-        // Notify parent page to save the new HTML
-        if (typeof parent !== 'undefined' && typeof parent.saveEditorRegion === 'function') {
-            parent.saveEditorRegion(element.innerHTML, id);
-        } else {
-            console.warn('parent.saveEditorRegion is not available');
-        }
+        // Trigger custom event for upload
+        window.CCMSImageWidgetEvents.trigger('imageChanged', {
+            type: 'uploaded',
+            id,
+            element,
+            imageSrc: image.src
+        });
 
         // Mark save as complete
         if (typeof parent !== 'undefined') {

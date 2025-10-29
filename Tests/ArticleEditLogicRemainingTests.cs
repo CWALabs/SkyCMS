@@ -90,7 +90,7 @@ public class ArticleEditLogicRemainingTests : ArticleEditLogicTestBase
     public async Task DeleteArticle_Root_Throws()
     {
         var root = await Logic.CreateArticle("Home Page", TestUserId);
-        await Assert.ThrowsExceptionAsync<NotSupportedException>(() =>
+        await Assert.ThrowsExactlyAsync<NotSupportedException>(() =>
             Logic.DeleteArticle(root.ArticleNumber));
     }
 

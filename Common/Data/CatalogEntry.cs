@@ -112,6 +112,7 @@ namespace Cosmos.Common.Data
         /// Should be unique within its routing scope. Not guaranteed to reflect <see cref="Title"/> if manually overridden.
         /// Stored without protocol/host (application-relative path component).
         /// </remarks>
+        [MaxLength(1999)]
         [Display(Name = "Url")]
         public string UrlPath { get; set; }
 
@@ -149,6 +150,7 @@ namespace Cosmos.Common.Data
         /// This value is used to associate the article with a specific blog or section
         /// within the application. Default is "default" if not explicitly set.
         /// </remarks>
+        [MaxLength(128)]
         [Display(Name = "Blog Key")]
         public string BlogKey { get; set; } = "default";
     }

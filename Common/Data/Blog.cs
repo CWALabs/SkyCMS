@@ -37,7 +37,7 @@ namespace Cosmos.Common.Data
         /// Constraints: lowercase letters, digits, dash, underscore.
         /// </summary>
         [Required]
-        [MaxLength(64)]
+        [MaxLength(128)]
         [RegularExpression("^[a-z0-9-_]+$", ErrorMessage = "Lowercase letters, numbers, dash, underscore only.")]
         public string BlogKey { get; set; }
 

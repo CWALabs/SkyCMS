@@ -116,15 +116,17 @@ namespace Sky.Editor.Controllers
                 model.IsDefault = true;
             }
 
-            var exists = (await db.Blogs.CountAsync(b => b.BlogKey == model.BlogKey)) > 0;
+            var exists = (await db.Blogs.Where(b => b.BlogKey == model.BlogKey).CountAsync()) > 0;
             if (exists)
             {
                 ModelState.AddModelError(nameof(model.BlogKey), "Blog key already exists.");
                 return View("Create", model);
             }
+            
+            var blogKey = model.BlogKey;
+            var articleExists = (await db.Articles.Where(a => a.UrlPath.StartsWith(blogKey)).CountAsync()) > 0;
 
-            var articleExists = await db.Articles.CountAsync(a => a.UrlPath.StartsWith(model.BlogKey));
-            if (articleExists > 0)
+            if (articleExists)
             {
                 ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
                 return View("Create", model);
@@ -140,8 +142,21 @@ namespace Sky.Editor.Controllers
                 }
             }
 
+            // Make the image URL relative path if it's absolute.
+            if (string.IsNullOrWhiteSpace(model.HeroImage) == false && Uri.IsWellFormedUriString(model.HeroImage, UriKind.Absolute))
+            {
+                var uri = new Uri(model.HeroImage);
+
+                // If the URI has a host different from the current request, ignore it.
+                if (uri.Host.Equals(Request.Host.Host, StringComparison.OrdinalIgnoreCase))
+                {
+                    model.HeroImage = uri.PathAndQuery;
+                }
+            }
+
             db.Blogs.Add(new Blog
             {
+                Id = Guid.NewGuid(),
                 BlogKey = model.BlogKey,
                 Title = model.Title,
                 Description = model.Description,

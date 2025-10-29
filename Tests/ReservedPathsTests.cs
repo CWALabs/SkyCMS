@@ -239,7 +239,7 @@ public class ReservedPathsTests : ArticleEditLogicTestBase
         };
 
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<Exception>(
+        await Assert.ThrowsExactlyAsync<Exception>(
             async () => await _reservedPaths.Upsert(systemPath),
             "Cannot update a system required path.");
     }
@@ -310,7 +310,7 @@ public class ReservedPathsTests : ArticleEditLogicTestBase
     public async Task Remove_SystemRequiredPath_ThrowsException()
     {
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<Exception>(
+        await Assert.ThrowsExactlyAsync<Exception>(
             async () => await _reservedPaths.Remove("root"),
             "Cannot remove a system required path.");
     }
@@ -356,7 +356,7 @@ public class ReservedPathsTests : ArticleEditLogicTestBase
         // Act & Assert
         foreach (var path in systemPaths)
         {
-            await Assert.ThrowsExceptionAsync<Exception>(
+            await Assert.ThrowsExactlyAsync<Exception>(
                 async () => await _reservedPaths.Remove(path),
                 $"Should not be able to remove system path: {path}");
         }

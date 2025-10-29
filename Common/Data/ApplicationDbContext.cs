@@ -17,7 +17,6 @@ namespace Cosmos.Common.Data
     using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Diagnostics;
-    using MySql.EntityFrameworkCore.Extensions;
 
     /// <summary>
     /// Database Context for Sky CMS.

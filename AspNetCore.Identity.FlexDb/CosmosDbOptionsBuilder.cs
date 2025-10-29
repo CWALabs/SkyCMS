@@ -66,7 +66,7 @@ namespace AspNetCore.Identity.FlexDb
             }
             else if (connectionString.Contains("uid=", StringComparison.InvariantCultureIgnoreCase))
             {
-                optionsBuilder.UseMySQL(connectionString);
+                optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetectAsync(connectionString).Result);
             }
             else if (connectionString.StartsWith("Data Source=", StringComparison.CurrentCultureIgnoreCase) && connectionString.Contains(".db"))
             {

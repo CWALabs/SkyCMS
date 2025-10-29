@@ -54,7 +54,7 @@ namespace Cosmos.Common.Data
         /// Should be unique among published articles of the same type. Do not include protocol, host, or query string.
         /// Examples: "/", "about/company-history", "blog/my-first-post".
         /// </remarks>
-        [MaxLength(128)]
+        [MaxLength(1999)]
         public string UrlPath { get; set; }
 
         /// <summary>
@@ -179,6 +179,7 @@ namespace Cosmos.Common.Data
         /// Used to associate the article with a specific blog or grouping.
         /// Defaults to "default" if not specified.
         /// </remarks>
+        [MaxLength(128)]
         public string BlogKey { get; set; } = "default";
     }
 }

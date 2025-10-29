@@ -3,6 +3,19 @@
     ViewData["Title"] = "Create Blog Stream";
     var hasId = Model != null && Model.Id != Guid.Empty;
 }
+<!-- FilePond -->
+<link rel="stylesheet" href="/lib/filepond/filepond.min.css" />
+<!-- Image Widget styles -->
+<link rel="stylesheet" href="/lib/cosmos/image-widget/image-widget.css" />
+<style>
+    .ccms-img-widget-img {
+        max-height: 20vh;
+        border: 1px dashed #ccc;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+</style>
 <div class="cwps-editor-container pt-3">
     <div class="container">
         <div class="row">
@@ -14,6 +27,11 @@
                     @* Hidden fields (no user entry for BlogKey; it’s derived from Title) *@
                     <input type="hidden" asp-for="BlogKey" />
                     @Html.HiddenFor(m => m.HeroImage)
+
+                    <p class="text-light">Blog banner image (optional):</p>
+                    <div class="ccms-img-widget-container"
+                         data-editor-config="image-widget"
+                         data-ccms-new="true"></div>
 
                     <div class="input-group mb-3">
                         <span class="input-group-text">Title:</span>
@@ -91,7 +109,29 @@
                 if (c) { titleFeedback.classList.add('text-success'); }
             })();
         })();
-    </script>
 
+        // Optional: route uploads under articles/{articleNumber}
+        // window.articleNumber = 123;
+        // Handles the image widget events.
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle the image changed event.
+            if (window.CCMSImageWidgetEvents && typeof window.CCMSImageWidgetEvents.on === 'function') {
+                window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+                    // Update a hidden input to track the current image URL
+                    const hiddenField = document.getElementById('HeroImage');
+                    if (hiddenField) {
+                        hiddenField.value = info.type === 'uploaded' ? info.imageSrc : '';
+                    } else {
+                        console.warn('Hidden field for HeroImage not found.');
+                    }
+                });
+            }
+        });
+
+    </script>
+    @* FilePond and Image Widget *@
+    <script asp-append-version="true" src="~/lib/filepond-plugin-file-metadata/dist/filepond-plugin-file-metadata.js"></script>
+    <script asp-append-version="true" src="~/lib/filepond/filepond.js"></script>
+    <script asp-append-version="true" src="/lib/cosmos/image-widget/image-widget.js"></script>
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 }

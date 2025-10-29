@@ -46,11 +46,11 @@ namespace Cosmos.BlobService
             var multi = config.GetValue<bool?>("MultiTenantEditor") ?? false;
 
             var connectionString = multi ? config.GetConnectionString("DataProtectionStorage")
-                : config.GetConnectionString("AzureBlobStorageConnectionString");
+                : GetConnectionString(config);
 
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException("DataProtectionStorage", "'DataProtectionStorage' or 'AzureBlobStorageConnectionString' connection string is not set.");
+                throw new ArgumentNullException("DataProtectionStorage", "'DataProtectionStorage' or 'StorageConnectionString' connection string is not set.");
             }
 
             var conparts = connectionString.Split(';');
@@ -91,7 +91,7 @@ namespace Cosmos.BlobService
         /// <returns>Blob service client.</returns>
         public static BlobContainerClient GetBlobContainerClient(IConfiguration config, DefaultAzureCredential defaultAzureCredential, string container = "$web")
         {
-            var connectionString = config.GetConnectionString("AzureBlobStorageConnectionString");
+            var connectionString = GetConnectionString(config);
             var conparts = connectionString.Split(';');
             var conpartsDict = conparts.Where(w => !string.IsNullOrEmpty(w)).Select(part => part.Split('=')).ToDictionary(sp => sp[0], sp => sp[1]);
 
@@ -129,22 +129,6 @@ namespace Cosmos.BlobService
             });
 
             return app;
-        }
-
-        private static string GetKeyValue(IConfiguration config, string key)
-        {
-            var data = (config is IConfigurationRoot) ? ((IConfigurationRoot)config)[key] : config[key];
-
-            if (string.IsNullOrEmpty(data))
-            {
-                data = Environment.GetEnvironmentVariable(key);
-                if (string.IsNullOrEmpty(data))
-                {
-                    data = Environment.GetEnvironmentVariable(key.ToUpper());
-                }
-            }
-
-            return data;
         }
 
         private static string GetConnectionString(IConfiguration config)

@@ -8,6 +8,7 @@
 namespace Cosmos.Common.Models.Blog
 {
     using System;
+    using System.ComponentModel.DataAnnotations;
 
     /// <summary>
     /// Lightweight projection of a blog article used in list and summary views.
@@ -32,6 +33,7 @@ namespace Cosmos.Common.Models.Blog
         /// <summary>
         /// Gets or sets the URL path (slug) used to access the blog post.
         /// </summary>
+        [MaxLength(1999)]
         public string UrlPath { get; set; } = string.Empty;
 
         /// <summary>

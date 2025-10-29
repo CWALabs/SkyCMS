@@ -233,7 +233,11 @@ namespace Sky.Editor.Data.Logic
                 }
             }
 
-            memoryCache.Set($"{this.httpContextAccessor.HttpContext.Request.Host.Host}-conf", config, TimeSpan.FromMinutes(5));
+            if (this.httpContextAccessor.HttpContext != null)
+            {
+                memoryCache.Set($"{this.httpContextAccessor.HttpContext.Request.Host.Host}-conf", config, TimeSpan.FromMinutes(5));
+            }
+
             return config;
         }
     }

@@ -66,8 +66,7 @@ namespace Cosmos.Common.Models
         /// Gets or sets the relative URL path (slug) for this article (minus protocol/host).
         /// Must be unique per language/versioning rules.
         /// </summary>
-        [MaxLength(128)]
-        [StringLength(128)]
+        [MaxLength(1999)]
         public string UrlPath { get; set; }
 
         /// <summary>

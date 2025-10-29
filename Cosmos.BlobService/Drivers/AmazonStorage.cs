@@ -7,13 +7,6 @@
 
 namespace Cosmos.BlobService.Drivers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using System.Text;
-    using System.Threading.Tasks;
     using Amazon;
     using Amazon.Runtime;
     using Amazon.S3;
@@ -25,6 +18,14 @@ namespace Cosmos.BlobService.Drivers
     using Microsoft.Extensions.Caching.Distributed;
     using Microsoft.Extensions.Caching.Memory;
     using Newtonsoft.Json;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Reflection.Metadata;
+    using System.Text;
+    using System.Threading.Tasks;
 
     /// <summary>
     ///     AWS S3 and Cloudflare S2 storage driver.
@@ -695,6 +696,55 @@ namespace Cosmos.BlobService.Drivers
         public async Task<long> GetStorageConsumption()
         {
             return await GetBytesConsumed();
+        }
+
+        /// <inheritdoc/>
+        public async Task<Dictionary<string, string>> GetPropertiesAsync(string target)
+        {
+            target = target.TrimStart('/');
+            using var client = GetClient();
+            var metadata = await client.GetObjectMetadataAsync(config.BucketName, target);
+
+            // Fix: Convert MetadataCollection to Dictionary<string, string>
+            var dict = new Dictionary<string, string>();
+            foreach (var key in metadata.Metadata.Keys)
+            {
+                dict[key] = metadata.Metadata[key];
+            }
+
+            return dict;
+        }
+
+        /// <inheritdoc/>
+        public async Task SavePropertiesAsync(string target, Dictionary<string, string> properties)
+        {
+            target = target.TrimStart('/');
+            using var client = GetClient();
+
+            // First verify the object exists
+            if (!await BlobExistsAsync(target))
+            {
+                throw new FileNotFoundException($"Object not found: {target}");
+            }
+
+            // Create a copy request with the same source and destination
+            var copyRequest = new CopyObjectRequest
+            {
+                SourceBucket = config.BucketName,
+                SourceKey = target,
+                DestinationBucket = config.BucketName,
+                DestinationKey = target,
+                MetadataDirective = S3MetadataDirective.REPLACE
+            };
+
+            // Add all new metadata
+            foreach (var prop in properties)
+            {
+                copyRequest.Metadata.Add(prop.Key, prop.Value);
+            }
+
+            // Perform the copy operation
+            await client.CopyObjectAsync(copyRequest);
         }
 
         /// <summary>

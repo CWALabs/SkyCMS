@@ -8,6 +8,7 @@
 namespace Cosmos.Common.Models
 {
     using System;
+    using System.ComponentModel.DataAnnotations;
 
     /// <summary>
     /// Table of Contents (TOC) Item.
@@ -17,6 +18,7 @@ namespace Cosmos.Common.Models
         /// <summary>
         /// Gets or sets uRL Path to page.
         /// </summary>
+        [MaxLength(1999)]
         public string UrlPath { get; set; }
 
         /// <summary>

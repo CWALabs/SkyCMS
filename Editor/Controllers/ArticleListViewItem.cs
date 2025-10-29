@@ -20,6 +20,11 @@ namespace Sky.Cms.Controllers
         public int ArticleNumber { get; set; }
 
         /// <summary>
+        /// Gets or sets the article type.
+        /// </summary>
+        public int? ArticleType { get; set; }
+
+        /// <summary>
         /// Gets or sets the article title.
         /// </summary>
         public string Title { get; set; }

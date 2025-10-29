@@ -13,7 +13,7 @@ Interactive image upload and management widget used by the Sky Editor. It provid
 - Replace image via upload or library picker
 - Alt text and title editor modal
 - Delete image and reset back to upload state
-- Automatic save callbacks into the parent editor
+- Custom event system for integration with parent applications
 
 ## Dependencies
 
@@ -45,20 +45,16 @@ The widget posts uploads to your server and expects back a string URL to the upl
 
 These values are defined in `CCMS_IMAGE_WIDGET_CONFIG` inside `image-widget.js`.
 
-## Parent page integration (save contract)
+## Parent page integration
 
-The widget calls functions on the parent window (useful when the editor runs in an iframe). If you’re not using an iframe, `parent` resolves to `window`.
+The widget can optionally interact with the parent window (useful when the editor runs in an iframe). If you're not using an iframe, `parent` resolves to `window`.
 
-Required callbacks:
+Optional integration:
 
-- `parent.saveEditorRegion(html, elementId)` — called after a successful upload or when properties change
-- `parent.saveChanges(html, elementId)` — called when the image is removed
-
-Optional:
-
-- `parent.saving()` — called when an upload starts
-- `parent.saveInProgress` — boolean flag the widget sets while uploading
+- `parent.saveInProgress` — boolean flag the widget sets to `false` after upload completes or fails
 - `window.articleNumber` — if set, directs uploads to `/pub/articles/{articleNumber}/`
+
+**Note:** The widget no longer requires `parent.saveEditorRegion()`, `parent.saveChanges()`, or `parent.saving()` callbacks. Use the `CCMSImageWidgetEvents` event dispatcher (see Custom events section below) to respond to image upload and deletion events.
 
 ## Markup API
 
@@ -111,9 +107,8 @@ This example shows a page that loads required assets, wires the minimal save cal
 
     <script>
       // Minimal parent integration for demo purposes
-      window.saveEditorRegion = (html, id) => console.log('saveEditorRegion', id, html);
-      window.saveChanges = (html, id) => console.log('saveChanges', id, html);
-      window.saving = () => console.log('saving…');
+      // The widget no longer requires save callbacks
+      // Use CCMSImageWidgetEvents.on('imageChanged', ...) to respond to image events
 
       // Optional: route uploads under articles/{articleNumber}
       // window.articleNumber = 123;
@@ -138,14 +133,118 @@ If you already have an image and want the widget to attach controls to it:
 
 1. On page load, the script finds all `div[data-editor-config="image-widget"]`.
 2. If no `<img>` is inside, it initializes a FilePond uploader.
-3. During upload, it sets `parent.saveInProgress = true` and optionally calls `parent.saving()`.
-4. On success, it replaces the uploader with an `<img>` and calls `parent.saveEditorRegion(html, elementId)`.
+3. During upload, it optionally sets `parent.saveInProgress = false` when complete.
+4. On success, it replaces the uploader with an `<img>` and triggers the `imageChanged` event.
 5. Hovering the image shows a toolbar with: Edit alt/title, Replace, Library, Delete.
-6. Delete removes the image, calls `parent.saveChanges`, and returns to the upload state.
+6. Delete removes the image, triggers the `imageChanged` event, and returns to the upload state.
 
 ## Configuration notes
 
 `image-widget.js` contains a `CCMS_IMAGE_WIDGET_CONFIG` constant with defaults (endpoints, file types, icons, etc.). If you need different endpoints or behavior, update this config in the script.
+
+## Custom events (imageChanged)
+
+The widget exposes a global event dispatcher at `window.CCMSImageWidgetEvents` that allows you to hook into image lifecycle events. This is useful for custom analytics, UI updates, or integration with other systems.
+
+### Supported event: `imageChanged`
+
+Fired after an image is successfully uploaded or deleted.
+
+**Event data object:**
+
+- `type` (string): `'uploaded'` or `'deleted'`
+- `id` (string): The widget's unique identifier (`data-ccms-ceid`)
+- `element` (HTMLElement): The widget container DOM element
+- `imageSrc` (string | undefined): The image src URL when `type === 'uploaded'`; `undefined` when `type === 'deleted'`
+
+### Usage example
+
+Register a listener in your page's `<script>` section:
+
+```javascript
+// Listen for image changes across all image widgets
+window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+    console.log('Image event:', info.type);
+    console.log('Widget ID:', info.id);
+    console.log('Container element:', info.element);
+    
+    if (info.type === 'uploaded') {
+        console.log('New image uploaded:', info.imageSrc);
+        // Custom logic: send analytics event, update UI, etc.
+    } else if (info.type === 'deleted') {
+        console.log('Image removed from widget', info.id);
+        // Custom logic: clean up related data, update UI, etc.
+    }
+});
+```
+
+### Real-world integration examples
+
+#### Example 1: Analytics tracking
+
+```javascript
+window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'image_action', {
+            event_category: 'image_widget',
+            event_label: info.type,
+            value: info.id
+        });
+    }
+});
+```
+
+#### Example 2: Update a counter or status indicator
+
+```javascript
+window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+    const counter = document.getElementById('image-count');
+    if (counter) {
+        const current = parseInt(counter.textContent) || 0;
+        counter.textContent = info.type === 'uploaded' ? current + 1 : current - 1;
+    }
+});
+```
+
+#### Example 3: Sync with a custom form field
+
+```javascript
+// Optional: route uploads under articles/{articleNumber}
+// window.articleNumber = 123;
+// Handles the image widget events.
+document.addEventListener('DOMContentLoaded', () => {
+    // Handle the image changed event.
+    if (window.CCMSImageWidgetEvents && typeof window.CCMSImageWidgetEvents.on === 'function') {
+        window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+            // Update a hidden input to track the current image URL
+            const hiddenField = document.getElementById('HeroImage');
+            if (hiddenField) {
+                hiddenField.value = info.type === 'uploaded' ? info.imageSrc : '';
+            } else {
+                console.warn('Hidden field for HeroImage not found.');
+            }
+        });
+    }
+});
+```
+
+### Removing event listeners
+
+If you need to unregister a listener (e.g., during page cleanup):
+
+```javascript
+function myHandler(info) {
+    console.log('Image changed:', info.type);
+}
+
+// Register
+window.CCMSImageWidgetEvents.on('imageChanged', myHandler);
+
+// Later, unregister
+window.CCMSImageWidgetEvents.off('imageChanged', myHandler);
+```
+
+**Note:** The event fires when an image is uploaded or deleted. The widget no longer calls `parent.saveEditorRegion` or `parent.saveChanges` - use this event system instead to respond to image lifecycle changes.
 
 ## Troubleshooting
 
@@ -153,4 +252,4 @@ If you already have an image and want the widget to attach controls to it:
 - Toolbar not appearing: ensure the container has `class="ccms-img-widget-container"` and that the widget found an `<img>`.
 - Upload fails: verify `/FileManager/UploadImage` is reachable and returns the image URL as the response body. Check max size/type on server.
 - Library empty: confirm `/FileManager/GetImageAssets?path=...` returns a JSON array of image URLs for the resolved path.
-- Nothing happens on save: implement `saveEditorRegion` and `saveChanges` on the parent page (or window) as described above.
+- Need to save changes: implement a listener using `window.CCMSImageWidgetEvents.on('imageChanged', ...)` to respond to upload and deletion events.

@@ -1815,26 +1815,29 @@ namespace Sky.Cms.Controllers
         /// </summary>
         /// <param name="term">search text value (optional).</param>
         /// <param name="publishedOnly">Only retrieve published articles.</param>
+        /// <param name="articleType">Article type to retrieve.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [HttpGet]
-        public async Task<IActionResult> GetArticleList(string term = "", bool publishedOnly = true)
+        public async Task<IActionResult> GetArticleList(string term = "", bool publishedOnly = true, int articleType = 0)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            var blogPostArticleType = (int)ArticleType.BlogPost;
+
             if (dbContext.Database.IsCosmos())
             {
-                var whereClause = publishedOnly ? $"WHERE c.Published != null AND " : "WHERE ";
-                whereClause += $"c.StatusCode = {(int)StatusCodeEnum.Active} AND c.ArticleType = 0";
+                var whereClause = publishedOnly ? $"WHERE c.Published != null" : "WHERE ";
+                whereClause += $"c.StatusCode = {(int)StatusCodeEnum.Active}";
 
                 if (!string.IsNullOrEmpty(term))
                 {
                     whereClause += $" AND LOWER(c.Title) LIKE '%{term.ToLower()}%'";
                 }
 
-                var query = $"SELECT c.ArticleNumber, c.Title, c.UrlPath, MAX(c.Published) as Published, MAX(c.Updated) as Updated FROM Articles c {whereClause} GROUP BY c.ArticleNumber, c.Title, c.UrlPath";
+                var query = $"SELECT c.ArticleNumber, c.ArticleType, c.Title, c.UrlPath, MAX(c.Published) as Published, MAX(c.Updated) as Updated FROM Articles c {whereClause} GROUP BY c.ArticleNumber, c.ArticleType, c.Title, c.UrlPath";
                 var client = dbContext.Database.GetCosmosClient();
                 var queryService = new CosmosDbService(client, dbContext.Database.GetCosmosDatabaseId(), "Articles");
 
@@ -1843,6 +1846,7 @@ namespace Sky.Cms.Controllers
                 var model = data.Select(s => new
                 {
                     s.ArticleNumber,
+                    s.ArticleType,
                     s.Title,
                     IsDefault = s.UrlPath == "root",
                     LastPublished = s.Published.HasValue ? s.Published.Value.UtcDateTime.ToString("o") : null,
@@ -1856,7 +1860,7 @@ namespace Sky.Cms.Controllers
             {
                 // LINQ equivalent for the SQL GROUP BY and MAX aggregate
                 var query = publishedOnly ? dbContext.Articles
-                    .Where(a => a.Published != null && a.StatusCode == (int)StatusCodeEnum.Active && a.ArticleType == 0) :
+                    .Where(a => a.Published != null && a.StatusCode == (int)StatusCodeEnum.Active && a.ArticleType != blogPostArticleType) :
                     dbContext.Articles
                     .Where(a => a.StatusCode == (int)StatusCodeEnum.Active && a.ArticleType == 0);
 
