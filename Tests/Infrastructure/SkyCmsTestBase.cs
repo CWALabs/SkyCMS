@@ -16,6 +16,8 @@ using Sky.Editor.Data.Logic;
 using Sky.Editor.Domain.Events;
 using Sky.Editor.Infrastructure.Time;
 using Sky.Editor.Services.Authors;
+using Sky.Editor.Services.BlogPublishing;
+using Sky.Editor.Services.BlogRenderingService;
 using Sky.Editor.Services.Catalog;
 using Sky.Editor.Services.Html;
 using Sky.Editor.Services.Publishing;
@@ -24,6 +26,7 @@ using Sky.Editor.Services.ReservedPaths;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
+using System.Reflection;
 
 namespace Sky.Tests
 {
@@ -32,10 +35,12 @@ namespace Sky.Tests
     /// Sets up an isolated in‑memory EF Core context and supporting services.
     /// Provides a capture dispatcher to assert domain event publishing.
     /// </summary>
-    public abstract class ArticleEditLogicTestBase : IAsyncDisposable
+    public abstract class SkyCmsTestBase : IAsyncDisposable
     {
+        protected AuthorInfoService AuthorInfoService = null!;
         protected ApplicationDbContext Db = null!;
         protected ArticleEditLogic Logic = null!;
+        protected CatalogService CatalogService = null!;
         protected StorageContext Storage = null!;
         protected IMemoryCache Cache = null!;
         protected Guid TestUserId;
@@ -51,6 +56,44 @@ namespace Sky.Tests
         protected IClock Clock { get; } = new SystemClock();
         protected UserManager<IdentityUser> UserManager = null!;
         protected ITemplateService TemplateService = null!;
+        protected IBlogRenderingService BlogRenderingService = null!;
+
+        private async Task EnsureBlogStreamTemplateExistsAsync()
+        {
+            var existingTemplate = await Db.Templates
+                .FirstOrDefaultAsync(t => t.PageType == "blog-stream");
+            if (existingTemplate == null)
+            {
+                var t = TemplateService.GetTemplateByKeyAsync("blog-stream").Result;
+                var template = new Template
+                {
+                    Id = Guid.NewGuid(),
+                    PageType = "blog-stream",
+                    Content = t.Content
+                };
+                Db.Templates.Add(template);
+                await Db.SaveChangesAsync();
+            }
+        }
+
+        private async Task EnsureBlogPostTemplateExistsAsync()
+        {
+            var existingTemplate = await Db.Templates
+                .FirstOrDefaultAsync(t => t.PageType == "blog-post");
+
+            if (existingTemplate == null)
+            {
+                var t = TemplateService.GetTemplateByKeyAsync("blog-post").Result;
+                var template = new Template
+                {
+                    Id = Guid.NewGuid(),
+                    PageType = "blog-post",
+                    Content = t.Content
+                };
+                Db.Templates.Add(template);
+                await Db.SaveChangesAsync();
+            }
+        }
 
         /// <summary>
         /// Initialize test context. Call from [TestInitialize].
@@ -85,7 +128,7 @@ namespace Sky.Tests
 
             // Lightweight configuration (all in-memory).
             var configuration = new ConfigurationBuilder()
-                .AddUserSecrets(typeof(ArticleEditLogicTestBase).Assembly, optional: false)
+                .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: false)
                 .AddInMemoryCollection()
                 .Build();
 
@@ -103,16 +146,27 @@ namespace Sky.Tests
             SlugService = new SlugService();
             ArticleHtmlService = new ArticleHtmlService();
             var catalogLogger = new LoggerFactory().CreateLogger<CatalogService>();
-            var catalogService = new CatalogService(Db, ArticleHtmlService, Clock, catalogLogger);
+            CatalogService = new CatalogService(Db, ArticleHtmlService, Clock, catalogLogger);
             EventDispatcher = new TestDomainEventDispatcher();
             var authorInfoService = new AuthorInfoService(Db, Cache);
-            PublishingService = new PublishingService(Db, Storage, EditorSettings,
-                new LoggerFactory().CreateLogger<PublishingService>(), HttpContextAccessor, authorInfoService, Clock);
+            BlogRenderingService = new BlogRenderingService(Db);
             ReservedPaths = new ReservedPaths(Db);
+            AuthorInfoService = new AuthorInfoService(Db, Cache);
+
+            PublishingService = new PublishingService(Db, Storage, EditorSettings,
+                new LoggerFactory().CreateLogger<PublishingService>(), HttpContextAccessor, authorInfoService, Clock, BlogRenderingService);
+            
             RedirectService = new RedirectService(Db, SlugService, Clock, PublishingService);
-            TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, Clock, EventDispatcher, PublishingService, ReservedPaths);
-            var webHostEnvironment = new Mock<IWebHostEnvironment>().Object;
-            TemplateService = new TemplateService(webHostEnvironment, new LoggerFactory().CreateLogger<TemplateService>());
+            TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, Clock, EventDispatcher, PublishingService, ReservedPaths, BlogRenderingService, new LoggerFactory().CreateLogger<TitleChangeService>());
+            var webHostEnvironmentMock = new Mock<IWebHostEnvironment>();
+            var assem = Assembly.GetAssembly(typeof(TemplateService));
+            var path = Path.GetDirectoryName(assem!.Location)!;
+            webHostEnvironmentMock.Setup(m => m.ContentRootPath).Returns(path);
+            var webHostEnvironment = webHostEnvironmentMock.Object;
+
+            TemplateService = new TemplateService(webHostEnvironment, new LoggerFactory().CreateLogger<TemplateService>(), Db);
+            TemplateService.EnsureDefaultTemplatesExistAsync().Wait();
+
 
             var publishingArtifactService = new PublishingService(
                 Db,
@@ -120,11 +174,12 @@ namespace Sky.Tests
                 EditorSettings,
                 new NullLogger<PublishingService>(),
                 HttpContextAccessor,
-                authorInfoService, Clock
+                authorInfoService, Clock, BlogRenderingService
             );
             var redirectService = new RedirectService(Db, SlugService, Clock, publishingArtifactService);
 
-            var titleChangeService = new TitleChangeService(Db, SlugService, redirectService, Clock, EventDispatcher, publishingArtifactService, ReservedPaths);
+            var titleChangeService = new TitleChangeService(
+                Db, SlugService, redirectService, Clock, EventDispatcher, publishingArtifactService, ReservedPaths, BlogRenderingService, new NullLogger<TitleChangeService>());
 
             // Construct logic (using explicit DI constructor).
             Logic = new ArticleEditLogic(
@@ -138,7 +193,7 @@ namespace Sky.Tests
                 Clock,
                 SlugService,
                 ArticleHtmlService,
-                catalogService,
+                CatalogService,
                 PublishingService,
                 titleChangeService,
                 redirectService,
@@ -156,6 +211,9 @@ namespace Sky.Tests
                     new IdentityErrorDescriber(),
                     null!,
                     new NullLogger<UserManager<IdentityUser>>());
+
+            EnsureBlogStreamTemplateExistsAsync().Wait();
+            EnsureBlogPostTemplateExistsAsync().Wait();
 
             AfterInitialize();
         }

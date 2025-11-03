@@ -41,7 +41,12 @@ namespace Cosmos.Common.Data
         /// <summary>
         /// A blog post entry, typically time-ordered and possibly featured in feeds or archives.
         /// </summary>
-        BlogPost = 1
+        BlogPost = 1,
+
+        /// <summary>
+        /// Represents a blog stream content type.
+        /// </summary>
+        BlogStream = 2
 
         // Add future types here (e.g., LandingPage = 2, Redirect = 3, Documentation = 4, etc.)
     }

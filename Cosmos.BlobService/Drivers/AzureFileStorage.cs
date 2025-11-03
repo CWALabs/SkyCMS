@@ -662,6 +662,66 @@ namespace Cosmos.BlobService.Drivers
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
+        public async Task<Dictionary<string, string>> GetPropertiesAsync(string target)
+        {
+            var dirName = Path.GetDirectoryName(target);
+            var fileName = Path.GetFileName(target);
+
+            if (string.IsNullOrEmpty(fileName))
+            {
+                // Directory properties
+                var directory = this.shareClient.GetDirectoryClient(dirName ?? target);
+                if (!await directory.ExistsAsync())
+                {
+                    return null;
+                }
+
+                var props = await directory.GetPropertiesAsync();
+                return props.Value.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            }
+            else
+            {
+                // File properties
+                var directory = this.shareClient.GetDirectoryClient(dirName);
+                var file = directory.GetFileClient(fileName);
+                if (!await file.ExistsAsync())
+                {
+                    return null;
+                }
+
+                var props = await file.GetPropertiesAsync();
+                return props.Value.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task SavePropertiesAsync(string target, Dictionary<string, string> properties)
+        {
+            var dirName = Path.GetDirectoryName(target);
+            var fileName = Path.GetFileName(target);
+
+            if (string.IsNullOrEmpty(fileName))
+            {
+                // Directory properties
+                var directory = this.shareClient.GetDirectoryClient(dirName ?? target);
+                if (await directory.ExistsAsync())
+                {
+                    await directory.SetMetadataAsync(properties);
+                }
+            }
+            else
+            {
+                // File properties
+                var directory = this.shareClient.GetDirectoryClient(dirName);
+                var file = directory.GetFileClient(fileName);
+                if (await file.ExistsAsync())
+                {
+                    await file.SetMetadataAsync(properties);
+                }
+            }
+        }
+
         private async Task CreateSubDirectory(ShareDirectoryClient directory, List<string> path)
         {
             var client = directory.GetSubdirectoryClient(path[0]);

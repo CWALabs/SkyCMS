@@ -8,7 +8,7 @@ namespace Sky.Tests;
 
 [DoNotParallelize]
 [TestClass]
-public class ArticleEditLogicRemainingTests : ArticleEditLogicTestBase
+public class ArticleEditLogicRemainingTests : SkyCmsTestBase
 {
 
     [TestInitialize]

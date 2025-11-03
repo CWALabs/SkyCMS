@@ -1,8 +1,181 @@
-﻿<div class="ccms-blog-item">
-    <div class="ccms-blog-title-image" data-editor-config="image-widget" data-ccms-new="true">
+﻿<style>
+    /* Scoped blog styles */
+    .ccms-blog-item {
+        box-sizing: border-box;
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 1rem;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        color: #121212;
+        line-height: 1.65;
+    }
+
+    /* Title/banner image */
+    .ccms-blog-title-image {
+        width: 100%;
+        max-height: 30vh; /* requested: cap banner to 30% of viewport height */
+        overflow: hidden;
+        border-radius: 12px;
+        background: #f3f3f3;
+        display: block;
+        margin: 0 0 1.25rem 0;
+    }
+    .ccms-blog-title-image img,
+    .ccms-blog-title-image picture,
+    .ccms-blog-title-image video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* Title */
+    .ccms-blog-item-title {
+        font-size: clamp(1.75rem, 2.5vw + 1rem, 2.75rem);
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        margin: 0 0 0.75rem 0;
+    }
+
+    /* Meta (optional if editors add) */
+    .ccms-blog-item .meta {
+        color: #666;
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Content typography */
+    .ccms-blog-item-content {
+        font-size: 1.05rem;
+    }
+    .ccms-blog-item-content p { margin: 0 0 1.1em 0; }
+    .ccms-blog-item-content h2 {
+        font-size: clamp(1.35rem, 1.2vw + 1rem, 1.9rem);
+        line-height: 1.3;
+        margin: 1.6rem 0 0.5rem;
+    }
+    .ccms-blog-item-content h3 {
+        font-size: clamp(1.15rem, 0.9vw + 0.9rem, 1.5rem);
+        line-height: 1.35;
+        margin: 1.4rem 0 0.5rem;
+    }
+    .ccms-blog-item-content img,
+    .ccms-blog-item-content video,
+    .ccms-blog-item-content picture,
+    .ccms-blog-item-content canvas,
+    .ccms-blog-item-content svg {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 1rem auto;
+        border-radius: 8px;
+    }
+
+    /* Rich text elements */
+    .ccms-blog-item-content blockquote {
+        margin: 1.25rem 0;
+        padding: 0.75rem 1rem;
+        border-left: 4px solid #cbd5e1;
+        background: #f8fafc;
+        color: #334155;
+    }
+    .ccms-blog-item-content pre {
+        overflow: auto;
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 0.9rem 1rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .ccms-blog-item-content code {
+        background: #f1f5f9;
+        color: #0f172a;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.95em;
+    }
+    .ccms-blog-item-content pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+    }
+
+    .ccms-blog-item-content ul,
+    .ccms-blog-item-content ol { padding-left: 1.25rem; margin: 0.75rem 0 1rem; }
+    .ccms-blog-item-content li { margin: 0.35rem 0; }
+
+    /* Tables */
+    .ccms-blog-item-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+        overflow: hidden;
+        border-radius: 8px;
+    }
+    .ccms-blog-item-content th,
+    .ccms-blog-item-content td {
+        border: 1px solid #e2e8f0;
+        padding: 0.6rem 0.75rem;
+        text-align: left;
+    }
+    .ccms-blog-item-content thead th { background: #f1f5f9; }
+    .ccms-blog-item-content tbody tr:nth-child(odd) { background: #fafafa; }
+
+    /* Media wrappers (for iframes/videos) */
+    .ccms-blog-item-content .media {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border-radius: 12px;
+        background: #000;
+        margin: 1rem 0;
+    }
+    .ccms-blog-item-content .media > iframe,
+    .ccms-blog-item-content .media > video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Links */
+    .ccms-blog-item-content a { color: #0ea5e9; text-decoration: none; }
+    .ccms-blog-item-content a:hover { text-decoration: underline; }
+
+    /* Responsive tweaks */
+    @media (max-width: 600px) {
+        .ccms-blog-item { padding: 0.75rem; }
+        .ccms-blog-item-title { font-size: clamp(1.5rem, 6vw, 2.1rem); }
+        .ccms-blog-item-content { font-size: 1rem; }
+        .ccms-blog-title-image { border-radius: 10px; }
+    }
+
+    @media (min-width: 1024px) {
+        .ccms-blog-item { padding: 1.5rem; }
+        .ccms-blog-item-content { font-size: 1.1rem; }
+    }
+
+    /* Respect prefers-color-scheme for code/blockquote contrast */
+    @media (prefers-color-scheme: dark) {
+        .ccms-blog-item { color: #e5e7eb; }
+        .ccms-blog-item-content code { background: #1f2937; color: #e5e7eb; }
+        .ccms-blog-item-content pre { background: #0b1020; }
+        .ccms-blog-item-content blockquote { background: #0f172a; color: #cbd5e1; border-left-color: #475569; }
+        .ccms-blog-item-content th,
+        .ccms-blog-item-content td { border-color: #334155; }
+        .ccms-blog-item-content thead th { background: #111827; }
+        .ccms-blog-item-content tbody tr:nth-child(odd) { background: #0b1020; }
+    }
+</style>
+<div class='ccms-blog-item'>
+    <div class='ccms-blog-title-image' data-editor-config='image-widget' data-ccms-new='true' data-ccms-enable-alt-editor='true'>
     </div>
-    <div class="ccms-blog-item-title">
-    </div>
-    <div class="ccms-blog-item-content" contenteditable="true">
+    <h1 class='ccms-blog-item-title'>
+    </h1>
+    <div class='ccms-blog-item-content' contenteditable='true'>
     </div>
 </div>

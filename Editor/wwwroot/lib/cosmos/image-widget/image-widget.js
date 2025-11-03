@@ -22,15 +22,35 @@
  *      <img src="/pub/images/photo.jpg" class="ccms-img-widget-img" alt="Description" />
  *    </div>
  * 
+ * 4. Enable the Alt/Title editor (optional, per widget):
+ *    Add data-ccms-enable-alt-editor="true" to the widget container to enable the built-in
+ *    modal editor for Alt and Title attributes.
+ *    Example:
+ *    <div data-editor-config="image-widget"
+ *         data-ccms-ceid="img-123"
+ *         data-ccms-enable-alt-editor="true"></div>
+ * 
  * CONFIGURATION:
  * - Upload endpoint: /FileManager/UploadImage
  * - Image library endpoint: /FileManager/GetImageAssets
  * - Accepted file types: PNG, JPG, JPEG, WebP, GIF
  * - Max file size: 25MB (enforced server-side)
  * - Upload path: /pub/articles/{articleNumber}/ (if articleNumber exists) or /pub/images/
+ * - Alt editor behavior:
+ *   - Global UI toggle: CCMS_IMAGE_WIDGET_CONFIG.enableAltTextEditor (default: true) controls whether
+ *     the edit button is shown and whether the editor is auto-prompted after upload.
+ *   - Per-widget activation: the editor only opens when the widget element has
+ *     data-ccms-enable-alt-editor="true". If absent or not "true", the button will have no effect and
+ *     auto-prompt after upload is skipped.
+ * 
+ * WIDGET DATA ATTRIBUTES:
+ * - data-ccms-ceid: Required stable id for existing widgets.
+ * - data-ccms-new="true": Auto-generate a new id for newly inserted widgets.
+ * - data-ccms-enable-alt-editor="true" [optional]: Enables the Alt/Title editor modal for this widget.
+ *   Defaults to disabled when not present.
  * 
  * FEATURES:
- * - Alt text editor for accessibility
+ * - Alt text editor for accessibility (per-widget opt-in via data-ccms-enable-alt-editor)
  * - Drag-and-drop image replacement
  * - Upload progress indicator
  * - Image library browser for reusing uploaded images
@@ -76,7 +96,7 @@ const CCMS_IMAGE_WIDGET_CONFIG = {
     zIndexOffset: 1000, // Safe z-index for overlays
     showProgressBar: true,
     enableImageLibrary: true,
-    enableAltTextEditor: true,
+    enableAltTextEditor: true, // Global UI toggle; modal only opens if the widget has data-ccms-enable-alt-editor="true"
     enableDragReplace: true
 };
 
@@ -164,6 +184,29 @@ function ccms___showError(message, container) {
 }
 
 /**
+ * Shows an informational notice (non-error) to the user.
+ * @param {string} message - Message to display
+ * @param {HTMLElement} container - Container to show message in
+ */
+function ccms___showInfo(message, container) {
+    const infoDiv = document.createElement('div');
+    infoDiv.classList.add('ccms-img-widget-info');
+    infoDiv.innerHTML = `
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+
+    container.appendChild(infoDiv);
+
+    // Auto-dismiss after 4 seconds
+    setTimeout(() => {
+        infoDiv.remove();
+    }, 4000);
+}
+
+/**
  * Validates a file before upload.
  * @param {File} file - File to validate
  * @returns {{valid: boolean, error: string|null}} Validation result
@@ -201,6 +244,10 @@ function ccms___validateFile(file) {
  * @param {HTMLElement} widgetContainer - The widget container element
  */
 function ccms___showAltTextEditor(imageElement, widgetContainer) {
+    const enableEditor = widgetContainer.getAttribute('data-ccms-enable-alt-editor');
+    if (enableEditor === null || enableEditor !== 'true') {
+        return;
+    }
     const id = widgetContainer.getAttribute('data-ccms-ceid');
     const currentAlt = imageElement.getAttribute('alt') || '';
     const currentTitle = imageElement.getAttribute('title') || '';
@@ -558,6 +605,11 @@ function ccms___handleWidgetMouseOver(event) {
         editBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            const enableEditor = element.getAttribute('data-ccms-enable-alt-editor');
+            if (enableEditor !== 'true') {
+                ccms___showInfo('Alt editor is disabled for this image. Add data-ccms-enable-alt-editor="true" to enable.', element);
+                return;
+            }
             ccms___showAltTextEditor(img, element);
         };
         toolbar.appendChild(editBtn);

@@ -7,6 +7,10 @@
 
 namespace Sky.Cms.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
@@ -23,10 +27,6 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.Html;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Templates controller.

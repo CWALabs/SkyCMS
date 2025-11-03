@@ -7,53 +7,15 @@
 
 namespace Sky.Editor.Boot
 {
-    using System;
-    using System.IO;
-    using System.Text.RegularExpressions;
-    using System.Threading.RateLimiting;
-    using System.Threading.Tasks;
-    using System.Web;
-    using AspNetCore.Identity.FlexDb.Extensions;
-    using Azure.Identity;
-    using Cosmos.BlobService;
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Services;
-    using Cosmos.Common.Services.Configurations;
-    using Cosmos.EmailServices;
-    using Hangfire;
-    using Hangfire.InMemory;
-    using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Builder;
-    using Microsoft.AspNetCore.DataProtection;
-    using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
-    using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
-    using Microsoft.AspNetCore.Hosting;
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.HttpOverrides;
-    using Microsoft.AspNetCore.Identity;
-    using Microsoft.AspNetCore.RateLimiting;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Options;
-    using Newtonsoft.Json.Serialization;
-    using Sky.Cms.Hubs;
-    using Sky.Cms.Services;
-    using Sky.Editor.Data.Logic;
-    using Sky.Editor.Domain.Events;
-    using Sky.Editor.Infrastructure.Time;
-    using Sky.Editor.Services;
-    using Sky.Editor.Services.Authors;
-    using Sky.Editor.Services.Catalog;
-    using Sky.Editor.Services.Html;
-    using Sky.Editor.Services.Publishing;
-    using Sky.Editor.Services.Redirects;
-    using Sky.Editor.Services.ReservedPaths;
-    using Sky.Editor.Services.Slugs;
-    using Sky.Editor.Services.Titles;
 
     /// <summary>
     /// Boots up the multi-tenant editor.

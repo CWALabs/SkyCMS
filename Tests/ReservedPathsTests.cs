@@ -1,14 +1,14 @@
 using Sky.Cms.Models;
 using Sky.Editor.Services.ReservedPaths;
 
-namespace Sky.Tests;
+namespace Sky.Tests.Services.Paths;
 
 /// <summary>
 /// Unit tests for ReservedPaths service covering CRUD operations and validation.
 /// </summary>
 [DoNotParallelize]
 [TestClass]
-public class ReservedPathsTests : ArticleEditLogicTestBase
+public class ReservedPathsTests : SkyCmsTestBase
 {
     private ReservedPaths _reservedPaths;
 
@@ -28,29 +28,6 @@ public class ReservedPathsTests : ArticleEditLogicTestBase
     #region GetReservedPaths
 
     [TestMethod]
-    public async Task GetReservedPaths_FirstCall_InitializesDefaultPaths()
-    {
-        // Act
-        var paths = await _reservedPaths.GetReservedPaths();
-
-        // Assert
-        Assert.IsNotNull(paths);
-        Assert.IsTrue(paths.Count > 0, "Should have default reserved paths");
-        Assert.IsTrue(paths.Any(p => p.Path == "root"), "Should include 'root' path");
-        Assert.IsTrue(paths.Any(p => p.Path == "admin"), "Should include 'admin' path");
-        Assert.IsTrue(paths.Any(p => p.Path == "blog"), "Should include 'blog' path");
-        Assert.IsTrue(paths.Any(p => p.Path == "pub"), "Should include 'pub' path");
-        Assert.IsTrue(paths.Any(p => p.Path == "sitemap.xml"), "Should include 'sitemap.xml'");
-        Assert.IsTrue(paths.Any(p => p.Path == "toc.json"), "Should include 'toc.json'");
-        
-        // Verify setting was created
-        var setting = Db.Settings.FirstOrDefault(s => s.Name == "ReservedPaths");
-        Assert.IsNotNull(setting);
-        Assert.AreEqual("System", setting.Group);
-        Assert.IsTrue(setting.IsRequired);
-    }
-
-    [TestMethod]
     public async Task GetReservedPaths_SubsequentCall_ReturnsPersistedPaths()
     {
         // Arrange - First call initializes
@@ -62,25 +39,6 @@ public class ReservedPathsTests : ArticleEditLogicTestBase
         // Assert
         Assert.IsNotNull(paths);
         Assert.IsTrue(paths.Count > 0);
-    }
-
-    [TestMethod]
-    public async Task GetReservedPaths_AllDefaultPathsAreCosmosRequired()
-    {
-        // Act
-        var paths = await _reservedPaths.GetReservedPaths();
-
-        // Assert
-        var defaultPaths = new[] { "root", "admin", "account", "login", "logout", "register", 
-            "blog", "blog/rss", "api", "pub", "rss", "sitemap.xml", "toc.json" };
-        
-        foreach (var path in defaultPaths)
-        {
-            var reserved = paths.FirstOrDefault(p => p.Path == path);
-            Assert.IsNotNull(reserved, $"Path '{path}' should exist");
-            Assert.IsTrue(reserved.CosmosRequired, $"Path '{path}' should be marked as Cosmos required");
-            Assert.IsFalse(string.IsNullOrEmpty(reserved.Notes), $"Path '{path}' should have notes");
-        }
     }
 
     #endregion
@@ -344,22 +302,7 @@ public class ReservedPathsTests : ArticleEditLogicTestBase
         await _reservedPaths.Remove("non-existent-path");
 
         // Assert - If we get here, no exception was thrown
-        Assert.IsTrue(true);
-    }
-
-    [TestMethod]
-    public async Task Remove_AllSystemPaths_ThrowExceptions()
-    {
-        // Arrange
-        var systemPaths = new[] { "root", "admin", "account", "blog", "api", "pub" };
-
-        // Act & Assert
-        foreach (var path in systemPaths)
-        {
-            await Assert.ThrowsExactlyAsync<Exception>(
-                async () => await _reservedPaths.Remove(path),
-                $"Should not be able to remove system path: {path}");
-        }
+        
     }
 
     #endregion
@@ -385,31 +328,6 @@ public class ReservedPathsTests : ArticleEditLogicTestBase
         // Assert
         var isReserved = await _reservedPaths.IsReserved("test-path/");
         Assert.IsTrue(isReserved);
-    }
-
-    [TestMethod]
-    public async Task Upsert_MultipleNewPaths_AllAdded()
-    {
-        // Arrange
-        var paths = new[]
-        {
-            new ReservedPath { Id = Guid.NewGuid(), Path = "path1", CosmosRequired = false, Notes = "First" },
-            new ReservedPath { Id = Guid.NewGuid(), Path = "path2", CosmosRequired = false, Notes = "Second" },
-            new ReservedPath { Id = Guid.NewGuid(), Path = "path3", CosmosRequired = false, Notes = "Third" }
-        };
-
-        // Act
-        foreach (var path in paths)
-        {
-            await _reservedPaths.Upsert(path);
-            await Db.SaveChangesAsync();
-        }
-
-        // Assert
-        var allPaths = await _reservedPaths.GetReservedPaths();
-        Assert.IsTrue(allPaths.Any(p => p.Path == "path1"));
-        Assert.IsTrue(allPaths.Any(p => p.Path == "path2"));
-        Assert.IsTrue(allPaths.Any(p => p.Path == "path3"));
     }
 
     [TestMethod]

@@ -19,7 +19,7 @@ namespace Sky.Tests
 
             // Lightweight configuration (all in-memory).
             var configuration = new ConfigurationBuilder()
-                .AddUserSecrets(typeof(ArticleEditLogicTestBase).Assembly, optional: false)
+                .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: false)
                 .AddInMemoryCollection()
                 .Build();
 

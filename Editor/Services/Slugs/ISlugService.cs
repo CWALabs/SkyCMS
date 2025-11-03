@@ -7,10 +7,6 @@
 
 namespace Sky.Editor.Services.Slugs
 {
-    using System.Globalization;
-    using System.Text;
-    using System.Text.RegularExpressions;
-
     /// <summary>
     /// Provides slug (URL segment) normalization utilities.
     /// </summary>
@@ -23,64 +19,5 @@ namespace Sky.Editor.Services.Slugs
         /// <param name="blogKey">Blog key (if is a blog entry).</param>
         /// <returns>Normalized slug.</returns>
         string Normalize(string input, string blogKey = "");
-    }
-
-    /// <summary>
-    /// URL-safe slug implementation for Razor Pages route segments.
-    /// Produces only ASCII letters/digits and separator characters; removes diacritics.
-    /// </summary>
-    public sealed class SlugService : ISlugService
-    {
-        // Choose your separator to match your style/SEO: '-' (common) or '_' (your original).
-        private const char Separator = '-';
-
-        /// <inheritdoc cref="Sky.Editor.Services.Slugs.ISlugService.Normalize(string, string)"/>
-        public string Normalize(string input, string blogKey = "")
-        {
-            if (string.IsNullOrWhiteSpace(input))
-            {
-                return string.Empty;
-            }
-
-            // 1) Normalize and lowercase
-            var s = input.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
-
-            // 2) Remove diacritics and map everything non [a-z0-9] to the separator
-            var sb = new StringBuilder(s.Length);
-            foreach (var ch in s)
-            {
-                var cat = CharUnicodeInfo.GetUnicodeCategory(ch);
-                if (cat is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark)
-                {
-                    continue;
-                }
-
-                if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9'))
-                {
-                    sb.Append(ch);
-                }
-                else
-                {
-                    sb.Append(Separator);
-                }
-            }
-
-            // 3) Collapse duplicate separators and trim unsafe ends
-            var collapsed = Regex.Replace(sb.ToString(), $"{Regex.Escape(Separator.ToString())}{{2,}}", Separator.ToString());
-            var slug = collapsed.Trim(Separator, '/', '.', '_', '~');
-
-            // 4) Guard against reserved dot-segments
-            if (slug is "." or "..")
-            {
-                slug = slug.Replace('.', Separator);
-            }
-
-            if (!string.IsNullOrWhiteSpace(blogKey))
-            {
-                slug = $"{blogKey}/{slug}";
-            }
-
-            return slug;
-        }
     }
 }

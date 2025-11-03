@@ -4,7 +4,7 @@ namespace Sky.Tests;
 
 [DoNotParallelize]
 [TestClass]
-public class ArticleEditLogicTests : ArticleEditLogicTestBase
+public class ArticleEditLogicTests : SkyCmsTestBase
 {
     [TestInitialize]
     public void Setup() => InitializeTestContext(seedLayout: true);

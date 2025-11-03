@@ -74,15 +74,25 @@ namespace Sky.Editor.Services.ReservedPaths
                 var staticReserved = new List<ReservedPath>
                     {
                         new () { Path = "root", CosmosRequired = true, Notes = "Home page alias" },
+
+                        // controllers
+                        new () { Path = "blog/*", CosmosRequired = true, Notes = "Blog root" },
+                        new () { Path = "editor/*", CosmosRequired = true, Notes = "Editor page alias" },
+                        new () { Path = "home/*", CosmosRequired = true, Notes = "Home page alias" },
+                        new () { Path = "layouts/*", CosmosRequired = true, Notes = "Layouts page alias" },
+                        new () { Path = "filemanager/*", CosmosRequired = true, Notes = "File Manager page alias" },
+                        new () { Path = "pub/*", CosmosRequired = true, Notes = "Public assets" },
+                        new () { Path = "roles/*", CosmosRequired = true, Notes = "Roles management" },
+                        new () { Path = "templates/*", CosmosRequired = true, Notes = "Templates management" },
+                        new () { Path = "users/*", CosmosRequired = true, Notes = "User management" },
+
                         new () { Path = "admin", CosmosRequired = true, Notes = "Admin path" },
                         new () { Path = "account", CosmosRequired = true, Notes = "Identity path" },
                         new () { Path = "login", CosmosRequired = true, Notes = "Identity path" },
                         new () { Path = "logout", CosmosRequired = true, Notes = "Identity path" },
                         new () { Path = "register", CosmosRequired = true, Notes = "Identity path" },
-                        new () { Path = "blog", CosmosRequired = true, Notes = "Blog root" },
                         new () { Path = "blog/rss", CosmosRequired = true, Notes = "Blog RSS" },
                         new () { Path = "api", CosmosRequired = true, Notes = "API route" },
-                        new () { Path = "pub", CosmosRequired = true, Notes = "Static assets" },
                         new () { Path = "rss", CosmosRequired = true, Notes = "RSS" },
                         new () { Path = "sitemap.xml", CosmosRequired = true, Notes = "Sitemap" },
                         new () { Path = "toc.json", CosmosRequired = true, Notes = "Table of contents" }

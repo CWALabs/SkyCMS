@@ -39,6 +39,7 @@ namespace Cosmos.Common.Models
                 Head = layout.Head;
                 HtmlHeader = layout.HtmlHeader;
                 FooterHtmlContent = layout.FooterHtmlContent;
+                IsDefault = layout.IsDefault;
             }
         }
 

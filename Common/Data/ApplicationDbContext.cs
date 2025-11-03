@@ -116,13 +116,6 @@ namespace Cosmos.Common.Data
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
         /// <summary>
-        /// Gets or sets blogs (multi-blog metadata roots).
-        /// Each blog provides a stable <c>BlogKey</c> used to group and route blog posts
-        /// (articles where <c>ArticleType == BlogPost</c> and matching <c>BlogKey</c>).
-        /// </summary>
-        public DbSet<Blog> Blogs { get; set; }
-
-        /// <summary>
         /// Ensure database exists and returns status.
         /// </summary>
         /// <param name="connectionString">Connection string.</param>
@@ -324,11 +317,6 @@ namespace Cosmos.Common.Data
                     .HasPartitionKey(k => k.Id)
                     .HasKey(log => log.Id);
 
-                modelBuilder.Entity<Blog>()
-                    .ToContainer("Blogs")
-                    .HasPartitionKey(p => p.Id)
-                    .HasKey(k => k.Id);
-
                 modelBuilder.Entity<CatalogEntry>().OwnsMany(o => o.ArticlePermissions);
 
                 modelBuilder.Entity<CatalogEntry>()
@@ -391,9 +379,8 @@ namespace Cosmos.Common.Data
 
                 // All SQL providers.
                 modelBuilder.Entity<Article>().Property(e => e.RowVersion).IsETagConcurrency();
-                modelBuilder.Entity<CatalogEntry>().Property(e => e.RowVersion).IsRowVersion();
-                modelBuilder.Entity<PublishedPage>().Property(e => e.RowVersion).IsRowVersion();
-
+                modelBuilder.Entity<CatalogEntry>().Property(e => e.RowVersion).IsETagConcurrency();
+                modelBuilder.Entity<PublishedPage>().Property(e => e.RowVersion).IsETagConcurrency();
             }
 
             base.OnModelCreating(modelBuilder);

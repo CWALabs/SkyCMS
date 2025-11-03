@@ -35,6 +35,8 @@ using Sky.Editor.Domain.Events;
 using Sky.Editor.Infrastructure.Time;
 using Sky.Editor.Services;
 using Sky.Editor.Services.Authors;
+using Sky.Editor.Services.BlogPublishing;
+using Sky.Editor.Services.BlogRenderingService;
 using Sky.Editor.Services.Catalog;
 using Sky.Editor.Services.Html;
 using Sky.Editor.Services.Publishing;
@@ -109,7 +111,7 @@ else
 
 // Register transient services - common to both single-tenant and multi-tenant modes
 // Transient services are created each time they are requested.
-builder.Services.AddTransient<ArticleVersionPublisher>();
+builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddTransient<IArticleHtmlService, ArticleHtmlService>();
 builder.Services.AddTransient<IAuthorInfoService, AuthorInfoService>();
@@ -124,6 +126,7 @@ builder.Services.AddTransient<ISlugService, SlugService>();
 builder.Services.AddSingleton<ITemplateService, TemplateService>();
 builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IViewRenderService, ViewRenderService>();
+builder.Services.AddTransient<IBlogRenderingService, BlogRenderingService>();
 builder.Services.AddHttpContextAccessor();
 
 // ---------------------------------------------------------------
@@ -343,7 +346,7 @@ using (var scope = app.Services.CreateScope())
     var recurring = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
     // For async method on a service type:
-    recurring.AddOrUpdate<ArticleVersionPublisher>(
+    recurring.AddOrUpdate<ArticleScheduler>(
         "article-version-publisher",
         x => x.ExecuteAsync(),
         "*/5 * * * *");

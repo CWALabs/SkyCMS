@@ -42,6 +42,7 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.ReservedPaths;
+    using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
 
     /// <summary>
@@ -67,6 +68,7 @@ namespace Sky.Cms.Controllers
         private readonly IArticleHtmlService htmlService;
         private readonly IReservedPaths reservedPaths;
         private readonly ITitleChangeService titleChangeService;
+        private readonly ITemplateService templateService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorController"/> class.
@@ -84,6 +86,7 @@ namespace Sky.Cms.Controllers
         /// <param name="htmlService">HTML service.</param>
         /// <param name="reservedPaths">Reserved path service.</param>
         /// <param name="titleChangeService">Title change service.</param>
+        /// <param name="templateService">Template service.</param>
         public EditorController(
             ILogger<EditorController> logger,
             ApplicationDbContext dbContext,
@@ -97,7 +100,8 @@ namespace Sky.Cms.Controllers
             IPublishingService publishingService,
             IArticleHtmlService htmlService,
             IReservedPaths reservedPaths,
-            ITitleChangeService titleChangeService)
+            ITitleChangeService titleChangeService,
+            ITemplateService templateService)
             : base(dbContext, userManager)
         {
             this.logger = logger;
@@ -126,8 +130,6 @@ namespace Sky.Cms.Controllers
 
             this.viewRenderService = viewRenderService;
 
-            // Ensure the required roles exist.
-            SetupNewAdministrator.Ensure_Roles_Exists(roleManager).Wait();
         }
 
         /// <summary>
@@ -136,6 +138,12 @@ namespace Sky.Cms.Controllers
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task<IActionResult> Index()
         {
+            // Ensure the required roles exist.
+            await SetupNewAdministrator.Ensure_Roles_Exists(roleManager);
+
+            // Ensure default templates exist.
+            await this.templateService.EnsureDefaultTemplatesExistAsync();
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);

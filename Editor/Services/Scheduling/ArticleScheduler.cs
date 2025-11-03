@@ -17,29 +17,26 @@ namespace Sky.Editor.Services.Scheduling
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Infrastructure.Time;
 
-    /// <summary>
-    /// Scheduled service that activates article versions with multiple published dates,
-    /// ensuring only the most recent non-future version is actively published.
-    /// </summary>
-    public class ArticleVersionPublisher
+    /// <inheritdoc/>
+    public class ArticleScheduler : IArticleScheduler
     {
         private readonly ApplicationDbContext dbContext;
         private readonly ArticleEditLogic articleLogic;
         private readonly IClock clock;
-        private readonly ILogger<ArticleVersionPublisher> logger;
+        private readonly ILogger<ArticleScheduler> logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ArticleVersionPublisher"/> class.
+        /// Initializes a new instance of the <see cref="ArticleScheduler"/> class.
         /// </summary>
         /// <param name="dbContext">Database context.</param>
         /// <param name="articleLogic">Article editing logic service.</param>
         /// <param name="clock">Clock abstraction for testable time.</param>
         /// <param name="logger">Logger instance.</param>
-        public ArticleVersionPublisher(
+        public ArticleScheduler(
             ApplicationDbContext dbContext,
             ArticleEditLogic articleLogic,
             IClock clock,
-            ILogger<ArticleVersionPublisher> logger)
+            ILogger<ArticleScheduler> logger)
         {
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             this.articleLogic = articleLogic ?? throw new ArgumentNullException(nameof(articleLogic));
@@ -47,10 +44,7 @@ namespace Sky.Editor.Services.Scheduling
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// <summary>
-        /// Executes the scheduled job to process article versions with multiple published dates.
-        /// </summary>
-        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <inheritdoc/>
         public async Task ExecuteAsync()
         {
             logger.LogInformation("ArticleVersionPublisher: Starting scheduled execution at {ExecutionTime}", clock.UtcNow);

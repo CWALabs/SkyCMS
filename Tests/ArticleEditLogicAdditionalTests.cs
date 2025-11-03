@@ -6,7 +6,7 @@ namespace Sky.Tests;
 
 [DoNotParallelize]
 [TestClass]
-public class ArticleEditLogicAdditionalTests : ArticleEditLogicTestBase
+public class ArticleEditLogicAdditionalTests : SkyCmsTestBase
 {
     [TestInitialize]
     public void Setup() => InitializeTestContext();
@@ -72,12 +72,19 @@ public class ArticleEditLogicAdditionalTests : ArticleEditLogicTestBase
     {
         await Logic.CreateArticle("Home Page", TestUserId);
         var parent = await Logic.CreateArticle("Parent Section", TestUserId);
-        var child = await Logic.CreateArticle("Parent Section Child Doc", TestUserId);
+        var child = await Logic.CreateArticle("Parent Section/Child Doc", TestUserId);
+        var oldPath = parent.UrlPath;
 
         // rename parent
         var parentVm = await Logic.GetArticleByArticleNumber(parent.ArticleNumber, null);
         parentVm.Title = "Parent Renamed";
-        await Logic.SaveArticle(parentVm, TestUserId);
+        var result = await Logic.SaveArticle(parentVm, TestUserId);
+
+        var articleId = result.Model.Id;
+
+        var updatedParent = await Db.Articles.FirstOrDefaultAsync(a => a.Id == articleId);
+
+        await TitleChangeService.HandleTitleChangeAsync(updatedParent, oldPath);
 
         var childVm = await Logic.GetArticleByArticleNumber(child.ArticleNumber, null);
         Assert.IsTrue(childVm.UrlPath.StartsWith("parent-renamed", StringComparison.OrdinalIgnoreCase),

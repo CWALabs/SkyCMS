@@ -117,12 +117,15 @@ namespace Cosmos.Common.Data.Logic
         /// <summary>
         /// Serialize an object as JSON and return UTF-32 encoded bytes.
         /// </summary>
+        /// <param name="obj">Object to serialize.</param>
+        /// <returns>UTF-32 encoded JSON byte array.</returns>
         public static byte[] Serialize(object obj)
         {
             if (obj == null)
             {
                 return null;
             }
+
             return Encoding.UTF32.GetBytes(JsonConvert.SerializeObject(obj));
         }
 
@@ -133,6 +136,7 @@ namespace Cosmos.Common.Data.Logic
         /// Uses basic priority heuristics (root=1.0, others=0.5). Banner image (if present) is attached.
         /// Not cached; caller should wrap with caching if frequently invoked.
         /// </remarks>
+        /// <returns>Sitemap instance.</returns>
         public async Task<Sitemap> GetSiteMap()
         {
             var publicUrl = "/";
@@ -199,6 +203,7 @@ namespace Cosmos.Common.Data.Logic
         /// Filtering logic uses a regex pattern to approximate one-level deep children.
         /// Future optimization: replace regex with hierarchical index or persisted depth metadata.
         /// </remarks>
+        /// <returns>Paged table of contents.</returns>
         public async Task<TableOfContents> GetTableOfContents(string prefix, int pageNo = 0, int pageSize = 10, bool orderByPublishedDate = false)
         {
             if (string.IsNullOrEmpty(prefix) || string.IsNullOrWhiteSpace(prefix) || prefix.Equals("/"))
@@ -287,6 +292,7 @@ namespace Cosmos.Common.Data.Logic
         /// Cache key: {url}-{lang}-{includeLayout}. Layout caching duration is separate.
         /// SQLite nuance: DateTimeOffset comparison adjustments addressed by explicit HasValue checks.
         /// </remarks>
+        /// <returns>Article view model.</returns>
         public virtual async Task<ArticleViewModel> GetPublishedPageByUrl(string urlPath, string lang = "", TimeSpan? cacheSpan = null, TimeSpan? layoutCache = null, bool includeLayout = true)
         {
             urlPath = urlPath?.ToLower().Trim(new char[] { ' ', '/' });
@@ -460,31 +466,8 @@ namespace Cosmos.Common.Data.Logic
                 }
             }
 
-            return new ArticleViewModel
-            {
-                ArticleNumber = article.ArticleNumber,
-                LanguageCode = lang,
-                LanguageName = string.Empty,
-                CacheDuration = 10,
-                Content = article.Content,
-                StatusCode = (StatusCodeEnum)article.StatusCode,
-                Id = article.Id,
-                Published = article.Published ?? null,
-                Title = article.Title,
-                UrlPath = article.UrlPath,
-                Updated = article.Updated,
-                VersionNumber = article.VersionNumber,
-                HeadJavaScript = article.HeaderJavaScript,
-                FooterJavaScript = article.FooterJavaScript,
-                Layout = includeLayout ? await GetDefaultLayout() : null,
-                ReadWriteMode = isEditor,
-                Expires = article.Expires ?? null,
-                BannerImage = article.BannerImage,
-                AuthorInfo = author,
-                ArticleType = (ArticleType)(article.ArticleType ?? 0),
-                Category = article.Category,
-                Introduction = article.Introduction
-            };
+            return new ArticleViewModel(article, await GetDefaultLayout(), authorInfo: author, lang: lang);
+
         }
 
         /// <summary>

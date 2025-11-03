@@ -141,7 +141,7 @@ namespace Cosmos.Common.Data
         /// For SQL databases, this value is automatically generated/updated by the underlying persistence provider (e.g., EF Core).
         /// Clients must supply the last known token when updating to prevent lost updates.
         /// </remarks>
-        public byte[] RowVersion { get; set; }
+        public long? RowVersion { get; set; }
 
         /// <summary>
         /// Gets or sets the blog key associated with the article.

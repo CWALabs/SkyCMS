@@ -16,6 +16,12 @@ namespace Sky.Editor.Services.Templates
     public interface ITemplateService
     {
         /// <summary>
+        /// Ensures that default templates exist for the current default layout.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task EnsureDefaultTemplatesExistAsync();
+
+        /// <summary>
         /// Gets all available templates.
         /// </summary>
         /// <returns>A page template list.</returns>

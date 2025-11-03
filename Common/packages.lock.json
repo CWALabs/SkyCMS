@@ -23,6 +23,12 @@
           "System.ClientModel": "1.6.0"
         }
       },
+      "HtmlAgilityPack": {
+        "type": "Direct",
+        "requested": "[1.12.4, )",
+        "resolved": "1.12.4",
+        "contentHash": "ljqvBabvFwKoLniuoQKO8b5bJfJweKLs4fUNS/V5dsvpo0A8MlJqxxn9XVmP2DaskbUXty6IYaWAi1SArGIMeQ=="
+      },
       "MailChimp.Net.V3": {
         "type": "Direct",
         "requested": "[5.8.2, )",

@@ -5,7 +5,7 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Sky.Tests
+namespace Sky.Tests.Services.Publishing
 {
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
@@ -21,7 +21,7 @@ namespace Sky.Tests
     /// Unit tests for the <see cref="PublishingService"/> class.
     /// </summary>
     [TestClass]
-    public class PublishingServiceTests : ArticleEditLogicTestBase
+    public class PublishingServiceTests : SkyCmsTestBase
     {
         /// <summary>
         /// Initializes test dependencies before each test method.
@@ -344,6 +344,12 @@ namespace Sky.Tests
             // Act
             await PublishingService.CreateStaticPages(ids);
 
+            // Assert
+            var page1Exists = await Storage.BlobExistsAsync("/page1");
+            var page2Exists = await Storage.BlobExistsAsync("/page2");
+            
+            Assert.IsTrue(page1Exists, "Static file for page1 should be created");
+            Assert.IsTrue(page2Exists, "Static file for page2 should be created");
         }
 
         /// <summary>
@@ -412,6 +418,7 @@ namespace Sky.Tests
         {
             // Arrange
             var article = CreateTestArticle();
+            article.UrlPath = "test-page";  // Not "root"
             article.Published = Clock.UtcNow;
             Db.Articles.Add(article);
             await Db.SaveChangesAsync();
@@ -420,8 +427,9 @@ namespace Sky.Tests
             await PublishingService.PublishAsync(article);
 
             // Assert
-            var exists = await Storage.BlobExistsAsync(article.UrlPath);
-            Assert.IsTrue(exists, "Static file should be created when static pages are enabled");
+            // Check the correct storage path (with leading slash)
+            var exists = await Storage.BlobExistsAsync("/" + article.UrlPath);
+            Assert.IsTrue(exists, "Static file should be created at /{UrlPath} when static pages are enabled");
         }
 
         /// <summary>

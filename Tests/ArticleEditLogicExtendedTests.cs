@@ -1,13 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Sky.Cms.Controllers;
 using Sky.Cms.Services;
-using Sky.Editor.Services.Slugs;
 
 namespace Sky.Tests;
 
 [DoNotParallelize]
 [TestClass]
-public class ArticleEditLogicExtendedTests : ArticleEditLogicTestBase
+public class ArticleEditLogicExtendedTests : SkyCmsTestBase
 {
     [TestInitialize]
     public void Setup() => InitializeTestContext(seedLayout: true);

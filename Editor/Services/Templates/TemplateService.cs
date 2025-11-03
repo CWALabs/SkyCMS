@@ -14,7 +14,9 @@ namespace Sky.Editor.Services.Templates
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Hosting;
+    using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
 
     /// <summary>
@@ -24,6 +26,7 @@ namespace Sky.Editor.Services.Templates
     {
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<TemplateService> _logger;
+        private readonly ApplicationDbContext dbContext;
         private List<PageTemplate>? _cachedTemplates;
         private readonly SemaphoreSlim _lock = new(1, 1);
 
@@ -32,10 +35,41 @@ namespace Sky.Editor.Services.Templates
         /// </summary>
         /// <param name="environment">The web hosting environment.</param>
         /// <param name="logger">The logger.</param>
-        public TemplateService(IWebHostEnvironment environment, ILogger<TemplateService> logger)
+        /// <param name="dbContext">The database context.</param>
+        public TemplateService(IWebHostEnvironment environment, ILogger<TemplateService> logger, ApplicationDbContext dbContext)
         {
             _environment = environment;
             _logger = logger;
+            this.dbContext = dbContext;
+        }
+
+        /// <inheritdoc/>
+        public async Task EnsureDefaultTemplatesExistAsync()
+        {
+            var allTemplates = await GetAllTemplatesAsync();
+            var defaultLayout = await dbContext.Layouts.FirstOrDefaultAsync(l => l.IsDefault == true);
+            var layoutId = defaultLayout?.Id;
+
+            foreach (var template in allTemplates)
+            {
+                var dbTemplate = await dbContext.Templates.FirstOrDefaultAsync(t => t.LayoutId == layoutId && t.Title == template.Name);
+                if (dbTemplate == null)
+                {
+                    var html = await LoadTemplateContentAsync(template.FilePath);
+                    dbTemplate = new Template
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = template.Name,
+                        Description = template.Description,
+                        PageType = template.Key,
+                        Content = html,
+                        LayoutId = layoutId,
+                        CommunityLayoutId = defaultLayout?.CommunityLayoutId
+                    };
+                    dbContext.Templates.Add(dbTemplate);
+                }
+            }
+            await dbContext.SaveChangesAsync();
         }
 
         /// <inheritdoc/>
@@ -150,6 +184,16 @@ namespace Sky.Editor.Services.Templates
             {
                 new PageTemplate
                 {
+                    Key = "blog-stream",
+                    Name = "Blog Stream",
+                    Description = "Standard blog stream layout with featured image, author info, and comment section.",
+                    Category = "Blog",
+                    FilePath = "PageTemplates/blog-stream.html",
+                    ThumbnailPath = "/images/templates/blog-stream-thumb.png",
+                    Tags = new List<string> { "blog", "article", "post", "content" }
+                },
+                new PageTemplate
+                {
                     Key = "blog-post",
                     Name = "Blog Post",
                     Description = "Standard blog post layout with featured image, author info, and comment section.",
@@ -158,57 +202,58 @@ namespace Sky.Editor.Services.Templates
                     ThumbnailPath = "/images/templates/blog-post-thumb.png",
                     Tags = new List<string> { "blog", "article", "post", "content" }
                 },
-                new PageTemplate
-                {
-                    Key = "landing-page",
-                    Name = "Landing Page",
-                    Description = "Conversion-focused landing page with hero section, features, and call-to-action.",
-                    Category = "Marketing",
-                    FilePath = "PageTemplates/landing-page.html",
-                    ThumbnailPath = "/images/templates/landing-page-thumb.png",
-                    Tags = new List<string> { "landing", "marketing", "conversion", "cta" }
-                },
-                new PageTemplate
-                {
-                    Key = "about-page",
-                    Name = "About Us",
-                    Description = "Professional about page with team section, company history, and values.",
-                    Category = "Corporate",
-                    FilePath = "PageTemplates/about-page.html",
-                    ThumbnailPath = "/images/templates/about-page-thumb.png",
-                    Tags = new List<string> { "about", "team", "company", "corporate" }
-                },
-                new PageTemplate
-                {
-                    Key = "contact-page",
-                    Name = "Contact Form",
-                    Description = "Contact page with form, location map, and contact details.",
-                    Category = "General",
-                    FilePath = "PageTemplates/contact-page.html",
-                    ThumbnailPath = "/images/templates/contact-page-thumb.png",
-                    Tags = new List<string> { "contact", "form", "support" },
-                    RequiresConfiguration = true
-                },
-                new PageTemplate
-                {
-                    Key = "product-showcase",
-                    Name = "Product Showcase",
-                    Description = "E-commerce style product display with image gallery and specifications.",
-                    Category = "E-commerce",
-                    FilePath = "PageTemplates/product-showcase.html",
-                    ThumbnailPath = "/images/templates/product-thumb.png",
-                    Tags = new List<string> { "product", "ecommerce", "showcase", "gallery" }
-                },
-                new PageTemplate
-                {
-                    Key = "blank",
-                    Name = "Blank Page",
-                    Description = "Empty page to start from scratch.",
-                    Category = "General",
-                    FilePath = "PageTemplates/blank.html",
-                    ThumbnailPath = "/images/templates/blank-thumb.png",
-                    Tags = new List<string> { "blank", "empty", "custom" }
-                }
+                // TODO: Add more templates as needed
+                //new PageTemplate
+                //{
+                //    Key = "landing-page",
+                //    Name = "Landing Page",
+                //    Description = "Conversion-focused landing page with hero section, features, and call-to-action.",
+                //    Category = "Marketing",
+                //    FilePath = "PageTemplates/landing-page.html",
+                //    ThumbnailPath = "/images/templates/landing-page-thumb.png",
+                //    Tags = new List<string> { "landing", "marketing", "conversion", "cta" }
+                //},
+                //new PageTemplate
+                //{
+                //    Key = "about-page",
+                //    Name = "About Us",
+                //    Description = "Professional about page with team section, company history, and values.",
+                //    Category = "Corporate",
+                //    FilePath = "PageTemplates/about-page.html",
+                //    ThumbnailPath = "/images/templates/about-page-thumb.png",
+                //    Tags = new List<string> { "about", "team", "company", "corporate" }
+                //},
+                //new PageTemplate
+                //{
+                //    Key = "contact-page",
+                //    Name = "Contact Form",
+                //    Description = "Contact page with form, location map, and contact details.",
+                //    Category = "General",
+                //    FilePath = "PageTemplates/contact-page.html",
+                //    ThumbnailPath = "/images/templates/contact-page-thumb.png",
+                //    Tags = new List<string> { "contact", "form", "support" },
+                //    RequiresConfiguration = true
+                //},
+                //new PageTemplate
+                //{
+                //    Key = "product-showcase",
+                //    Name = "Product Showcase",
+                //    Description = "E-commerce style product display with image gallery and specifications.",
+                //    Category = "E-commerce",
+                //    FilePath = "PageTemplates/product-showcase.html",
+                //    ThumbnailPath = "/images/templates/product-thumb.png",
+                //    Tags = new List<string> { "product", "ecommerce", "showcase", "gallery" }
+                //},
+                //new PageTemplate
+                //{
+                //    Key = "blank",
+                //    Name = "Blank Page",
+                //    Description = "Empty page to start from scratch.",
+                //    Category = "General",
+                //    FilePath = "PageTemplates/blank.html",
+                //    ThumbnailPath = "/images/templates/blank-thumb.png",
+                //    Tags = new List<string> { "blank", "empty", "custom" }
+                //}
             };
         }
     }

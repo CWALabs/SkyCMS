@@ -69,7 +69,7 @@ namespace Sky.Editor.Services.Authors
         /// - The method derives a string cache key from <paramref name="userId"/> via <c>userId.ToString()</c>.
         /// - If a cached <see cref="AuthorInfo"/> exists, it is returned immediately.
         /// - Otherwise, the method queries <see cref="ApplicationDbContext.AuthorInfos"/> for a persisted record.
-        /// - If no persisted record exists, the method queries <see cref="ApplicationDbContext.Users"/> to obtain
+        /// - If no persisted record exists, the method queries <see cref="ApplicationDbContext"/> to obtain
         ///   an identity record. If the identity is found, a new <see cref="AuthorInfo"/> is created with:
         ///     - <see cref="AuthorInfo.Id"/> = userId string
         ///     - <see cref="AuthorInfo.AuthorName"/> = identity.UserName ?? identity.Email ?? userId string

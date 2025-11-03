@@ -34,6 +34,57 @@ namespace Cosmos.Common.Models
     public class ArticleViewModel
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="ArticleViewModel"/> class.
+        /// </summary>
+        public ArticleViewModel()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ArticleViewModel"/> class.
+        /// </summary>
+        /// <param name="article">The article.</param>
+        /// <param name="layout">The layout.</param>
+        /// <param name="isEditor">Is for an editor.</param>
+        /// <param name="authorInfo">The author information.</param>
+        /// <param name="lang">The language.</param>
+        public ArticleViewModel(Article article, LayoutViewModel layout, bool isEditor = false, string authorInfo = "", string lang = "")
+        {
+            if (article == null)
+            {
+                throw new ArgumentNullException(nameof(article));
+            }
+
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            ArticleNumber = article.ArticleNumber;
+            LanguageCode = lang;
+            LanguageName = string.Empty;
+            CacheDuration = 10;
+            Content = article.Content;
+            StatusCode = (StatusCodeEnum)article.StatusCode;
+            Id = article.Id;
+            Published = article.Published ?? null;
+            Title = article.Title;
+            UrlPath = article.UrlPath;
+            Updated = article.Updated;
+            VersionNumber = article.VersionNumber;
+            HeadJavaScript = article.HeaderJavaScript;
+            FooterJavaScript = article.FooterJavaScript;
+            Layout = layout;
+            ReadWriteMode = isEditor;
+            Expires = article.Expires ?? null;
+            BannerImage = article.BannerImage;
+            AuthorInfo = authorInfo;
+            ArticleType = (ArticleType)(article.ArticleType ?? 0);
+            Category = article.Category;
+            Introduction = article.Introduction;
+        }
+
+        /// <summary>
         /// Gets or sets the stable unique identifier of the article (primary key).
         /// </summary>
         [Key]

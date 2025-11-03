@@ -7,12 +7,6 @@
 
 namespace Sky.Editor.Controllers
 {
-    // if you place ISlugService elsewhere adjust
-    // UPDATED: sync with enhanced Blog entity & view models (Title, Description, HeroImage, IsDefault, SortOrder)
-    // Added mapping & update of UpdatedUtc when editing a blog stream.
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.AspNetCore.Authorization;
@@ -21,9 +15,13 @@ namespace Sky.Editor.Controllers
     using Microsoft.EntityFrameworkCore;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models.Blogs;
-    using Sky.Editor.Services.Redirects;
+    using Sky.Editor.Services.BlogPublishing;
     using Sky.Editor.Services.Slugs;
     using Sky.Editor.Services.Templates;
+    using Sky.Editor.Services.Titles;
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Editor-facing controller for managing blog streams (multi-blog support) and their entries (blog posts).
@@ -36,7 +34,7 @@ namespace Sky.Editor.Controllers
     ///   <item>Maintain a single default blog stream (used as reassignment target).</item>
     ///   <item>Create, edit, publish (immediate), and delete blog post entries via <see cref="ArticleEditLogic"/>.</item>
     ///   <item>Provide JSON listing endpoint for client-side selection widgets.</item>
-    ///   <item>Provide an anonymous preview (<see cref="GenericBlogPage"/>) for a specific blog.</item>
+    ///   <item>Provide an anonymous preview (<see cref="PreviewStream(string)"/>) for a specific blog.</item>
     /// </list>
     /// Security:
     /// All actions require authentication via <see cref="AuthorizeAttribute"/> except the preview endpoint which allows anonymous access.
@@ -48,8 +46,9 @@ namespace Sky.Editor.Controllers
         private readonly ApplicationDbContext db;
         private readonly ArticleEditLogic articleLogic;
         private readonly ISlugService slugService; // NEW
-        private readonly IRedirectService redirectService;
         private readonly ITemplateService templateService;
+        private readonly IBlogRenderingService blogRenderingService;
+        private readonly ITitleChangeService titleChangeService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BlogController"/> class.
@@ -57,23 +56,26 @@ namespace Sky.Editor.Controllers
         /// <param name="db">Application database context.</param>
         /// <param name="articleLogic">Article editing / publishing logic service.</param>
         /// <param name="slugService">Slug normalization and uniqueness helper.</param>
-        /// <param name="redirectService">Redirect management service.</param>
         /// <param name="templateService">Template management service.</param>
         /// <param name="userManager">User management service.</param>
+        /// <param name="blogRenderingService">Blog rendering service.</param>
+        /// <param name="titleChangeService">Title change service.</param>
         public BlogController(
             ApplicationDbContext db,
             ArticleEditLogic articleLogic,
             ISlugService slugService,
-            IRedirectService redirectService,
             ITemplateService templateService,
-            UserManager<IdentityUser> userManager)
+            UserManager<IdentityUser> userManager,
+            IBlogRenderingService blogRenderingService,
+            ITitleChangeService titleChangeService)
             : base(db, userManager)
         {
             this.db = db;
             this.articleLogic = articleLogic;
             this.slugService = slugService;
-            this.redirectService = redirectService;
             this.templateService = templateService;
+            this.blogRenderingService = blogRenderingService;
+            this.titleChangeService = titleChangeService;
         }
 
         /// <summary>
@@ -81,8 +83,10 @@ namespace Sky.Editor.Controllers
         /// </summary>
         /// <returns>Index view containing a list of <see cref="BlogStreamViewModel"/>.</returns>
         [HttpGet("")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            // Ensure that the Blog stream template exists.
+            await templateService.EnsureDefaultTemplatesExistAsync();
             return View("Index");
         }
 
@@ -92,7 +96,7 @@ namespace Sky.Editor.Controllers
         /// <returns>Create view with default model.</returns>
         [HttpGet("create")]
         public IActionResult Create() =>
-            View("Create", new BlogStreamViewModel { SortOrder = 0 });
+            View("Create", new BlogStreamViewModel());
 
         /// <summary>
         /// Handles blog stream creation.
@@ -108,39 +112,15 @@ namespace Sky.Editor.Controllers
                 return View("Create", model);
             }
 
-            // Auto-generate key
-            model.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title ?? "blog");
-
-            if (await db.Blogs.Where(w => w.IsDefault == true).CountAsync() < 1)
-            {
-                model.IsDefault = true;
-            }
-
-            var exists = (await db.Blogs.Where(b => b.BlogKey == model.BlogKey).CountAsync()) > 0;
-            if (exists)
-            {
-                ModelState.AddModelError(nameof(model.BlogKey), "Blog key already exists.");
-                return View("Create", model);
-            }
-            
-            var blogKey = model.BlogKey;
-            var articleExists = (await db.Articles.Where(a => a.UrlPath.StartsWith(blogKey)).CountAsync()) > 0;
-
-            if (articleExists)
+            if (!await titleChangeService.ValidateTitle(model.Title, null))
             {
                 ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
                 return View("Create", model);
             }
 
-            if (model.IsDefault)
-            {
-                // Unset any previous default
-                var oldDefaults = await db.Blogs.Where(b => b.IsDefault).ToListAsync();
-                foreach (var d in oldDefaults)
-                {
-                    d.IsDefault = false;
-                }
-            }
+            // Create blog stream article.
+            model.BlogKey = slugService.Normalize(model.Title);
+            var article = await articleLogic.CreateArticle(model.Title, Guid.Parse(await GetUserId()), null, model.BlogKey, ArticleType.BlogStream);
 
             // Make the image URL relative path if it's absolute.
             if (string.IsNullOrWhiteSpace(model.HeroImage) == false && Uri.IsWellFormedUriString(model.HeroImage, UriKind.Absolute))
@@ -154,17 +134,12 @@ namespace Sky.Editor.Controllers
                 }
             }
 
-            db.Blogs.Add(new Blog
-            {
-                Id = Guid.NewGuid(),
-                BlogKey = model.BlogKey,
-                Title = model.Title,
-                Description = model.Description,
-                HeroImage = model.HeroImage ?? string.Empty,
-                IsDefault = model.IsDefault,
-                SortOrder = model.SortOrder
-            });
-            await db.SaveChangesAsync();
+            article.BannerImage = model.HeroImage ?? string.Empty;
+            article.Introduction = model.Description;
+            article.Content = string.Empty; // Blog stream articles have no body content.
+
+            await articleLogic.SaveArticle(article, Guid.Parse(await GetUserId()));
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -176,21 +151,19 @@ namespace Sky.Editor.Controllers
         [HttpGet("{id:guid}/edit")]
         public async Task<IActionResult> Edit(Guid id)
         {
-            var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
-            if (blog == null)
+            var article = await articleLogic.GetArticleById(id, Cms.Controllers.EnumControllerName.Edit, Guid.Parse(await GetUserId()));
+            if (article == null)
             {
                 return NotFound();
             }
 
             return View("Edit", new BlogStreamViewModel
             {
-                Id = blog.Id,
-                BlogKey = blog.BlogKey,
-                Title = blog.Title,
-                Description = blog.Description,
-                HeroImage = blog.HeroImage,
-                IsDefault = blog.IsDefault,
-                SortOrder = blog.SortOrder
+                Id = article.Id,
+                BlogKey = article.UrlPath,
+                Title = article.Title,
+                Description = article.Introduction,
+                HeroImage = article.BannerImage
             });
         }
 
@@ -214,67 +187,38 @@ namespace Sky.Editor.Controllers
                 return View("Edit", model);
             }
 
-            var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
-            if (blog == null)
+            if (!await titleChangeService.ValidateTitle(model.Title, null))
             {
-                return NotFound();
+                ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
+                return View("Create", model);
             }
 
-            // Do NOT silently regenerate BlogKey on title change (stability principle)
-            var duplicateKey = await db.Blogs.Where(b => b.Title.ToLower() == model.Title.ToLower() && b.Id != id).CountAsync();
-            if (duplicateKey > 0)
-            {
-                ModelState.AddModelError(nameof(model.BlogKey), "Another blog with this key exists.");
-                return View("Edit", model);
-            }
+            var article = await db.Articles.FirstOrDefaultAsync(f => f.Id == id);
 
-            // Detect if the title has changed and regenerate the BlogKey accordingly
-            if (blog.Title != model.Title)
-            {
-                // Check for conflicts with existing articles
-                var statusCodeDeleted = (int)StatusCodeEnum.Deleted;
-                var articleExists = await db.Articles.FirstOrDefaultAsync(a => a.UrlPath.StartsWith(model.BlogKey)
-                                            && a.StatusCode != statusCodeDeleted);
-                if (articleExists != null)
-                {
-                    ModelState.AddModelError(nameof(model.BlogKey), "Blog key conflicts with existing page on this website.");
-                    return View("Edit", model);
-                }
+            // Save old title in case of change.
+            var oldTitle = article.Title;
+            var oldUrlPath = article.UrlPath;
 
-                // Regenerate BlogKey
-                blog.Title = model.Title;
-                blog.BlogKey = await GenerateUniqueBlogKeyAsync(model.Title);
-            }
-
-            if (model.IsDefault)
-            {
-                // Check to see if there's another default already
-                var oldDefaults = await db.Blogs.Where(b => b.IsDefault == true && b.Id != blog.Id).ToListAsync();
-                foreach (var d in oldDefaults)
-                {
-                    d.IsDefault = false;
-                }
-
-                blog.IsDefault = true;
-            }
-            else
-            {
-                // This can be false if there is another blog set at the default.
-                var otherDefault = await db.Blogs.FirstOrDefaultAsync(b => b.IsDefault == true && b.Id != blog.Id);
-                if (otherDefault == null)
-                {
-                    ModelState.AddModelError(nameof(model.IsDefault), "There must be a default blog.");
-                    return View("Edit", model);
-                }
-            }
-
-            blog.Description = model.Description;
-            blog.HeroImage = model.HeroImage ?? string.Empty;
-            blog.IsDefault = model.IsDefault;
-            blog.SortOrder = model.SortOrder;
-            blog.UpdatedUtc = DateTimeOffset.UtcNow;
-
+            // Update changes.
+            article.Title = model.Title;
+            article.UrlPath = slugService.Normalize(model.Title);
+            article.Introduction = model.Description;
+            article.BannerImage = model.HeroImage;
+            article.Published = model.Published;
+            article.Content = await blogRenderingService.GenerateBlogStreamHtml(article);
             await db.SaveChangesAsync();
+
+            // Handle title change.
+            if (oldTitle != article.Title)
+            {
+                await titleChangeService.HandleTitleChangeAsync(article, oldUrlPath);
+            }
+
+            if (article.Published.HasValue)
+            {
+                await articleLogic.PublishArticle(article.Id, article.Published.Value);
+            }
+
             return View(model);
         }
 
@@ -286,22 +230,22 @@ namespace Sky.Editor.Controllers
         [HttpGet("{id:guid}/delete")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
-            if (blog == null)
+            var article = await db.Articles.FirstOrDefaultAsync(b => b.Id == id);
+            if (article == null)
             {
                 return NotFound();
             }
 
             return View("Delete", new BlogStreamViewModel
             {
-                Id = blog.Id,
-                BlogKey = blog.BlogKey,
-                Title = blog.Title
+                Id = article.Id,
+                BlogKey = article.BlogKey,
+                Title = article.Title
             });
         }
 
         /// <summary>
-        /// Performs deletion of a blog stream, optionally reassigning articles to a fallback.
+        /// Performs deletion of a blog stream.
         /// </summary>
         /// <param name="id">Blog identifier.</param>
         /// <param name="reassign">If true, articles are reassigned to default/fallback blog; if false, deletion blocked when articles exist.</param>
@@ -310,44 +254,24 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmDelete(Guid id, bool reassign = true)
         {
-            var blog = await db.Blogs.FirstOrDefaultAsync(b => b.Id == id);
-            if (blog == null)
+            var article = await db.Articles.FirstOrDefaultAsync(b => b.Id == id);
+            if (article == null)
             {
                 return NotFound();
             }
 
-            if (blog.IsDefault)
+            await articleLogic.DeleteArticle(article.ArticleNumber);
+
+            var entries = await db.Articles
+                .Where(c => c.BlogKey == article.BlogKey).Select(c => c.ArticleNumber).Distinct()
+                .ToListAsync();
+
+            foreach (var entryNumber in entries)
             {
-                ModelState.AddModelError(string.Empty, "Cannot delete the default blog. Make another default first.");
-                return View("Delete", new BlogStreamViewModel { Id = blog.Id, BlogKey = blog.BlogKey, Title = blog.Title });
+                // Delete each article associated with this blog.
+                await articleLogic.DeleteArticle(entryNumber);
             }
 
-            var hasArticles = (await db.Articles.CountAsync(a => a.BlogKey == blog.BlogKey)) > 0;
-            if (hasArticles && reassign)
-            {
-                var fallback = await db.Blogs.FirstOrDefaultAsync(b => b.IsDefault && b.Id != blog.Id)
-                               ?? await db.Blogs.FirstOrDefaultAsync(b => b.Id != blog.Id);
-
-                if (fallback == null)
-                {
-                    ModelState.AddModelError(string.Empty, "No fallback blog stream available for reassignment.");
-                    return View("Delete", new BlogStreamViewModel { Id = blog.Id, BlogKey = blog.BlogKey, Title = blog.Title });
-                }
-
-                var affected = await db.Articles.Where(a => a.BlogKey == blog.BlogKey).ToListAsync();
-                foreach (var a in affected)
-                {
-                    a.BlogKey = fallback.BlogKey;
-                }
-            }
-            else if (hasArticles && !reassign)
-            {
-                ModelState.AddModelError(string.Empty, "Blog contains articles. Reassign or delete them first.");
-                return View("Delete", new BlogStreamViewModel { Id = blog.Id, BlogKey = blog.BlogKey, Title = blog.Title });
-            }
-
-            db.Blogs.Remove(blog);
-            await db.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
@@ -364,7 +288,7 @@ namespace Sky.Editor.Controllers
                 return BadRequest();
             }
 
-            var blog = await db.Blogs.FirstOrDefaultAsync(b => b.BlogKey == blogKey);
+            var blog = await db.Articles.FirstOrDefaultAsync(b => b.BlogKey == blogKey);
             if (blog == null)
             {
                 return NotFound();
@@ -389,8 +313,8 @@ namespace Sky.Editor.Controllers
             {
                 BlogKey = blog.BlogKey,
                 BlogTitle = blog.Title,
-                BlogDescription = blog.Description,
-                HeroImage = blog.HeroImage,
+                BlogDescription = blog.Introduction,
+                HeroImage = blog.BannerImage,
                 Entries = entries.OrderByDescending(c => c.Published ?? c.Updated).ToList()
             };
             return View("Entries", vm);
@@ -400,14 +324,21 @@ namespace Sky.Editor.Controllers
         /// Displays create entry form for a given blog.
         /// </summary>
         /// <param name="blogKey">Blog key.</param>
+        /// <param name="title">Title of the blog entry.</param>
         /// <returns>Create entry view or 404 if blog not found.</returns>
-        [HttpGet("{blogKey}/entries/create")]
-        public async Task<IActionResult> CreateEntry(string blogKey)
+        [HttpGet("{blogKey}/entries/create/{title}")]
+        public async Task<IActionResult> CreateEntry(string blogKey, string title)
         {
-            var blogExists = (await db.Blogs.CountAsync(b => b.BlogKey == blogKey)) > 0;
-            if (!blogExists)
+            var blogStreamType = (int)ArticleType.BlogStream;
+            var blog = await db.Articles.FirstOrDefaultAsync(b => b.BlogKey == blogKey && b.ArticleType == blogStreamType);
+            if (blog == null)
             {
-                return NotFound();
+                return NotFound("Blog not found.");
+            }
+
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return BadRequest("Title is required.");
             }
 
             var html = await templateService.GetTemplateByKeyAsync("blog-post");
@@ -419,7 +350,7 @@ namespace Sky.Editor.Controllers
 
             var userId = Guid.Parse(await GetUserId());
 
-            var article = await articleLogic.CreateArticle("New Blog Entry", userId, null, blogKey);
+            var article = await articleLogic.CreateArticle(title, userId, null, blogKey);
 
             article.ArticleType = ArticleType.BlogPost;
             article.Content = html.Content;
@@ -474,28 +405,15 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditEntry(string blogKey, int articleNumber, BlogEntryEditViewModel model)
         {
-            if (model.ArticleNumber != articleNumber || model.BlogKey != blogKey)
-            {
-                return BadRequest();
-            }
-
             if (!ModelState.IsValid)
             {
                 return View("EditEntry", model);
             }
 
-            var article = await db.Articles
-                .Where(a => a.ArticleNumber == articleNumber)
-                .OrderByDescending(a => a.VersionNumber)
-                .FirstOrDefaultAsync();
-            if (article == null || article.BlogKey != blogKey)
-            {
-                return NotFound();
-            }
+            var userId = Guid.Parse(await GetUserId());
+            var blogStreamType = (int)ArticleType.BlogStream;
 
-            var userId = Guid.Parse(User?.Claims?.FirstOrDefault(c => c.Type.EndsWith("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value ?? Guid.Empty.ToString());
-
-            var articleVm = await articleLogic.GetArticleByArticleNumber(articleNumber, article.VersionNumber);
+            var articleVm = await articleLogic.GetArticleByArticleNumber(articleNumber, null);
             articleVm.Title = model.Title;
             articleVm.Introduction = model.Introduction;
             articleVm.Content = model.Content;
@@ -505,15 +423,20 @@ namespace Sky.Editor.Controllers
 
             if (model.PublishNow)
             {
-                if (article.Published == null)
+                if (articleVm.Published == null)
                 {
-                    await articleLogic.PublishArticle(article.Id, DateTimeOffset.UtcNow);
+                    await articleLogic.PublishArticle(articleVm.Id, DateTimeOffset.UtcNow);
                 }
                 else
                 {
-                    await articleLogic.PublishArticle(article.Id, article.Published);
+                    await articleLogic.PublishArticle(articleVm.Id, articleVm.Published);
                 }
             }
+
+            // Render the blog stream article
+            var blogStreamArticle = await db.Articles.FirstOrDefaultAsync(a => a.BlogKey == blogKey && a.ArticleType == blogStreamType);
+            blogStreamArticle.Content = await blogRenderingService.GenerateBlogStreamHtml(blogStreamArticle);
+
 
             return RedirectToAction(nameof(Entries), new { blogKey });
         }
@@ -557,42 +480,33 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmDeleteEntry(string blogKey, int articleNumber)
         {
-            var catalog = await db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == articleNumber);
-            if (catalog == null || catalog.BlogKey != blogKey)
-            {
-                return NotFound();
-            }
-
             await articleLogic.DeleteArticle(articleNumber);
+
             return RedirectToAction(nameof(Entries), new { blogKey });
         }
 
         /// <summary>
-        /// Anonymous preview page (simplified listing) for a specific blog, returning recent posts.
+        /// Anonymous preview page (simplified listing) for a specific blog stream, returning recent posts.
         /// </summary>
         /// <param name="blogKey">Blog key.</param>
         /// <returns>Preview view with recent posts; 404 if blog not found.</returns>
         [HttpGet("{blogKey}/preview")]
         [AllowAnonymous]
-        public async Task<IActionResult> GenericBlogPage(string blogKey)
+        public async Task<IActionResult> PreviewStream(string blogKey)
         {
-            var blog = await db.Blogs.FirstOrDefaultAsync(b => b.BlogKey == blogKey);
-            if (blog == null)
+            var article = await GetLatestStreamArticleAsync(blogKey);
+            if (article == null)
             {
                 return NotFound();
             }
 
-            var posts = await db.ArticleCatalog
-                .Where(c => c.BlogKey == blogKey)
-                .OrderByDescending(c => c.Published ?? c.Updated)
-                .Take(25)
-                .ToListAsync();
+            // update content just to be sure.
+            article.Content = await blogRenderingService.GenerateBlogStreamHtml(article);
+            await db.SaveChangesAsync();
 
-            ViewData["BlogTitle"] = blog.Title;
-            ViewData["BlogDescription"] = blog.Description;
-            ViewData["HeroImage"] = blog.HeroImage;
+            ViewData["articleId"] = article.Id;
 
-            return View("GenericBlog", posts);
+            return View("~/Views/Home/Preview.cshtml");
         }
 
         /// <summary>
@@ -602,21 +516,19 @@ namespace Sky.Editor.Controllers
         [HttpGet("GetBlogs")]
         public async Task<IActionResult> GetBlogs()
         {
-            var blogs = await db.Blogs
+            var articleType = (int)ArticleType.BlogStream;
+            var blogs = await db.Articles
+                .Where(b => b.ArticleType == articleType)
                 .Select(b => new BlogStreamViewModel
                 {
                     Id = b.Id,
                     BlogKey = b.BlogKey,
                     Title = b.Title,
-                    Description = b.Description,
-                    HeroImage = b.HeroImage,
-                    IsDefault = b.IsDefault,
-                    SortOrder = b.SortOrder
+                    Description = b.Introduction,
+                    HeroImage = b.BannerImage
                 })
                 .ToListAsync();
-            return Json(blogs
-                .OrderBy(b => b.SortOrder)
-                .ThenBy(b => b.BlogKey).ToList());
+            return Json(blogs.OrderBy(b => b.Title).ToList());
         }
 
 
@@ -633,15 +545,10 @@ namespace Sky.Editor.Controllers
                 return BadRequest();
             }
 
-            var blog = await db.Blogs.FirstOrDefaultAsync(b => b.BlogKey == blogKey);
+            var blog = await GetLatestStreamArticleAsync(blogKey);
             if (blog == null)
             {
                 return NotFound();
-            }
-
-            if (blog.IsDefault)
-            {
-                blogKey = "default";
             }
 
             var entries = await db.ArticleCatalog
@@ -662,39 +569,44 @@ namespace Sky.Editor.Controllers
             return Json(entries.OrderByDescending(c => c.Published ?? c.Updated).ToList());
         }
 
-        /// <summary>
-        /// Generates a unique blog key (slug) from a supplied title.
-        /// </summary>
-        /// <param name="title">Source title text.</param>
-        /// <returns>Unique route-safe slug (lowercase, max length 64) not currently in use.</returns>
-        private async Task<string> GenerateUniqueBlogKeyAsync(string title)
+        private async Task<Article> GetLatestStreamArticleAsync(string blogKey)
         {
-            // Reuse existing slug normalizer. Fall back if service returns empty.
-            var baseSlug = slugService.Normalize(title) ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(baseSlug))
-            {
-                baseSlug = "blog";
-            }
+            var deletedEnum = (int)StatusCodeEnum.Deleted;
+            var streamType = (int)ArticleType.BlogStream;
 
-            // Trim to max length (64) before uniqueness suffixing
-            const int max = 64;
-            if (baseSlug.Length > max)
-            {
-                baseSlug = baseSlug[..max];
-            }
+            var entity = await db.Articles
+                .Where(a => a.UrlPath == blogKey && a.StatusCode != deletedEnum && a.ArticleType == streamType)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
 
-            var candidate = baseSlug;
-            var i = 2;
-            while ((await db.Blogs.CountAsync(b => b.BlogKey == candidate)) > 0)
-            {
-                var suffix = "-" + i;
-                var cut = Math.Min(baseSlug.Length, max - suffix.Length);
-                candidate = baseSlug[..cut] + suffix;
-                i++;
-            }
-
-            return candidate;
+            return entity;
         }
 
+        private async Task UpdateBlogStreamArticle(Cosmos.Common.Data.Article article, BlogStreamViewModel model)
+        {
+            // Save old title in case of change.
+            var oldTitle = article.Title;
+            var oldUrlPath = article.UrlPath;
+
+            // Update changes.
+            article.Title = model.Title;
+            article.UrlPath = slugService.Normalize(model.Title);
+            article.Introduction = model.Description;
+            article.BannerImage = model.HeroImage;
+            article.Published = model.Published;
+            article.Content = await blogRenderingService.GenerateBlogStreamHtml(article);
+            await db.SaveChangesAsync();
+
+            // Handle title change.
+            if (oldTitle != article.Title)
+            {
+                await titleChangeService.HandleTitleChangeAsync(article, oldUrlPath);
+            }
+
+            if (article.Published.HasValue)
+            {
+                await articleLogic.PublishArticle(article.Id, article.Published.Value);
+            }
+        }
     }
 }

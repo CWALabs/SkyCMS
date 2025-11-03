@@ -42,7 +42,7 @@ namespace Sky.Editor.Models.Blogs
         /// Gets or sets the blog stream title.
         /// </summary>
         /// <remarks>Required with a maximum length of 128 characters.</remarks>
-        [Required]
+        [Required(AllowEmptyStrings = false)]
         [MaxLength(128)]
         [Display(Name = "Title")]
         public string Title { get; set; }
@@ -51,7 +51,7 @@ namespace Sky.Editor.Models.Blogs
         /// Gets or sets the blog stream description.
         /// </summary>
         /// <remarks>Required with a maximum length of 512 characters. Typically displayed on list and detail pages.</remarks>
-        [Required]
+        [Required(AllowEmptyStrings = false)]
         [MaxLength(512)]
         [Display(Name = "Description")]
         public string Description { get; set; }
@@ -61,19 +61,13 @@ namespace Sky.Editor.Models.Blogs
         /// </summary>
         /// <remarks>This property is optional; store a URL or application-relative path to an image.</remarks>
         [Display(Name = "Hero Image (URL / Path)")]
-        public string HeroImage { get; set; }  // no [Required]
+        public string HeroImage { get; set; }  // not [Required]
 
         /// <summary>
-        /// Gets or sets a value indicating whether this stream is the site's default blog.
+        /// Gets or sets the published date/time for the blog stream.
         /// </summary>
-        [Display(Name = "Default Stream")]
-        public bool IsDefault { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets the numeric sort order used when listing streams.
-        /// </summary>
-        [Display(Name = "Sort Order")]
-        public int SortOrder { get; set; }
+        [Display(Name = "Published")]
+        public DateTimeOffset? Published { get; set; } = null;
     }
 
     /// <summary>
