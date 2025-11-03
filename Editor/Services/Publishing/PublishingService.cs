@@ -28,7 +28,15 @@ namespace Sky.Editor.Services.Publishing
     using Sky.Editor.Services.BlogPublishing;
     using Sky.Editor.Services.CDN;
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Orchestrates publishing of articles and blog content.
+    /// </summary>
+    /// <remarks>
+    /// This service persists published page records, generates optional static HTML files,
+    /// updates the site table of contents, and coordinates CDN cache purges so new content
+    /// becomes visible immediately. Blog streams and blog posts receive special rendering
+    /// via the injected <see cref="IBlogRenderingService"/>.
+    /// </remarks>
     public class PublishingService : IPublishingService
     {
         private readonly ApplicationDbContext _db;
@@ -71,12 +79,20 @@ namespace Sky.Editor.Services.Publishing
             this.blogRenderingService = blogRenderingService;
         }
 
-        /// <summary>
-        /// Publishes a blog stream article based on the provided blog data and user ID.
-        /// </summary>
-        /// <param name="blog"></param>
-        /// <param name="userId"></param>
-        /// <returns></returns>
+    /// <summary>
+    /// Publishes (or updates) a blog stream page for the specified blog key and user.
+    /// </summary>
+    /// <param name="blog">The blog stream metadata and content input. The <see cref="Article.BlogKey"/> identifies the stream; the HTML is generated with <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/>.</param>
+    /// <param name="userId">The ID of the user performing the publish; stored on the resulting article for auditing and author attribution.</param>
+    /// <returns>A list of CDN purge results indicating cache invalidation status per provider after publishing.</returns>
+    /// <remarks>
+    /// If a blog stream article already exists for the given <see cref="Article.BlogKey"/>,
+    /// its metadata is updated and the <see cref="Article.VersionNumber"/> is incremented;
+    /// otherwise a new article record is created. In both cases, content is produced by
+    /// <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/> and the operation
+    /// delegates to <see cref="PublishAsync(Article)"/> to create the published page, write
+    /// optional static files, update the TOC, and purge the CDN.
+    /// </remarks>
         public async Task<List<CdnResult>> PublishAsync(Article blog, Guid userId)
         {
             var article = await _db.Articles
@@ -240,7 +256,7 @@ namespace Sky.Editor.Services.Publishing
         ///   <item><description>Triggers a full CDN cache purge if a CDN service is configured</description></item>
         /// </list>
         /// <para>
-        /// Unlike <see cref="PublishAsync"/>, this method performs a full CDN purge rather than selective path purging.
+    /// Unlike <see cref="PublishAsync(Article)"/>, this method performs a full CDN purge rather than selective path purging.
         /// Only processes pages if <see cref="IEditorSettings.StaticWebPages"/> is enabled.
         /// </para>
         /// </remarks>
@@ -332,8 +348,7 @@ namespace Sky.Editor.Services.Publishing
             });
         }
 
-
-        /// <summary>
+    /// <summary>
         /// Unpublishes earlier versions of an article to ensure only the latest published version is active.
         /// </summary>
         /// <param name="article">The article being published. Must have a valid <see cref="Article.ArticleNumber"/> and <see cref="Article.VersionNumber"/>.</param>
@@ -536,7 +551,6 @@ namespace Sky.Editor.Services.Publishing
         /// <see cref="CdnResult"/> collection to determine success/failure status for each provider.
         /// </para>
         /// </remarks>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="page"/> is null.</exception>
         private async Task<List<CdnResult>> PurgeCdnAsync(PublishedPage page)
         {
             var results = new List<CdnResult>();
@@ -563,6 +577,5 @@ namespace Sky.Editor.Services.Publishing
 
             return results;
         }
-
     }
 }

@@ -72,10 +72,14 @@ namespace Sky.Editor.Services.BlogRenderingService
 
             // Query for blog entries belonging to this blog stream.
             var blogKey = article.BlogKey;
+            var blogArticleNumber = article.ArticleNumber; // Exclude blog stream article from the list of blog entries.
             var publishedNow = DateTimeOffset.UtcNow;
-            var blogArticleType = (int)ArticleType.BlogPost;
             var entries = await dbContext.Articles
-                .Where(a => a.BlogKey == blogKey && a.ArticleType == blogArticleType && a.StatusCode != deletedStatus && a.StatusCode != redirectStatus && a.Published <= publishedNow)
+                .Where(a => a.BlogKey == blogKey
+                    && a.ArticleNumber != blogArticleNumber
+                    && a.Published <= publishedNow
+                    && a.StatusCode != deletedStatus
+                    && a.StatusCode != redirectStatus)
                 .ToListAsync();
 
             // Take top 10 most recent entries, and remove duplicates by taking the last version published.
@@ -115,8 +119,9 @@ namespace Sky.Editor.Services.BlogRenderingService
                 // If Introduction is empty, extract first paragraph from content.
                 if (string.IsNullOrEmpty(entry.Introduction))
                 {
+                    var content = await dbContext.Articles.Where(w => w.Id == entry.Id).Select(s => s.Content).FirstOrDefaultAsync();
                     var entryDoc = new HtmlAgilityPack.HtmlDocument();
-                    entryDoc.LoadHtml(entry.Content);
+                    entryDoc.LoadHtml(content);
                     var firstParagraph = entryDoc.DocumentNode.SelectSingleNode("//p");
                     introductionNode.InnerHtml = firstParagraph != null ? firstParagraph.InnerText : string.Empty;
                     articleNode.AppendChild(introductionNode);

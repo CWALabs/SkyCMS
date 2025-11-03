@@ -35,10 +35,15 @@
 
                     <div class="input-group mb-3">
                         <span class="input-group-text">Title:</span>
-                        <input asp-for="Title" class="form-control" id="Title" placeholder="e.g. Engineering Updates" />
+                        <input asp-for="Title" class="form-control" id="Title" placeholder="Short name (max 128 chars)" title="What is the name of this blog? Best to keep it short." />
                     </div>
                     <span asp-validation-for="Title" class="text-danger"></span>
                     <div id="titleFeedback" class="form-text mb-2" aria-live="polite"></div>
+                    <div class="input-group mb-3" style="max-width: 300px;">
+                        <span class="input-group-text">Publish:</span>
+                        <input asp-for="Published" type="datetime-local" value="@DateTimeOffset.UtcNow" class="form-control" />
+                    </div>
+                    <span asp-validation-for="Published" class="text-danger"></span>
 
                     <div class="input-group mb-3">
                         <span class="input-group-text">Description:</span>

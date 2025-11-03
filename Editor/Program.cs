@@ -111,6 +111,7 @@ else
 
 // Register transient services - common to both single-tenant and multi-tenant modes
 // Transient services are created each time they are requested.
+builder.Services.AddTransient<ITemplateService, TemplateService>();
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddTransient<IArticleHtmlService, ArticleHtmlService>();
@@ -123,9 +124,8 @@ builder.Services.AddTransient<IPublishingService, PublishingService>();
 builder.Services.AddTransient<IRedirectService, RedirectService>();
 builder.Services.AddTransient<IReservedPaths, ReservedPaths>();
 builder.Services.AddTransient<ISlugService, SlugService>();
-builder.Services.AddSingleton<ITemplateService, TemplateService>();
-builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IViewRenderService, ViewRenderService>();
+builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IBlogRenderingService, BlogRenderingService>();
 builder.Services.AddHttpContextAccessor();
 

@@ -7,6 +7,9 @@
 
 namespace Sky.Editor.Controllers
 {
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.AspNetCore.Authorization;
@@ -19,9 +22,6 @@ namespace Sky.Editor.Controllers
     using Sky.Editor.Services.Slugs;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Editor-facing controller for managing blog streams (multi-blog support) and their entries (blog posts).
@@ -137,6 +137,7 @@ namespace Sky.Editor.Controllers
             article.BannerImage = model.HeroImage ?? string.Empty;
             article.Introduction = model.Description;
             article.Content = string.Empty; // Blog stream articles have no body content.
+            article.Published = model.Published;
 
             await articleLogic.SaveArticle(article, Guid.Parse(await GetUserId()));
 
@@ -418,6 +419,7 @@ namespace Sky.Editor.Controllers
             articleVm.Introduction = model.Introduction;
             articleVm.Content = model.Content;
             articleVm.BannerImage = model.BannerImage;
+            articleVm.Published = model.Published;
 
             await articleLogic.SaveArticle(articleVm, userId);
 
@@ -551,8 +553,10 @@ namespace Sky.Editor.Controllers
                 return NotFound();
             }
 
+            // Get the entries that match the blog key with the exception of the blog stream article itself.
+            var blogStreamArticleNumber = blog.ArticleNumber;
             var entries = await db.ArticleCatalog
-                .Where(c => c.BlogKey == blogKey)
+                .Where(c => c.BlogKey == blogKey && c.ArticleNumber != blogStreamArticleNumber)
                 .Select(c => new BlogEntryListItem
                 {
                     BlogKey = c.BlogKey,

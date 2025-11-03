@@ -265,7 +265,7 @@ namespace Sky.Editor.Data.Logic
         /// <param name="blogKey">Optional blog key (default "default").</param>
         /// <param name="articleType">Optional article type (default "General").S</param>
         /// <returns>Article view model for editing.</returns>
-        public async Task<ArticleViewModel> CreateArticle(string title, Guid userId, Guid? templateId = null, string blogKey = "default", ArticleType articleType = ArticleType.General)
+        public async Task<ArticleViewModel> CreateArticle(string title, Guid userId, Guid? templateId = null, string blogKey = "", ArticleType articleType = ArticleType.General)
         {
             var isFirstArticle = (await DbContext.Articles.CountAsync()) == 0;
             var defaultTemplate = string.Empty;
