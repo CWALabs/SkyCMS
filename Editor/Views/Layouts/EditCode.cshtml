@@ -8,10 +8,6 @@
     var readOnly = (bool?)ViewData["ReadOnly"] ?? false;
 }
 
-<style>
-
-</style>
-
 <nav class="code-tabs navbar">
     <ul class="nav nav-tabs " id="nav-tab">
         @{
@@ -36,6 +32,8 @@
     <input type="hidden" asp-for="FooterHtmlContent" />
     <input type="hidden" asp-for="EditorType" />
 </form>
+
+<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
 
 <script>
     var editor;
@@ -109,7 +107,7 @@
                 $("#EditingField").val(fieldId);
                 var hiddenInput = $("#" + fieldId);
                 var code = hiddenInput.val();
-                emmetMonaco.emmetHTML(monaco);
+
                 editor = monaco.editor.create(document.getElementById('editspace'),
                     {
                         language: mode,

@@ -63,11 +63,6 @@
     },
     {
       "provider": "unpkg",
-      "library": "emmet-monaco-es@5.5.0",
-      "destination": "wwwroot/lib/emmet-monaco-es"
-    },
-    {
-      "provider": "unpkg",
       "library": "@microsoft/signalr@8.0.7",
       "destination": "wwwroot/lib/signalr/"
     },

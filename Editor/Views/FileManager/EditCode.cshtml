@@ -9,10 +9,6 @@
     var host = "https://" + this.Context.Request.Host.ToString();
 }
 
-<style>
-   
-</style>
-
 <nav class="code-tabs navbar">
     <ul class="nav nav-tabs " id="nav-tab">
         @{
@@ -41,6 +37,9 @@
     <input type="hidden" asp-for="EditorFields" />
     <input type="hidden" asp-for="EditorType" />
 </form>
+
+<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
+
 <script>
     var editor;
     var fieldId;
@@ -118,7 +117,7 @@
                 $("#EditingField").val(fieldId);
                 var hiddenInput = $("#" + fieldId);
                 var code = hiddenInput.val();
-                emmetMonaco.emmetHTML(monaco);
+
                 editor = monaco.editor.create(document.getElementById('editspace'),
                     {
                         language: mode,

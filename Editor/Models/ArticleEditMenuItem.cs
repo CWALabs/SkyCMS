@@ -34,6 +34,6 @@ namespace Sky.Cms.Models
         /// <summary>
         /// Gets or sets a value indicating whether can use Live editor.
         /// </summary>
-        public bool UsesHtmlEditor { get; set; }
+        public bool UsesHtmlEditor { get; set; } = false;
     }
 }

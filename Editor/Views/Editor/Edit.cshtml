@@ -19,9 +19,6 @@
     <input type="hidden" asp-for="BannerImage" />
 </form>
 
-<script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
-<script src="https://unpkg.com/emmet-monaco-es/dist/emmet-monaco.min.js"></script>
-
 <iframe id="ccmsContFrame" src="/Editor/CcmsContent/@Model.ArticleNumber" style="position: absolute; top: 52px; width: 100%; margin:0px; padding:0px;z-index:1;" onload="setupFrame()" frameBorder="0" scrolling="yes"></iframe>
 
 <div class="toast-container position-fixed top-0 end-0 p-3">
@@ -35,27 +32,6 @@
 
 @if (Model != null)
 {
-    <div class="modal" id="modalVsCode" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content bg-dark text-white">
-                <div class="modal-body" style="height: 80vh;position:relative;">
-                    <div class="navbar">
-                        <div class="container-fluid">
-                            <div class="navbar-brand text-light">
-                                <img src="/images/vscodeicon.svg" alt="Logo" height="20" class="d-inline-block align-text-top">
-                                Code Editor
-                            </div>
-                            <div class="d-flex">
-                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button id="btnApply" type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Apply</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="editspace" class="m-editor-container" style="height: 80vh;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
     <script>
 
         function setupPreviewFrame() {
@@ -127,7 +103,6 @@
     var enableAutoSave = true;
 
     // Modals
-    const vsCodeModal = new bootstrap.Modal(document.getElementById('modalVsCode'));
     const linksToast = new bootstrap.Toast(document.getElementById('linksToast'));
 
     $("#frmSave").submit(function (e) {
@@ -441,37 +416,6 @@
     });
 
     window.addEventListener('resize', function (event) { setupFrame(); }, true);
-
-    function openVsCodeBlockEditor(ed) {
-        ckeditor = ed;
-
-        $("#editspace").html("");
-
-        if (typeof ckeditor === "undefined" || ckeditor === null) {
-            alert("Error: Could not open live editor.");
-            return;
-        }
-
-        vsCodeModal.show();
-
-
-        // Monaco AMD Editor  - https://microsoft.github.io/monaco-editor/
-        require.config({ paths: { 'vs': '/lib/monaco-editor/min/vs' } });
-
-        //require.config({ paths: { vs: '/lib/node_modules/monaco-editor/dist' } }); // Emmet Abbr.
-        require(['vs/editor/editor.main'],
-            function () {
-
-                var code = ckeditor.getData();
-                emmetMonaco.emmetHTML(monaco);
-                editor = monaco.editor.create(document.getElementById('editspace'),
-                    {
-                        language: "html",
-                        theme: "vs-dark",
-                        value: code
-                    });
-            });
-    }
 
     function openPickPageModal(ed) {
         ckeditor = ed;

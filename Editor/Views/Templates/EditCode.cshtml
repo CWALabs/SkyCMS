@@ -29,6 +29,8 @@
     <input type="hidden" asp-for="Content" />
 </form>
 
+<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
+
 <script>
     var editor;
     var fieldId;
@@ -102,7 +104,7 @@
                 $("#EditingField").val(fieldId);
                 var hiddenInput = $("#" + fieldId);
                 var code = hiddenInput.val();
-                emmetMonaco.emmetHTML(monaco);
+
                 editor = monaco.editor.create(document.getElementById('editspace'),
                     {
                         language: mode,

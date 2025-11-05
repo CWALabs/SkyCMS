@@ -116,6 +116,7 @@ namespace Sky.Cms.Controllers
             this.htmlService = htmlService;
             this.reservedPaths = reservedPaths;
             this.titleChangeService = titleChangeService;
+            this.templateService = templateService;
 
             var htmlUtilities = new HtmlUtilities();
 

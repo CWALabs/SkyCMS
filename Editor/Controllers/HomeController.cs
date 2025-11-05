@@ -134,13 +134,14 @@ namespace Sky.Cms.Controllers
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task<IActionResult> EditList(string target)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var article = await articleLogic.GetArticleByUrl(target);
 
+            if (article == null)
+            {
+                return NotFound(ModelState);
+            }
+
+           
             var data = await dbContext.Articles.OrderByDescending(o => o.VersionNumber)
                 .Where(a => a.ArticleNumber == article.ArticleNumber).Select(s => new ArticleEditMenuItem
                 {
@@ -221,7 +222,14 @@ namespace Sky.Cms.Controllers
             // If yes, do NOT include headers that allow caching. 
             Response.Headers[HeaderNames.CacheControl] = "no-store";
 
-            return View();
+            // If no preview type, load the edit list.
+            if (string.IsNullOrEmpty(previewType))
+            {
+                ViewData["LoadEditList"] = true; // Signal to load the edit list in the main menu.
+                return View();
+            }
+
+            return View("~/Views/Home/Preview.cshtml");
         }
 
         /// <summary>

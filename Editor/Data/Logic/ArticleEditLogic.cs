@@ -173,7 +173,7 @@ namespace Sky.Editor.Data.Logic
         /// <returns>Article view model or null.</returns>
         public async Task<ArticleViewModel> GetArticleByUrl(string urlPath, EnumControllerName controllerName, Guid userId)
         {
-            if (string.IsNullOrWhiteSpace(urlPath))
+            if (string.IsNullOrWhiteSpace(urlPath) || urlPath.Equals("/"))
             {
                 urlPath = "root";
             }

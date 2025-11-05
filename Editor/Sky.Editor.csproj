@@ -51,6 +51,8 @@
 	  <Content Remove="wwwroot\images\samples\20251015_OHR.AmethystLaccaria_EN-US0640413961_UHD_bing.jpg" />
 	  <Content Remove="wwwroot\images\skycms\SkyCMSLogoDarkBackground.jpeg" />
 	  <Content Remove="wwwroot\images\skycms\SkyCMSLogoLightBackground.jpeg" />
+	  <Content Remove="wwwroot\js\editors\editor-grapesjs.js" />
+	  <Content Remove="wwwroot\js\editors\editor-monaco.js" />
 	  <Content Remove="wwwroot\lib\cosmos\ckeditor\ckeditor-widget.301.js" />
 	</ItemGroup>
 
