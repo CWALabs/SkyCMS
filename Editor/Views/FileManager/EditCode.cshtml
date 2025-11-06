@@ -4,26 +4,10 @@
 @{
     Layout = "_LayoutEditor";
     ViewData["Title"] = Model.EditorTitle;
-    var fields = Model.EditorFields.ToArray();
-    var aclass = "active";
-    var host = "https://" + this.Context.Request.Host.ToString();
 }
 
-<nav class="code-tabs navbar">
-    <ul class="nav nav-tabs " id="nav-tab">
-        @{
-            foreach (var field in fields)
-            {
-                    <li class="nav-item">
-                        <a class="code-tabs nav-link @aclass" title="@field.ToolTip" data-bs-toggle="tooltip" data-bs-placement="bottom" data-ccms-fieldname="@field.FieldName" aria-current="page">@field.FieldName</a>
-                    </li>
-                aclass = "";
-            }
-        }
-    </ul>
-</nav>
-
-<div id="editspace" class="m-editor-container"></div>
+<!-- Use shared partial for common editor UI -->
+<partial name="_CodeEditorShared" model="Model" />
 
 <form id="frmSave" asp-action="EditCode" method="post">
     @Html.AntiForgeryToken()
@@ -32,231 +16,74 @@
     <input type="hidden" asp-for="Content" />
     <input type="hidden" asp-for="Path" />
     <input type="hidden" asp-for="EditorMode" />
-    <input type="hidden" asp-for="EditingField" />
     <input type="hidden" asp-for="EditorTitle" />
     <input type="hidden" asp-for="EditorFields" />
     <input type="hidden" asp-for="EditorType" />
 </form>
 
-<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
+<script src="~/js/editors/monaco-editor-common.js"></script>
 
 <script>
-    var editor;
-    var fieldId;
-    var ccmsEditorIsLocked = false;
-
-    $("#frmSave").submit(function (e) {
-        e.preventDefault();
-        saveChanges(null, null);
+    // Initialize code editor with FileManager-specific configuration
+    const editorApi = initializeCodeEditor({
+        initialField: "@Model.EditingField",
+        autoSaveDelay: 1500,
+        readOnly: false,
+        blockUIOnLoad: true,
+        onBeforeInit: function() {
+            // Disable title and publishing fields for file manager
+            $("#tbTitle").prop("disabled", true);
+            $("#tbPublished").prop("disabled", true);
+        },
+        onAfterInit: function() {
+            $.unblockUI();
+            checkDisplayLiveEditorButton('Content');
+        }
     });
 
-    // Example: var editFields = '[{"FieldId":"HeaderJavaScript","FieldName":"Header JavaScript","EditorMode":0},{"FieldId":"Content","FieldName":"Html Content","EditorMode":1},{"FieldId":"FooterJavaScript","FieldName":"Footer JavaScript","EditorMode":0}]';
-    var editFields = @(Html.Raw(JsonConvert.SerializeObject(Model.EditorFields)));
-
-    function saveExistingLoadNewEditor(id) {
-        if (editor !== null && typeof editor !== "undefined") {
-            $("#" + fieldId).val(editor.getValue());
-        }
-        createAndLoadEditor(id);
-    }
-
-    //
-    // Creates and loads a Monaco Editor.
-    //
-    function createAndLoadEditor(id) {
-        if (editor !== null && typeof editor !== "undefined") {
-            if (editor.getModel()) {
-                editor.getModel().dispose();
-            }
-            $("#msgBox").html("Loading...");
-            editor.dispose();
-            editor = null;
+    // Register FileManager-specific save handler
+    editorApi.registerSaveHandler(function(myModal, next) {
+        if (!validateEditorPermissions() || window.saveInProgress === true) {
+            return;
         }
 
-        fieldId = null;
-
-        $("#EditingField").val(null);
-
-        // Disable title and publishing fields
-        $("#tbTitle").prop("disabled", true);
-        $("#tbPublished").prop("disabled", true);
-
-        // Monaco AMD Editor  - https://microsoft.github.io/monaco-editor/
-        require.config({ paths: { 'vs': window.location.origin + '/lib/monaco-editor/min/vs' } });
-
-        //require.config({ paths: { vs: '/lib/node_modules/monaco-editor/dist' } }); // Emmet Abbr.
-        require(['vs/editor/editor.main'],
-            function () {
-                fieldId = id;
-                var fieldInfo = editFields.find(o => o.FieldName === id);
-                fieldId = fieldInfo.FieldId;
-
-                var mode = null;
-
-                switch (fieldInfo.EditorMode) {
-                    case 0:
-                        mode = "javascript"
-                        break;
-                    case 1:
-                        mode = "html"
-                        break;
-                    case 2:
-                        mode = "css";
-                        break;
-                    case 3:
-                        mode = "xml";
-                        break;
-                    case 4:
-                        mode = "json";
-                        break;
-                    default:
-                        mode = "html"
-                        break;
-                }
-
-                $("#EditingField").val(fieldId);
-                var hiddenInput = $("#" + fieldId);
-                var code = hiddenInput.val();
-
-                editor = monaco.editor.create(document.getElementById('editspace'),
-                    {
-                        language: mode,
-                        theme: "vs-dark",
-                        value: code
-                    });
-
-                $("#msgBox").html("");
-
-                // Close loading spiner and display saved status
-                $("#spinLoading").hide();
-                $("#btnSavingStatus").show();
-            });
-    }
-
-    // Save the changes for this editor
-    function saveChanges(myModal, next) {
-
+        window.saveInProgress = true;
         saving();
-
-        if (typeof (myModel) !== "undefined" && myModel !== null) {
-            myModal.hide();
-        }
-        // Saving publish date with time zone information
         savePublishDateTime();
 
-        // Save title
+        if (typeof myModal !== "undefined" && myModal !== null) {
+            myModal.hide();
+        }
+        
         $("#Title").val($("#tbTitle").val());
 
+        // Get form data
         var form = $('#frmSave');
-
-        if (editor) {
-            $("#" + fieldId).val(encryptData(editor.getValue()));
+        
+        if (window.editor && window.fieldId) {
+            $("#" + window.fieldId).val(encryptData(window.editor.getValue()));
         }
 
-        $.post("@Url.Action("EditCode")",
-            form.serialize(),
-            function (response) {
-
-                doneSaving();
-
-                if (response.IsValid) {
-                    if (typeof (next) !== "undefined" && next !== null) {
+        $.post("@Url.Action("EditCode")", form.serialize(), function(response) {
+            handleSaveResponse(response,
+                function() {
+                    // Success callback
+                    if (typeof next !== "undefined" && next !== null) {
                         next();
                     }
-                    toastMsg("Successfully saved.");
-                } else {
-                    var errorMsg = "<h5>Error(s) detected while saving:</h5>";
-
-                    // Invalid response.
-                    $.each(response.Errors,
-                        function (index, error) {
-                            errorMsg = "<p>" + error.Key + "</p><ul>";
-                            $.each(error.Errors,
-                                function (index, innerError) {
-                                    errorMsg = errorMsg + "<li>" + innerError.ErrorMessage + "</li>";
-                                });
-                            errorMsg = errorMsg + "</ul>";
-                        });
-                    $("#divErrorLog").html(errorMsg);
-                    var errorModal = new bootstrap.Modal(document.getElementById('modalSavingError'));
-                    errorModal.show();
                 }
-            }
-        );
-    }
+            );
+        }).fail(handleSaveFailure);
+    });
 
-    function btnSelectField(e) {
-        fieldName = e.target.text();
-        saveExistingLoadNewEditor(e.id);
-    }
-
-    function doNotSave() {
-        modalCheckSaveFirst.hide();
-        next();
-    }
-
-    $(document).ready(function () {
-        
-        $("body").addClass("cwps-editor-container");
-
-        var fieldId = "@Model.EditingField";
-        if (fieldId !== "") {
-            var fieldInfo = editFields.find(o => o.FieldId === fieldId);
-            createAndLoadEditor(fieldInfo.FieldName);
-            // Refresh locks for everyone including self.
-            setTimeout(function () {
-                //ccmsSendSignal("NotifyRoomOfLock");
-            }, 2000);
-        }
-
-        $('#tbPublished').daterangepicker({
-            timePicker: true,
-            singleDatePicker: true,
-            showDropdowns: true,
-            locale: {
-                format: 'MM/DD/YYYY hh:mm A'
-            }
-        });
-
-        $("[data-ccms-fieldname]").click(function (event) {
-            var name = $(event.target).attr("data-ccms-fieldname");
-            $("[data-ccms-fieldname]").removeClass("active");
-            saveExistingLoadNewEditor(name);
-            $(event.target).addClass("active");
-        });
-
+    $(document).ready(function() {
+        // FileManager-specific initialization
         $("#btnSaveAsDraft").hide();
-
+        
+        // Setup common UI elements
+        setupCommonEditorUI();
     });
 
-    $(window).bind('keydown', function (event) {
-        if (event.ctrlKey || event.metaKey) {
-            switch (String.fromCharCode(event.which).toLowerCase()) {
-                case 's':
-                    event.preventDefault();
-                    $("#frmSave").submit();
-                    break;
-            }
-        }
-    });
-
-    var timeout;
-
-    $(window).bind('keyup', function (event) {
-       // Clear the timeout if it has already been set.
-        // This will prevent the previous task from executing
-        // if it has been less than <MILLISECONDS>
-        clearTimeout(timeout);
-
-        // Make a new timeout set to go off in 1000ms (1 second)
-        timeout = setTimeout(function () {
-            if (getAutoSave()) {
-                $("#frmSave").submit();
-            }
-        }, 1500);
-    });
-
+    // Setup cleanup
+    setupEditorCleanup();
 </script>
-
-<script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
-<script src="/lib/emmet-monaco-es/dist/emmet-monaco.min.js"></script>

@@ -3,26 +3,11 @@
 @{
     Layout = "_LayoutEditor";
     ViewData["Title"] = Model.EditorTitle;
-    var fields = Model.EditorFields.ToArray();
-    var aclass = "active";
     var readOnly = (bool?)ViewData["ReadOnly"] ?? false;
 }
 
-<nav class="code-tabs navbar">
-    <ul class="nav nav-tabs " id="nav-tab">
-        @{
-            foreach (var field in fields)
-            {
-                    <li class="nav-item">
-                        <a class="code-tabs nav-link @aclass" title="@field.ToolTip" data-bs-toggle="tooltip" data-bs-placement="bottom" data-ccms-fieldname="@field.FieldName" aria-current="page">@field.FieldName</a>
-                    </li>
-                aclass = "";
-            }
-        }
-    </ul>
-</nav>
-
-<div id="editspace" class="m-editor-container"></div>
+<!-- Use shared partial for common editor UI -->
+<partial name="_CodeEditorShared" model="Model" />
 
 <form id="frmSave" asp-action="EditCode">
     <input type="hidden" asp-for="Id"/>
@@ -33,338 +18,63 @@
     <input type="hidden" asp-for="EditorType" />
 </form>
 
-<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
+<script src="~/js/editors/monaco-editor-common.js"></script>
 
 <script>
-    var editor;
-    var fieldId;
-    var ccmsEditorIsLocked = false;
+    // View-specific constants
     const readOnly = @readOnly.ToString().ToLower();
 
-    $("#frmSave").submit(function (e) {
-        e.preventDefault();
-        saveChanges(null, null);
+    // Initialize code editor with Layouts-specific configuration
+    const editorApi = initializeCodeEditor({
+        initialField: "@Model.EditingField",
+        autoSaveDelay: 1500,
+        readOnly: readOnly
     });
 
-    // Example: var editFields = '[{"FieldId":"HeaderJavaScript","FieldName":"Header JavaScript","EditorMode":0},{"FieldId":"Content","FieldName":"Html Content","EditorMode":1},{"FieldId":"FooterJavaScript","FieldName":"Footer JavaScript","EditorMode":0}]';
-    var editFields = @(Html.Raw(JsonConvert.SerializeObject(Model.EditorFields)));
-
-    function saveExistingLoadNewEditor(id) {
-        if (editor !== null && typeof editor !== "undefined") {
-            $("#" + fieldId).val(editor.getValue());
-        }
-        createAndLoadEditor(id);
-    }
-
-    function closeEditor() {
-        window.location.href = "@Url.Action("Index", "Layouts")";
-    }
-
-    //
-    // Creates and loads a Monaco Editor.
-    //
-    function createAndLoadEditor(id) {
-        if (editor !== null && typeof editor !== "undefined") {
-            if (editor.getModel()) {
-                editor.getModel().dispose();
-            }
-            $("#msgBox").html("Loading...");
-            editor.dispose();
-            editor = null;
-        }
-
-        fieldId = null;
-
-        $("#EditingField").val(null);
-
-        // Monaco AMD Editor  - https://microsoft.github.io/monaco-editor/
-        require.config({ paths: { 'vs': window.location.origin + '/lib/monaco-editor/min/vs' } });
-
-        //require.config({ paths: { vs: '/lib/node_modules/monaco-editor/dist' } }); // Emmet Abbr.
-        require(['vs/editor/editor.main'],
-            function () {
-                fieldId = id;
-                var fieldInfo = editFields.find(o => o.FieldName === id);
-                fieldId = fieldInfo.FieldId;
-
-                var mode = null;
-
-                switch (fieldInfo.EditorMode) {
-                    case 0:
-                        mode = "javascript"
-                        break;
-                    case 1:
-                        mode = "html"
-                        break;
-                    case 2:
-                        mode = "css";
-                        break;
-                    default:
-                        mode = "html"
-                        break;
-                }
-
-                $("#EditingField").val(fieldId);
-                var hiddenInput = $("#" + fieldId);
-                var code = hiddenInput.val();
-
-                editor = monaco.editor.create(document.getElementById('editspace'),
-                    {
-                        language: mode,
-                        theme: "vs-dark",
-                        value: code
-                    });
-
-                $("#msgBox").html("");
-
-                // Close loading spiner and display saved status
-                $("#spinLoading").hide();
-                $("#btnSavingStatus").show();
-            });
-    }
-
-    // Save the changes for this editor
-    function saveChanges(myModal) {
-
+    // Register Layouts-specific save handler
+    editorApi.registerSaveHandler(function(myModal) {
         if (readOnly) {
             return;
         }
 
+        if (window.saveInProgress === true) {
+            return;
+        }
+
+        window.saveInProgress = true;
         saving();
 
-        if (typeof (myModel) !== "undefined" && myModel !== null) {
+        if (typeof myModal !== "undefined" && myModal !== null) {
             myModal.hide();
         }
-        // Saving publish date with time zone information
+        
         savePublishDateTime();
-
-        // Save title
         $("#Title").val($("#tbTitle").val());
 
-        if (editor) {
-            $("#" + fieldId).val(editor.getValue());
-        }
+        // Prepare model with encrypted data
+        let model = prepareEncryptedModel('#frmSave', 
+            ['Head', 'HtmlHeader', 'FooterHtmlContent']);
 
-        let model = {
-            Id: $("#Id").val(),
-            EditingField: $("#EditingField").val(),
-            Head: encryptData($("#Head").val()),
-            HtmlHeader: encryptData($("#HtmlHeader").val()),
-            FooterHtmlContent: encryptData($("#FooterHtmlContent").val()),
-            EditorType: $("#EditorType").val()
-        }
+        $.post("/Layouts/EditCode", model, function(response) {
+            handleSaveResponse(response);
+        }).fail(handleSaveFailure);
+    });
 
-        $.post("/Layouts/EditCode",
-            model,
-            function (response) {
-
-                doneSaving();
-
-                if (response.IsValid) {
-                    if (next !== null && typeof next  === 'function') {
-                        next();
-                        next = null;
-                    }
-                    toastMsg("Successfully saved.");
-                } else {
-                    var errorMsg = "<h5>Error(s) detected while saving:</h5>";
-
-                    // Invalid response.
-                    $.each(response.Errors,
-                        function (index, error) {
-                            errorMsg = "<p>" + error.Key + "</p><ul>";
-                            $.each(error.Errors,
-                                function (index, innerError) {
-                                    errorMsg = errorMsg + "<li>" + innerError.ErrorMessage + "</li>";
-                                });
-                            errorMsg = errorMsg + "</ul>";
-                        });
-                    $("#divErrorLog").html(errorMsg);
-                    var errorModal = new bootstrap.Modal(document.getElementById('modalSavingError'));
-                    errorModal.show();
-                }
-            }
-        );
-    }
-
-    function btnSelectField(e) {
-        fieldName = e.target.text();
-        saveExistingLoadNewEditor(e.id);
-    }
-
-    $(document).ready(function () {
-        
-        $("body").addClass("cwps-editor-container");
-
+    $(document).ready(function() {
+        // Layouts-specific initialization
         $("#liInsert").show();
-
-        var fieldId = "@Model.EditingField";
-        if (fieldId !== "") {
-            var fieldInfo = editFields.find(o => o.FieldId === fieldId);
-            createAndLoadEditor(fieldInfo.FieldName);
-            // Refresh locks for everyone including self.
-            setTimeout(function () {
-                //ccmsSendSignal("NotifyRoomOfLock");
-            }, 2000);
-        }
-
-        $("tblTitle").val("@Model.EditorTitle");
-
-        $("[data-ccms-fieldname]").click(function (event) {
-            var name = $(event.target).attr("data-ccms-fieldname");
-            $("[data-ccms-fieldname]").removeClass("active");
-            saveExistingLoadNewEditor(name);
-            $(event.target).addClass("active");
-        });
-
+        $("#tbTitle").val("@Model.EditorTitle");
         $("#btnSaveAsDraft").hide();
 
-        $("#btnSaveAsDraft").hide();
+        // Setup common UI elements
+        setupCommonEditorUI();
 
-        $("#btnOpenLink").click(function (e) {
-            if (openPickPageModal) {
-                openPickPageModal();
-            }
-            else {
-                alert("Could not find openPickPageModal().");
-            }
-        });
-
-        $("#btnOpenInsertFileLink").click(function (e) {
-            if (openInsertFileLinkModel) {
-                openInsertFileLinkModel();
-            }
-            else {
-                alert("Could not find openInsertFileLinkModel().");
-            }
-        });
-
-        $("#btnOpenInsertImage").click(function (e) {
-            if (openInsertImageModel) {
-                openInsertImageModel();
-            }
-            else {
-                alert("Could not find openInsertImageModel().");
-            }
-        });
-
-        // Hide the navigation bar if in read-only mode.
+        // Hide the navigation bar if in read-only mode
         if (readOnly) {
             $("#navbarSupportedContent").hide();
         }
     });
 
-    $(window).bind('keydown', function (event) {
-        if (readOnly) {
-            return;
-        }
-
-        if (event.ctrlKey || event.metaKey) {
-            switch (String.fromCharCode(event.which).toLowerCase()) {
-                case 's':
-                    event.preventDefault();
-                    $("#frmSave").submit();
-                    break;
-            }
-        }
-    });
-
-    var timeout;
-
-    $(window).bind('keyup', function (event) {
-
-        if (readOnly) {
-            return;
-        }
-
-        // Clear the timeout if it has already been set.
-        // This will prevent the previous task from executing
-        // if it has been less than <MILLISECONDS>
-        clearTimeout(timeout);
-
-        // Make a new timeout set to go off in 1000ms (1 second)
-        timeout = setTimeout(function () {
-            if (getAutoSave()) {
-                $("#frmSave").submit();
-            }
-        }, 1500);
-    });
-
-
-    function openInsertFileLinkModel() {
-
-        if (typeof editor === "undefined" || editor === null) {
-            alert("Error: Could not open code editor.");
-            return;
-        }
-
-        openSelectFileModal("file");
-
-    }
-
-    function openInsertImageModel() {
-
-        if (typeof editor === "undefined" || editor === null) {
-            alert("Error: Could not open code editor.");
-            return;
-        }
-
-        openSelectFileModal("image");
-    }
-
-    function openPickPageModal() {
-
-        if (typeof editor === "undefined" || editor === null) {
-            alert("Error: Could not open code editor.");
-            return;
-        }
-
-        $("#combobox").val("");
-
-        pickPageModal.show();
-    }
-
-    function insertPageLink() {
-
-        const inputLinkText = $("#inputLinkText").val();
-
-        if (typeof (inputLinkText) === "undefined" || inputLinkText === null || inputLinkText === "") {
-            $("#inputLinkTextError").show();
-            return false;
-        }
-
-        pickPageModal.hide();
-
-        const link = "<a href='/" + selectedAnchorData.url + "'>" + inputLinkText + "</a>";
-
-        // insert text here
-        editor.trigger('keyboard', 'type', { text: link });
-    }
-
-    function insertFileLink(path) {
-
-        clearFileMgrPaths();
-
-        const url = fileBaseUrl + "/" + path;
-
-        const link = "<a href='" + url + "'>" + path + "</a>";
-
-        // insert text here
-        editor.trigger('keyboard', 'type', { text: link });
-    }
-
-    function insertImage(path) {
-
-        clearFileMgrPaths();
-
-        const url = fileBaseUrl + "/" + path;
-
-        const image = "<img src='" + url + "' />";
-
-        // insert text here
-        editor.trigger('keyboard', 'type', { text: image });
-    }
+    // Setup cleanup
+    setupEditorCleanup();
 </script>
-
-<script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
-<script src="/lib/emmet-monaco-es/dist/emmet-monaco.min.js"></script>

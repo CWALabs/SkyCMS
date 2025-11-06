@@ -69,6 +69,7 @@ namespace Sky.Editor.Services.Templates
                     dbContext.Templates.Add(dbTemplate);
                 }
             }
+
             await dbContext.SaveChangesAsync();
         }
 

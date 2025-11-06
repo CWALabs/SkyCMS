@@ -1,9 +1,5 @@
-@using Cosmos.Cms.Common.Services.Configurations;
-@using Sky.Cms.Services
 @using Sky.Editor.Data.Logic
-@using Microsoft.Extensions.Options;
 @inject IEditorSettings options
-@model List<ArticleListItem>
 @{
     ViewData["Title"] = "Web Page Inventory";
 
@@ -62,164 +58,6 @@
         <div class="row bg-dark">
             <div class="col-md-12">
                 <div id="pagelist-table" class="table-dark"></div>
-                <script>
-
-                    const publisherUrl = "@options.PublisherUrl.TrimEnd('/')";
-                    const tblHeight = window.innerHeight - 200;
-                    let pageSize = Math.round(tblHeight / 50) + 1;
-
-                    function dateTime(cell, formatterParams, onRendered){
-                        //cell - the cell component
-                        //formatterParams - parameters set for the column
-                        //onRendered - function to call when the formatter has been rendered
-                        return getLocalTime(cell.getValue());
-                    }
-
-                    function dateFilterFunction(headerValue, rowValue, rowData, filterParams){
-                        if (rowValue === null || rowValue === "") {
-                            return false;
-                        }
-                        return headerValue === rowValue.split("T")[0]; //must return a boolean, true if it passes the filter.
-                    }
-
-                    async function sendToTrash(articleNumber) {
-                        const result = await fetch("@Url.Action("TrashArticle", "Editor")/" + articleNumber);
-                        if (result.ok) {
-                            pageTable.setData();
-                        }
-                    }
-
-                    function openArticleVersions(e, cell) {
-                        const data = cell.getRow().getData();
-                        window.location.href = "@Url.Action("Versions")/" + data.ArticleNumber;
-                    }
-
-                    function unpublish(articleNumber) {
-                        const data = cell.getRow().getData();
-                        $.get("@Url.Action("UnpublishPage", "Editor")/" + articleNumber, function (data) {
-                            pageTable.setData();
-                        });
-                    }
-
-                    const trashBtn = function(cell, formatterParams){
-                        data = cell.getRow().getData();
-                        if (data.IsDefault === true){
-                            return "";
-                        }
-                        return "<button type='button' title='Send page to trash' onclick='sendToTrash(" + data.ArticleNumber + ", \"" + data.Title + "\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-trash'></i></button>";
-                    };
-
-                    const menuBar = function(cell, formatterParams){
-                        data = cell.getRow().getData();
-                        let html = "<div class='btn-group btn-group-sm' role='group' aria-label='Page actions.'>";
-                        html += html += "<a href='/Editor/Versions/" + data.ArticleNumber + "' title='Click to edit page.' class='btn btn-sm btn-success'><i class='fa-solid fa-pen-to-square'></i></a>";
-                        let url = data.UrlPath;
-                        if (url === "root") {
-                            url = "";
-                        }
-
-                        if (data.LastPublished !== null && data.LastPublished !== ""){
-                            html += "<a target='_blank' href='" + publisherUrl + "/" + url + "' title='Open page on website.'  class='btn btn-sm btn-secondary'><i class='fa-solid fa-arrow-up-right-from-square'></i></a>";
-                        }
-                        else
-                        {
-                            html += "<a title='Cannot open page on website until it is published.' onclick='alert(\"Cannot open page on website until it is published.\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-arrow-up-right-from-square'></i></a>";
-                        }
-
-                        if (data.IsDefault === true){
-                            html += "<div title='Current home page.' class='btn btn-sm btn-primary'><i class='fa-solid fa-house'></i></div>";
-                        }
-                        else if (data.LastPublished !== null && data.LastPublished !== ""){
-                            html += "<a href='/Editor/NewHome/" + data.ArticleNumber + "' title='Make this the new home page.' class='btn btn-sm btn-secondary'><i class='fa-solid fa-house'></i></a>";
-                        }
-                        else
-                        {
-                            html += "<a title='Cannot make this the new home page until it is published.' onclick='alert(\"Cannot make this the home until it is published.\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-house'></i></a>";
-                        }
-
-                        html += "<a class='btn btn-sm btn-secondary' title='Create a clone of this page' href='/Editor/Clone/" + data.ArticleNumber + "'><i class='fa-solid fa-copy'></i></a>";
-
-                        if (data.LastPublished !== null && canEdit && data.IsDefault === false)
-                        {
-                            html += "<button onclick='unpublish(" + data.ArticleNumber + ")' title='Unpublishes a this item, and makes it no longer accessible except for editing.' class='btn btn-sm btn-secondary'><i class='fa-solid fa-calendar-xmark'></i></button>";
-                        }html += "</div>";
-                        return html;
-                    };
-
-                    const pageTable = new Tabulator("#pagelist-table", {
-                        height:tblHeight + "px",
-                        pagination:true, //enable pagination
-                        paginationMode:"local", //enable local pagination
-                        paginationSize:pageSize, //optional parameter to request a certain number of rows per page
-                        persistence:{
-                            sort: true, //persist column sorting
-                            filter: true, //persist filters
-                            headerFilter: true, //persist header filters
-                            group: false, //persist row grouping
-                            page: true, //persist page
-                            columns: false, //persist columns
-                        },
-                        persistenceWriterFunc:function(id, type, data){
-                            //id - tables persistence id
-                            //type - type of data being persisted ("sort", "filter", "group", "page" or "columns")
-                            //data - array or object of data
-                            sessionStorage.setItem(id + "-" + type, JSON.stringify(data));
-                        },
-                        persistenceReaderFunc:function(id, type){
-                            //id - tables persistence id
-                            //type - type of data being persisted ("sort", "filter", "group", "page" or "columns")
-                            var data = sessionStorage.getItem(id + "-" + type);
-                            return data ? JSON.parse(data) : false;
-                        },
-                        layout:"fitColumns",
-                        ajaxURL:"@Url.Action("GetArticleList", "Editor")?publishedOnly=false", //ajax URL
-                        columns:[
-                            {title:"UrlPath", field:"UrlPath", visible: false },
-                            {title:"No.", field:"ArticleNumber", visible: false },
-
-                            {title:"Actions", field:"IsDefault", formatter:menuBar, width:176, headerSort:false },
-
-                            {title:"Published",
-                                field:"LastPublished",
-                                headerFilter:"date",
-                                headerFilterFunc:dateFilterFunction,
-                                cellClick:openArticleVersions,
-                                width:180,
-                                sorter:"datetime",
-                                sorterParams:{
-                                    format:"iso" },
-                                formatter:"datetime",
-                                formatterParams:{
-                                    inputFormat:"iso",
-                                    outputFormat:"MM/dd/yyyy HH:mm:ss",
-                                    invalidPlaceholder:"(Invalid date)"
-                                }
-                            },
-
-                            {title:"Updated",
-                                field:"Updated",
-                                headerFilter:"date",
-                                headerFilterFunc:dateFilterFunction,
-                                cellClick:openArticleVersions,
-                                width:180,
-                                sorter:"datetime",
-                                sorterParams:{
-                                    format:"iso" },
-                                formatter:"datetime",
-                                formatterParams:{
-                                    inputFormat:"iso",
-                                    outputFormat:"MM/dd/yyyy HH:mm:ss",
-                                    invalidPlaceholder:"(Invalid date)"
-                                }
-                            },
-
-                            {title:"Title", field:"Title", sorter:"string", headerFilter:"input", cellClick:openArticleVersions },
-
-                            {title: "Trash", field:"ArticleNumber", formatter:trashBtn, width:56, headerSort:false, hozAlign:"center", headerHozAlign:"center" }
-
-                        ],
-                    });
-                </script>
             </div>
         </div>
 
@@ -230,11 +68,165 @@
         </div>
     </div>
 </div>
-<form>
-    <input id="selected" type="hidden" />
-</form>
 
 <script>
+
+    const publisherUrl = "@options.PublisherUrl.TrimEnd('/')";
+    const tblHeight = window.innerHeight - 200;
+    let pageSize = Math.round(tblHeight / 50) + 1;
+
+    function dateTime(cell, formatterParams, onRendered){
+        //cell - the cell component
+        //formatterParams - parameters set for the column
+        //onRendered - function to call when the formatter has been rendered
+        return getLocalTime(cell.getValue());
+    }
+
+    function dateFilterFunction(headerValue, rowValue, rowData, filterParams){
+        if (rowValue === null || rowValue === "") {
+            return false;
+        }
+        return headerValue === rowValue.split("T")[0]; //must return a boolean, true if it passes the filter.
+    }
+
+    async function sendToTrash(articleNumber) {
+        const result = await fetch("@Url.Action("TrashArticle", "Editor")/" + articleNumber);
+        if (result.ok) {
+            pageTable.setData();
+        }
+    }
+
+    function openArticleVersions(e, cell) {
+        const data = cell.getRow().getData();
+        window.location.href = "@Url.Action("Versions")/" + data.ArticleNumber;
+    }
+
+    function unpublish(articleNumber) {
+        const data = cell.getRow().getData();
+        $.get("@Url.Action("UnpublishPage", "Editor")/" + articleNumber, function (data) {
+            pageTable.setData();
+        });
+    }
+
+    const trashBtn = function(cell, formatterParams){
+        data = cell.getRow().getData();
+        if (data.IsDefault === true){
+            return "";
+        }
+        return "<button type='button' title='Send page to trash' onclick='sendToTrash(" + data.ArticleNumber + ", \"" + data.Title + "\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-trash'></i></button>";
+    };
+
+    const menuBar = function(cell, formatterParams){
+        data = cell.getRow().getData();
+        let html = "<div class='btn-group btn-group-sm' role='group' aria-label='Page actions.'>";
+        html += html += "<a href='/Editor/Versions/" + data.ArticleNumber + "' title='Click to edit page.' class='btn btn-sm btn-success'><i class='fa-solid fa-pen-to-square'></i></a>";
+        let url = data.UrlPath;
+        if (url === "root") {
+            url = "";
+        }
+
+        if (data.LastPublished !== null && data.LastPublished !== ""){
+            html += "<a target='_blank' href='" + publisherUrl + "/" + url + "' title='Open page on website.'  class='btn btn-sm btn-secondary'><i class='fa-solid fa-arrow-up-right-from-square'></i></a>";
+        }
+        else
+        {
+            html += "<a title='Cannot open page on website until it is published.' onclick='alert(\"Cannot open page on website until it is published.\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-arrow-up-right-from-square'></i></a>";
+        }
+
+        if (data.IsDefault === true){
+            html += "<div title='Current home page.' class='btn btn-sm btn-primary'><i class='fa-solid fa-house'></i></div>";
+        }
+        else if (data.LastPublished !== null && data.LastPublished !== ""){
+            html += "<a href='/Editor/NewHome/" + data.ArticleNumber + "' title='Make this the new home page.' class='btn btn-sm btn-secondary'><i class='fa-solid fa-house'></i></a>";
+        }
+        else
+        {
+            html += "<a title='Cannot make this the new home page until it is published.' onclick='alert(\"Cannot make this the home until it is published.\")' class='btn btn-sm btn-secondary'><i class='fa-solid fa-house'></i></a>";
+        }
+
+        html += "<a class='btn btn-sm btn-secondary' title='Create a clone of this page' href='/Editor/Clone/" + data.ArticleNumber + "'><i class='fa-solid fa-copy'></i></a>";
+
+        if (data.LastPublished !== null && canEdit && data.IsDefault === false)
+        {
+            html += "<button onclick='unpublish(" + data.ArticleNumber + ")' title='Unpublishes a this item, and makes it no longer accessible except for editing.' class='btn btn-sm btn-secondary'><i class='fa-solid fa-calendar-xmark'></i></button>";
+        }html += "</div>";
+        return html;
+    };
+
+    const pageTable = new Tabulator("#pagelist-table", {
+        height:tblHeight + "px",
+        pagination:true, //enable pagination
+        paginationMode:"local", //enable local pagination
+        paginationSize:pageSize, //optional parameter to request a certain number of rows per page
+        persistence:{
+            sort: true, //persist column sorting
+            filter: true, //persist filters
+            headerFilter: true, //persist header filters
+            group: false, //persist row grouping
+            page: true, //persist page
+            columns: false, //persist columns
+        },
+        persistenceWriterFunc:function(id, type, data){
+            //id - tables persistence id
+            //type - type of data being persisted ("sort", "filter", "group", "page" or "columns")
+            //data - array or object of data
+            sessionStorage.setItem(id + "-" + type, JSON.stringify(data));
+        },
+        persistenceReaderFunc:function(id, type){
+            //id - tables persistence id
+            //type - type of data being persisted ("sort", "filter", "group", "page" or "columns")
+            var data = sessionStorage.getItem(id + "-" + type);
+            return data ? JSON.parse(data) : false;
+        },
+        layout:"fitColumns",
+        ajaxURL:"@Url.Action("GetArticleList", "Editor")?publishedOnly=false", //ajax URL
+        columns:[
+            {title:"UrlPath", field:"UrlPath", visible: false },
+            {title:"No.", field:"ArticleNumber", visible: false },
+
+            {title:"Actions", field:"IsDefault", formatter:menuBar, width:176, headerSort:false },
+
+            {title:"Published",
+                field:"LastPublished",
+                headerFilter:"date",
+                headerFilterFunc:dateFilterFunction,
+                cellClick:openArticleVersions,
+                width:180,
+                sorter:"datetime",
+                sorterParams:{
+                    format:"iso" },
+                formatter:"datetime",
+                formatterParams:{
+                    inputFormat:"iso",
+                    outputFormat:"MM/dd/yyyy HH:mm:ss",
+                    invalidPlaceholder:"(Invalid date)"
+                }
+            },
+
+            {title:"Updated",
+                field:"Updated",
+                headerFilter:"date",
+                headerFilterFunc:dateFilterFunction,
+                cellClick:openArticleVersions,
+                width:180,
+                sorter:"datetime",
+                sorterParams:{
+                    format:"iso" },
+                formatter:"datetime",
+                formatterParams:{
+                    inputFormat:"iso",
+                    outputFormat:"MM/dd/yyyy HH:mm:ss",
+                    invalidPlaceholder:"(Invalid date)"
+                }
+            },
+
+            {title:"Title", field:"Title", sorter:"string", headerFilter:"input", cellClick:openArticleVersions },
+
+            {title: "Trash", field:"ArticleNumber", formatter:trashBtn, width:56, headerSort:false, hozAlign:"center", headerHozAlign:"center" }
+
+        ],
+    });
+
     const canEdit = @canEdit.ToString().ToLower();
     const clipboard = new ClipboardJS('.clipboard');
     clipboard.on('success',

@@ -1,0 +1,39 @@
+@using Newtonsoft.Json
+@using Sky.Cms.Models.Interfaces
+@model ICodeEditorViewModel
+
+@{
+    var fields = Model.EditorFields.ToArray();
+    var aclass = "active";
+}
+
+<nav class="code-tabs navbar">
+    <ul class="nav nav-tabs" id="nav-tab">
+        @foreach (var field in fields)
+        {
+            <li class="nav-item">
+                <a class="code-tabs nav-link @aclass" 
+                   title="@field.ToolTip" 
+                   data-bs-toggle="tooltip" 
+                   data-bs-placement="bottom" 
+                   data-ccms-fieldname="@field.FieldName" 
+                   aria-current="page">
+                    @field.FieldName
+                </a>
+            </li>
+            aclass = "";
+        }
+    </ul>
+</nav>
+
+<div id="editspace" class="m-editor-container"></div>
+
+<!-- Load shared Monaco editor scripts -->
+<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
+<script src="~/js/editors/monaco-editor-core.js"></script>
+<script src="~/js/editors/monaco-editor-insert-helpers.js"></script>
+
+<script>
+    // Initialize editFields from model
+    var editFields = @Html.Raw(JsonConvert.SerializeObject(Model.EditorFields));
+</script>

@@ -10,16 +10,14 @@
 
 <style>
     /* Set menu options */
-
     #btnCcmsCodeEditor,
     #liBtnVersions {
         display: none !important;
     }
-
 </style>
 
 <nav id="navBar" class="code-tabs navbar" style="display:none">
-    <ul class="nav nav-tabs " id="nav-tab">
+    <ul class="nav nav-tabs" id="nav-tab">
         @{
             foreach (var field in fields)
             {
@@ -54,6 +52,11 @@
     <input type="hidden" asp-for="BannerImage" />
 </form>
 
+<!-- Load shared scripts -->
+<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
+<script src="~/js/editors/monaco-editor-core.js"></script>
+<script src="~/js/editors/monaco-editor-insert-helpers.js"></script>
+
 @if (Model != null)
 {
     <div class="modal" id="versionList" tabindex="-2">
@@ -61,141 +64,48 @@
             <div class="modal-header">
                 <h5 class="modal-title">Article Versions</h5>
             </div>
-            <div class="modal-body">
-                
-            </div>
+            <div class="modal-body"></div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
-
-    <script>
-        
-    </script>
 }
 
-<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
 
 <script>
-    var editor;
-    var fieldId;
+    // View-specific constants
     var fieldName;
-    var ccmsEditorIsLocked = false;
     const versionNumber = @Model.VersionNumber;
-
-    // Current user
     const ccms_editor_userid = "@this.Context.User.Identity.Name";
     const hasModel = @((Model != null).ToString().ToLower());
-    // This needs global scope, so using var
     var hasPermissionsSet = @hasPermissionsSet.ToString().ToLower();
+    
+    // Initialize editFields from model
+    var editFields = @Html.Raw(JsonConvert.SerializeObject(Model.EditorFields));
 
-    $("#frmSave").submit(function (e) {
-        e.preventDefault();
-        saveChanges();
-    });
-
-    // Example: var editFields = '[{"FieldId":"HeaderJavaScript","FieldName":"Header JavaScript","EditorMode":0},{"FieldId":"Content","FieldName":"Html Content","EditorMode":1},{"FieldId":"FooterJavaScript","FieldName":"Footer JavaScript","EditorMode":0}]';
-    var editFields = @(Html.Raw(JsonConvert.SerializeObject(Model.EditorFields)));
-
-    function saveExistingLoadNewEditor(id) {
-        if (editor !== null && typeof editor !== "undefined") {
-            $("#" + fieldId).val(editor.getValue());
-        }
-        createAndLoadEditor(id);
+    // Override afterEditorCreate to add custom behavior
+    function afterEditorCreate(fieldInfo) {
+        // Allow user interaction
+        $.unblockUI();
+        
+        // Check after loading data
+        checkDisplayLiveEditorButton('Content');
     }
 
-    //
-    // Creates and loads a Monaco Editor.
-    //
-    function createAndLoadEditor(id) {
-        if (editor !== null && typeof editor !== "undefined") {
-            if (editor.getModel()) {
-                editor.getModel().dispose();
-            }
-            $("#msgBox").html("Loading...");
-
-            editor.dispose();
-            editor = null;
-
-        }
-
-        fieldId = null;
-
-        $("#EditingField").val(null);
-
-        // Monaco AMD Editor  - https://microsoft.github.io/monaco-editor/
-        require.config({ paths: { 'vs': window.location.origin + '/lib/monaco-editor/min/vs' } });
-
-        //require.config({ paths: { vs: '/lib/node_modules/monaco-editor/dist' } }); // Emmet Abbr.
-
-        require(['vs/editor/editor.main'], function () {
-            fieldName = id;
-
-            var fieldInfo = editFields.find(o => o.FieldName === id);
-            fieldId = fieldInfo.FieldId;
-
-            var mode = null;
-
-            switch (fieldInfo.EditorMode) {
-                case 0:
-                    mode = "javascript"
-                    break;
-                case 1:
-                    mode = "html"
-                    break;
-                case 2:
-                    mode = "css";
-                    break;
-                default:
-                    mode = "html"
-                    break;
-            }
-
-            $("#EditingField").val(fieldId);
-            var hiddenInput = $("#" + fieldId);
-            var code = hiddenInput.val();
-
-            editor = monaco.editor.create(document.getElementById('editspace'),
-                {
-                    language: mode,
-                    theme: "vs-dark",
-                    value: code
-                });
-
-            $("#msgBox").html("");
-
-            // Allow user interaction
-            $.unblockUI();
-
-            // Close loading spiner and display saved status
-            $("#spinLoading").hide();
-
-            $("#btnSavingStatus").show();
-            checkDisplayLiveEditorButton('Content'); // Check after load data.
-        });
-    }
-
-    // Save the changes for this editor
+    // View-specific save function
     function saveChanges(postProcessing) {
-
         if (validatePermissions() === false) {
-            // Need permissions set before going any further.
             return;
         }
 
         if (saveInProgress === true) {
-            return; // A save is already in progress
+            return;
         }
 
         saveInProgress = true;
-
         saving();
-
-        // Saving publish date with time zone information
         savePublishDateTime();
-
-        //let form = $('#frmSave');
 
         if (editor) {
             $("#" + fieldId).val(editor.getValue());
@@ -220,64 +130,51 @@
             BannerImage: $("#BannerImage").val()
         };
 
-        $.post("/Editor/EditCode",
-            model,
-            function (response) {
-                saveInProgress = false;
+        $.post("/Editor/EditCode", model, function (response) {
+            saveInProgress = false;
+            doneSaving();
 
-                doneSaving();
-
-                if (response.IsValid) {
-
-                    checkDisplayLiveEditorButton('Content'); // Check after post data.
-
-                    if (next !== null && typeof next  === 'function') {
-                        next();
-                        next = null;
-                    }
-                } else {
-                    var errorMsg = "Error(s):";
-
-                    // Invalid response.
-                    $.each(response.Errors,
-                        function (index, error) {
-                            errorMsg = "<p>" + error.Key + "</p><ul>";
-                            $.each(error.Errors,
-                                function (index, innerError) {
-                                    errorMsg = errorMsg + "<li>" + innerError.Exception.Message + "</li>";
-                                });
-                            errorMsg = errorMsg + "</ul>";
-                        });
-                    $("#divErrorLog").html(errorMsg);
-                    var errorModal = new bootstrap.Modal(document.getElementById('modalSavingError'));
-                    errorModal.show();
+            if (response.IsValid) {
+                checkDisplayLiveEditorButton('Content');
+                if (next !== null && typeof next === 'function') {
+                    next();
+                    next = null;
                 }
+            } else {
+                var errorMsg = "Error(s):";
+                $.each(response.Errors, function (index, error) {
+                    errorMsg = "<p>" + error.Key + "</p><ul>";
+                    $.each(error.Errors, function (index, innerError) {
+                        errorMsg = errorMsg + "<li>" + innerError.Exception.Message + "</li>";
+                    });
+                    errorMsg = errorMsg + "</ul>";
+                });
+                $("#divErrorLog").html(errorMsg);
+                var errorModal = new bootstrap.Modal(document.getElementById('modalSavingError'));
+                errorModal.show();
             }
-        ).fail(handle_error);
-    }
-
-    function handle_error(xhr, status, error) {
-        saveInProgress = false;
-        doneSaving();
-        $("#divErrorLog").html(xhr.responseText);
-        errorModal.show();
-    }
-
-    function btnSelectField(e) {
-        fieldName = e.target.text();
-        saveExistingLoadNewEditor(e.id);
+        }).fail(function (xhr, status, error) {
+            saveInProgress = false;
+            doneSaving();
+            $("#divErrorLog").html(xhr.responseText);
+            errorModal.show();
+        });
     }
 
     $(document).ready(function () {
-
-        // Block user action until loaded.
+        // Block user action until loaded
         $.blockUI();
 
-        $("body").addClass("cwps-editor-container");
+        // Initialize common Monaco editor functionality
+        initializeMonacoEditor({
+            initialField: "@Model.EditingField",
+            autoSaveDelay: 3500,
+            readOnly: false
+        });
 
+        // View-specific initialization
         $("#btnOtherPages").show();
         $("#btnOpenInsertImage").hide();
-
         $("#lblTitle").html("Page URL: ");
         $("#modalChgTitleHeader").html("Change page URL: ");
         $("#newTitle").html("New page URL: ");
@@ -285,175 +182,28 @@
         if ($("#UrlPath").val() != "root") {
             $("#divUrlTitleExamples").show();
         }
+        
         $("#spanWorkingVersionNo").html("Working Version: " + versionNumber);
-
-        var fieldId = "@Model.EditingField";
-
-        if (fieldId !== "") {
-            var fieldInfo = editFields.find(o => o.FieldId === fieldId);
-            createAndLoadEditor(fieldInfo.FieldName);
-            // Refresh locks for everyone including self.
-            setTimeout(function () {
-                //ccmsSendSignal("NotifyRoomOfLock");
-            }, 2000);
-        }
         $("#navBar").show();
         $("#editspace").show();
-
-        $("[data-ccms-fieldname]").click(function (event) {
-            var name = $(event.target).attr("data-ccms-fieldname");
-            $("[data-ccms-fieldname]").removeClass("active");
-            saveExistingLoadNewEditor(name);
-            $(event.target).addClass("active");
-        });
-
         $("#liBtnVersions").show();
-
         $("#divTitleGroup").show();
         $("#liInsert").show();
-
         $("#btnVersions").attr("href", "/Editor/Versions/" + $("#ArticleNumber").val() + "?versionNumber=" + $("#VersionNumber").val());
 
-        $("#btnOpenLink").click(function (e) {
-            if (openPickPageModal) {
-                openPickPageModal();
-            }
-            else {
-                alert("Could not find openPickPageModal().");
-            }
-        });
-
-        $("#btnOpenInsertFileLink").click(function (e) {
-            if (openInsertFileLinkModel) {
-                openInsertFileLinkModel();
-            }
-            else {
-                alert("Could not find openInsertFileLinkModel().");
-            }
-        });
-
-        $("#btnOpenInsertImage").click(function (e) {
-            if (openInsertImageModel) {
-                openInsertImageModel();
-            }
-            else {
-                alert("Could not find openInsertImageModel().");
-            }
-        });
+        // Setup insert button handlers
+        setupInsertButtonHandlers();
 
         if (hasModel && isReviewer === false && isAuthor === false && requiresAuthentication) {
             $(".perm").show();
         }
 
         $("#btnCcmsGrapesJsEditor").show();
-
     });
 
     $(document).on("unload", function () {
-        // Close filemanager window if opened
         if (typeof fileMgrPopup !== "undefined" && fileMgrPopup !== null && fileMgrPopup.location) {
             fileMgrPopup.close();
         }
     });
-
-    $(window).bind('keydown', function (event) {
-        if (event.ctrlKey || event.metaKey) {
-            switch (String.fromCharCode(event.which).toLowerCase()) {
-                case 's':
-                    event.preventDefault();
-                    saveChanges();
-                    break;
-            }
-        }
-    });
-
-    var timeout;
-
-    $(window).bind('keyup', function (event) {
-        // Clear the timeout if it has already been set.
-        // This will prevent the previous task from executing
-        // if it has been less than <MILLISECONDS>
-        clearTimeout(timeout);
-
-        // Make a new timeout set to go off in 1000ms (1 second)
-        timeout = setTimeout(function () {
-            if (getAutoSave()) {
-                saveChanges();
-            }
-        }, 3500);
-    });
-
-    function openPickPageModal() {
-
-        if (typeof editor === "undefined" || editor === null) {
-            alert("Error: Could not open code editor.");
-            return;
-        }
-
-        $("#combobox").val("");
-
-        pickPageModal.show();
-    }
-
-    function openInsertFileLinkModel() {
-
-        if (typeof editor === "undefined" || editor === null) {
-            alert("Error: Could not open code editor.");
-            return;
-        }
-
-        openSelectFileModal("file");
-    }
-
-    function openInsertImageModel() {
-
-        if (typeof editor === "undefined" || editor === null) {
-            alert("Error: Could not open code editor.");
-            return;
-        }
-
-        openSelectFileModal("image");
-    }
-
-    function insertPageLink() {
-
-        const inputLinkText = $("#inputLinkText").val();
-
-        if (typeof (inputLinkText) === "undefined" || inputLinkText === null || inputLinkText === "") {
-            $("#inputLinkTextError").show();
-            return false;
-        }
-
-        pickPageModal.hide();
-
-        const link = "<a href='/" + selectedAnchorData.url + "'>" + inputLinkText + "</a>";
-
-        // insert text here
-        editor.trigger('keyboard', 'type', { text: link });
-    }
-
-    function insertFileLink(path) {
-
-        clearFileMgrPaths();
-
-        const url = fileBaseUrl + "/" + path;
-
-        const link = "<a href='" + url + "'>" + path + "</a>";
-
-        // insert text here
-        editor.trigger('keyboard', 'type', { text: link });
-    }
-
-    function insertImage(path) {
-
-        clearFileMgrPaths();
-
-        const url = fileBaseUrl + "/" + path;
-
-        const image = "<img src='" + url + "' />";
-
-        // insert text here
-        editor.trigger('keyboard', 'type', { text: image });
-    }
-
 </script>

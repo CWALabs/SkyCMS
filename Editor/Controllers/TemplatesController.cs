@@ -27,6 +27,7 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.Html;
+    using Sky.Editor.Services.Templates;
 
     /// <summary>
     /// Templates controller.
@@ -40,6 +41,7 @@ namespace Sky.Cms.Controllers
         private readonly IEditorSettings options;
         private readonly StorageContext storageContext;
         private readonly IArticleHtmlService htmlService;
+        private readonly ITemplateService templateServices;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplatesController"/> class.
@@ -51,13 +53,15 @@ namespace Sky.Cms.Controllers
         /// <param name="articleLogic">Article edit logic.</param>
         /// <param name="options">Cosmos Options.</param>
         /// <param name="htmlService">HTML service.</param>
+        /// <param name="templateServices">Template services.</param>
         public TemplatesController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
             StorageContext storageContext,
             ArticleEditLogic articleLogic,
             IEditorSettings options,
-            IArticleHtmlService htmlService)
+            IArticleHtmlService htmlService,
+            ITemplateService templateServices)
             : base(dbContext, userManager)
         {
             this.dbContext = dbContext;
@@ -65,6 +69,7 @@ namespace Sky.Cms.Controllers
             this.options = options;
             this.storageContext = storageContext;
             this.htmlService = htmlService;
+            this.templateServices = templateServices;
         }
 
         /// <summary>
@@ -91,8 +96,12 @@ namespace Sky.Cms.Controllers
             ViewData["pageNo"] = pageNo;
             ViewData["pageSize"] = pageSize;
 
-            var query = dbContext.Templates.OrderBy(t => t.Title)
-                .Where(w => w.LayoutId == defautLayout.Id)
+            await templateServices.EnsureDefaultTemplatesExistAsync();
+
+            var layoutId = defautLayout.Id;
+
+            var data = await dbContext.Templates.OrderBy(t => t.Title)
+                .Where(w => w.LayoutId == layoutId)
                 .Select(s => new TemplateIndexViewModel
                 {
                     Id = s.Id,
@@ -100,9 +109,11 @@ namespace Sky.Cms.Controllers
                     Description = s.Description,
                     Title = s.Title,
                     UsesHtmlEditor = s.Content.ToLower().Contains(" contenteditable=") || s.Content.ToLower().Contains(" data-ccms-ceid=")
-                }).AsQueryable();
+                }).ToListAsync();
 
-            ViewData["RowCount"] = await query.CountAsync();
+            ViewData["RowCount"] = data.Count();
+
+            var query = data.AsQueryable();
 
             if (sortOrder == "desc")
             {
@@ -141,7 +152,7 @@ namespace Sky.Cms.Controllers
                 }
             }
 
-            return View(await query.Skip(pageNo * pageSize).Take(pageSize).ToListAsync());
+            return View(query.Skip(pageNo * pageSize).Take(pageSize).ToList());
         }
 
         /// <summary>
