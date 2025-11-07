@@ -41,10 +41,6 @@
       "destination": "wwwroot/lib/fotorama"
     },
     {
-      "library": "monaco-editor@0.53.0",
-      "destination": "wwwroot/lib/monaco-editor"
-    },
-    {
       "library": "powerbi-client@2.23.7",
       "destination": "wwwroot/lib/powerbi-client"
     },

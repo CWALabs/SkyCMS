@@ -316,7 +316,17 @@ else
     app.UseHsts(); // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
 }
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Ensure .js files are served with correct MIME type
+        if (ctx.File.Name.EndsWith(".js"))
+        {
+            ctx.Context.Response.Headers.Append("Content-Type", "application/javascript");
+        }
+    }
+});
 app.UseRouting();
 app.UseCors();
 app.UseResponseCaching(); // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/middleware?view=aspnetcore-3.1

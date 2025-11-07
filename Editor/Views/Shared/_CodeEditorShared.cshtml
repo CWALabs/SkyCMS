@@ -7,33 +7,36 @@
     var aclass = "active";
 }
 
-<nav class="code-tabs navbar">
+<style>
+    /* Set menu options */
+    #btnCcmsCodeEditor,
+    #liBtnVersions {
+        display: none !important;
+    }
+    .code-editor-li {
+        display: block !important; /* Override default setting */
+    }
+</style>
+
+<nav id="navBar" class="code-tabs navbar" style="display:none">
     <ul class="nav nav-tabs" id="nav-tab">
-        @foreach (var field in fields)
-        {
-            <li class="nav-item">
-                <a class="code-tabs nav-link @aclass" 
-                   title="@field.ToolTip" 
-                   data-bs-toggle="tooltip" 
-                   data-bs-placement="bottom" 
-                   data-ccms-fieldname="@field.FieldName" 
-                   aria-current="page">
-                    @field.FieldName
-                </a>
-            </li>
-            aclass = "";
+        @{
+            foreach (var field in fields)
+            {
+                <li class="nav-item">
+                    <a class="code-tabs nav-link @aclass" title="@field.ToolTip" data-bs-toggle="tooltip" data-bs-placement="bottom" data-ccms-fieldname="@field.FieldName" aria-current="page">@field.FieldName</a>
+                </li>
+                aclass = "";
+            }
         }
     </ul>
 </nav>
 
-<div id="editspace" class="m-editor-container"></div>
+<div id="editspace" class="m-editor-container" style="display:none"></div>
 
-<!-- Load shared Monaco editor scripts -->
-<script src="~/lib/monaco-editor/min/vs/loader.min.js"></script>
-<script src="~/js/editors/monaco-editor-core.js"></script>
-<script src="~/js/editors/monaco-editor-insert-helpers.js"></script>
-
-<script>
-    // Initialize editFields from model
-    var editFields = @Html.Raw(JsonConvert.SerializeObject(Model.EditorFields));
-</script>
+<!-- Load Monaco Editor from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js"></script>
+<script src="/js/editors/monaco-loader-modern.js"></script>
+<script src="/js/editors/monaco-editor-core.js"></script>
+<script src="/js/editors/monaco-editor-insert-helpers.js"></script>
+<script src="/js/editors/monaco-active-document.js"></script>

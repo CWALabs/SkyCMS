@@ -38,3 +38,40 @@
         border-color: black;
         background-color: black;
     }
+/* Active Document Indicator Styles */
+#activeDocumentBreadcrumb {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background-color: #2d2d30;
+    border: 1px solid #3e3e42;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    max-width: 400px;
+}
+
+#activeDocumentLanguage {
+    background-color: #007acc;
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+}
+
+.dirty-indicator {
+    font-size: 1.2rem;
+    line-height: 1;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.code-tabs .nav-link.active {
+    background-color: #1e1e1e;
+    color: #fff;
+    border-bottom: 2px solid #007acc;
+}

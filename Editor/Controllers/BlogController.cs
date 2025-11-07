@@ -249,11 +249,9 @@ namespace Sky.Editor.Controllers
         /// Performs deletion of a blog stream.
         /// </summary>
         /// <param name="id">Blog identifier.</param>
-        /// <param name="reassign">If true, articles are reassigned to default/fallback blog; if false, deletion blocked when articles exist.</param>
         /// <returns>Redirect to <see cref="Index"/> or view with errors.</returns>
-        [HttpPost("{id:guid}/delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ConfirmDelete(Guid id, bool reassign = true)
+        [HttpPost("{id:guid}/confirmdelete")]
+        public async Task<IActionResult> ConfirmDelete(Guid id)
         {
             var article = await db.Articles.FirstOrDefaultAsync(b => b.Id == id);
             if (article == null)
@@ -261,10 +259,9 @@ namespace Sky.Editor.Controllers
                 return NotFound();
             }
 
-            await articleLogic.DeleteArticle(article.ArticleNumber);
-
+            var blogKey = article.BlogKey;
             var entries = await db.Articles
-                .Where(c => c.BlogKey == article.BlogKey).Select(c => c.ArticleNumber).Distinct()
+                .Where(c => c.BlogKey == blogKey).Select(c => c.ArticleNumber).Distinct()
                 .ToListAsync();
 
             foreach (var entryNumber in entries)
@@ -272,6 +269,8 @@ namespace Sky.Editor.Controllers
                 // Delete each article associated with this blog.
                 await articleLogic.DeleteArticle(entryNumber);
             }
+
+            await articleLogic.DeleteArticle(article.ArticleNumber);
 
             return RedirectToAction(nameof(Index));
         }
@@ -478,8 +477,7 @@ namespace Sky.Editor.Controllers
         /// <param name="blogKey">Blog key.</param>
         /// <param name="articleNumber">Article number.</param>
         /// <returns>Redirect to entries listing.</returns>
-        [HttpPost("{blogKey}/entries/{articleNumber:int}/delete")]
-        [ValidateAntiForgeryToken]
+        [HttpPost("{blogKey}/entries/{articleNumber:int}/confirmdeleteentry")]
         public async Task<IActionResult> ConfirmDeleteEntry(string blogKey, int articleNumber)
         {
             await articleLogic.DeleteArticle(articleNumber);
@@ -518,9 +516,16 @@ namespace Sky.Editor.Controllers
         [HttpGet("GetBlogs")]
         public async Task<IActionResult> GetBlogs()
         {
+            var deletedEnum = (int)StatusCodeEnum.Deleted;
             var articleType = (int)ArticleType.BlogStream;
             var blogs = await db.Articles
-                .Where(b => b.ArticleType == articleType)
+                .Where(b => b.ArticleType == articleType && b.StatusCode != deletedEnum)
+                .ToListAsync();
+
+            // Get the latest version of each blog stream.
+            // This linq expression is done outside of the database query to avoid complex SQL generation.
+            var data = blogs.GroupBy(a => a.ArticleNumber)
+                .Select(g => g.OrderBy(a => a.VersionNumber).LastOrDefault())
                 .Select(b => new BlogStreamViewModel
                 {
                     Id = b.Id,
@@ -529,8 +534,9 @@ namespace Sky.Editor.Controllers
                     Description = b.Introduction,
                     HeroImage = b.BannerImage
                 })
-                .ToListAsync();
-            return Json(blogs.OrderBy(b => b.Title).ToList());
+                .ToList();
+
+            return Json(data.OrderBy(b => b.Title).ToList());
         }
 
 
@@ -553,10 +559,29 @@ namespace Sky.Editor.Controllers
                 return NotFound();
             }
 
+            // BlogEntryListItem
             // Get the entries that match the blog key with the exception of the blog stream article itself.
+            var deletedEnum = (int)StatusCodeEnum.Deleted;
             var blogStreamArticleNumber = blog.ArticleNumber;
-            var entries = await db.ArticleCatalog
-                .Where(c => c.BlogKey == blogKey && c.ArticleNumber != blogStreamArticleNumber)
+            var entries = await db.Articles
+                .Where(c => c.BlogKey == blogKey && c.ArticleNumber != blogStreamArticleNumber && c.StatusCode != deletedEnum)
+                .Select(c => new 
+                {
+                    c.BlogKey,
+                    c.ArticleNumber,
+                    c.Title,
+                    c.Published,
+                    c.Updated,
+                    c.UrlPath,
+                    c.Introduction,
+                    c.BannerImage,
+                    c.VersionNumber
+                })
+                .ToListAsync();
+
+            var model = entries
+                .GroupBy(e => e.ArticleNumber)
+                .Select(g => g.OrderByDescending(e => e.VersionNumber).First())
                 .Select(c => new BlogEntryListItem
                 {
                     BlogKey = c.BlogKey,
@@ -568,9 +593,9 @@ namespace Sky.Editor.Controllers
                     Introduction = c.Introduction,
                     BannerImage = c.BannerImage
                 })
-                .ToListAsync();
+                .ToList();
 
-            return Json(entries.OrderByDescending(c => c.Published ?? c.Updated).ToList());
+            return Json(model.OrderByDescending(c => c.Published ?? c.Updated).ToList());
         }
 
         private async Task<Article> GetLatestStreamArticleAsync(string blogKey)
