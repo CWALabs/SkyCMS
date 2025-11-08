@@ -79,10 +79,10 @@ class MonacoEditorCore {
             // Show loading indicator
             if (typeof $.blockUI === 'function') {
                 $.blockUI({
-                    message: '<div class="spinner-border text-light" role="status"><span class="visually-hidden">Loading editor...</span></div>'
+                    message: '<div class="bg-dark text-light" role="status">Loading editor...</div>'
                 });
             }
-
+            
             this.config = {
                 autoSaveDelay: 3500,
                 readOnly: false,

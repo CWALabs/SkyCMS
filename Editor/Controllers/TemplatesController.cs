@@ -422,7 +422,6 @@ namespace Sky.Cms.Controllers
             {
                 Id = entity.Id,
                 EditorTitle = "Template Editor",
-                Title = entity.Title,
                 EditorFields = new List<EditorField>
                 {
                     new ()
@@ -430,16 +429,18 @@ namespace Sky.Cms.Controllers
                         EditorMode = EditorMode.Html,
                         FieldName = "Html Content",
                         FieldId = "Content",
-                        IconUrl = "~/images/seti-ui/icons/html.svg"
+                        IconUrl = "~/images/seti-ui/icons/html.svg",
+                        ToolTip = string.Empty
                     }
+                },
+                CustomButtons = new List<string>
+                {
+                    "Preview"
                 },
                 EditingField = "Content",
                 Content = htmlService.EnsureEditableMarkers(entity.Content),
                 Version = 0,
-                CustomButtons = new List<string>
-                {
-                    "Preview"
-                }
+                Title = entity.Title
             };
             return View(model);
         }

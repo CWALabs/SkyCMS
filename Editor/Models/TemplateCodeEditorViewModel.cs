@@ -69,10 +69,5 @@ namespace Sky.Cms.Models
         /// Gets or sets editor Type.
         /// </summary>
         public string EditorType { get; set; }
-
-        /// <summary>
-        /// Gets or sets editor field.
-        /// </summary>
-        IEnumerable<EditorField> ICodeEditorViewModel.EditorFields { get; set; }
     }
 }

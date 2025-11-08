@@ -18,21 +18,38 @@
     <input type="hidden" asp-for="EditorType" />
 </form>
 
-<script src="~/js/editors/monaco-editor-common.js"></script>
-
 <script>
     // View-specific constants
+    var fieldName;
     const readOnly = @readOnly.ToString().ToLower();
+    const ccms_editor_userid = "@this.Context.User.Identity.Name";
+    const hasModel = @((Model != null).ToString().ToLower());
+    var hasPermissionsSet = false;
+    
+    // Initialize editFields from model
+    var editFields = @Html.Raw(JsonConvert.SerializeObject(Model.EditorFields));
 
-    // Initialize code editor with Layouts-specific configuration
-    const editorApi = initializeCodeEditor({
-        initialField: "@Model.EditingField",
-        autoSaveDelay: 1500,
-        readOnly: readOnly
-    });
+    // Override afterEditorCreate to add Layouts-specific behavior
+    function afterEditorCreate(fieldInfo) {
+        // Update active document tracker
+        if (window.activeDocumentTracker) {
+            window.activeDocumentTracker.setActiveDocument({
+                fieldName: fieldInfo.FieldName,
+                language: fieldInfo.EditorMode,
+                title: '@Model.EditorTitle',
+                layoutId: '@Model.Id',
+                isDirty: false
+            });
+        }
+        
+        // Check after loading data
+        if (typeof checkDisplayLiveEditorButton === 'function') {
+            checkDisplayLiveEditorButton('Content');
+        }
+    }
 
-    // Register Layouts-specific save handler
-    editorApi.registerSaveHandler(function(myModal) {
+    // View-specific save function
+    function saveChanges(postProcessing) {
         if (readOnly) {
             return;
         }
@@ -42,39 +59,142 @@
         }
 
         window.saveInProgress = true;
-        saving();
-
-        if (typeof myModal !== "undefined" && myModal !== null) {
-            myModal.hide();
+        
+        if (typeof showSaving === 'function') {
+            showSaving();
         }
         
-        savePublishDateTime();
+        if (typeof savePublishDateTime === 'function') {
+            savePublishDateTime();
+        }
+        
         $("#Title").val($("#tbTitle").val());
 
+        // Save current editor content
+        if (window.monacoEditorCore) {
+            window.monacoEditorCore.saveCurrentFieldContent();
+        } else if (window.editor && window.fieldId) {
+            $("#" + window.fieldId).val(window.editor.getValue());
+        }
+
         // Prepare model with encrypted data
-        let model = prepareEncryptedModel('#frmSave', 
-            ['Head', 'HtmlHeader', 'FooterHtmlContent']);
+        let model = {
+            Id: $("#Id").val(),
+            EditingField: $("#EditingField").val(),
+            Head: encryptData($("#Head").val()),
+            HtmlHeader: encryptData($("#HtmlHeader").val()),
+            FooterHtmlContent: encryptData($("#FooterHtmlContent").val()),
+            EditorType: $("#EditorType").val()
+        };
 
         $.post("/Layouts/EditCode", model, function(response) {
-            handleSaveResponse(response);
-        }).fail(handleSaveFailure);
-    });
+            window.saveInProgress = false;
+            
+            if (typeof doneSaving === 'function') {
+                doneSaving();
+            }
 
-    $(document).ready(function() {
-        // Layouts-specific initialization
-        $("#liInsert").show();
-        $("#tbTitle").val("@Model.EditorTitle");
-        $("#btnSaveAsDraft").hide();
+            if (response.IsValid) {
+                // Mark document as clean after successful save
+                if (window.activeDocumentTracker) {
+                    window.activeDocumentTracker.markClean();
+                }
+                
+                if (typeof postProcessing !== 'undefined' && postProcessing !== null && typeof postProcessing === 'function') {
+                    postProcessing();
+                }
+                
+                toastMsg("Layout saved successfully.");
+            } else {
+                var errorMsg = "<h5>Error(s) detected while saving:</h5>";
+                $.each(response.Errors, function (index, error) {
+                    errorMsg += "<p>" + error.Key + "</p><ul>";
+                    $.each(error.Errors, function (index, innerError) {
+                        errorMsg += "<li>" + (innerError.Exception ? innerError.Exception.Message : innerError.ErrorMessage) + "</li>";
+                    });
+                    errorMsg += "</ul>";
+                });
+                $("#divErrorLog").html(errorMsg);
+                
+                if (typeof bootstrap !== 'undefined' && document.getElementById('modalSavingError')) {
+                    var errorModal = new bootstrap.Modal(document.getElementById('modalSavingError'));
+                    errorModal.show();
+                }
+            }
+        }).fail(function (xhr, status, error) {
+            window.saveInProgress = false;
+            
+            if (typeof doneSaving === 'function') {
+                doneSaving();
+            }
+            
+            $("#divErrorLog").html(xhr.responseText);
+            
+            if (typeof bootstrap !== 'undefined' && document.getElementById('modalSavingError')) {
+                var errorModal = new bootstrap.Modal(document.getElementById('modalSavingError'));
+                errorModal.show();
+            }
+        });
+    }
 
-        // Setup common UI elements
-        setupCommonEditorUI();
+    // Add listener for active document changes
+    if (window.activeDocumentTracker) {
+        window.activeDocumentTracker.addListener((docInfo) => {
+            console.log('Active document changed:', docInfo);
+        });
+    }
 
-        // Hide the navigation bar if in read-only mode
-        if (readOnly) {
-            $("#navbarSupportedContent").hide();
+    $(document).ready(async function () {
+        try {
+            // Block user action until loaded
+            if (typeof $.blockUI === 'function') {
+                $.blockUI();
+            }
+
+            // Initialize Monaco editor with modern loader
+            await initializeMonacoEditor({
+                editFields: editFields,
+                initialField: "@Model.EditingField",
+                autoSaveDelay: 3500,
+                readOnly: readOnly,
+                basePath: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min'
+            });
+            
+            // Close loading spinner and display saved status
+            $("#spinLoading").hide();
+            
+            // View-specific initialization
+            $("#liInsert").show();
+            $("#tbTitle").val("@Model.EditorTitle");
+            $("#btnSaveAsDraft").hide();
+            $("#navBar").show();
+            $("#editspace").show();
+
+            // Hide the navigation bar if in read-only mode
+            if (readOnly) {
+                $("#navbarSupportedContent").hide();
+            }
+
+        } catch (error) {
+            console.error('Failed to initialize editor:', error);
+            
+            if (typeof $.unblockUI === 'function') {
+                $.unblockUI();
+            }
+            
+            alert('Failed to load editor. Please refresh the page and try again.\n\nError: ' + error.message);
         }
     });
 
-    // Setup cleanup
-    setupEditorCleanup();
+    $(document).on("unload", function () {
+        // Cleanup editor
+        if (window.monacoEditorCore) {
+            window.monacoEditorCore.dispose();
+        }
+
+        // Cleanup file manager popup
+        if (typeof fileMgrPopup !== "undefined" && fileMgrPopup !== null && fileMgrPopup.location) {
+            fileMgrPopup.close();
+        }
+    });
 </script>

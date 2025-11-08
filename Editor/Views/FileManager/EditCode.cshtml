@@ -21,69 +21,168 @@
     <input type="hidden" asp-for="EditorType" />
 </form>
 
-<script src="~/js/editors/monaco-editor-common.js"></script>
-
 <script>
-    // Initialize code editor with FileManager-specific configuration
-    const editorApi = initializeCodeEditor({
-        initialField: "@Model.EditingField",
-        autoSaveDelay: 1500,
-        readOnly: false,
-        blockUIOnLoad: true,
-        onBeforeInit: function() {
-            // Disable title and publishing fields for file manager
-            $("#tbTitle").prop("disabled", true);
-            $("#tbPublished").prop("disabled", true);
-        },
-        onAfterInit: function() {
-            $.unblockUI();
+    // View-specific constants
+    var fieldName;
+    const ccms_editor_userid = "@this.Context.User.Identity.Name";
+    const hasModel = @((Model != null).ToString().ToLower());
+    var hasPermissionsSet = false;
+    
+    // Initialize editFields from model
+    var editFields = @Html.Raw(JsonConvert.SerializeObject(Model.EditorFields));
+
+    // Override afterEditorCreate to add FileManager-specific behavior
+    function afterEditorCreate(fieldInfo) {
+        // Disable title and publishing fields for file manager
+        $("#tbTitle").prop("disabled", true);
+        $("#tbPublished").prop("disabled", true);
+        
+        // Check after loading data
+        if (typeof checkDisplayLiveEditorButton === 'function') {
             checkDisplayLiveEditorButton('Content');
         }
-    });
+        
+        // Update active document tracker
+        if (window.activeDocumentTracker) {
+            window.activeDocumentTracker.setActiveDocument({
+                fieldName: fieldInfo.FieldName,
+                language: fieldInfo.EditorMode,
+                title: '@Model.EditorTitle',
+                path: '@Model.Path',
+                isDirty: false
+            });
+        }
+    }
 
-    // Register FileManager-specific save handler
-    editorApi.registerSaveHandler(function(myModal, next) {
+    // View-specific save function
+    function saveChanges(postProcessing) {
         if (!validateEditorPermissions() || window.saveInProgress === true) {
             return;
         }
 
         window.saveInProgress = true;
-        saving();
-        savePublishDateTime();
-
-        if (typeof myModal !== "undefined" && myModal !== null) {
-            myModal.hide();
+        
+        if (typeof showSaving === 'function') {
+            showSaving();
         }
         
+        if (typeof savePublishDateTime === 'function') {
+            savePublishDateTime();
+        }
+
         $("#Title").val($("#tbTitle").val());
+
+        // Save current editor content
+        if (window.monacoEditorCore) {
+            window.monacoEditorCore.saveCurrentFieldContent();
+        } else if (window.editor && window.fieldId) {
+            $("#" + window.fieldId).val(encryptData(window.editor.getValue()));
+        }
 
         // Get form data
         var form = $('#frmSave');
         
-        if (window.editor && window.fieldId) {
-            $("#" + window.fieldId).val(encryptData(window.editor.getValue()));
+        $.post("@Url.Action("EditCode")", form.serialize(), function(response) {
+            window.saveInProgress = false;
+            
+            if (typeof doneSaving === 'function') {
+                doneSaving();
+            }
+
+            if (response.IsValid) {
+                // Mark document as clean after successful save
+                if (window.activeDocumentTracker) {
+                    window.activeDocumentTracker.markClean();
+                }
+                
+                if (typeof postProcessing !== 'undefined' && postProcessing !== null && typeof postProcessing === 'function') {
+                    postProcessing();
+                }
+                
+                toastMsg("File saved successfully.");
+            } else {
+                var errorMsg = "<h5>Error(s) detected while saving:</h5>";
+                $.each(response.Errors, function (index, error) {
+                    errorMsg += "<p>" + error.Key + "</p><ul>";
+                    $.each(error.Errors, function (index, innerError) {
+                        errorMsg += "<li>" + (innerError.Exception ? innerError.Exception.Message : innerError.ErrorMessage) + "</li>";
+                    });
+                    errorMsg += "</ul>";
+                });
+                $("#divErrorLog").html(errorMsg);
+                
+                if (typeof bootstrap !== 'undefined' && document.getElementById('modalSavingError')) {
+                    var errorModal = new bootstrap.Modal(document.getElementById('modalSavingError'));
+                    errorModal.show();
+                }
+            }
+        }).fail(function (xhr, status, error) {
+            window.saveInProgress = false;
+            
+            if (typeof doneSaving === 'function') {
+                doneSaving();
+            }
+            
+            $("#divErrorLog").html(xhr.responseText);
+            
+            if (typeof bootstrap !== 'undefined' && document.getElementById('modalSavingError')) {
+                var errorModal = new bootstrap.Modal(document.getElementById('modalSavingError'));
+                errorModal.show();
+            }
+        });
+    }
+
+    // Add listener for active document changes
+    if (window.activeDocumentTracker) {
+        window.activeDocumentTracker.addListener((docInfo) => {
+            console.log('Active document changed:', docInfo);
+        });
+    }
+
+    $(document).ready(async function () {
+        try {
+            // Block user action until loaded
+            if (typeof $.blockUI === 'function') {
+                $.blockUI();
+            }
+
+            // Initialize Monaco editor with modern loader
+            await initializeMonacoEditor({
+                editFields: editFields,
+                initialField: "@Model.EditingField",
+                autoSaveDelay: 3500,
+                readOnly: false,
+                basePath: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min'
+            });
+            
+            // Close loading spinner and display saved status
+            $("#spinLoading").hide();
+            
+            // View-specific initialization
+            $("#btnSaveAsDraft").hide();
+            $("#navBar").show();
+            $("#editspace").show();
+
+        } catch (error) {
+            console.error('Failed to initialize editor:', error);
+            
+            if (typeof $.unblockUI === 'function') {
+                $.unblockUI();
+            }
+            
+            alert('Failed to load editor. Please refresh the page and try again.\n\nError: ' + error.message);
+        }
+    });
+
+    $(document).on("unload", function () {
+        // Cleanup editor
+        if (window.monacoEditorCore) {
+            window.monacoEditorCore.dispose();
         }
 
-        $.post("@Url.Action("EditCode")", form.serialize(), function(response) {
-            handleSaveResponse(response,
-                function() {
-                    // Success callback
-                    if (typeof next !== "undefined" && next !== null) {
-                        next();
-                    }
-                }
-            );
-        }).fail(handleSaveFailure);
+        // Cleanup file manager popup
+        if (typeof fileMgrPopup !== "undefined" && fileMgrPopup !== null && fileMgrPopup.location) {
+            fileMgrPopup.close();
+        }
     });
-
-    $(document).ready(function() {
-        // FileManager-specific initialization
-        $("#btnSaveAsDraft").hide();
-        
-        // Setup common UI elements
-        setupCommonEditorUI();
-    });
-
-    // Setup cleanup
-    setupEditorCleanup();
 </script>
