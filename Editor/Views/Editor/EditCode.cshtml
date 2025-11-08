@@ -6,16 +6,6 @@
     var fields = Model.EditorFields.ToArray();
     var hasPermissionsSet = Model.ArticlePermissions.Any();
 }
-<style>
-    /* Set menu options */
-    #btnCcmsCodeEditor,
-    #liBtnVersions {
-        display: none !important;
-    }
-    .code-editor-li {
-        display: block; /* Override default setting */
-    }
-</style>
 
 <partial name="_CodeEditorShared" model="Model" />
 
@@ -65,16 +55,12 @@
     // Initialize editFields from model
     var editFields = @Html.Raw(JsonConvert.SerializeObject(Model.EditorFields));
 
-    // Override afterEditorCreate to add custom behavior
+    // Override afterEditorCreate to add active document tracking
     function afterEditorCreate(fieldInfo) {
         // Check after loading data
         if (typeof checkDisplayLiveEditorButton === 'function') {
             checkDisplayLiveEditorButton('Content');
         }
-    }
-
-    // Override afterEditorCreate to add active document tracking
-    function afterEditorCreate(fieldInfo) {
         // Update active document tracker
         if (window.activeDocumentTracker) {
             window.activeDocumentTracker.setActiveDocument({
