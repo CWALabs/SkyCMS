@@ -4,9 +4,9 @@ Location: `Common/PubControllerBase.cs`
 
 The `PubControllerBase` class provides a secure proxy for serving files from storage in the Publisher application. It centralizes access control for article-bound assets and ensures consistent streaming and content-type handling. Derived controllers can override behavior as needed.
 
-- Namespace: `Cosmos.Publisher.Controllers`
+- Namespace: `Cosmos.Common`
 - Inherits: `Microsoft.AspNetCore.Mvc.Controller`
-- Primary consumer: SkyCMS Publisher
+- Primary consumer: SkyCMS Publisher (`Sky.Publisher`)
 
 ---
 
@@ -170,4 +170,5 @@ Notes:
 
 ---
 
-Last updated: October 2025
+Last updated: November 2025 (.NET 9.0 update)
+

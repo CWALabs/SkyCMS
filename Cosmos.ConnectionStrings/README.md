@@ -18,11 +18,11 @@ Cosmos.DynamicConfig is a configuration management system for multi-tenant appli
 - **Database Connections**: Per-tenant database connection string management
 - **Storage Connections**: Per-tenant blob storage connection string management
 - **Custom Configuration**: Key-value configuration pairs per tenant
-- **Memory Caching**: Efficient caching of configuration data for performance
+- **Memory Caching**: Efficient caching of configuration data for performance (10-second TTL)
 
 ### Advanced Features
 
-- **Domain Validation**: Validate domain names against configured tenants
+- **Domain Validation**: Validate domain names against configured tenants via `ValidateDomainName()`
 - **Metrics Collection**: Built-in metrics tracking for tenant resource usage
 - **Entity Framework Integration**: Works with Cosmos DB, SQL Server, MySQL, and SQLite via FlexDb provider detection
 - **HTTP Context Integration**: Seamless integration with ASP.NET Core pipeline
@@ -35,21 +35,74 @@ Cosmos.DynamicConfig is a configuration management system for multi-tenant appli
 
 Defines the contract for dynamic configuration services, providing methods for retrieving connection strings and configuration values based on domain context.
 
+**Properties:**
+- `IsMultiTenantConfigured`: Returns `true` if any tenant connection is configured
+
+**Methods:**
+- `GetDatabaseConnectionString(domainName)`: Retrieves tenant database connection
+- `GetStorageConnectionString(domainName)`: Retrieves tenant storage connection
+- `GetConfigurationValue(key)`: Gets standard configuration values
+- `GetConnectionStringByName(name)`: Gets named connection strings
+
 #### DynamicConfigurationProvider
 
 The main implementation that handles configuration resolution, caching, and database interactions for multi-tenant scenarios.
+
+**Key Features:**
+- Requires `IHttpContextAccessor` - throws `ArgumentNullException` if not available
+- Validates `ConfigDbConnectionString` on construction
+- Caches tenant connections for 10 seconds using `IMemoryCache`
+- Uses FlexDb for automatic database provider detection
+
+**Important Notes:**
+- The constructor **requires** an active HTTP context. If your code runs outside an HTTP request (e.g., background services), you **must** pass the domain explicitly to the API methods.
+- If `HttpContext` is null during construction, an `ArgumentNullException` is thrown.
+- Configuration database connection string is mandatory and validated on startup.
 
 #### DynamicConfigDbContext
 
 Entity Framework DbContext for managing configuration data, connections, and metrics. The backing database is determined by your `ConfigDbConnectionString` (Cosmos DB, SQL Server, MySQL, or SQLite).
 
+**Containers/Tables:**
+- `Connections`: Tenant configuration entities (container: "config")
+- `Metrics`: Usage metrics entities (container: "Metrics")
+
 #### Connection Entity
 
 Represents a tenant configuration with domain mappings, connection strings, and metadata.
 
+**Properties:**
+- `Id`: Unique identifier (Guid)
+- `DomainNames`: Array of domain names for tenant routing
+- `DbConn`: Tenant database connection string
+- `StorageConn`: Tenant storage connection string
+- `Customer`: Owner/tenant name
+- `ResourceGroup`: Azure resource group
+- `PublisherMode`: Publishing mode (Static, Decoupled, Headless, Hybrid, Static-dynamic)
+- `WebsiteUrl`: Primary website URL
+- `OwnerEmail`: Owner email address
+
+#### Metric Entity
+
+Tracks resource usage per tenant.
+
+**Properties:**
+- `Id`: Unique identifier (Guid)
+- `ConnectionId`: Associated tenant connection ID
+- `TimeStamp`: Metric timestamp (DateTimeOffset)
+- `BlobStorageBytes`: Total blob storage usage (double?)
+- `BlobStorageEgressBytes`: Outbound bandwidth (double?)
+- `BlobStorageIngressBytes`: Inbound bandwidth (double?)
+- `BlobStorageTransactions`: Storage transaction count (double?)
+- `DatabaseDataUsageBytes`: Database data usage (double?)
+- `DatabaseIndexUsageBytes`: Database index usage (double?)
+- `DatabaseRuUsage`: Request Units consumed (double?)
+- `FrontDoorRequestBytes`: Front Door request bytes (long?)
+- `FrontDoorResponseBytes`: Front Door response bytes (long?)
+
 #### DomainMiddleware
 
-ASP.NET Core middleware that captures and stores the current request's domain for configuration resolution.
+ASP.NET Core middleware that captures the current request's domain and stores it in `HttpContext.Items["Domain"]` for downstream use.
 
 ## Installation
 

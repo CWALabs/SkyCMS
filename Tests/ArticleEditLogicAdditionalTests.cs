@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sky.Editor.Services.Titles;
 
-namespace Sky.Tests;
+namespace Sky.Tests.Logic;
 
 [DoNotParallelize]
 [TestClass]

@@ -8,42 +8,33 @@
 
 <!-- [Project Website](https://Sky.moonrise.net) | [Documentation](https://Sky.moonrise.net/Docs) | [Get Free Help](https://Sky.moonrise.net/Support) | [YouTube Channel](https://www.youtube.com/@Sky-cms) | [Slack Channel](https://Sky-cms.slack.com/) -->
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMoonriseSoftwareCalifornia%2FSkyCMS%2Frefs%2Fheads%2Fmain%2FArmTemplates%2Fazuredeploy.json)
-
-(For AWS)
-
-[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://raw.githubusercontent.com/MoonriseSoftwareCalifornia/SkyCMS/main/AWS/cloudformation-skycms.yaml&stackName=skycms)
-
-(More click-to-deploy options coming soon)
-
-Also available: [AWS CloudFormation deployment guide](./AWS/README.md)
-
-[View instructions](./Docs/AzureInstall.md) for installing on Azure | [What gets deployed?](./ArmTemplates/README.md) | [Storage Configuration](./Docs/StorageConfig.md) | [Database Configuration](./Docs/DatabaseConfig.md)
-
 Deploy anywhere: Azure, AWS, Cloudflare — or any cloud that supports Docker containers and either S3‑compatible object storage or Azure Storage.
 
 > SkyCMS lives high in the clouds—like a kestrel that can soar for months without landing. It manages static, dynamic, and origin-less edge-hosted websites with ease.
 
-Choose your hosting model: [Static](./Docs/StorageConfig.md#static-website-hosting-azure) | [Edge (origin-less)](./Docs/CloudflareEdgeHosting.md) | [Headless](./Publisher/README.md) | [Decoupled](./Publisher/README.md)
+Choose your hosting model: [Static](./Docs/StorageConfig.md#static-website-hosting-azure) | [Edge (origin-less)](./Docs/CloudflareEdgeHosting.md) | [Dynamic](./Publisher/README.md) | [Decoupled](./Publisher/README.md)
 
 ## Overview
 
-[SkyCMS](https://Sky.moonrise.net/) is an open-source, cloud-native Content Management System designed for high-performance, scalability, and ease of use. Built with modern web technologies, SkyCMS runs in multiple modes to meet different deployment needs and can be hosted traditionally or at the edge (origin-less) using Cloudflare Workers + R2:
+[SkyCMS](https://Sky.moonrise.net/) is an open-source, cloud-native Content Management System designed for high-performance, scalability, and ease of use. Built with modern web technologies, **SkyCMS is primarily a traditional CMS that renders complete web pages**, either dynamically or as static files. It runs in multiple modes to meet different deployment needs and can be hosted traditionally or at the edge (origin-less) using Cloudflare Workers + R2:
 
-- **Static Mode**: All content hosted on a static website with automatic content refresh - highest performance, stability, and operational simplicity
+- **Static Mode** (Primary): Content rendered as static HTML files and hosted on cloud storage (Azure Blob, S3, Cloudflare R2) - highest performance, stability, and operational simplicity
   - Can be deployed as an **origin-less, edge-hosted** site via Cloudflare R2 + Worker
-- **Headless Mode**: Content delivered via API - ideal for multi-channel content distribution (web, mobile, desktop)
-- **Decoupled Mode**: Content delivered via dedicated website - near-static performance with backend functionality
+  - Automatic static site generation from CMS content
+- **Dynamic Mode**: Publisher application dynamically renders pages on-demand - full CMS functionality with server-side rendering
+- **Decoupled Mode**: Separate editor and publisher applications - near-static performance with backend functionality
+- **API Mode** (Optional): RESTful API available for headless scenarios - content delivered as JSON for multi-channel distribution
 
 ## 🎯 Design Objectives
 
 SkyCMS was built with the following core objectives:
 
-- **Performance**: Outperform traditional CMSs in speed, capacity, and stability
+- **Performance**: Outperform traditional CMSs through static site generation and optimized dynamic rendering
 - **User-Friendly**: Easy to use by both web developers and non-technical content editors
 - **Low Maintenance**: Easy to administer with low operational costs
-- **Flexible Deployment**: Support for static, decoupled, and headless modes
+- **Flexible Deployment**: Support for static, dynamic, decoupled, and optional API modes
 - **Cloud-Native**: Built for modern cloud infrastructure with global scalability
+- **Complete Page Rendering**: Primary focus on delivering complete HTML pages rather than API-first architecture
 
 ## ✨ Key Features
 
@@ -53,7 +44,7 @@ SkyCMS was built with the following core objectives:
 - **Rich Editing Tools**: CKEditor 5, GrapesJS, Monaco Editor, and Filerobot image editor
 - **Version Control**: Full versioning system with restore capabilities
 - **Template System**: Reusable page templates with editable regions
-- **Multi-Mode Publishing**: Static, headless, and decoupled content delivery
+- **Multi-Mode Publishing**: Static file generation, dynamic rendering, or optional API delivery
 
 ### Blogging Platform
 

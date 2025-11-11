@@ -4,7 +4,7 @@ using Sky.Cms.Models;
 using Sky.Cms.Services;
 using Sky.Editor.Domain.Events;
 
-namespace Sky.Tests;
+namespace Sky.Tests.Logic;
 
 [DoNotParallelize]
 [TestClass]

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Sky.Tests;
+namespace Sky.Tests.Logic;
 
 [DoNotParallelize]
 [TestClass]

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Sky.Cms.Controllers;
 using Sky.Cms.Services;
 
-namespace Sky.Tests;
+namespace Sky.Tests.Logic;
 
 [DoNotParallelize]
 [TestClass]

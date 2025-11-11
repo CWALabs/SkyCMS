@@ -1,30 +1,65 @@
 # SkyCMS Publisher
 
-The SkyCMS Publisher is the public-facing web application component of the SkyCMS system that serves content to end users. It operates in multiple modes to provide flexible deployment options for different performance and architectural requirements.
+The SkyCMS Publisher is the public-facing web application component of the SkyCMS system that **renders and serves complete web pages** to end users. It operates in multiple modes to provide flexible deployment options for different performance and architectural requirements.
 
 ## Overview
 
-The Publisher application is responsible for rendering and delivering content created in the SkyCMS Editor to website visitors. It's designed to be highly performant, scalable, and configurable to meet various deployment scenarios.
+**The Publisher application's primary function is to render complete HTML pages**, either dynamically through server-side processing or by serving pre-generated static HTML files from cloud storage (Azure Blob Storage, AWS S3, or Cloudflare R2). This is fundamentally different from headless CMS architectures that rely on API endpoints to deliver content fragments.
+
+The Publisher is designed to be highly performant, scalable, and configurable to meet various deployment scenarios.
 
 ## Architecture Modes
 
 The Publisher operates in two primary modes, determined by the `CosmosStaticWebPages` configuration setting:
 
-### 1. Dynamic Publisher Mode (Default)
+### 1. Dynamic Publisher Mode (Server-Side Rendering)
 
-- **Full CMS functionality** with server-side rendering
-- **Database-driven content** from Azure Cosmos DB or SQLite
+**Traditional CMS functionality with full page rendering:**
+
+- **Server-side HTML generation** - Complete pages rendered on each request
+- **Database-driven content** from Azure Cosmos DB, SQL Server, MySQL, or SQLite
 - **User authentication and authorization** support
-- **Dynamic content generation** with real-time updates
+- **Real-time content** with dynamic data integration
 - **Interactive features** like comments, forms, and user sessions
+- **Personalized content** based on user context
 
-### 2. Static Website Proxy Mode
+**When to use:** Dynamic content requirements, user-specific pages, real-time data integration
 
-- **High-performance static content** delivery
-- **Blob storage integration** for static file serving
-- **CDN-optimized** for global content distribution
-- **Minimal server overhead** for maximum scalability
-- **Automatic static site generation** from CMS content
+### 2. Static Website Proxy Mode (Static Site Generation)
+
+**High-performance pre-rendered pages:**
+
+- **Pre-generated HTML files** stored in cloud storage (Azure Blob, S3, Cloudflare R2)
+- **Blazing-fast delivery** - Pages served directly from CDN/edge locations
+- **Minimal server overhead** - Publisher acts as a smart proxy to storage
+- **Maximum scalability** - Handle massive traffic with minimal infrastructure
+- **Automatic static site generation** triggered by content publishing in Editor
+- **Edge hosting support** - Deploy origin-less sites with Cloudflare Workers + R2
+
+**When to use:** Public-facing websites, high-traffic sites, edge hosting, maximum performance requirements
+
+## Content Delivery Philosophy
+
+### Page Rendering First, API Optional
+
+SkyCMS is built on the principle that **most websites are best served as complete HTML pages** rather than through API-driven frontend frameworks. This approach provides:
+
+✅ **Better Performance**: Static HTML from CDN beats API calls
+✅ **Simpler Architecture**: No separate frontend application needed
+✅ **SEO Benefits**: Server-rendered HTML works perfectly with search engines
+✅ **Lower Costs**: Minimal compute requirements, especially in static mode
+✅ **Faster Development**: Standard web development skills (HTML/CSS/JS)
+✅ **Better Reliability**: Fewer dependencies and points of failure
+
+### Optional API Endpoints
+
+While the Publisher does expose API endpoints (e.g., `/pub/` routes for file access), these are:
+
+- **Supporting infrastructure** for asset delivery, not primary content delivery
+- **Optional capabilities** for specific use cases (mobile apps, integrations)
+- **Not the primary architecture** - pages are the primary output
+
+This contrasts with headless CMS systems where APIs are the primary (or only) way to deliver content.
 
 ## Technology Stack
 
