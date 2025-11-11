@@ -28,7 +28,8 @@ namespace AspNetCore.Identity.FlexDb.Stores
 
             errors.Add(new IdentityError()
             {
-                Code = "500", Description = e.Message
+                Code = "500",
+                Description = e.Message
             });
 
             return IdentityResult.Failed(errors.ToArray());

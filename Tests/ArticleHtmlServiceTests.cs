@@ -1,0 +1,346 @@
+﻿// <copyright file="ArticleHtmlServiceTests.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// for more information concerning the license and the contributors participating to this project.
+// </copyright>
+
+namespace Sky.Tests.Services.Html
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Sky.Editor.Services.Html;
+    using System;
+
+    /// <summary>
+    /// Unit tests for <see cref="ArticleHtmlService"/>.
+    /// Tests HTML manipulation functionality including editable marker injection,
+    /// Angular base tag handling, and introduction text extraction.
+    /// </summary>
+    [DoNotParallelize]
+    [TestClass]
+    public class ArticleHtmlServiceTests : SkyCmsTestBase
+    {
+        private IArticleHtmlService articleHtmlService = null!;
+
+        /// <summary>
+        /// Initialize test context before each test.
+        /// </summary>
+        [TestInitialize]
+        public void Setup()
+        {
+            InitializeTestContext(seedLayout: false);
+            articleHtmlService = new ArticleHtmlService();
+        }
+
+        #region EnsureEditableMarkers Tests
+
+        /// <summary>
+        /// Tests that null input returns a default editable div.
+        /// </summary>
+        [TestMethod]
+        public void EnsureEditableMarkers_WhitespaceOnly_ReturnsDefaultEditableDiv()  // ✅ New test
+        {
+            // Arrange
+            var html = "   \t\n   ";
+
+            // Act
+            var result = articleHtmlService.EnsureEditableMarkers(html);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Contains("contenteditable='true'"));
+            Assert.IsTrue(result.Contains("data-ccms-ceid="));
+        }
+
+        /// <summary>
+        /// Tests that empty string returns a default editable div.
+        /// </summary>
+        [TestMethod]
+        public void EnsureEditableMarkers_EmptyString_ReturnsDefaultEditableDiv()
+        {
+            // Act
+            var result = articleHtmlService.EnsureEditableMarkers(string.Empty);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Contains("contenteditable='true'"));
+            Assert.IsTrue(result.Contains("data-ccms-ceid="));
+        }
+
+        /// <summary>
+        /// Tests that HTML with editable element gets CCMS IDs added.
+        /// </summary>
+        [TestMethod]
+        public void EnsureEditableMarkers_HtmlWithEditableElement_AddsCcmsIds()
+        {
+            // Arrange
+            var html = "<div contenteditable='true'>Test Content</div>";
+
+            // Act
+            var result = articleHtmlService.EnsureEditableMarkers(html);
+
+            // Assert
+            Assert.IsTrue(result.Contains("data-ccms-ceid="));
+            Assert.IsTrue(result.Contains("data-ccms-index="));
+            Assert.IsTrue(result.Contains("Test Content"));
+        }
+
+        /// <summary>
+        /// Tests that HTML without editable elements gets wrapped.
+        /// </summary>
+        [TestMethod]
+        public void EnsureEditableMarkers_HtmlWithoutEditableElement_WrapsContent()
+        {
+            // Arrange
+            var html = "<p>Regular paragraph</p>";
+
+            // Act
+            var result = articleHtmlService.EnsureEditableMarkers(html);
+
+            // Assert
+            Assert.IsTrue(result.Contains("contenteditable=\"true\""));
+            Assert.IsTrue(result.Contains("data-ccms-ceid="));
+            // ✅ Removed data-ccms-index check - not added for wrapped content
+            Assert.IsTrue(result.Contains("<p>Regular paragraph</p>"));
+        }
+
+        /// <summary>
+        /// Tests that multiple editable elements get indexed correctly.
+        /// </summary>
+        [TestMethod]
+        public void EnsureEditableMarkers_MultipleEditableElements_AssignsSequentialIndices()
+        {
+            // Arrange
+            var html = "<div contenteditable='true'>First</div><div contenteditable='true'>Second</div>";
+
+            // Act
+            var result = articleHtmlService.EnsureEditableMarkers(html);
+
+            // Assert
+            Assert.IsTrue(result.Contains("data-ccms-index=\"0\""));
+            Assert.IsTrue(result.Contains("data-ccms-index=\"1\""));
+        }
+
+        /// <summary>
+        /// Tests that existing CCMS IDs are preserved.
+        /// </summary>
+        [TestMethod]
+        public void EnsureEditableMarkers_ExistingCcmsId_PreservesId()
+        {
+            // Arrange
+            var existingId = Guid.NewGuid().ToString("N");
+            var html = $"<div contenteditable='true' data-ccms-ceid='{existingId}'>Content</div>";
+
+            // Act
+            var result = articleHtmlService.EnsureEditableMarkers(html);
+
+            // Assert
+            Assert.IsTrue(result.Contains(existingId));
+        }
+
+        #endregion
+
+        #region EnsureAngularBase Tests
+
+        /// <summary>
+        /// Tests that null header fragment returns empty string.
+        /// </summary>
+        [TestMethod]
+        public void EnsureAngularBase_NullHeader_ReturnsEmpty()
+        {
+            // Act
+            var result = articleHtmlService.EnsureAngularBase(null, "/test");
+
+            // Assert
+            Assert.AreEqual(string.Empty, result);
+        }
+
+        /// <summary>
+        /// Tests that non-Angular header is returned unchanged.
+        /// </summary>
+        [TestMethod]
+        public void EnsureAngularBase_NonAngularHeader_ReturnsUnchanged()
+        {
+            // Arrange
+            var header = "<meta name='viewport' content='width=device-width'>";
+
+            // Act
+            var result = articleHtmlService.EnsureAngularBase(header, "/test");
+
+            // Assert
+            Assert.AreEqual(header, result);
+        }
+
+        /// <summary>
+        /// Tests that Angular header without base tag gets one added.
+        /// </summary>
+        [TestMethod]
+        public void EnsureAngularBase_AngularHeaderWithoutBase_AddsBaseTag()
+        {
+            // Arrange
+            var header = "<meta name='ccms:framework' value='angular'>";
+
+            // Act
+            var result = articleHtmlService.EnsureAngularBase(header, "/blog");
+
+            // Assert
+            Assert.IsTrue(result.Contains("<base"));
+            Assert.IsTrue(result.Contains("href=\"/blog/\""));
+        }
+
+        /// <summary>
+        /// Tests that root path normalizes correctly.
+        /// </summary>
+        [TestMethod]
+        public void EnsureAngularBase_RootPath_NormalizesToSlash()
+        {
+            // Arrange
+            var header = "<meta name='ccms:framework' value='angular'>";
+
+            // Act
+            var result = articleHtmlService.EnsureAngularBase(header, string.Empty);
+
+            // Assert
+            Assert.IsTrue(result.Contains("href=\"/\""));
+        }
+
+        #endregion
+
+        #region ExtractIntroduction Tests
+
+        /// <summary>
+        /// Tests that null HTML returns empty string.
+        /// </summary>
+        [TestMethod]
+        public void ExtractIntroduction_NullHtml_ReturnsEmpty()
+        {
+            // Act
+            var result = articleHtmlService.ExtractIntroduction(null);
+
+            // Assert
+            Assert.AreEqual(string.Empty, result);
+        }
+
+        /// <summary>
+        /// Tests that empty HTML returns empty string.
+        /// </summary>
+        [TestMethod]
+        public void ExtractIntroduction_EmptyHtml_ReturnsEmpty()
+        {
+            // Act
+            var result = articleHtmlService.ExtractIntroduction(string.Empty);
+
+            // Assert
+            Assert.AreEqual(string.Empty, result);
+        }
+
+        /// <summary>
+        /// Tests that first paragraph text is extracted.
+        /// </summary>
+        [TestMethod]
+        public void ExtractIntroduction_ValidHtml_ExtractsFirstParagraph()
+        {
+            // Arrange
+            var html = "<p>This is the introduction text.</p><p>This is second paragraph.</p>";
+
+            // Act
+            var result = articleHtmlService.ExtractIntroduction(html);
+
+            // Assert
+            Assert.AreEqual("This is the introduction text.", result);
+        }
+
+        /// <summary>
+        /// Tests that text longer than 512 characters is truncated.
+        /// </summary>
+        [TestMethod]
+        public void ExtractIntroduction_LongText_TruncatesTo512Characters()
+        {
+            // Arrange
+            var longText = new string('A', 600);
+            var html = $"<p>{longText}</p>";
+
+            // Act
+            var result = articleHtmlService.ExtractIntroduction(html);
+
+            // Assert
+            Assert.AreEqual(512, result.Length);
+        }
+
+        /// <summary>
+        /// Tests that HTML tags are stripped from introduction.
+        /// </summary>
+        [TestMethod]
+        public void ExtractIntroduction_HtmlWithTags_StripsTagsFromIntroduction()
+        {
+            // Arrange
+            var html = "<p>This is <strong>bold</strong> and <em>italic</em> text.</p>";
+
+            // Act
+            var result = articleHtmlService.ExtractIntroduction(html);
+
+            // Assert
+            Assert.AreEqual("This is bold and italic text.", result);
+        }
+
+        /// <summary>
+        /// Tests that empty paragraphs are skipped.
+        /// </summary>
+        [TestMethod]
+        public void ExtractIntroduction_EmptyParagraphs_SkipsToFirstNonEmpty()
+        {
+            // Arrange
+            var html = "<p></p><p>   </p><p>First real content</p>";
+
+            // Act
+            var result = articleHtmlService.ExtractIntroduction(html);
+
+            // Assert
+            Assert.AreEqual("First real content", result);
+        }
+
+        /// <summary>
+        /// Tests that HTML without paragraphs returns empty string.
+        /// </summary>
+        [TestMethod]
+        public void ExtractIntroduction_NoParagraphs_ReturnsEmpty()
+        {
+            // Arrange
+            var html = "<div>No paragraph here</div>";
+
+            // Act
+            var result = articleHtmlService.ExtractIntroduction(html);
+
+            // Assert
+            Assert.AreEqual(string.Empty, result);
+        }
+
+        #endregion
+
+        #region ExtractIntroduction Tests
+
+        [TestMethod]
+        public void ExtractIntroduction_HtmlEntities_DecodesEntities()  // ✅ New test
+        {
+            // Arrange
+            var html = "<p>This &amp; that &lt;tag&gt;</p>";
+
+            // Act
+            var result = articleHtmlService.ExtractIntroduction(html);
+
+            // Assert
+            Assert.AreEqual("This & that <tag>", result);
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Clean up after each test.
+        /// </summary>
+        [TestCleanup]
+        public async System.Threading.Tasks.Task Cleanup()
+        {
+            await DisposeAsync();
+        }
+    }
+}

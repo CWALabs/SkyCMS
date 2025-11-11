@@ -1,7 +1,7 @@
 ﻿// <copyright file="CreatePageViewModel.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -11,6 +11,7 @@ namespace Sky.Cms.Models
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
     using Cosmos.Cms.Data;
+    using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Mvc.Rendering;
 
     /// <summary>
@@ -55,5 +56,22 @@ namespace Sky.Cms.Models
         /// Gets or sets template list.
         /// </summary>
         public List<SelectListItem> Templates { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of article.
+        /// </summary>
+        public ArticleType ArticleType { get; set; } = ArticleType.General;
+
+        /// <summary>
+        /// Gets or sets blog category.
+        /// </summary>
+        [MaxLength(64)]
+        public string Category { get; set; }
+
+        /// <summary>
+        /// Gets or sets introduction/summary for blog post.
+        /// </summary>
+        [MaxLength(512)]
+        public string Introduction { get; set; }
     }
 }

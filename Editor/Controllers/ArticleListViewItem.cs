@@ -1,7 +1,7 @@
 ﻿// <copyright file="ArticleListViewItem.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -18,6 +18,11 @@ namespace Sky.Cms.Controllers
         /// Gets or sets the article number.
         /// </summary>
         public int ArticleNumber { get; set; }
+
+        /// <summary>
+        /// Gets or sets the article type.
+        /// </summary>
+        public int? ArticleType { get; set; }
 
         /// <summary>
         /// Gets or sets the article title.

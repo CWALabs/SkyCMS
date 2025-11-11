@@ -1,18 +1,18 @@
 ﻿// <copyright file="ConnectionStringProvider.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using System.Text;
+
 namespace Cosmos.DynamicConfig
 {
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Caching.Memory;
-    using Microsoft.Extensions.Configuration;
-    using System.Text;
-
     /// <summary>
     /// Gets connection strings and configuration values from the configuration file.
     /// </summary>
@@ -141,17 +141,22 @@ namespace Cosmos.DynamicConfig
         /// </remarks>
         public string GetTenantDomainNameFromRequest(bool useReferer = false)
         {
-            var httpContext = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HTTP context is not available.");
-            var request = httpContext.Request;
+            if (httpContextAccessor.HttpContext == null)
+            {
+                return string.Empty;
+            }
+             
             if (useReferer)
             {
-                var referer = request.Headers["Referer"].ToString();
+                var referer = httpContextAccessor.HttpContext.Request.Headers.Referer.ToString();
                 if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
                 {
                     return refererUri.Host.ToLower();
                 }
             }
-            return request == null ? throw new InvalidOperationException("HTTP request is not available.") : request.Host.Host;
+            return httpContextAccessor.HttpContext.Request == null ?
+                throw new InvalidOperationException("HTTP request is not available.") :
+                httpContextAccessor.HttpContext.Request.Host.Host;
         }
 
         /// <summary>

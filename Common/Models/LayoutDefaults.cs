@@ -1,7 +1,7 @@
 ﻿// <copyright file="LayoutDefaults.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -49,7 +49,7 @@ namespace Cosmos.Common.Models
         /// <returns>Returns a <see cref="Layout"/>.</returns>
         public static Layout GetOceanside()
         {
-            return new ()
+            return new()
             {
                 // Negative ID added to avoid this error while seeding:
                 // The seed entity for entity type 'Layout' cannot be added because a non-zero value is required for property 'Id'. Consider providing a negative value to avoid collisions with non-seed data.

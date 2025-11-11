@@ -8,10 +8,6 @@
       "destination": "wwwroot/lib/bootstrap"
     },
     {
-      "library": "cropperjs@1.6.2",
-      "destination": "wwwroot/lib/cropperjs"
-    },
-    {
       "provider": "unpkg",
       "library": "filepond-plugin-file-metadata@1.0.8",
       "destination": "wwwroot/lib/filepond-plugin-file-metadata"
@@ -21,32 +17,12 @@
       "destination": "wwwroot/lib/luxon"
     },
     {
-      "library": "jquery-cropper@1.0.1",
-      "destination": "wwwroot/lib/jquery-cropper"
-    },
-    {
       "library": "jquery-validate@1.21.0",
       "destination": "wwwroot/lib/jquery-validate"
     },
     {
       "library": "jquery-validation-unobtrusive@4.0.0",
       "destination": "wwwroot/lib/jquery-validation-unobtrusive"
-    },
-    {
-      "library": "jquery@3.7.1",
-      "destination": "wwwroot/lib/jquery/"
-    },
-    {
-      "library": "fotorama@4.6.4",
-      "destination": "wwwroot/lib/fotorama"
-    },
-    {
-      "library": "monaco-editor@0.52.2",
-      "destination": "wwwroot/lib/monaco-editor"
-    },
-    {
-      "library": "powerbi-client@2.23.7",
-      "destination": "wwwroot/lib/powerbi-client"
     },
     {
       "library": "popper.js@2.11.8",
@@ -60,11 +36,6 @@
       "provider": "unpkg",
       "library": "tabulator-tables@6.3.1",
       "destination": "wwwroot/lib/tabulator-tables"
-    },
-    {
-      "provider": "unpkg",
-      "library": "emmet-monaco-es@5.5.0",
-      "destination": "wwwroot/lib/emmet-monaco-es"
     },
     {
       "provider": "unpkg",

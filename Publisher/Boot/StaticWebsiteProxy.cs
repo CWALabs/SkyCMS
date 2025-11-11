@@ -1,18 +1,18 @@
 ﻿// <copyright file="StaticWebsiteProxy.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
+using System.Threading.RateLimiting;
+using Azure.Identity;
+using Cosmos.BlobService;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.RateLimiting;
+using Newtonsoft.Json.Serialization;
+
 namespace Cosmos.Publisher.Boot
 {
-    using System.Threading.RateLimiting;
-    using Azure.Identity;
-    using Cosmos.BlobService;
-    using Microsoft.AspNetCore.Antiforgery;
-    using Microsoft.AspNetCore.RateLimiting;
-    using Newtonsoft.Json.Serialization;
-
     /// <summary>
     /// Configures and starts a web application to serve static files from the "wwwroot" directory.
     /// </summary>

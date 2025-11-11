@@ -1,7 +1,7 @@
 ﻿// <copyright file="Cosmos___SettingsController.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -13,7 +13,6 @@ namespace Sky.Editor.Controllers
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
@@ -241,7 +240,7 @@ namespace Sky.Editor.Controllers
                 return result;
             }
             catch (Exception ex)
-            { 
+            {
                 logger.LogError(ex, "Error testing CDN connection.");
                 return new List<CdnResult> { new CdnResult { IsSuccessStatusCode = false, Message = ex.Message } };
             }

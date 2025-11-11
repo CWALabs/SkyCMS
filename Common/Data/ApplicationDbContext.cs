@@ -1,7 +1,7 @@
 ﻿// <copyright file="ApplicationDbContext.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -17,10 +17,11 @@ namespace Cosmos.Common.Data
     using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Diagnostics;
-    using MySql.EntityFrameworkCore.Extensions;
 
     /// <summary>
-    ///     Database Context for Sky CMS.
+    /// Database Context for Sky CMS.
+    /// Includes identity, content (articles, pages, templates, layouts),
+    /// operational metadata (metrics, logs) and now multi-blog support via <see cref="Blogs"/>.
     /// </summary>
     public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, IdentityRole, string>, IDataProtectionKeyContext
     {
@@ -36,43 +37,41 @@ namespace Cosmos.Common.Data
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationDbContext"/> class with connection string.
+        /// Automatically determines if connection string is for Cosmos DB, MySQL or SQL Server.
         /// </summary>
         /// <param name="connectionString">Connection string.</param>
-        /// <remarks>
-        /// Automatically determines if connection string is for Cosmos DB, MySQL or SQL Server.
-        /// </remarks>
         public ApplicationDbContext(string connectionString)
             : base(CosmosDbOptionsBuilder.GetDbOptions<ApplicationDbContext>(connectionString), true)
         {
         }
 
         /// <summary>
-        /// Gets or sets catalog of Articles.
+        /// Gets or sets catalog of Articles (flattened listing metadata + permissions).
         /// </summary>
         public DbSet<CatalogEntry> ArticleCatalog { get; set; }
 
         /// <summary>
-        /// Gets or sets article locks.
+        /// Gets or sets article locks (edit session coordination).
         /// </summary>
         public DbSet<ArticleLock> ArticleLocks { get; set; }
 
         /// <summary>
-        ///     Gets or sets article activity logs.
+        /// Gets or sets article activity logs (audit trail).
         /// </summary>
         public DbSet<ArticleLog> ArticleLogs { get; set; }
 
         /// <summary>
-        ///     Gets or sets article Numbers.
+        /// Gets or sets article number sequence records.
         /// </summary>
         public DbSet<ArticleNumber> ArticleNumbers { get; set; }
 
         /// <summary>
-        ///     Gets or sets articles.
+        /// Gets or sets versioned article entities (draft + historical).
         /// </summary>
         public DbSet<Article> Articles { get; set; }
 
         /// <summary>
-        /// Gets or sets public information about article authors and editors.
+        /// Gets or sets public author/editor profile info.
         /// </summary>
         public DbSet<AuthorInfo> AuthorInfos { get; set; }
 
@@ -82,7 +81,7 @@ namespace Cosmos.Common.Data
         public DbSet<Contact> Contacts { get; set; }
 
         /// <summary>
-        ///     Gets or sets website layouts.
+        /// Gets or sets website layouts (chrome containers).
         /// </summary>
         public DbSet<Layout> Layouts { get; set; }
 
@@ -92,22 +91,22 @@ namespace Cosmos.Common.Data
         public DbSet<Metric> Metrics { get; set; }
 
         /// <summary>
-        /// Gets or sets published pages viewable via the publisher.
+        /// Gets or sets published page snapshots (one active per ArticleNumber).
         /// </summary>
         public DbSet<PublishedPage> Pages { get; set; }
 
         /// <summary>
-        /// Gets or sets site settings.
+        /// Gets or sets site settings (key/value configuration).
         /// </summary>
         public DbSet<Setting> Settings { get; set; }
 
         /// <summary>
-        ///     Gets or sets web page templates.
+        /// Gets or sets web page templates (starter content).
         /// </summary>
         public DbSet<Template> Templates { get; set; }
 
         /// <summary>
-        /// Gets or sets the TOTP (Time-based One-Time Password) tokens for users.
+        /// Gets or sets the TOTP tokens for users.
         /// </summary>
         public DbSet<TotpToken> TotpTokens { get; set; } = null!;
 
@@ -168,12 +167,8 @@ namespace Cosmos.Common.Data
         }
 
         /// <summary>
-        /// Ensure database exists and returns status.
+        /// Ensure database exists and returns status (Cosmos DB specific path).
         /// </summary>
-        /// <param name="dbContext">Database context.</param>
-        /// <param name="setup">Setup database as well as test connection.</param>
-        /// <param name="databaseName">Set the database name.</param>
-        /// <returns>Success or not.</returns>
         public static DbStatus EnsureDatabaseExists(ApplicationDbContext dbContext, bool setup, string databaseName)
         {
             var cosmosClient = dbContext.Database.GetCosmosClient();
@@ -185,30 +180,20 @@ namespace Cosmos.Common.Data
                 DatabaseResponse response = cosmosClient.GetDatabase(databaseName).ReadAsync().Result;
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    // Check to see if the identity containers exist.
+                    // Check required containers.
                     var identityContainerResult = cosmosClient.GetContainer(databaseName, "Identity").ReadContainerAsync().Result;
-
-                    // Check to see if the CMS containers exists.
                     var articleContainerResult = cosmosClient.GetContainer(databaseName, "Articles").ReadContainerAsync().Result;
 
                     if (identityContainerResult.StatusCode == System.Net.HttpStatusCode.OK &&
                         articleContainerResult.StatusCode == System.Net.HttpStatusCode.OK)
                     {
-                        // Check to see if the database is empty.
                         var query = identityContainerResult.Container.GetItemLinqQueryable<IdentityUser>(allowSynchronousQueryExecution: true);
                         var count = query.Count();
-                        if (count > 0)
-                        {
-                            dbStatus = DbStatus.ExistsWithUsers; // Database exists and is not empty.
-                        }
-                        else
-                        {
-                            dbStatus = DbStatus.ExistsWithNoUsers; // Database exists but is empty.
-                        }
+                        dbStatus = count > 0 ? DbStatus.ExistsWithUsers : DbStatus.ExistsWithNoUsers;
                     }
                     else
                     {
-                        dbStatus = DbStatus.ExistsWithMissingContainers; // Container does not exist.
+                        dbStatus = DbStatus.ExistsWithMissingContainers;
                     }
                 }
             }
@@ -216,28 +201,22 @@ namespace Cosmos.Common.Data
             {
                 dbStatus = DbStatus.DoesNotExist;
             }
-            catch (Exception)
-            {
-                throw; // Log or handle unexpected exceptions as needed
-            }
 
-            // If setup is allowed, and database either does not exist, or, has missing containers,
-            // setup the database now.
             if (setup && (dbStatus == DbStatus.DoesNotExist || dbStatus == DbStatus.ExistsWithMissingContainers))
             {
                 var task = dbContext.Database.EnsureCreatedAsync();
                 task.Wait();
                 if (task.IsCompletedSuccessfully)
                 {
-                    dbStatus = DbStatus.ExistsWithNoUsers; // Database exists but has no users.
+                    dbStatus = DbStatus.ExistsWithNoUsers;
                 }
                 else if (task.IsFaulted)
                 {
-                    throw task.Exception; // Database creation failed.
+                    throw task.Exception;
                 }
                 else
                 {
-                    throw new Exception("EnsureCreatedAsync() failed."); // Database creation failed.
+                    throw new Exception("EnsureCreatedAsync() failed.");
                 }
             }
 
@@ -245,11 +224,16 @@ namespace Cosmos.Common.Data
         }
 
         /// <summary>
+        /// Returns true if the context can connect to the configured database.
+        /// </summary>
+        public async Task<bool> IsConfigured()
+        {
+            return await this.Database.CanConnectAsync();
+        }
+
+        /// <summary>
         /// Determine if a Cosmos DB database exists.
         /// </summary>
-        /// <param name="client">Cosmos DB client.</param>
-        /// <param name="databaseId">Database ID.</param>
-        /// <returns>True if the database exists, otherwise false.</returns>
         private static async Task<bool> DoesCosmosDatabaseExist(CosmosClient client, string databaseId)
         {
             QueryDefinition query = new QueryDefinition(
@@ -261,7 +245,6 @@ namespace Cosmos.Common.Data
             while (resultSet.HasMoreResults)
             {
                 FeedResponse<dynamic> response = await resultSet.ReadNextAsync();
-
                 return response.Count > 0;
             }
 
@@ -269,28 +252,15 @@ namespace Cosmos.Common.Data
         }
 
         /// <summary>
-        ///     Determine if this service is configured.
+        /// Configure provider-specific options (e.g., suppress Cosmos sync warnings).
         /// </summary>
-        /// <returns>Indicates if context is configured and can connect.</returns>
-        public async Task<bool> IsConfigured()
-        {
-            return await this.Database.CanConnectAsync();
-        }
-
-        /// <summary>
-        /// Modify logging to simple logging service.
-        /// </summary>
-        /// <param name="optionsBuilder">DbContextOptionsBuilder.</param>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var isCosmosDb = optionsBuilder.IsConfigured && optionsBuilder.Options.Extensions.Any(e => e is Microsoft.EntityFrameworkCore.Cosmos.Infrastructure.Internal.CosmosOptionsExtension);
+            var isCosmosDb = optionsBuilder.IsConfigured &&
+                             optionsBuilder.Options.Extensions.Any(e => e is Microsoft.EntityFrameworkCore.Cosmos.Infrastructure.Internal.CosmosOptionsExtension);
 
             if (isCosmosDb)
             {
-                // Synchronous blocking on asynchronous methods can result in deadlock, and the
-                // Azure Cosmos DB SDK only supports async methods.
-                // https://docs.microsoft.com/en-us/ef/core/providers/cosmos/limitations#synchronous-and-blocking-calls
-                // TODO: Remove all synchronous calls to the database.
                 optionsBuilder.ConfigureWarnings(w => w.Ignore(CosmosEventId.SyncNotSupported));
             }
 
@@ -298,9 +268,9 @@ namespace Cosmos.Common.Data
         }
 
         /// <summary>
-        ///     On model creating.
+        /// Model creation and container / index configuration.
         /// </summary>
-        /// <param name="modelBuilder">DB Context model builder.</param>
+        /// <param name="modelBuilder">The model builder.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             if (this.Database.IsSqlite())
@@ -323,7 +293,6 @@ namespace Cosmos.Common.Data
                     .HasPartitionKey(k => k.Id)
                     .HasKey(k => k.Id);
 
-                // Need to make a convertion so article number can be used as a partition key
                 modelBuilder.Entity<ArticleNumber>()
                     .ToContainer("ArticleNumber")
                     .HasPartitionKey(k => k.Id)
@@ -394,16 +363,24 @@ namespace Cosmos.Common.Data
                     .HasPartitionKey(k => k.Id)
                     .HasKey(k => k.Id);
             }
-            else if (Database.IsMySql())
+            else
             {
-                modelBuilder.Entity<Article>()
-                    .HasIndex(a => a.ArticleNumber);
+                if (Database.IsMySql())
+                {
+                    modelBuilder.Entity<Article>()
+                        .HasIndex(a => a.ArticleNumber);
 
-                modelBuilder.Entity<PublishedPage>()
-                    .HasIndex(p => p.UrlPath);
+                    modelBuilder.Entity<PublishedPage>()
+                        .HasIndex(p => p.UrlPath);
 
-                modelBuilder.Entity<CatalogEntry>()
-                    .HasIndex(p => new { p.UrlPath });
+                    modelBuilder.Entity<CatalogEntry>()
+                        .HasIndex(p => new { p.UrlPath });
+                }
+
+                // All SQL providers.
+                modelBuilder.Entity<Article>().Property(e => e.RowVersion).IsETagConcurrency();
+                modelBuilder.Entity<CatalogEntry>().Property(e => e.RowVersion).IsETagConcurrency();
+                modelBuilder.Entity<PublishedPage>().Property(e => e.RowVersion).IsETagConcurrency();
             }
 
             base.OnModelCreating(modelBuilder);

@@ -1,18 +1,15 @@
 ﻿// <copyright file="DesignerDataViewModel.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
 namespace Sky.Editor.Models
 {
     using System;
-    using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
     using Cosmos.Cms.Data;
-    using Sky.Editor.Models.GrapesJs;
-    using MailChimp.Net.Models;
 
     /// <summary>
     /// GrapesJs designer post data view model.

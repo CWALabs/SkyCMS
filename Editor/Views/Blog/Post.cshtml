@@ -1,0 +1,33 @@
+@model Cosmos.Common.Models.ArticleViewModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+<div class="container py-4 text-light">
+    <article class="blog-post">
+        <header class="mb-4">
+            <h1>@Model.Title</h1>
+            @if(Model.Published.HasValue){<p class="text-muted">Published @Model.Published.Value.UtcDateTime.ToString("yyyy-MM-dd")</p>}
+            @if(!string.IsNullOrEmpty(Model.BannerImage)){
+                <img src="@Model.BannerImage" alt="@Model.Title" class="img-fluid mb-3" />
+            }
+            @if(!string.IsNullOrEmpty(Model.Introduction)){
+                <p class="lead">@Model.Introduction</p>
+            }
+        </header>
+        <div class="blog-content">
+            @Html.Raw(Model.Content)
+        </div>
+        <footer class="mt-5 d-flex justify-content-between">
+            <div>
+                @if(!string.IsNullOrEmpty(Model.PreviousUrl)){
+                    <a class="btn btn-sm btn-outline-secondary" href="@Model.PreviousUrl">&laquo; @Model.PreviousTitle</a>
+                }
+            </div>
+            <div>
+                @if(!string.IsNullOrEmpty(Model.NextUrl)){
+                    <a class="btn btn-sm btn-outline-secondary" href="@Model.NextUrl">@Model.NextTitle &raquo;</a>
+                }
+            </div>
+        </footer>
+    </article>
+</div>

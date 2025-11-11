@@ -1,0 +1,167 @@
+@model Sky.Editor.Models.Blogs.BlogStreamViewModel
+@{
+    ViewData["Title"] = "Edit Blog Stream";
+}
+<!-- FilePond -->
+<link rel="stylesheet" href="/lib/filepond/filepond.min.css" />
+<!-- Image Widget styles -->
+<link rel="stylesheet" href="/lib/cosmos/image-widget/image-widget.css" />
+<style>
+    .ccms-img-widget-img {
+        max-height: 20vh;
+        border: 1px dashed #ccc;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+</style>
+<div class="cwps-editor-container pt-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-light mb-3">
+                <h3>Edit a Blog</h3>
+                <form asp-action="Edit" method="post" id="editBlogForm" novalidate enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    @* Hidden fields (no user entry for BlogKey; it’s derived from Title) *@
+                    <input type="hidden" asp-for="BlogKey" />
+                    @Html.HiddenFor(m => m.HeroImage)
+
+                    <p class="text-light">Blog banner image (optional):</p>
+                    <div class="ccms-img-widget-container"
+                         data-editor-config="image-widget"
+                         data-ccms-new="true">
+                        @if (!string.IsNullOrEmpty(Model.HeroImage))
+                        {
+                            <img id="heroPreview" class="ccms-img-widget-img" src="@Model.HeroImage" alt="Hero Image Preview" />
+                        }
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Title:</span>
+                        <input asp-for="Title" class="form-control" id="Title" placeholder="e.g. Engineering Updates" />
+                    </div>
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                    <div id="titleFeedback" class="form-text mb-2" aria-live="polite"></div>
+                    <div class="input-group mb-3" style="max-width: 300px;">
+                        <span class="input-group-text">Publish:</span>
+                        <input asp-for="Published" type="datetime-local" value="@DateTimeOffset.UtcNow" class="form-control" />
+                    </div>
+                    <span asp-validation-for="Published" class="text-danger"></span>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Description:</span>
+                        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Short description (max 512 chars)"></textarea>
+                    </div>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+
+                    <div class="form-text mb-3">
+                        <button id="btnSubmit" type="submit" class="btn btn-primary">Save</button>
+                        <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // Basic title presence check
+            const form = document.getElementById('editBlogForm');
+            const titleInput = document.getElementById('Title');
+            form.addEventListener('submit', (e) => {
+                const title = (titleInput.value || '').trim();
+                if (!title) {
+                    e.preventDefault();
+                    alert('A title is required.');
+                    titleInput.classList.add('is-invalid');
+                } else {
+                    titleInput.classList.remove('is-invalid');
+                }
+            });
+
+            // Image upload wiring
+            const fileInput = document.getElementById('heroFile');
+            const uploadBtn = document.getElementById('btnUpload');
+            const urlInput = document.getElementById('HeroImage');
+            const previewImg = document.getElementById('heroPreview');
+            const uploadUrl = '@Url.Action("SimpleUpload", "FileManager")';
+            const blogId = '@Model.Id';
+
+            const allowedTypes = new Set([
+                'image/apng', 'image/avif', 'image/gif', 'image/jpeg', 'image/png', 'image/svg+xml', 'image/webp'
+            ]);
+
+            function setBusy(busy) {
+                uploadBtn.disabled = busy;
+                uploadBtn.textContent = busy ? 'Uploading…' : 'Upload';
+            }
+
+            async function uploadImage(file) {
+                if (!file) return;
+
+                if (!allowedTypes.has(file.type)) {
+                    alert('Unsupported image format. Please select a web image (PNG, JPEG/JPG, GIF, WEBP, AVIF, APNG, SVG).');
+                    return;
+                }
+                if (file.size > 25 * 1024 * 1024) {
+                    alert('The image is too large. Maximum size is 25MB.');
+                    return;
+                }
+
+                setBusy(true);
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const endpoint = `${uploadUrl}?id=${encodeURIComponent(blogId)}&entityType=blog`;
+                    const res = await fetch(endpoint, { method: 'POST', body: formData });
+                    if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+
+                    const data = await res.json();
+                    if (data?.error?.message) throw new Error(data.error.message);
+
+                    const imageUrl = data?.url || (Array.isArray(data?.data) ? data.data[0] : '');
+                    if (!imageUrl) throw new Error('Unexpected upload response.');
+
+                    urlInput.value = imageUrl;
+                    previewImg.src = imageUrl;
+                    previewImg.style.display = 'block';
+                } catch (err) {
+                    alert(err.message || 'Image upload failed.');
+                } finally {
+                    setBusy(false);
+                }
+            }
+
+            uploadBtn.addEventListener('click', () => uploadImage(fileInput.files?.[0]));
+        })();
+
+        // Optional: route uploads under articles/{articleNumber}
+        // window.articleNumber = 123;
+        // Handles the image widget events.
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle the image changed event.
+            if (window.CCMSImageWidgetEvents && typeof window.CCMSImageWidgetEvents.on === 'function') {
+                window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+                    // Update a hidden input to track the current image URL
+                    const hiddenField = document.getElementById('HeroImage');
+                    if (hiddenField) {
+                        hiddenField.value = info.type === 'uploaded' ? info.imageSrc : '';
+                    } else {
+                        console.warn('Hidden field for HeroImage not found.');
+                    }
+                });
+            }
+        });
+    </script>
+
+    @* FilePond and Image Widget *@
+    <script asp-append-version="true" src="~/lib/filepond-plugin-file-metadata/dist/filepond-plugin-file-metadata.js"></script>
+    <script asp-append-version="true" src="~/lib/filepond/filepond.js"></script>
+    <script asp-append-version="true" src="/lib/cosmos/image-widget/image-widget.js"></script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,7 +1,7 @@
 ﻿// <copyright file="HomeController.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -16,7 +16,6 @@ namespace Sky.Cms.Controllers
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Models;
-    using Sky.Editor.Data.Logic;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Identity;
@@ -27,6 +26,7 @@ namespace Sky.Cms.Controllers
     using Microsoft.Extensions.Logging;
     using Microsoft.Net.Http.Headers;
     using Sky.Cms.Models;
+    using Sky.Editor.Data.Logic;
 
     /// <summary>
     /// Home page controller.
@@ -134,13 +134,14 @@ namespace Sky.Cms.Controllers
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task<IActionResult> EditList(string target)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var article = await articleLogic.GetArticleByUrl(target);
 
+            if (article == null)
+            {
+                return NotFound(ModelState);
+            }
+
+           
             var data = await dbContext.Articles.OrderByDescending(o => o.VersionNumber)
                 .Where(a => a.ArticleNumber == article.ArticleNumber).Select(s => new ArticleEditMenuItem
                 {
@@ -221,9 +222,10 @@ namespace Sky.Cms.Controllers
             // If yes, do NOT include headers that allow caching. 
             Response.Headers[HeaderNames.CacheControl] = "no-store";
 
+            // If no preview type, load the edit list.
             if (string.IsNullOrEmpty(previewType))
             {
-                ViewData["LoadEditList"] = true;
+                ViewData["LoadEditList"] = true; // Signal to load the edit list in the main menu.
                 return View();
             }
 

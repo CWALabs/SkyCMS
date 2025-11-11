@@ -1,34 +1,43 @@
-# Cosmos.BlobService - Multi-Cloud Blob Storage Service
+README.md
+# Cosmos.BlobService - Sky CMS Azure Storage Provider
+
+**Version:** 9.0.16.5  
+**License:** MIT  
+**Repository:** [https://github.com/MoonriseSoftwareCalifornia/Cosmos.BlobService](https://github.com/MoonriseSoftwareCalifornia/Cosmos.BlobService)
 
 ## Overview
 
-Cosmos.BlobService is a comprehensive multi-cloud blob storage abstraction layer that provides a unified interface for managing files across different cloud storage providers. It supports Azure Blob Storage and Amazon S3 (with notes on Cloudflare R2), allowing applications to seamlessly switch between providers or use multiple providers simultaneously.
+Cosmos.BlobService is a comprehensive multi-cloud blob storage abstraction layer that provides a unified interface for managing files across different cloud storage providers. It supports Azure Blob Storage, Amazon S3, and Cloudflare R2 (S3-compatible), allowing applications to seamlessly switch between providers or use multiple providers simultaneously.
+
+This library is part of the [Sky CMS ecosystem](https://cosmos.moonrise.net) and is built on .NET 9.0.
 
 ## Features
 
 ### Multi-Cloud Support
 
-- **Azure Blob Storage**: Full support with managed identity authentication
+- **Azure Blob Storage**: Full support with managed identity authentication and Azure Files Share
 - **Amazon S3**: Complete AWS S3 integration with chunked upload support
-- **Cloudflare R2 (S3-compatible)**: Requires custom S3 endpoint; see notes below
+- **Cloudflare R2**: Full S3-compatible support with custom endpoint configuration
 - **Unified Interface**: Single API for all storage operations regardless of provider
-- **Provider Switching**: Runtime configuration of storage providers
+- **Runtime Provider Selection**: Dynamic configuration of storage providers based on connection strings
 
 ### File Management Operations
 
 - **Upload/Download**: Single and chunked file uploads with metadata tracking
 - **Copy/Move/Rename**: File and folder operations across cloud providers
 - **Delete**: File and folder deletion with recursive support
-- **Metadata**: Comprehensive file metadata handling including image dimensions
+- **Metadata Management**: Comprehensive file metadata handling including image dimensions
 - **Directory Operations**: Create, list, and manage virtual directory structures
+- **Stream Operations**: Efficient streaming for large file operations
 
 ### Advanced Features
 
-- **Chunked Uploads**: Support for large file uploads with progress tracking
-- **Static Website**: Enable/disable Azure static website hosting
+- **Chunked Uploads**: Support for large file uploads with progress tracking (AWS multi-part and Azure append blobs)
+- **Static Website Hosting**: Enable/disable Azure static website hosting programmatically
 - **Data Protection**: Integration with ASP.NET Core data protection
-- **Multi-Tenant**: Support for single and multi-tenant configurations
-- **Memory Caching**: Efficient caching for improved performance
+- **Multi-Tenant Support**: Support for single and multi-tenant configurations with dynamic configuration
+- **Memory Caching**: Efficient caching for improved performance (especially for S3 multi-part uploads)
+- **Metadata Operations**: Upsert, delete, and retrieve custom metadata for blobs
 
 ## Architecture
 
@@ -36,98 +45,111 @@ Cosmos.BlobService is a comprehensive multi-cloud blob storage abstraction layer
 
 #### StorageContext
 
-The main service class that provides the unified interface to all storage operations. It automatically selects the appropriate driver based on configuration.
+The main service class that provides the unified interface to all storage operations. It automatically selects the appropriate driver based on configuration and supports both single-tenant and multi-tenant scenarios.
 
 #### ICosmosStorage Interface
 
-Defines the contract for all storage drivers, ensuring consistent behavior across different cloud providers.
+Defines the contract for all storage drivers, ensuring consistent behavior across different cloud providers. Key methods include:
+- Blob existence checks
+- File and folder CRUD operations
+- Streaming operations
+- Metadata management
+- Storage consumption metrics
 
 #### Storage Drivers
 
-- **AzureStorage**: Implements Azure Blob Storage operations
-- **AmazonStorage**: Implements Amazon S3 operations
+- **AzureStorage**: Implements Azure Blob Storage operations with support for both block and append blobs
+- **AmazonStorage**: Implements Amazon S3 operations with multi-part upload support
 - **AzureFileStorage**: Provides Azure Files Share support
 
-### Driver Pattern
+### Driver Selection Pattern
 
-The service uses a driver pattern where each cloud provider has its own implementation of the `ICosmosStorage` interface, allowing for provider-specific optimizations while maintaining a consistent API.
+The service uses automatic driver selection based on connection string format:
+- Connection strings starting with `DefaultEndpointsProtocol=` → Azure Blob Storage
+- Connection strings containing `AccountId=` → Cloudflare R2
+- Connection strings containing `Bucket=` → Amazon S3
 
 ## Installation
 
-This package is part of the SkyCMS solution and is not distributed separately on NuGet. You can obtain it by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+### From Source
+
+This package can be obtained by cloning the [Sky CMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS):
+
+### NuGet Package
+
+The package can be built and referenced directly from your project or published to your private NuGet feed.
+
+## Dependencies
+
+- **.NET 9.0**: Target framework
+- **Azure.Storage.Blobs**: Azure Blob Storage SDK
+- **Azure.Storage.Files.Shares** (v12.24.0): Azure Files Share SDK
+- **Azure.Extensions.AspNetCore.DataProtection.Blobs** (v1.5.1): Data protection integration
+- **Azure.Identity** (v1.17.0): Azure authentication
+- **AWSSDK.S3** (v4.0.9): Amazon S3 SDK
+- **Microsoft.Extensions.Caching.Memory**: Memory caching
+- **StyleCop.Analyzers** (v1.1.118): Code style enforcement
 
 ## Configuration
 
-### Connection key precedence
+### Connection String Precedence
 
 The Blob Service looks for the following configuration keys (in order):
 
 1. `ConnectionStrings:StorageConnectionString` (preferred)
 2. `ConnectionStrings:AzureBlobStorageConnectionString` (fallback for legacy configurations)
 
-### Azure Blob Storage Configuration
+### Azure Blob Storage
+
+**Standard Connection:**
 
 ```json
-{
-  "ConnectionStrings": {
-    "StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=yourkey;EndpointSuffix=core.windows.net"
-  }
+{ "ConnectionStrings": {
+	"StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=yourkey;EndpointSuffix=core.windows.net" }
 }
 ```
 
-For managed identity authentication:
+**Managed Identity (DefaultAzureCredential):**
 
 ```json
-{
-  "ConnectionStrings": {
-    "StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=AccessToken;EndpointSuffix=core.windows.net"
-  }
-}
-
-> Note: Using `AccountKey=AccessToken` enables DefaultAzureCredential in code. Ensure your app identity has appropriate Blob Data roles.
-```
-
-### Amazon S3 Configuration
-
-```json
-{
-  "ConnectionStrings": {
-    "StorageConnectionString": "Bucket=yourbucket;Region=us-west-2;KeyId=yourkeyid;Key=yoursecretkey;"
-  }
-}
-
-Quick guide to create least-privilege keys: [Docs/AWS-S3-AccessKeys.md](../Docs/AWS-S3-AccessKeys.md)
-```
-
-### Cloudflare R2 (S3-compatible) Configuration
-
-```json
-Cloudflare R2 is S3-compatible but typically requires a custom S3 endpoint like `https://<account-id>.r2.cloudflarestorage.com`. The current implementation uses the AWS SDK without exposing a custom endpoint setting; full R2 support may require a code change to pass a custom ServiceURL.
-
-You can still prepare credentials and bucket details using the R2 console. See: [Docs/Cloudflare-R2-AccessKeys.md](../Docs/Cloudflare-R2-AccessKeys.md)
-```
-
-
-### Multi-Tenant Configuration
-
-```json
-{
-  "MultiTenantEditor": true,
-  "ConnectionStrings": {
-    "DataProtectionStorage": "your-data-protection-connection-string"
-  }
+{ "ConnectionStrings": {
+	"StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=AccessToken;EndpointSuffix=core.windows.net" }
 }
 ```
+
+````````
+
+> **Note:** Using `AccountKey=AccessToken` enables DefaultAzureCredential. Ensure your app identity has the appropriate Azure RBAC roles (e.g., Storage Blob Data Contributor).
+
+### Amazon S3
+
+```json
+{ "ConnectionStrings": {
+	"StorageConnectionString": "Bucket=your-bucket-name;Region=us-west-2;AccessKey=your-access-key;SecretKey=your-secret`
+
+### Cloudflare R2
+
+```json
+{ "ConnectionStrings": {
+	"StorageConnectionString": "Bucket=your-bucket-name;AccountId=your-account-id;AccessKey=your-access-key;SecretKey=your-secret;Endpoint=https://your-account-id.r2.cloudflarestorage.com" }
+}
+
+````````
+
+When `MultiTenantEditor` is `true`, the service uses `IDynamicConfigurationProvider` to retrieve tenant-specific connection strings at runtime.
 
 ## Usage
 
-### Service Registration
-
-In your `Program.cs` or `Startup.cs`:
-
 ```csharp
 using Cosmos.BlobService;
+using Azure.Identity;
+```
 
+### Service Registration
+
+In your `Program.cs`:
+
+```csharp
 // Register storage context
 builder.Services.AddCosmosStorageContext(builder.Configuration);
 
@@ -135,177 +157,154 @@ builder.Services.AddCosmosStorageContext(builder.Configuration);
 builder.Services.AddCosmosCmsDataProtection(builder.Configuration, new DefaultAzureCredential());
 ```
 
-### Provider detection
-
-- Connection string starts with `DefaultEndpointsProtocol=` → Azure Blob Storage
-- Connection string contains `Bucket=` → Amazon S3 (or S3-compatible)
-
-For full configuration guidance, see [Docs/StorageConfig.md](../Docs/StorageConfig.md).
-
-### Basic Usage
+### Basic File Operations
 
 ```csharp
-using Cosmos.BlobService;
-using Cosmos.BlobService.Models;
+using Cosmos.BlobService; using Cosmos.BlobService.Models;
 
-public class FileController : ControllerBase
-{
-    private readonly StorageContext _storageContext;
+public class FileService { private readonly StorageContext _storageContext;
 
-    public FileController(StorageContext storageContext)
-    {
-        _storageContext = storageContext;
-    }
+     public FileService(StorageContext storageContext)
+     {
+         _storageContext = storageContext;
+     }
 
-    [HttpPost("upload")]
-    public async Task<IActionResult> UploadFile(IFormFile file, string directory = "")
-    {
-        var fileName = Path.GetFileName(file.FileName);
-        var relativePath = Path.Combine(directory, fileName).Replace('\\', '/');
-        
-        var metadata = new FileUploadMetaData
-        {
-            FileName = fileName,
-            RelativePath = relativePath,
-            ContentType = file.ContentType,
-            ChunkIndex = 0,
-            TotalChunks = 1,
-            TotalFileSize = file.Length,
-            UploadUid = Guid.NewGuid().ToString()
-        };
+     // Upload a file
+     public async Task<string> UploadFileAsync(IFormFile file, string directory = "")
+     {
+         var fileName = Path.GetFileName(file.FileName);
+         var relativePath = Path.Combine(directory, fileName).Replace('\\', '/');
+    
+         var metadata = new FileUploadMetaData
+         {
+             FileName = fileName,
+             RelativePath = relativePath,
+             ContentType = file.ContentType,
+             ChunkIndex = 0,
+             TotalChunks = 1,
+             TotalFileSize = file.Length,
+             UploadUid = Guid.NewGuid().ToString()
+         };
 
-        using var stream = new MemoryStream();
-        await file.CopyToAsync(stream);
-        
-        await _storageContext.AppendBlobAsync(stream.ToArray(), metadata, DateTimeOffset.UtcNow, "block");
-        
-        return Ok(new { path = relativePath });
-    }
+         using var stream = new MemoryStream();
+         await file.CopyToAsync(stream);
+    
+         await _storageContext.AppendBlob(stream, metadata, "block");
+    
+         return relativePath;
+     }
 
-    [HttpGet("download/{*path}")]
-    public async Task<IActionResult> DownloadFile(string path)
-    {
-        var stream = await _storageContext.GetStreamAsync(path);
-        var metadata = await _storageContext.GetFileAsync(path);
-        
-        return File(stream, metadata.ContentType, metadata.Name);
-    }
+     // Download a file
+     public async Task<Stream> DownloadFileAsync(string path)
+     {
+         return await _storageContext.GetStreamAsync(path);
+     }
 
-    [HttpDelete("{*path}")]
-    public async Task<IActionResult> DeleteFile(string path)
-    {
-        _storageContext.DeleteFile(path);
-        return Ok();
-    }
+     // Check if file exists
+     public async Task<bool> FileExistsAsync(string path)
+     {
+         return await _storageContext.BlobExistsAsync(path);
+     }
 
-    [HttpPost("copy")]
-    public async Task<IActionResult> CopyFile(string source, string destination)
-    {
-        await _storageContext.CopyAsync(source, destination);
-        return Ok();
-    }
+     // Delete a file
+     public void DeleteFile(string path)
+     {
+         _storageContext.DeleteFile(path);
+     }
 
-    [HttpPost("move")]
-    public async Task<IActionResult> MoveFile(string source, string destination)
-    {
-        await _storageContext.MoveFileAsync(source, destination);
-        return Ok();
-    }
+     // Copy a file
+     public async Task CopyFileAsync(string source, string destination)
+     {
+         await _storageContext.CopyAsync(source, destination);
+     }
+
+     // Move/rename a file
+     public async Task MoveFileAsync(string source, string destination)
+     {
+         await _storageContext.MoveFileAsync(source, destination);
+     }
+
+     // List files and folders
+     public async Task<List<FileManagerEntry>> ListContentsAsync(string path)
+     {
+         return await _storageContext.GetFilesAndDirectories(path);
+     }
+
+     // Create a folder
+     public async Task<FileManagerEntry> CreateFolderAsync(string path)
+     {
+         return await _storageContext.CreateFolder(path);
+     }
+
+     // Delete a folder
+     public async Task DeleteFolderAsync(string path)
+     {
+         await _storageContext.DeleteFolderAsync(path);
+     }
 }
 ```
 
-### Example File Operations
+### Chunked File Upload (Large Files)
 
 ```csharp
-// Check if file exists
-bool exists = await storageContext.BlobExistsAsync("path/to/file.jpg");
+public async Task<IActionResult> UploadChunk( byte[] chunkData, long chunkIndex, long totalChunks, string fileName, string uploadUid) { var metadata = new FileUploadMetaData { FileName = fileName, RelativePath = $"uploads/{fileName}", ContentType = "application/octet-stream", ChunkIndex = chunkIndex, TotalChunks = totalChunks, TotalFileSize = chunkData.Length * totalChunks, UploadUid = uploadUid };
+     using var memoryStream = new MemoryStream(chunkData);
+     await _storageContext.AppendBlob(memoryStream, metadata, "append");
 
-// Get file metadata
-var fileInfo = await storageContext.GetFileAsync("path/to/file.jpg");
-
-// List files and directories
-var entries = await storageContext.GetFilesAsync("path/to/directory");
-
-// Create directory
-await storageContext.CreateFolderAsync("path/to/new/directory");
-
-// Delete directory
-await storageContext.DeleteFolderAsync("path/to/directory");
-```
-
-### Image Upload with Metadata
-
-```csharp
-[HttpPost("upload-image")]
-public async Task<IActionResult> UploadImage(IFormFile file)
-{
-    using var image = await Image.LoadAsync(file.OpenReadStream());
-    
-    var metadata = new FileUploadMetaData
-    {
-        FileName = file.FileName,
-        RelativePath = $"images/{file.FileName}",
-        ContentType = file.ContentType,
-        ImageWidth = image.Width.ToString(),
-        ImageHeight = image.Height.ToString(),
-        TotalFileSize = file.Length,
-        UploadUid = Guid.NewGuid().ToString()
-    };
-
-    using var memoryStream = new MemoryStream();
-    await file.CopyToAsync(memoryStream);
-    
-    await storageContext.AppendBlobAsync(memoryStream.ToArray(), metadata, DateTimeOffset.UtcNow, "block");
-    
-    return Ok(new { 
-        url = $"/{metadata.RelativePath}",
-        width = image.Width,
-        height = image.Height 
-    });
+     return Ok(new { 
+         uploaded = chunkIndex + 1, 
+         total = totalChunks 
+     });
 }
 ```
 
 ### Azure Static Website Management
 
 ```csharp
-// Enable static website hosting (Azure only)
-await storageContext.EnableAzureStaticWebsite();
-
-// Disable static website hosting (Azure only)
-await storageContext.DisableAzureStaticWebsite();
+// Enable static website hosting (Azure only) await _storageContext.EnableAzureStaticWebsite();
+// Disable static website hosting (Azure only) await _storageContext.DisableAzureStaticWebsite();
 ```
 
-## API Reference
+### Working with Metadata
+
+```csharp
+// Get file metadata
+var fileInfo = await _storageContext.GetFileAsync("path/to/file.jpg");
+Console.WriteLine($"Size: {fileInfo.Size}, Modified: {fileInfo.Modified}");
+```
 
 ### StorageContext Methods
 
-| Method | Description | Parameters |
-|--------|-------------|------------|
-| `BlobExistsAsync` | Check if a blob exists | `path: string` |
-| `GetFileAsync` | Get file metadata | `path: string` |
-| `GetFilesAsync` | List files in directory | `path: string` |
-| `GetStreamAsync` | Get file stream | `path: string` |
-| `AppendBlobAsync` | Upload file data | `data: byte[]`, `metadata: FileUploadMetaData`, `uploadTime: DateTimeOffset`, `mode: string` |
-| `CopyAsync` | Copy file/folder | `source: string`, `destination: string` |
-| `MoveFileAsync` | Move/rename file | `source: string`, `destination: string` |
-| `DeleteFile` | Delete file | `path: string` |
-| `DeleteFolderAsync` | Delete folder | `path: string` |
-| `CreateFolderAsync` | Create folder | `path: string` |
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `BlobExistsAsync(path)` | Check if a blob exists | `Task<bool>` |
+| `GetFileAsync(path)` | Get file metadata | `Task<FileManagerEntry>` |
+| `GetFilesAndDirectories(path)` | List files and folders | `Task<List<FileManagerEntry>>` |
+| `GetStreamAsync(path)` | Get file stream | `Task<Stream>` |
+| `AppendBlob(stream, metadata, mode)` | Upload file data | `Task` |
+| `CopyAsync(source, destination)` | Copy file/folder | `Task` |
+| `MoveFileAsync(source, destination)` | Move/rename file | `Task` |
+| `MoveFolderAsync(source, destination)` | Move/rename folder | `Task` |
+| `DeleteFile(path)` | Delete file | `void` |
+| `DeleteFolderAsync(path)` | Delete folder | `Task` |
+| `CreateFolder(path)` | Create folder | `Task<FileManagerEntry>` |
+| `EnableAzureStaticWebsite()` | Enable Azure static website | `Task` |
+| `DisableAzureStaticWebsite()` | Disable Azure static website | `Task` |
 
 ### FileUploadMetaData Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `UploadUid` | `string` | Unique upload identifier |
-| `FileName` | `string` | Original file name |
-| `RelativePath` | `string` | Storage path |
-| `ContentType` | `string` | MIME content type |
-| `ChunkIndex` | `long` | Current chunk number |
-| `TotalChunks` | `long` | Total number of chunks |
-| `TotalFileSize` | `long` | Total file size in bytes |
-| `ImageWidth` | `string` | Image width (if applicable) |
-| `ImageHeight` | `string` | Image height (if applicable) |
-| `CacheControl` | `string` | Cache control header |
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `UploadUid` | `string` | Yes | Unique upload identifier for tracking chunks |
+| `FileName` | `string` | Yes | Original file name |
+| `RelativePath` | `string` | Yes | Target storage path |
+| `ContentType` | `string` | Yes | MIME content type |
+| `ChunkIndex` | `long` | Yes | Current chunk number (0-based) |
+| `TotalChunks` | `long` | Yes | Total number of chunks |
+| `TotalFileSize` | `long` | Yes | Total file size in bytes |
+| `ImageWidth` | `string` | No | Image width (for image files) |
+| `ImageHeight` | `string` | No | Image height (for image files) |
+| `CacheControl` | `string` | No | Cache control header |
 
 ### FileManagerEntry Properties
 
@@ -315,60 +314,57 @@ await storageContext.DisableAzureStaticWebsite();
 | `Path` | `string` | Full path |
 | `Size` | `long` | Size in bytes |
 | `IsDirectory` | `bool` | Whether item is a directory |
-| `Created` | `DateTime` | Creation date |
-| `Modified` | `DateTime` | Last modified date |
+| `Created` | `DateTime` | Creation date (local) |
+| `CreatedUtc` | `DateTime` | Creation date (UTC) |
+| `Modified` | `DateTime` | Last modified date (local) |
+| `ModifiedUtc` | `DateTime` | Last modified date (UTC) |
 | `ContentType` | `string` | MIME content type |
 | `Extension` | `string` | File extension |
 | `ETag` | `string` | Entity tag |
-
-## Dependencies
-
-### Core Dependencies
-
-- **.NET 9.0**: Modern .NET framework
-- **Azure.Storage.Blobs**: Azure Blob Storage SDK
-- **AWSSDK.S3**: Amazon S3 SDK
-- **Azure.Identity**: Azure authentication
-- **Microsoft.Extensions.Caching.Memory**: Memory caching
-- **Microsoft.Extensions.DependencyInjection**: Dependency injection
-
-### Image Processing
-
-- **SixLabors.ImageSharp**: Image manipulation and metadata extraction
-
-### Project Configuration
-
-- **Microsoft.Extensions.Configuration**: Configuration management
-- **Cosmos.DynamicConfig**: Dynamic configuration provider
+| `HasDirectories` | `bool` | Whether folder contains subdirectories |
 
 ## Multi-Cloud Strategy
 
-The service provides a unified approach to cloud storage that offers several benefits:
+The service provides a unified approach to cloud storage with several benefits:
 
 1. **Vendor Independence**: Avoid vendor lock-in by supporting multiple providers
 2. **Cost Optimization**: Choose the most cost-effective provider for different scenarios
 3. **Geographic Distribution**: Use different providers for different regions
-4. **Redundancy**: Implement cross-cloud backup strategies
-5. **Migration**: Easily migrate between cloud providers
+4. **Migration Flexibility**: Easily migrate between cloud providers with minimal code changes
+5. **Development Flexibility**: Use different providers for development, staging, and production
 
 ## Performance Considerations
 
-- **Chunked Uploads**: Large files are uploaded in chunks for better reliability
-- **Memory Caching**: Frequently accessed metadata is cached
+- **Chunked Uploads**: Large files are uploaded in chunks (AWS: 5MB minimum per part, Azure: 2.5MB buffered)
+- **Memory Caching**: Multi-part upload state is cached for AWS/R2 operations
 - **Connection Pooling**: Efficient connection management for both Azure and AWS
 - **Async Operations**: All operations are asynchronous for better scalability
+- **Automatic Driver Selection**: No runtime overhead for driver selection after initial configuration
 
 ## Security Features
 
-- **Managed Identity**: Support for Azure managed identity authentication
-- **Data Protection**: Integration with ASP.NET Core data protection
+- **Managed Identity**: Support for Azure managed identity authentication (DefaultAzureCredential)
+- **Data Protection**: Integration with ASP.NET Core data protection for key storage
 - **Connection String Security**: Secure handling of connection strings and credentials
-- **Access Control**: Respect cloud provider access control mechanisms
+- **Access Control**: Respects cloud provider access control mechanisms (Azure RBAC, S3 IAM)
+- **CORS Configuration**: Automatic CORS configuration when enabling Azure static websites
 
-## License
-
-Licensed under the GNU Public License, Version 3.0. See the [LICENSE](LICENSE.txt) file for details.
+## Project Structure
 
 ## Contributing
 
-This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+This project is part of the Sky CMS ecosystem. For contribution guidelines and more information, visit:
+- **Sky CMS Repository**: [https://github.com/MoonriseSoftwareCalifornia/SkyCMS](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
+- **Project Website**: [https://cosmos.moonrise.net](https://cosmos.moonrise.net)
+
+## License
+
+Licensed under the MIT License. See the LICENSE file for details.
+
+## Copyright
+
+Copyright © Moonrise Software LLC. All rights reserved.
+
+## Support
+
+For issues, questions, or contributions, please visit the GitHub repository or the project website.

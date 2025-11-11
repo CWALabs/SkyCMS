@@ -185,7 +185,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
             {
                 var user = await _repo.Table<IdentityUser>()
                     .FirstOrDefaultAsync(_ => _.Id == userId, cancellationToken: cancellationToken);
-                
+
                 return (TUserEntity?)(object?)user;
             }
 

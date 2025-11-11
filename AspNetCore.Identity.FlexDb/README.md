@@ -1,51 +1,140 @@
 # AspNetCore.Identity.FlexDb - Flexible Database Provider for ASP.NET Core Identity
 
-A flexible, multi-database implementation of ASP.NET Core Identity that automatically selects the appropriate database provider based on your connection string. Supports Azure Cosmos DB, SQL Server, MySQL, and SQLite with seamless switching between providers.
+[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
+[![NuGet](https://img.shields.io/nuget/v/AspNetCore.Identity.CosmosDb.svg)](https://www.nuget.org/packages/AspNetCore.Identity.CosmosDb/)
 
-## � What's New
+A flexible, multi-database implementation of ASP.NET Core Identity that **automatically selects the appropriate database provider** based on your connection string. Supports Azure Cosmos DB, SQL Server, MySQL, and SQLite with seamless switching between providers.
 
-- .NET 9 support and dependency updates
-- Improved provider auto-detection docs and examples
-- Optional SQLite at-rest encryption via SQLCipher package
+---
 
-## �🎯 Overview
+## 📋 Table of Contents
 
-AspNetCore.Identity.FlexDb eliminates the need to choose a specific database provider at compile time. Simply provide a connection string, and the library automatically configures the correct Entity Framework provider, making it perfect for applications that need to support multiple deployment scenarios or migrate between database systems.
+- [What's New](#-whats-new)
+- [Overview](#-overview)
+- [Supported Database Providers](#️-supported-database-providers)
+- [Quick Start](#-quick-start)
+- [Architecture](#️-architecture)
+- [Configuration](#-configuration)
+- [Security Features](#-security-features)
+- [Advanced Usage](#️-advanced-usage)
+- [Extending FlexDb](#-extending-flexdb)
+- [Performance](#-performance)
+- [Migration Guide](#-migration-guide)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
+
+## 🆕 What's New
+
+### Version 9.0+
+
+- ✅ **.NET 9** support with C# 13.0 features
+- ✅ **Enhanced Strategy Pattern** with improved provider detection
+- ✅ **Thread-safe** stateless strategy implementations
+- ✅ **Improved documentation** with comprehensive XML comments
+- ✅ **SQLite encryption** support via SQLCipher package
+- ✅ **Performance optimizations** for all providers
+- ✅ **Better error messages** with detailed provider information
+
+---
+
+## 🎯 Overview
+
+AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database provider at compile time**. Simply provide a connection string, and the library automatically configures the correct Entity Framework provider using the **Strategy Pattern**.
+
+### Why FlexDb?
+
+- 🔄 **Zero Code Changes**: Switch databases by changing connection strings only
+- 🚀 **Rapid Development**: No provider-specific configuration needed
+- 🌐 **Multi-Environment**: Use SQLite for dev, SQL Server for staging, Cosmos DB for production
+- 📦 **Single Package**: All providers in one NuGet package
+- 🔧 **Extensible**: Add custom providers by implementing `IDatabaseConfigurationStrategy`
+- 🛡️ **Secure**: Built-in personal data encryption and protection
 
 ### Key Features
 
-- **Automatic Provider Detection**: Intelligently selects database provider from connection string
-- **Multi-Database Support**: Cosmos DB, SQL Server, MySQL, and SQLite
-- **Azure Integration**: Native support for Azure Cosmos DB and Azure SQL Database
-- **Backward Compatibility**: Supports legacy Cosmos DB configurations
-- **Personal Data Protection**: Built-in encryption for sensitive user data
-- **NuGet Package**: Easy installation as `AspNetCore.Identity.CosmosDb`
+| Feature | Description |
+|---------|-------------|
+| **Automatic Provider Detection** | Intelligently selects database provider from connection string patterns |
+| **Multi-Database Support** | Cosmos DB, SQL Server, MySQL, and SQLite out of the box |
+| **Strategy Pattern** | Clean, extensible architecture for adding new providers |
+| **Azure Integration** | Native support for Azure Cosmos DB and Azure SQL Database |
+| **Backward Compatibility** | Supports legacy Cosmos DB configurations |
+| **Personal Data Protection** | Built-in encryption for sensitive user data |
+| **Thread-Safe** | All operations are thread-safe and concurrent-friendly |
+| **Well Documented** | Comprehensive XML documentation for all public APIs |
+
+---
 
 ## 🗄️ Supported Database Providers
 
 ### Azure Cosmos DB
 
-- **Primary Target**: Optimized for cloud-native applications
-- **Global Distribution**: Multi-region replication and scaling
-- **NoSQL Flexibility**: Schema-less document storage
-- **Connection String**: `AccountEndpoint=https://account.documents.azure.com:443/;AccountKey=key;Database=dbname;`
+**Best for:** Global-scale, cloud-native applications requiring low latency and high availability
+
+| Aspect | Details |
+|--------|---------|
+| **Provider Priority** | 10 (highest) |
+| **Detection Pattern** | `AccountEndpoint=` |
+| **Features** | Multi-region replication, automatic scaling, NoSQL flexibility |
+| **Connection String** | `AccountEndpoint=https://account.documents.azure.com:443/;AccountKey=key;Database=dbname;` |
+| **Use Cases** | Global apps, serverless architectures, document-based data models |
+
+**Optimizations:**
+- Optimized partition key strategy for user data
+- Minimized RU consumption
+- Efficient batch operations
 
 ### SQL Server / Azure SQL Database
 
-- **Enterprise Ready**: Full ACID compliance and relational features
-- **Connection String**: `Server=server;Initial Catalog=database;User ID=user;Password=password;`
+**Best for:** Enterprise applications requiring ACID compliance and relational integrity
+
+| Aspect | Details |
+|--------|---------|
+| **Provider Priority** | 20 |
+| **Detection Pattern** | `Server=` or `User ID=` |
+| **Features** | Full ACID compliance, advanced indexing, enterprise features |
+| **Connection String** | `Server=server;Initial Catalog=database;User ID=user;Password=password;` |
+| **Use Cases** | Enterprise apps, complex reporting, existing SQL Server infrastructure |
+
+**Optimizations:**
+- Connection pooling
+- Optimized indexes on email and username
+- Retry policies for transient failures
 
 ### MySQL
 
-- **Open Source**: Cost-effective relational database option
-- **Connection String**: `Server=server;Port=3306;uid=user;pwd=password;database=dbname;`
+**Best for:** Open-source projects, cost-effective hosting, LAMP stack integration
+
+| Aspect | Details |
+|--------|---------|
+| **Provider Priority** | 30 |
+| **Detection Pattern** | `uid=` or `user id=` (with `server=`) |
+| **Features** | Open source, wide hosting support, good performance |
+| **Connection String** | `Server=server;Port=3306;uid=user;pwd=password;database=dbname;` |
+| **Use Cases** | Linux hosting, open-source projects, budget-conscious deployments |
 
 ### SQLite
 
-- **Simple**: Lightweight option for edge/single-editor deployments
-- **Optional encryption**: SQLCipher-enabled via `SQLitePCLRaw.bundle_e_sqlcipher`
-- **Connection String**: `Data Source=database.db;Password=strong-password;`
-- For containers, mount a persistent volume and set `Data Source` to the mounted path
+**Best for:** Development, testing, single-user applications, edge deployments
+
+| Aspect | Details |
+|--------|---------|
+| **Provider Priority** | 40 |
+| **Detection Pattern** | `Data Source=` with `.db` extension |
+| **Features** | Zero configuration, file-based, optional encryption via SQLCipher |
+| **Connection String** | `Data Source=database.db;Password=strong-password;` |
+| **Use Cases** | Local development, testing, mobile apps, embedded systems |
+
+**Important for Containers:**
+- Mount a persistent volume for the SQLite file
+- Example: `Data Source=/data/sqlite/app.db;`
+- Ensure write permissions on the mounted volume
+
+---
 
 ## 🚀 Quick Start
 

@@ -1,7 +1,7 @@
 ﻿// <copyright file="AzureStorage.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -382,7 +382,7 @@ namespace Cosmos.BlobService.Drivers
             var results = new List<BlobItem>();
             var containerClient =
                 this.blobServiceClient.GetBlobContainerClient(this.containerName);
-            var items = containerClient.GetBlobsAsync(prefix: path);
+            var items = containerClient.GetBlobsAsync(prefix: path.Equals("/") ? null : path);
 
             await foreach (var item in items)
             {
@@ -794,6 +794,59 @@ namespace Cosmos.BlobService.Drivers
             }
 
             return bytesConsumed;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Dictionary<string, string>> GetPropertiesAsync(string target)
+        {
+            var blobClient = await this.GetBlobAsync(target);
+
+            if (blobClient == null || !await blobClient.ExistsAsync())
+            {
+                throw new InvalidOperationException($"Blob at path '{target}' does not exist.");
+            }
+
+            var blobProperties = await blobClient.GetPropertiesAsync();
+
+            return blobProperties.Value.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        }
+
+        /// <inheritdoc/>
+        public async Task SavePropertiesAsync(string target, Dictionary<string, string> properties)
+        {
+            if (string.IsNullOrEmpty(target))
+            {
+                throw new ArgumentException("Target path cannot be null or empty.", nameof(target));
+            }
+
+            if (properties == null || properties.Count == 0)
+            {
+                return;
+            }
+
+            var blobClient = await this.GetBlobAsync(target);
+
+            if (blobClient == null || !await blobClient.ExistsAsync())
+            {
+                throw new InvalidOperationException($"Blob at path '{target}' does not exist.");
+            }
+
+            var blobProperties = await blobClient.GetPropertiesAsync();
+            var metadata = blobProperties.Value.Metadata;
+
+            foreach (var property in properties)
+            {
+                if (metadata.ContainsKey(property.Key))
+                {
+                    metadata[property.Key] = property.Value;
+                }
+                else
+                {
+                    metadata.Add(property.Key, property.Value);
+                }
+            }
+
+            await blobClient.SetMetadataAsync(metadata);
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
 ﻿// <copyright file="TemplatesController.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -26,6 +26,8 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
+    using Sky.Editor.Services.Html;
+    using Sky.Editor.Services.Templates;
 
     /// <summary>
     /// Templates controller.
@@ -38,6 +40,8 @@ namespace Sky.Cms.Controllers
         private readonly ApplicationDbContext dbContext;
         private readonly IEditorSettings options;
         private readonly StorageContext storageContext;
+        private readonly IArticleHtmlService htmlService;
+        private readonly ITemplateService templateServices;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplatesController"/> class.
@@ -48,18 +52,24 @@ namespace Sky.Cms.Controllers
         /// <param name="storageContext">Storage context service.</param>
         /// <param name="articleLogic">Article edit logic.</param>
         /// <param name="options">Cosmos Options.</param>
+        /// <param name="htmlService">HTML service.</param>
+        /// <param name="templateServices">Template services.</param>
         public TemplatesController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
             StorageContext storageContext,
             ArticleEditLogic articleLogic,
-            IEditorSettings options)
+            IEditorSettings options,
+            IArticleHtmlService htmlService,
+            ITemplateService templateServices)
             : base(dbContext, userManager)
         {
             this.dbContext = dbContext;
             this.articleLogic = articleLogic;
             this.options = options;
             this.storageContext = storageContext;
+            this.htmlService = htmlService;
+            this.templateServices = templateServices;
         }
 
         /// <summary>
@@ -86,8 +96,12 @@ namespace Sky.Cms.Controllers
             ViewData["pageNo"] = pageNo;
             ViewData["pageSize"] = pageSize;
 
-            var query = dbContext.Templates.OrderBy(t => t.Title)
-                .Where(w => w.LayoutId == defautLayout.Id)
+            await templateServices.EnsureDefaultTemplatesExistAsync();
+
+            var layoutId = defautLayout.Id;
+
+            var data = await dbContext.Templates.OrderBy(t => t.Title)
+                .Where(w => w.LayoutId == layoutId)
                 .Select(s => new TemplateIndexViewModel
                 {
                     Id = s.Id,
@@ -95,9 +109,11 @@ namespace Sky.Cms.Controllers
                     Description = s.Description,
                     Title = s.Title,
                     UsesHtmlEditor = s.Content.ToLower().Contains(" contenteditable=") || s.Content.ToLower().Contains(" data-ccms-ceid=")
-                }).AsQueryable();
+                }).ToListAsync();
 
-            ViewData["RowCount"] = await query.CountAsync();
+            ViewData["RowCount"] = data.Count();
+
+            var query = data.AsQueryable();
 
             if (sortOrder == "desc")
             {
@@ -136,7 +152,7 @@ namespace Sky.Cms.Controllers
                 }
             }
 
-            return View(await query.Skip(pageNo * pageSize).Take(pageSize).ToListAsync());
+            return View(query.Skip(pageNo * pageSize).Take(pageSize).ToList());
         }
 
         /// <summary>
@@ -333,7 +349,7 @@ namespace Sky.Cms.Controllers
                 CommunityLayoutId = defautLayout?.CommunityLayoutId
             };
 
-            entity.Content = articleLogic.Ensure_ContentEditable_IsMarked(entity.Content);
+            entity.Content = htmlService.EnsureEditableMarkers(entity.Content);
 
             dbContext.Templates.Add(entity);
             await dbContext.SaveChangesAsync();
@@ -406,7 +422,6 @@ namespace Sky.Cms.Controllers
             {
                 Id = entity.Id,
                 EditorTitle = "Template Editor",
-                Title = entity.Title,
                 EditorFields = new List<EditorField>
                 {
                     new ()
@@ -414,16 +429,18 @@ namespace Sky.Cms.Controllers
                         EditorMode = EditorMode.Html,
                         FieldName = "Html Content",
                         FieldId = "Content",
-                        IconUrl = "~/images/seti-ui/icons/html.svg"
+                        IconUrl = "~/images/seti-ui/icons/html.svg",
+                        ToolTip = string.Empty
                     }
                 },
-                EditingField = "Content",
-                Content = articleLogic.Ensure_ContentEditable_IsMarked(entity.Content),
-                Version = 0,
                 CustomButtons = new List<string>
                 {
                     "Preview"
-                }
+                },
+                EditingField = "Content",
+                Content = htmlService.EnsureEditableMarkers(entity.Content),
+                Version = 0,
+                Title = entity.Title
             };
             return View(model);
         }
@@ -455,7 +472,7 @@ namespace Sky.Cms.Controllers
 
                 entity.Title = model.Title;
 
-                entity.Content = articleLogic.Ensure_ContentEditable_IsMarked(model.Content);
+                entity.Content = htmlService.EnsureEditableMarkers(model.Content);
 
                 await dbContext.SaveChangesAsync();
 
@@ -533,7 +550,7 @@ namespace Sky.Cms.Controllers
 
             var entity = await dbContext.Templates.FirstOrDefaultAsync(f => f.Id == id);
 
-            var htmlContent = articleLogic.Ensure_ContentEditable_IsMarked(entity.Content);
+            var htmlContent = htmlService.EnsureEditableMarkers(entity.Content);
 
             return Json(new project(htmlContent));
         }
@@ -575,7 +592,7 @@ namespace Sky.Cms.Controllers
                 return NotFound();
             }
 
-            model.HtmlContent = articleLogic.Ensure_ContentEditable_IsMarked(model.HtmlContent);
+            model.HtmlContent = htmlService.EnsureEditableMarkers(model.HtmlContent);
 
             if (string.IsNullOrEmpty(model.Title))
             {
@@ -608,13 +625,13 @@ namespace Sky.Cms.Controllers
             var guid = Guid.NewGuid();
 
             // Template preview
-            ArticleViewModel model = new ()
+            ArticleViewModel model = new()
             {
                 ArticleNumber = 1,
                 LanguageCode = string.Empty,
                 LanguageName = string.Empty,
                 CacheDuration = 10,
-                Content = articleLogic.Ensure_ContentEditable_IsMarked(entity.Content),
+                Content = htmlService.EnsureEditableMarkers(entity.Content),
                 StatusCode = StatusCodeEnum.Active,
                 Id = entity.Id,
                 Published = DateTimeOffset.UtcNow,

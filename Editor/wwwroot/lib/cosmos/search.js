@@ -1,4 +1,8 @@
-﻿document.getElementById('frmSearch').addEventListener('submit', );
+﻿// Wire up submit handler if the form exists
+const __ccmsSearchForm = document.getElementById('frmSearch');
+if (__ccmsSearchForm) {
+    __ccmsSearchForm.addEventListener('submit', handleSearch);
+}
 
 document.getElementById('btnReset').addEventListener('click', function (event) {
     event.preventDefault(); // Prevent the default form submission
@@ -7,9 +11,9 @@ document.getElementById('btnReset').addEventListener('click', function (event) {
     document.getElementById('btnReset').style['display'] = 'none';
 })
 
-function handeSearch(event) {
+function handleSearch(event) {
     event.preventDefault(); // Prevent the default form submission
-    postData()
+    postSearchData()
         .then(data => {
             document.getElementById('btnReset').style['display'] = 'block';
             let el = document.getElementById('divResults');
@@ -72,9 +76,6 @@ function buildOrderedList(links) {
     ol.style['list-style-type'] = 'decimal';
     ol.classList.add("ms-4");
 
-    const icon = document.createElement('i');
-    icon.className = 'ms-1 fa-solid fa-arrow-up-right-from-square'; // Font
-
     // Iterate over the links array
     links.forEach(link => {
         // Create a list item element
@@ -92,11 +93,14 @@ function buildOrderedList(links) {
         //info.style['font-style'] = 'italic';
         info.innerText = " (updated: " + dt.toLocaleDateString("en-US") + " )";
 
-        // Append the anchor to the list item
+    // Append the anchor to the list item
         li.appendChild(a);
         //li.appendChild(document.createElement('br'));
         li.appendChild(info);
-        li.appendChild(icon);
+    // Append an icon per item
+    const icon = document.createElement('i');
+    icon.className = 'ms-1 fa-solid fa-arrow-up-right-from-square';
+    li.appendChild(icon);
 
         // Append the list item to the ordered list
         ol.appendChild(li);

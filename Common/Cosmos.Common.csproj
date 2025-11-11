@@ -48,7 +48,7 @@
 		<DisableImplicitAspNetCoreAnalyzers>true</DisableImplicitAspNetCoreAnalyzers>
 		<Title>Sky CMS Common Objects</Title>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryUrl>https://github.com/MoonriseSoftwareCalifornia/CosmosCMS</RepositoryUrl>
+		<RepositoryUrl>https://github.com/MoonriseSoftwareCalifornia/SkyCMS</RepositoryUrl>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -93,11 +93,12 @@
 	<ItemGroup>
 		<PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.4.0" />
 		<PackageReference Include="Azure.Monitor.Query" Version="1.7.1" />
+		<PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
 		<PackageReference Include="MailChimp.Net.V3" Version="5.8.2" />
-		<PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="9.0.9" />
-		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.9" />
-		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.9" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.9" />
+		<PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="9.0.10" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
 		<PackageReference Include="Microsoft.PowerBI.Api" Version="4.22.0" />
 		<PackageReference Include="Otp.NET" Version="1.4.0">
 		  <TreatAsUsed>true</TreatAsUsed>
@@ -106,7 +107,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="X.Web.Sitemap" Version="2.10.7" />
+		<PackageReference Include="X.Web.Sitemap" Version="2.11.0" />
 	</ItemGroup>
 
 	<ItemGroup>

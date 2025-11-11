@@ -63982,7 +63982,7 @@ var DataSourceManager = /** @class */ (function (_super) {
      * The method is useful for accessing nested data within data sources.
      *
      * @param {String} path - The string path in the format 'dataSourceId.recordId.property'.
-     * @returns {[DataSource?, DataRecord?, String?]} - An array containing the data source,
+     * @returns {[DataSource?, DataRecord?, string]} - An array containing the data source,
      * data record, and optional property path.
      * @example
      * const [dataSource, dataRecord, propPath] = dsm.fromPath('my_data_source_id.record_id.myProp');

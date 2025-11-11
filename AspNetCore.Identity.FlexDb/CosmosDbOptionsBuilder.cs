@@ -3,127 +3,134 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using Microsoft.Data.Sqlite;
+using System.Collections.Generic;
+using AspNetCore.Identity.FlexDb.Strategies;
 
 namespace AspNetCore.Identity.FlexDb
 {
+    /// <summary>
+    /// Provides automatic database provider configuration based on connection strings.
+    /// </summary>
     public class CosmosDbOptionsBuilder : DbContextOptionsBuilder
     {
+        private static readonly List<IDatabaseConfigurationStrategy> DefaultStrategies = new List<IDatabaseConfigurationStrategy>
+        {
+            new CosmosDbConfigurationStrategy(),
+            new SqlServerConfigurationStrategy(),
+            new MySqlConfigurationStrategy(),
+            new SqliteConfigurationStrategy()
+        };
+
         /// <summary>
-        /// Automatically builds <see cref="DbContextOptions"/> for either Cosmos DB, SQL Server, or MySQL based on the connection string provided.
+        /// Automatically builds <see cref="DbContextOptions{TContext}"/> for the appropriate database provider based on the connection string.
         /// </summary>
-        /// <param name="connectionString"></param>
-        /// <returns></returns>
+        /// <typeparam name="TContext">The DbContext type.</typeparam>
+        /// <param name="connectionString">The connection string.</param>
+        /// <returns>Configured DbContextOptions.</returns>
         /// <remarks>
-        /// <para> This method inspects the provided connection string to determine the appropriate database provider to use. Here are some example connection strings:</para>
+        /// <para>This method inspects the provided connection string to determine the appropriate database provider to use. Here are example connection strings:</para>
         /// <para><b>Cosmos DB:</b> AccountEndpoint=https://{Your Cosmos account DNS name}:443/;AccountKey={Your Key};Database={Your database name};</para>
-        /// <para><b>SQL Server:</b> Server=tcp:{your_server}.database.windows.net,1433;Initial Catalog={your_database};Persist Security Info=False;User ID={your_user};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;</para>
+        /// <para><b>SQL Server:</b> Server=tcp:{your_server}.database.windows.net,1433;Initial Catalog={your_database};User ID={your_user};Password={your_password};</para>
         /// <para><b>MySQL:</b> Server={your_server};Port=3306;uid={your_user};pwd={your_password};database={your_database};</para>
+        /// <para><b>SQLite (Encrypted):</b> Data Source=/data/localdev.db;Password=yourpassword;</para>
         /// </remarks>
-        public static DbContextOptions<TContext> GetDbOptions<TContext>(string connectionString) where TContext : DbContext
+        public static DbContextOptions<TContext> GetDbOptions<TContext>(string connectionString)
+            where TContext : DbContext
         {
             return GetDbOptionsBuilder<TContext>(connectionString).Options;
         }
 
         /// <summary>
-        /// Automatically builds <see cref="DbContextOptionsBuilder<TContext>"/> for either Cosmos DB, SQL Server, or MySQL based on the connection string provided.
+        /// Automatically builds <see cref="DbContextOptionsBuilder{TContext}"/> for the appropriate database provider based on the connection string.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
-        /// <returns>DbContextOptionsBuilder<TContext></returns>
+        /// <typeparam name="TContext">The DbContext type.</typeparam>
+        /// <param name="connectionString">The connection string.</param>
+        /// <returns>Configured DbContextOptionsBuilder.</returns>
         /// <remarks>
-        /// <para> This method inspects the provided connection string to determine the appropriate database provider to use. Here are some example connection strings:</para>
+        /// <para>This method inspects the provided connection string to determine the appropriate database provider to use. Here are example connection strings:</para>
         /// <para><b>Cosmos DB:</b> AccountEndpoint=https://{Your Cosmos account DNS name}:443/;AccountKey={Your Key};Database={Your database name};</para>
-        /// <para><b>SQL Server:</b> Server=tcp:{your_server}.database.windows.net,1433;Initial Catalog={your_database};Persist Security Info=False;User ID={your_user};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;</para>
+        /// <para><b>SQL Server:</b> Server=tcp:{your_server}.database.windows.net,1433;Initial Catalog={your_database};User ID={your_user};Password={your_password};</para>
         /// <para><b>MySQL:</b> Server={your_server};Port=3306;uid={your_user};pwd={your_password};database={your_database};</para>
+        /// <para><b>SQLite (Encrypted):</b> Data Source=/data/localdev.db;Password=yourpassword;</para>
         /// </remarks>
-        public static DbContextOptionsBuilder<TContext> GetDbOptionsBuilder<TContext>(string connectionString) where TContext : DbContext
+        public static DbContextOptionsBuilder<TContext> GetDbOptionsBuilder<TContext>(string connectionString)
+            where TContext : DbContext
         {
             var optionsBuilder = new DbContextOptionsBuilder<TContext>();
-
             ConfigureDbOptions(optionsBuilder, connectionString);
-
             return optionsBuilder;
         }
 
         /// <summary>
-        /// Configures the provided <see cref="DbContextOptionsBuilder"/> for either Cosmos DB, SQL Server, or MySQL based on the connection string provided.
+        /// Configures the provided <see cref="DbContextOptionsBuilder"/> for the appropriate database provider based on the connection string.
         /// </summary>
-        /// <param name="optionsBuilder">Options builder.</param>
-        /// <param name="connectionString">Connection string.</param>
-        /// <exception cref="ArgumentException"></exception>
+        /// <param name="optionsBuilder">The DbContext options builder.</param>
+        /// <param name="connectionString">The connection string.</param>
+        /// <exception cref="ArgumentNullException">Thrown when optionsBuilder or connectionString is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when no matching database provider is found.</exception>
         /// <remarks>
-        /// <para> This method inspects the provided connection string to determine the appropriate database provider to use. Here are some example connection strings:</para>
-        /// <para><b>Cosmos DB:</b>AccountEndpoint=https://{Your Cosmos account DNS name}:443/;AccountKey={Your Key};Database={Your database name};</para>
-        /// <para><b>SQL Server:</b>Server=tcp:{your_server}.database.windows.net,1433;Initial Catalog={your_database};Persist Security Info=False;User ID={your_user};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;</para>
-        /// <para><b>MySQL:</b>Server={your_server};Port=3306;uid={your_user};pwd={your_password};database={your_database};</para>
-        /// <para><b>SQLite:</b>Data Source=/data/localdev.db</para>
-        /// <para><b>Encrypted SQLite:</b>Data Source=/data/localdev.db;Password=yourpassword</para>
+        /// <para>This method inspects the provided connection string to determine the appropriate database provider to use. Here are example connection strings:</para>
+        /// <para><b>Cosmos DB:</b> AccountEndpoint=https://{Your Cosmos account DNS name}:443/;AccountKey={Your Key};Database={Your database name};</para>
+        /// <para><b>SQL Server:</b> Server=tcp:{your_server}.database.windows.net,1433;Initial Catalog={your_database};User ID={your_user};Password={your_password};</para>
+        /// <para><b>MySQL:</b> Server={your_server};Port=3306;uid={your_user};pwd={your_password};database={your_database};</para>
+        /// <para><b>SQLite (Encrypted):</b> Data Source=/data/localdev.db;Password=yourpassword;</para>
         /// </remarks>
         public static void ConfigureDbOptions(DbContextOptionsBuilder optionsBuilder, string connectionString)
         {
-            if (connectionString.Contains("User ID", StringComparison.InvariantCultureIgnoreCase))
-            {
-                optionsBuilder.UseSqlServer(connectionString);
-            }
-            else if (connectionString.Contains("uid=", StringComparison.InvariantCultureIgnoreCase))
-            {
-                optionsBuilder.UseMySQL(connectionString);
-            }
-            else if (connectionString.StartsWith("Data Source=", StringComparison.CurrentCultureIgnoreCase) && connectionString.Contains(".db"))
-            {
-                // Check if it's an encrypted SQLite connection (contains Password parameter)
-                if (!connectionString.Contains("Password=", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    // For encrypted SQLite, you'll need to use a custom approach since EF Core doesn't directly support sqlcipher
-                    // This would require implementing a custom DbContext that uses sqlite-net-sqlcipher
-                    throw new ArgumentException("Encrypted SQLite requires a password set in the connection string like this: Data Source=/data/localdev.db;Password=yourpassword.");
-                }
-                else
-                {
-                    var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                    var dbNamePart = parts.FirstOrDefault(p => p.StartsWith("Data Source=", StringComparison.InvariantCultureIgnoreCase));
-                    var passPart = parts.FirstOrDefault(p => p.StartsWith("Password=", StringComparison.InvariantCultureIgnoreCase));
-                    var dataSource = dbNamePart.Split('=')[1];
-                    var password = passPart.Split("=")[1];
+            ConfigureDbOptions(optionsBuilder, connectionString, DefaultStrategies);
+        }
 
-                    var connectionStringBuilder = new SqliteConnectionStringBuilder
-                    {
-                        DataSource = dataSource,
-                        Mode = SqliteOpenMode.ReadWriteCreate,
-                        Password = password
-                    };
-
-                    var sqliteConnection = new SqliteConnection(connectionStringBuilder.ToString());
-
-                    optionsBuilder.UseSqlite(sqliteConnection);
-                }
-            }
-            else if (connectionString.Contains("AccountEndpoint=", StringComparison.InvariantCultureIgnoreCase))
+        /// <summary>
+        /// Configures the provided <see cref="DbContextOptionsBuilder"/> using a custom set of strategies.
+        /// </summary>
+        /// <param name="optionsBuilder">The DbContext options builder.</param>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="strategies">Custom list of configuration strategies.</param>
+        /// <exception cref="ArgumentNullException">Thrown when optionsBuilder, connectionString, or strategies is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when no matching database provider is found.</exception>
+        public static void ConfigureDbOptions(
+            DbContextOptionsBuilder optionsBuilder,
+            string connectionString,
+            IEnumerable<IDatabaseConfigurationStrategy> strategies)
+        {
+            if (optionsBuilder == null)
             {
-                var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                var dbNamePart = parts.FirstOrDefault(p => p.StartsWith("Database=", StringComparison.InvariantCultureIgnoreCase));
-                var endpointPart = parts.FirstOrDefault(p => p.StartsWith("AccountEndpoint=", StringComparison.InvariantCultureIgnoreCase));
-                var keyPart = parts.FirstOrDefault(p => p.StartsWith("AccountKey=", StringComparison.InvariantCultureIgnoreCase));
+                throw new ArgumentNullException(nameof(optionsBuilder));
+            }
 
-                if (dbNamePart == null || endpointPart == null || keyPart == null)
-                {
-                    throw new ArgumentException("The provided Cosmos DB connection string is missing required components.", nameof(connectionString));
-                }
-                if (keyPart[1].ToString().Equals("AccessToken", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    optionsBuilder.UseCosmos(accountEndpoint: endpointPart[1].ToString(), tokenCredential: new DefaultAzureCredential(), databaseName: dbNamePart[1].ToString());
-                }
-                else
-                {
-                    var accountEndpoint = endpointPart.Split("=")[1].ToString();
-                    var accountKey = keyPart.Substring(keyPart.IndexOf('=') + 1);
-                    var databaseName = dbNamePart.Split("=")[1].ToString();
-                    optionsBuilder.UseCosmos(accountEndpoint, accountKey, databaseName: databaseName);
-                }
-            }
-            else
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentException("The provided connection string does not appear to be valid for Cosmos DB, SQL Server, or MySQL.", nameof(connectionString));
+                throw new ArgumentNullException(nameof(connectionString));
             }
+
+            if (strategies == null)
+            {
+                throw new ArgumentNullException(nameof(strategies));
+            }
+
+            var orderedStrategies = strategies.OrderBy(s => s.Priority).ToList();
+
+            var strategy = orderedStrategies.FirstOrDefault(s => s.CanHandle(connectionString));
+
+            if (strategy == null)
+            {
+                var supportedProviders = string.Join(", ", orderedStrategies.Select(s => s.ProviderName));
+                throw new ArgumentException(
+                    $"The provided connection string does not match any supported database provider. " +
+                    $"Supported providers: {supportedProviders}",
+                    nameof(connectionString));
+            }
+
+            strategy.Configure(optionsBuilder, connectionString);
+        }
+
+        /// <summary>
+        /// Gets the collection of default database configuration strategies.
+        /// </summary>
+        /// <returns>A read-only collection of strategies.</returns>
+        public static IReadOnlyList<IDatabaseConfigurationStrategy> GetDefaultStrategies()
+        {
+            return DefaultStrategies.AsReadOnly();
         }
     }
 }

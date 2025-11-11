@@ -1,20 +1,20 @@
 ﻿// <copyright file="EditorSettings.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
 namespace Sky.Editor.Data.Logic
 {
     using System;
-    using Sky.Cms.Services;
     using Cosmos.Common.Data;
-    using Sky.Editor.Models;
     using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
+    using Sky.Cms.Services;
+    using Sky.Editor.Models;
 
     /// <summary>
     ///   Logic for managing settings in the application.
@@ -175,7 +175,8 @@ namespace Sky.Editor.Data.Logic
         /// <returns>Editor configuration.</returns>
         public EditorConfig GetEditorConfig()
         {
-            if (memoryCache.TryGetValue($"{this.httpContextAccessor.HttpContext.Request.Host.Host}-conf", out EditorConfig config))
+            EditorConfig config = null;
+            if (this.httpContextAccessor.HttpContext != null && this.memoryCache.TryGetValue($"{this.httpContextAccessor.HttpContext.Request.Host.Host}-conf", out config))
             {
                 return config;
             }
@@ -232,7 +233,11 @@ namespace Sky.Editor.Data.Logic
                 }
             }
 
-            memoryCache.Set($"{this.httpContextAccessor.HttpContext.Request.Host.Host}-conf", config, TimeSpan.FromMinutes(5));
+            if (this.httpContextAccessor.HttpContext != null)
+            {
+                memoryCache.Set($"{this.httpContextAccessor.HttpContext.Request.Host.Host}-conf", config, TimeSpan.FromMinutes(5));
+            }
+
             return config;
         }
     }

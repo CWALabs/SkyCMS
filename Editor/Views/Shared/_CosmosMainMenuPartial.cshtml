@@ -49,10 +49,13 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark" id="ddManageMenu">
                             <li>
-                                <a class="dropdown-item" title="List of pages on this website." href="/Editor/Index">Pages</a>
+                                <a class="dropdown-item" title="Website page list." asp-action="Index" asp-controller="Editor">Pages</a>
                             </li>
                             <li>
                                 <a id="btnNewPage" class="ms-2 fw-lighter dropdown-item" title="Creates new page using this one as it's parent." style="font-size:inherit.8rem">New page <i class="fa-solid fa-circle-arrow-right"></i></a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" title="Website blog list." href="/Editor/Blogs">Blogs</a>
                             </li>
                             <li>
                                 <a class="dropdown-item" title="Open files stored on this website." href="/FileManager/Index">File Manager</a>
@@ -68,12 +71,6 @@
                                 <li>
                                     <a class="dropdown-item" title="Publish entire website and refresh CDN." href="/Editor/Publish">Publish Website</a>
                                 </li>
-                            }
-                            <li style="display:none">
-                                <a class="dropdown-item" title="Internal (non-public) file storage." href="/Code/Index">Internal Files</a>
-                            </li>
-                            @if (isAdministrator || isEditor)
-                            {
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" title="Manage customer contacts." asp-action="Index" asp-controller="Cosmos___Contacts">Contacts</a>
@@ -93,7 +90,7 @@
                             }
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item fw-lighter" title="Sky CMS is licensed to users under GNU General Public License Version 3." href="https://github.com/MoonriseSoftwareCalifornia/CosmosCMS?tab=GPL-3.0-1-ov-file#readme" target="_blank">User License</a>
+                                <a class="dropdown-item fw-lighter" title="Sky CMS is licensed to users under GNU General Public License Version 3." href="https://github.com/MoonriseSoftwareCalifornia/SkyCMS?tab=GPL-3.0-1-ov-file#readme" target="_blank">User License</a>
                             </li>
                         </ul>
                     </li>

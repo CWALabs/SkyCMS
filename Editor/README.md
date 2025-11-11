@@ -1,31 +1,35 @@
-# SkyCMS Editor - Content Management Interface
+# SkyCMS Editor
 
-The SkyCMS Editor is a sophisticated content management application that provides a comprehensive interface for creating, editing, and managing website content. Built on .NET 9.0 with ASP.NET Core, it offers multiple editing modes, multi-tenancy support, and integrates with modern web content editing tools.
+The SkyCMS Editor is the authoring & administration application of the SkyCMS platform. It provides multiple authoring modes (visual, rich‑text, and code), asset & permission management, versioning, and publishing workflows targeting the SkyCMS Publisher (dynamic, static, headless, or decoupled modes).
 
-Quick links:
+![Editor UI](./wwwroot/images/skycms/SkyCMSLogoNoWiTextDarkTransparent30h.png)
 
-- Storage setup: [Docs/StorageConfig.md](../Docs/StorageConfig.md) (see also: [AWS S3](../Docs/AWS-S3-AccessKeys.md), [Cloudflare R2](../Docs/Cloudflare-R2-AccessKeys.md))
-- Database setup: [Docs/DatabaseConfig.md](../Docs/DatabaseConfig.md)
-- Deploy to Azure: [ArmTemplates/azuredeploy.json](../ArmTemplates/azuredeploy.json)
+## At a Glance
 
-## 🎯 Overview
+| Capability | Description |
+|------------|-------------|
+| Authoring Modes | CKEditor 5 (WYSIWYG), GrapesJS (visual layout / drag & drop), Monaco (code / HTML / diff) |
+| Content Lifecycle | Draft → Versioned → Published (with revert & history) |
+| Media & Assets | Integrated File Manager, banner image picker, per‑page asset folders (`pub/articles/{id}`) |
+| Permissions | Role & user level access; publishing requires permissions when authentication enforced |
+| Autosave & Recovery | Local autosave with recovery modal on failure |
+| Page Metadata | Title / URL path change dialog with validation |
+| Realtime Helpers | SignalR (live status / potential for collaborative extensions) |
+| Storage Abstraction | Multi‑cloud blob (Azure Blob, S3, Cloudflare R2) via `Cosmos.BlobService` |
+| Database Providers | Cosmos DB, SQL Server, MySQL, SQLite (.NET 9 / EF Core) |
+| Security | ASP.NET Core Identity / external providers (shared with Publisher) |
+| Extensibility | Domain events, pluggable UI actions, utility & logic layer separation |
 
-The Editor serves as the administrative and content creation hub of the SkyCMS platform, providing content creators, editors, and administrators with powerful tools to manage website content without requiring technical expertise.
+## Technology Stack
 
-### Key Features
+- Runtime: **.NET 9**, ASP.NET Core **Razor Pages / MVC hybrid**
+- UI: Bootstrap 5, CKEditor 5, GrapesJS, Monaco, FilePond, Filerobot Image Editor, Font Awesome
+- Realtime: SignalR
+- Data: EF Core multi-provider (Cosmos DB, SQL Server, MySQL, SQLite)
+- Storage: Abstraction over Azure Blob / S3 / R2
+- Auth: ASP.NET Core Identity (roles: *Authors*, *Reviewers*, *Administrators*, etc.)
 
-- **Multi-Editor Support**: Visual editors (GrapesJS), WYSIWYG editors (CKEditor 5), and code editors (Monaco)
-- **Multi-Tenancy**: Support for both single-tenant and multi-tenant configurations
-- **Real-time Collaboration**: SignalR integration for live editing sessions
-- **File Management**: Comprehensive file and media management system
-- **Template System**: Layout and template management for consistent design
-- **User Management**: Role-based access control with granular permissions
-- **Version Control**: Article versioning and comparison tools
-- **Publishing Workflow**: Content approval and publishing management
-
-## 🏗️ Architecture
-
-### Application Structure
+## Project Structure (High-Level)
 
 ```text
 Editor/
@@ -210,199 +214,8 @@ And add the config database connection:
 | `CosmosStaticWebPages` | Static site generation | true |
 | `AllowSetup` | Enable setup wizard | false |
 
-## 🛠️ Development
+### Storage Provider Selection
 
-### Architecture Patterns
+Provider inferred by connection string pattern. Public URL must match actual CDN/edge origin for correct asset resolution in editor previews.
 
-- **MVC Pattern**: Clean separation of concerns
-- **Dependency Injection**: Service-based architecture
-- **Repository Pattern**: Data access abstraction
-- **Settings Pattern**: Configuration management
 
-### Key Services
-
-#### ArticleEditLogic
-
-Core business logic for content management:
-
-- Article CRUD operations
-- Content validation and processing
-- Publishing workflow management
-- Version control
-
-#### FileManagerService
-
-File and media management:
-
-- Upload and storage operations
-- Image processing and thumbnails
-- CDN integration
-- File security and validation
-
-#### EditorSettings
-
-Configuration and settings management:
-
-- Multi-tenant configuration
-- Dynamic settings loading
-- Environment-specific configurations
-
-### Adding Custom Editors
-
-1. **Create Editor Model**
-
-   ```csharp
-   public class CustomEditorViewModel : ICodeEditorViewModel
-   {
-       // Implement required properties
-   }
-   ```
-
-2. **Add Controller Action**
-
-   ```csharp
-   [HttpGet]
-   public async Task<IActionResult> CustomEditor(int id)
-   {
-       // Editor logic
-       return View(model);
-   }
-   ```
-
-3. **Create Editor View**
-
-   ```html
-   @model CustomEditorViewModel
-   <!-- Editor UI -->
-   ```
-
-## 🔐 Security
-
-### Authentication & Authorization
-
-- **ASP.NET Core Identity**: User management
-- **Role-Based Access**: Granular permissions
-  - **Administrators**: Full system access
-  - **Editors**: Content and template management
-  - **Authors**: Content creation only
-  - **Reviewers**: Content review and approval
-
-### Content Security
-
-- **Input Validation**: XSS protection
-- **File Upload Security**: Type and size restrictions
-- **Content Sanitization**: HTML cleaning and validation
-- **CSRF Protection**: Anti-forgery tokens
-
-## 📊 Performance
-
-### Optimization Features
-
-- **Memory Caching**: Configuration and data caching
-- **CDN Integration**: Static asset delivery
-- **Lazy Loading**: On-demand content loading
-- **Image Processing**: Automatic thumbnails and optimization
-
-### Monitoring
-
-- **Application Insights**: Performance monitoring
-- **Custom Metrics**: Editor usage analytics
-- **Error Tracking**: Centralized logging
-- **Health Checks**: System status monitoring
-
-## 🔗 Integration
-
-### Publisher Integration
-
-The Editor works seamlessly with the SkyCMS Publisher:
-
-- **Content Synchronization**: Real-time content updates
-- **Static Site Generation**: Pre-rendered page creation
-- **CDN Management**: Automatic cache invalidation
-- **SEO Optimization**: Meta data and structure management
-
-### External Services
-
-- **Azure Blob Storage**: File and media storage
-- **Azure CDN**: Global content delivery
-- **Application Insights**: Monitoring and analytics
-- **Azure SQL Database**: Content and configuration storage
-
-## 🚀 Deployment
-
-### Docker Deployment
-
-```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
-WORKDIR /app
-COPY . .
-EXPOSE 80
-ENTRYPOINT ["dotnet", "Sky.Editor.dll"]
-```
-
-### Azure App Service
-
-1. Configure application settings
-2. Set up database connection
-3. Configure blob storage
-4. Deploy using Azure DevOps or GitHub Actions
-
-### Environment Variables
-
-```bash
-ConnectionStrings__ApplicationDbContextConnection="Data Source=skycms.db"
-ConnectionStrings__StorageConnectionString="DefaultEndpointsProtocol=...;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net"
-ConnectionStrings__BackupStorageConnectionString="DefaultEndpointsProtocol=...;AccountName=backupacct;AccountKey=...;EndpointSuffix=core.windows.net"
-CosmosPublisherUrl="https://your-site.com"
-MultiTenantEditor="false"
-# Optional (multi-tenant config DB)
-ConnectionStrings__ConfigDbConnectionString="AccountEndpoint=...;AccountKey=...;Database=SkyCmsConfig"
-```
-
-## 📖 API Reference
-
-### Content API Endpoints
-
-- `GET /Editor/Index` - Article listing
-- `GET /Editor/Edit/{id}` - Visual editor
-- `GET /Editor/EditCode/{id}` - Code editor
-- `GET /Editor/Designer/{id}` - GrapesJS designer
-- `POST /Editor/SaveContent` - Save article content
-- `GET /Editor/Versions/{id}` - Version history
-
-### File Management API
-
-- `GET /FileManager/Index` - File browser
-- `POST /FileManager/Upload` - File upload
-- `GET /FileManager/Download/{id}` - File download
-- `DELETE /FileManager/Delete/{id}` - File deletion
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with tests
-4. Submit a pull request
-
-### Development Guidelines
-
-- Follow C# coding standards
-- Include unit tests for new features
-- Update documentation for API changes
-- Ensure responsive design for new UI components
-
-## 📄 License
-
-Licensed under the GNU General Public License v3.0. See [LICENSE](../License.md) for details.
-
-## 🔗 Related Projects
-
-- **[Publisher](../Publisher/README.md)**: Public-facing website application
-- **[Common](../Common/README.md)**: Shared libraries and utilities
-- **[AspNetCore.Identity.FlexDb](../AspNetCore.Identity.FlexDb/README.md)**: Flexible identity provider
-
-## 📞 Support
-
-- **Documentation**: [SkyCMS Wiki](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/wiki)
-- **Issues**: [GitHub Issues](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/discussions)

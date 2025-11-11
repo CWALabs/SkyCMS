@@ -1,21 +1,22 @@
 ﻿// <copyright file="Login.cshtml.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
 namespace Sky.Cms.Areas.Identity.Pages.Account
 {
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel.DataAnnotations;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Services;
-    using Cosmos.DynamicConfig;
-    using Cosmos.Editor.Boot;
-    using Cosmos.EmailServices;
     using Microsoft.AspNetCore.Authentication;
     using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.Identity.UI.Services;
     using Microsoft.AspNetCore.Mvc;
@@ -26,12 +27,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel.DataAnnotations;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Login page model.
@@ -180,7 +175,7 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         public async Task<IActionResult> OnPostAsync(string returnUrl = "", string website = "")
         {
             returnUrl = await GetReturnUrl(returnUrl);
-                        
+
             ExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             if (ModelState.IsValid)
@@ -311,7 +306,7 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
                     return false;
                 }
             }
-            catch
+            catch (Exception e)
             {
                 return false;
             }

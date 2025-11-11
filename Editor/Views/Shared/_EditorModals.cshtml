@@ -1,0 +1,197 @@
+﻿<div id="modals">
+    <div class="modal fade" id="modalRecoverData" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Recover changes?</h5>
+                </div>
+                <div class="modal-body">
+                    <p>A recent save for this page did not succeed, but the changes were saved locally.</p>
+                    <p>Do you want to recover saved changes?</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="modalBtnSaveFirst" type="button" class="btn btn-secondary" onclick="restoreBackup()" data-bs-dismiss="modal">Yes</button>
+                    <button type="button" class="btn btn-secondary" onclick="deleteBackup()" data-bs-dismiss="modal">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalCheckSaveFirst" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Save First?</h5>
+                </div>
+                <div class="modal-body">
+                    <div id="divSaveFirstDialog"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="modalBtnSaveFirst" type="button" class="btn btn-secondary" onclick="saveChanges()" data-bs-dismiss="modal">Yes</button>
+                    <button type="button" class="btn btn-secondary" onclick="doNotSave()" data-bs-dismiss="modal">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalCheckPermissions" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">No Permissions Set</h5>
+                </div>
+                <div class="modal-body">
+                    <p>ALERT: Permissions are required prior to publishing a page.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="bgEditClick('permissions')" data-bs-dismiss="modal">Set Permissions</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalChangeTitle" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header">
+                    <h5 id="modalChgTitleHeader" class="modal-title">Change URL</h5>
+                </div>
+                <div class="modal-body">
+                    <form id="frmChangeTitle">
+                        <div class="form-group">
+                            <label id="lblCurrentTitle" for="currentTitle" title="Showing current URL" class="control-label">Current URL:</label>
+                            <div class="form-control" id="currentTitle"></div>
+                        </div>
+                        <div class="form-group">
+                            <label id="lblNewTitle" for="newTitle" class="control-label">New URL: /</label>
+                            <input class="form-control" autocomplete="off" required id="newTitle" title="Enter new URL" />
+                            <span id="newTitleValidation" class="btn btn-sm btn-danger" style="display:none"></span>
+                        </div>
+                        <div id="divUrlTitleExamples" style="display:none">
+                            <p>Example URLs:</p>
+                            <label id="lblCurrentTitle" for="currentTitle" class="control-label">Example URL:</label>
+                            <div class="form-control" id="currentTitle">Water</div>
+                            <label id="lblCurrentTitle" for="currentTitle" class="control-label">Example URL with a parent page:</label>
+                            <div class="form-control" id="currentTitle">Water/Images</div>
+                            <label id="lblCurrentTitle" for="currentTitle" class="control-label">Example URL with two parent pages:</label>
+                            <div class="form-control" id="currentTitle">Water/Images/Mountain Tops</div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-secondary">Change and Save</button>
+                            <button id="btnCancelChgTitle" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalSavingError" tabindex="-1">
+        <div class="modal-dialog bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title text-light">Error Detected</h5>
+            </div>
+            <div class="modal-body text-light">
+                <div id="divErrorLog" class="text-light"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="pickPageModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h4 class="text-light">
+                        Insert Page Link
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <div class="row mb-3">
+                            <label for="combobox">Page search:</label>
+                            <div class="row">
+                                <div class="col-9">
+                                    <input id="combobox" autocomplete="off" laceholder="Search for a page ..." type="text" class="form-control bg-dark text-light custom-combobox" aria-label="Type to search for a page." style="height:26px">
+                                </div>
+                                <div class="col-3">
+                                    <button type="button" id="btnRefreshList" title="Refresh search" class="btn btn-sm btn-secondary">Refresh <i class="fa-solid fa-rotate"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3" id="pageSelectResults">
+                            <div class="col-9">
+                                <div id="pageStatus" class="text-light" style="display:none;font-size:0.8rem;">
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <a id="btnOpenLink" href="#" target="_blank" class="btn btn-sm btn-secondary" style="display:none">Versions <i class="fa-solid fa-circle-arrow-right"></i></a>
+                            </div>
+                        </div>
+                        <div id="divLinkDetails" style="display:none">
+                            <div class="row mb-3">
+                                <label for="inputLinkText" class="form-label">Link text:</label>
+                                <input id="inputLinkText" type="text" class="form-control form-control-sm">
+                                <span id="inputLinkTextError" class="badge badge-danger" style="display:none">Link text is required.</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-fooder">
+                    <div class="container-fluid">
+                        <div class="row mb-3">
+                            <div class="col-auto ms-5">
+                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button id="btnApplyLink" type="button" class="btn btn-sm btn-primary" disabled>Apply <i class="fa-solid fa-circle-arrow-right"></i></button>
+                                <a id="btnCreatePage" target="_blank" href="" class="btn btn-sm btn-primary" style="display:none">Create page <i class="fa-solid fa-circle-arrow-right"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalSelectFile" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-body" style="height: 100vh;position:relative;">
+                    <div style="height:100%;width:100%;">
+                        <button id="btnSelectFileAndClose" type="button" class="btn btn-sm btn-success" data-bs-dismiss="modal" disabled>Select and Close</button>
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal">Cancel</button>
+                        <button id="btnClear" type="button" class="btn btn-sm btn-primary" title="Clear list of selected items" style="display:none">Clear Selected</button>
+                        <div id="spinFileMgrLoading" class="btn btn-sm btn-primary mt-1 ms-3 me-3">
+                            <div class="align-items-center text-light">
+                                <strong>Loading...</strong>
+                                <div class="spinner-border spinner-border-sm text-light" role="status"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <iframe id="iframeSelectFile" class="m-fileselector-container" style="height: 100%; width: 100%;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalFileMgr" tabindex="-3">
+        <div class="modal-dialog modal-fullscreen">
+            <div id="fileMgrModalContent" class="modal-content">
+                <div class="modal-header bg-dark text-light">
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal">Close File Manager</button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="iframeFileMgr" class="d-block w-100" style="height:100%"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalPermMgr" tabindex="-4">
+        <div class="modal-dialog modal-fullscreen">
+            <div id="permMgrModalContent" class="modal-content">
+                <div class="modal-header bg-dark text-light">
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal">Close Permissions Manager</button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="iframePermMgr" class="d-block w-100" style="height:100%"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

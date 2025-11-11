@@ -1,0 +1,142 @@
+@model Sky.Editor.Models.Blogs.BlogStreamViewModel
+@{
+    ViewData["Title"] = "Create Blog Stream";
+    var hasId = Model != null && Model.Id != Guid.Empty;
+}
+<!-- FilePond -->
+<link rel="stylesheet" href="/lib/filepond/filepond.min.css" />
+<!-- Image Widget styles -->
+<link rel="stylesheet" href="/lib/cosmos/image-widget/image-widget.css" />
+<style>
+    .ccms-img-widget-img {
+        max-height: 20vh;
+        border: 1px dashed #ccc;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+</style>
+<div class="cwps-editor-container pt-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-light mb-3">
+                <h3>Create a Blog</h3>
+                <form asp-action="Create" method="post" id="createBlogForm" novalidate enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    @* Hidden fields (no user entry for BlogKey; it’s derived from Title) *@
+                    <input type="hidden" asp-for="BlogKey" />
+                    @Html.HiddenFor(m => m.HeroImage)
+
+                    <p class="text-light">Blog banner image (optional):</p>
+                    <div class="ccms-img-widget-container"
+                         data-editor-config="image-widget"
+                         data-ccms-new="true"></div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Title:</span>
+                        <input asp-for="Title" class="form-control" id="Title" placeholder="Short name (max 128 chars)" title="What is the name of this blog? Best to keep it short." />
+                    </div>
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                    <div id="titleFeedback" class="form-text mb-2" aria-live="polite"></div>
+                    <div class="input-group mb-3" style="max-width: 300px;">
+                        <span class="input-group-text">Publish:</span>
+                        <input asp-for="Published" type="datetime-local" value="@DateTimeOffset.UtcNow" class="form-control" />
+                    </div>
+                    <span asp-validation-for="Published" class="text-danger"></span>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Description:</span>
+                        <textarea asp-for="Description" class="form-control" rows="5"  placeholder="Short description (max 512 chars)"></textarea>
+                    </div>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+
+                    <div class="form-text mb-3">
+                        <button id="btnSubmit" type="submit" class="btn btn-primary">Create</button>
+                        <a class="btn btn-secondary" href="@Url.Action("Index")">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('createBlogForm');
+            const titleInput = document.getElementById('Title');
+            const titleFeedback = document.getElementById('titleFeedback');
+            const hiddenKey = document.getElementById('BlogKey');
+            const keyPattern = /^[a-z0-9-_]+$/;
+            const maxLen = 64;
+
+            form.addEventListener('submit', (e) => {
+                const title = (titleInput.value || '').trim();
+                if (!title) {
+                    e.preventDefault();
+                    titleFeedback.textContent = 'A title is required.';
+                    titleFeedback.classList.remove('text-success'); titleFeedback.classList.add('text-danger');
+                    titleInput.classList.add('is-invalid');
+                    return;
+                }
+
+                const candidate = slugify(title);
+                if (!candidate) {
+                    e.preventDefault();
+                    titleFeedback.textContent = 'Title cannot produce a valid key. Use letters and numbers.';
+                    titleFeedback.classList.remove('text-success'); titleFeedback.classList.add('text-danger');
+                    titleInput.classList.add('is-invalid');
+                    return;
+                }
+
+                titleInput.classList.remove('is-invalid');
+                hiddenKey.value = candidate; // let server keep/validate uniqueness
+            });
+
+            function slugify(text) {
+                if (!text) return '';
+                let s = text.toLowerCase().trim();
+                s = s.replace(/[\s.]+/g, '-');      // spaces/dots -> hyphen
+                s = s.replace(/[^a-z0-9-_]/g, '-'); // disallow others
+                s = s.replace(/[-_]{2,}/g, '-');    // collapse
+                s = s.replace(/^[-_]+|[-_]+$/g, ''); // trim ends
+                if (s.length > maxLen) s = s.substring(0, maxLen).replace(/[-_]+$/g, '');
+                if (!s || !keyPattern.test(s)) return '';
+                return s;
+            }
+
+            // Initial feedback
+            (function init() {
+                const t = (titleInput.value || '').trim();
+                const c = slugify(t);
+                titleFeedback.textContent = c ? `Will create key: ${c}` : '';
+                if (c) { titleFeedback.classList.add('text-success'); }
+            })();
+        })();
+
+        // Optional: route uploads under articles/{articleNumber}
+        // window.articleNumber = 123;
+        // Handles the image widget events.
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle the image changed event.
+            if (window.CCMSImageWidgetEvents && typeof window.CCMSImageWidgetEvents.on === 'function') {
+                window.CCMSImageWidgetEvents.on('imageChanged', function(info) {
+                    // Update a hidden input to track the current image URL
+                    const hiddenField = document.getElementById('HeroImage');
+                    if (hiddenField) {
+                        hiddenField.value = info.type === 'uploaded' ? info.imageSrc : '';
+                    } else {
+                        console.warn('Hidden field for HeroImage not found.');
+                    }
+                });
+            }
+        });
+
+    </script>
+    @* FilePond and Image Widget *@
+    <script asp-append-version="true" src="~/lib/filepond-plugin-file-metadata/dist/filepond-plugin-file-metadata.js"></script>
+    <script asp-append-version="true" src="~/lib/filepond/filepond.js"></script>
+    <script asp-append-version="true" src="/lib/cosmos/image-widget/image-widget.js"></script>
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

@@ -1,5 +1,4 @@
 ﻿using AspNetCore.Identity.FlexDb.Contracts;
-using Duende.IdentityServer.EntityFramework.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -329,7 +328,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
                 };
                 _repo.Add(identityRoleClaim);
             }
-                await _repo.SaveChangesAsync().WaitAsync(cancellationToken);
+            await _repo.SaveChangesAsync().WaitAsync(cancellationToken);
         }
 
         // <inheritdoc />

@@ -43,6 +43,7 @@
     // Activated from _LayoutEditor.cshtml in multiple locations;
     async function saveChanges() {
         await editor.store();
+
         if (next !== null && typeof next  === 'function') {
             next();
             next = null;

@@ -1,15 +1,14 @@
 ﻿// <copyright file="DomainMiddleware.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using Microsoft.AspNetCore.Http;
+
 namespace Cosmos.DynamicConfig
 {
-    using System.Threading.Tasks;
-    using Microsoft.AspNetCore.Http;
-
     /// <summary>
     /// Domain name middleware service. Gets the domain name of the current request.
     /// </summary>

@@ -1,17 +1,17 @@
 ﻿// <copyright file="StaticProxyController.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
+using System.Net.Mime;
+using Cosmos.BlobService;
+using Cosmos.Publisher.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+
 namespace Cosmos.Publisher.Controllers
 {
-    using System.Net.Mime;
-    using Cosmos.BlobService;
-    using Cosmos.Publisher.Models;
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.Extensions.Caching.Memory;
-
     /// <summary>
     /// Static proxy controller.
     /// </summary>
@@ -39,12 +39,12 @@ namespace Cosmos.Publisher.Controllers
         public async Task<IActionResult> Index()
         {
             string path = string.IsNullOrWhiteSpace(HttpContext.Request.Path) || HttpContext.Request.Path == "/" ? "index.html" : HttpContext.Request.Path;
-            
+
             try
             {
                 memoryCache.TryGetValue(path, out FileCacheObject fileCacheObject);
 
-                if (fileCacheObject == null) 
+                if (fileCacheObject == null)
                 {
                     var properties = await storageContext.GetFileAsync(path);
                     if (properties == null)

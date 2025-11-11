@@ -1,12 +1,19 @@
 ﻿// <copyright file="FileManagerController.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
 namespace Sky.Cms.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
     using Cosmos.BlobService;
     using Cosmos.BlobService.Models;
     using Cosmos.Common.Data;
@@ -24,17 +31,9 @@ namespace Sky.Cms.Controllers
     using SixLabors.ImageSharp.Processing;
     using Sky.Cms.Models;
     using Sky.Cms.Services;
-    using Sky.Editor.Controllers;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models;
     using Sky.Editor.Services.CDN;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
 
     /// <summary>
     /// File manager controller.
@@ -122,7 +121,7 @@ namespace Sky.Cms.Controllers
             {
                 return new string[] { ".apng", ".avif", ".gif", ".jpg", "jpeg", ".png", ".svg", ".webp" };
             }
-        }   
+        }
 
         /// <summary>
         /// Fixes the path for the image asset array method.

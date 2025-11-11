@@ -1,7 +1,7 @@
 ﻿// <copyright file="EditorController.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -9,7 +9,6 @@ namespace Sky.Cms.Controllers
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
@@ -40,6 +39,11 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.CDN;
+    using Sky.Editor.Services.Html;
+    using Sky.Editor.Services.Publishing;
+    using Sky.Editor.Services.ReservedPaths;
+    using Sky.Editor.Services.Templates;
+    using Sky.Editor.Services.Titles;
 
     /// <summary>
     /// Editor controller.
@@ -51,14 +55,20 @@ namespace Sky.Cms.Controllers
     {
         private readonly ArticleEditLogic articleLogic;
         private readonly ApplicationDbContext dbContext;
-        private readonly ILogger<EditorController> logger;
-        private readonly IEditorSettings editorSettings;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly UserManager<IdentityUser> userManager;
         private readonly Uri blobPublicAbsoluteUrl;
-        private readonly IViewRenderService viewRenderService;
         private readonly StorageContext storageContext;
+
+        private readonly ILogger<EditorController> logger;
+        private readonly IEditorSettings editorSettings;
+        private readonly IViewRenderService viewRenderService;
         private readonly IHubContext<LiveEditorHub> hub;
+        private readonly IPublishingService publishingService;
+        private readonly IArticleHtmlService htmlService;
+        private readonly IReservedPaths reservedPaths;
+        private readonly ITitleChangeService titleChangeService;
+        private readonly ITemplateService templateService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorController"/> class.
@@ -72,6 +82,11 @@ namespace Sky.Cms.Controllers
         /// <param name="viewRenderService">View rendering service.</param>
         /// <param name="storageContext">Storage context.</param>
         /// <param name="hub">Editor SignalR hub.</param>
+        /// <param name="publishingService">Publishing service.</param>
+        /// <param name="htmlService">HTML service.</param>
+        /// <param name="reservedPaths">Reserved path service.</param>
+        /// <param name="titleChangeService">Title change service.</param>
+        /// <param name="templateService">Template service.</param>
         public EditorController(
             ILogger<EditorController> logger,
             ApplicationDbContext dbContext,
@@ -81,7 +96,12 @@ namespace Sky.Cms.Controllers
             IEditorSettings options,
             IViewRenderService viewRenderService,
             StorageContext storageContext,
-            IHubContext<LiveEditorHub> hub)
+            IHubContext<LiveEditorHub> hub,
+            IPublishingService publishingService,
+            IArticleHtmlService htmlService,
+            IReservedPaths reservedPaths,
+            ITitleChangeService titleChangeService,
+            ITemplateService templateService)
             : base(dbContext, userManager)
         {
             this.logger = logger;
@@ -92,6 +112,11 @@ namespace Sky.Cms.Controllers
             this.articleLogic = articleLogic;
             this.storageContext = storageContext;
             this.hub = hub;
+            this.publishingService = publishingService;
+            this.htmlService = htmlService;
+            this.reservedPaths = reservedPaths;
+            this.titleChangeService = titleChangeService;
+            this.templateService = templateService;
 
             var htmlUtilities = new HtmlUtilities();
 
@@ -106,8 +131,6 @@ namespace Sky.Cms.Controllers
 
             this.viewRenderService = viewRenderService;
 
-            // Ensure the required roles exist.
-            SetupNewAdministrator.Ensure_Roles_Exists(roleManager).Wait();
         }
 
         /// <summary>
@@ -116,6 +139,12 @@ namespace Sky.Cms.Controllers
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task<IActionResult> Index()
         {
+            // Ensure the required roles exist.
+            await SetupNewAdministrator.Ensure_Roles_Exists(roleManager);
+
+            // Ensure default templates exist.
+            await this.templateService.EnsureDefaultTemplatesExistAsync();
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -292,7 +321,7 @@ namespace Sky.Cms.Controllers
                 return NotFound();
             }
 
-            var htmlContent = articleLogic.Ensure_ContentEditable_IsMarked(article.Content);
+            var htmlContent = htmlService.EnsureEditableMarkers(article.Content);
 
             return Json(new project(htmlContent));
         }
@@ -567,7 +596,7 @@ namespace Sky.Cms.Controllers
             ViewData["currentSort"] = currentSort;
             ViewData["pageNo"] = pageNo;
             ViewData["pageSize"] = pageSize;
-            var reserved = await articleLogic.GetReservedPaths();
+            var reserved = await reservedPaths.GetReservedPaths();
             var existingUrls = await dbContext.Articles.Where(w => w.StatusCode == (int)StatusCodeEnum.Active).Select(s => s.Title).Distinct().ToListAsync();
             existingUrls.AddRange(reserved.Select(s => s.Path));
             ViewData["reservedPaths"] = existingUrls;
@@ -651,7 +680,7 @@ namespace Sky.Cms.Controllers
 
                 model.Title = model.Title.TrimStart('/');
 
-                var validTitle = await articleLogic.ValidateTitle(model.Title, null);
+                var validTitle = await titleChangeService.ValidateTitle(model.Title, null);
 
                 if (!validTitle)
                 {
@@ -660,6 +689,10 @@ namespace Sky.Cms.Controllers
                 }
 
                 var article = await articleLogic.CreateArticle(model.Title, Guid.Parse(await GetUserId()), model.TemplateId);
+                article.ArticleType = model.ArticleType;
+                article.Category = model.Category ?? string.Empty;
+                article.Introduction = model.Introduction ?? string.Empty;
+                await articleLogic.SaveArticle(article, Guid.Parse(await GetUserId()));
 
                 return RedirectToAction("Versions", "Editor", new { Id = article.ArticleNumber });
             }
@@ -940,7 +973,7 @@ namespace Sky.Cms.Controllers
 
                 model.Title = model.Title.TrimStart('/');
 
-                var validTitle = await articleLogic.ValidateTitle(model.Title, null);
+                var validTitle = await titleChangeService.ValidateTitle(model.Title, null);
 
                 if (!validTitle)
                 {
@@ -950,7 +983,7 @@ namespace Sky.Cms.Controllers
 
                 var template = await dbContext.Templates.FirstOrDefaultAsync(f => f.Title.ToLower() == "home page");
                 var article = await articleLogic.CreateArticle(model.Title, Guid.Parse(await GetUserId()), template.Id);
-                
+
                 article.Published = DateTimeOffset.UtcNow;
                 article.StatusCode = (int)StatusCodeEnum.Active;
                 article.Content = template.Content;
@@ -1021,7 +1054,7 @@ namespace Sky.Cms.Controllers
         /// <summary>
         /// Un-publishes an article.
         /// </summary>
-        /// <param name="id">Article ID.</param>
+        /// <param name="id">Article number.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Authorize(Roles = "Administrators, Editors")]
         public async Task<IActionResult> UnpublishPage(int id)
@@ -1031,7 +1064,8 @@ namespace Sky.Cms.Controllers
                 return BadRequest(ModelState);
             }
 
-            await articleLogic.UnpublishArticle(id);
+            var article = await dbContext.Articles.Where(w => w.ArticleNumber == id).OrderByDescending(o => o.VersionNumber).FirstOrDefaultAsync();
+            await publishingService.UnpublishAsync(article);
 
             return Ok();
         }
@@ -1234,7 +1268,7 @@ namespace Sky.Cms.Controllers
                 return BadRequest(ModelState);
             }
 
-            var paths = await articleLogic.GetReservedPaths();
+            var paths = await reservedPaths.GetReservedPaths();
 
             ViewData["RowCount"] = paths.Count;
 
@@ -1260,12 +1294,6 @@ namespace Sky.Cms.Controllers
                     {
                         case "Path":
                             query = query.OrderByDescending(o => o.Path);
-                            break;
-                        case "CosmosRequired":
-                            query = query.OrderByDescending(o => o.CosmosRequired);
-                            break;
-                        case "Notes":
-                            query = query.OrderByDescending(o => o.Notes);
                             break;
                     }
                 }
@@ -1317,32 +1345,6 @@ namespace Sky.Cms.Controllers
         }
 
         /// <summary>
-        /// Creates a new reserved path.
-        /// </summary>
-        /// <param name="model">Reserved path model.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [HttpPost]
-        public async Task<IActionResult> CreateReservedPath(ReservedPath model)
-        {
-            ViewData["Title"] = "Create a Reserved Path";
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    await articleLogic.SaveReservedPath(model);
-                    return RedirectToAction("ReservedPaths");
-                }
-                catch (Exception e)
-                {
-                    ModelState.AddModelError("Path", e.Message);
-                }
-            }
-
-            return View("~/Views/Editor/EditReservedPath.cshtml", model);
-        }
-
-        /// <summary>
         /// Edit a reserved path.
         /// </summary>
         /// <param name="id">Path ID.</param>
@@ -1356,7 +1358,7 @@ namespace Sky.Cms.Controllers
 
             ViewData["Title"] = "Edit Reserved Path";
 
-            var paths = await articleLogic.GetReservedPaths();
+            var paths = await reservedPaths.GetReservedPaths();
 
             var path = paths.Find(f => f.Id == id);
 
@@ -1366,57 +1368,6 @@ namespace Sky.Cms.Controllers
             }
 
             return View(path);
-        }
-
-        /// <summary>
-        /// Edit an existing reserved path.
-        /// </summary>
-        /// <param name="model">Reserved path model.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [HttpPost]
-        public async Task<IActionResult> EditReservedPath(ReservedPath model)
-        {
-            ViewData["Title"] = "Edit Reserved Path";
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    await articleLogic.SaveReservedPath(model);
-                    return RedirectToAction("ReservedPaths");
-                }
-                catch (Exception e)
-                {
-                    ModelState.AddModelError("Path", e.Message);
-                }
-            }
-
-            return View(model);
-        }
-
-        /// <summary>
-        /// Removes a reerved path.
-        /// </summary>
-        /// <param name="id">Path ID.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task<IActionResult> RemoveReservedPath(Guid id)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                await articleLogic.DeleteReservedPath(id);
-                return RedirectToAction("ReservedPaths");
-            }
-            catch (Exception e)
-            {
-                ModelState.AddModelError("Path", e.Message);
-            }
-
-            return RedirectToAction("ReservedPaths");
         }
 
         /// <summary>
@@ -1514,6 +1465,9 @@ namespace Sky.Cms.Controllers
 
             // Banner image
             article.BannerImage = model.BannerImage;
+            article.ArticleType = model.ArticleType;
+            article.Category = model.Category;
+            article.Introduction = model.Introduction;
 
             // Make sure we are setting to the orignal updated date/time
             // This is validated to make sure that someone else hasn't already edited this
@@ -1855,7 +1809,7 @@ namespace Sky.Cms.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await articleLogic.ValidateTitle(title, articleNumber);
+            var result = await titleChangeService.ValidateTitle(title, articleNumber);
 
             if (result)
             {
@@ -1870,18 +1824,21 @@ namespace Sky.Cms.Controllers
         /// </summary>
         /// <param name="term">search text value (optional).</param>
         /// <param name="publishedOnly">Only retrieve published articles.</param>
+        /// <param name="articleType">Article type to retrieve.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [HttpGet]
-        public async Task<IActionResult> GetArticleList(string term = "", bool publishedOnly = true)
+        public async Task<IActionResult> GetArticleList(string term = "", bool publishedOnly = true, int articleType = 0)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            var blogPostArticleType = (int)ArticleType.BlogPost;
+
             if (dbContext.Database.IsCosmos())
             {
-                var whereClause = publishedOnly ? $"WHERE c.Published != null AND " : "WHERE ";
+                var whereClause = publishedOnly ? $"WHERE c.Published != null" : "WHERE ";
                 whereClause += $"c.StatusCode = {(int)StatusCodeEnum.Active}";
 
                 if (!string.IsNullOrEmpty(term))
@@ -1889,7 +1846,7 @@ namespace Sky.Cms.Controllers
                     whereClause += $" AND LOWER(c.Title) LIKE '%{term.ToLower()}%'";
                 }
 
-                var query = $"SELECT c.ArticleNumber, c.Title, c.UrlPath, MAX(c.Published) as Published, MAX(c.Updated) as Updated FROM Articles c {whereClause} GROUP BY c.ArticleNumber, c.Title, c.UrlPath";
+                var query = $"SELECT c.ArticleNumber, c.ArticleType, c.Title, c.UrlPath, MAX(c.Published) as Published, MAX(c.Updated) as Updated FROM Articles c {whereClause} GROUP BY c.ArticleNumber, c.ArticleType, c.Title, c.UrlPath";
                 var client = dbContext.Database.GetCosmosClient();
                 var queryService = new CosmosDbService(client, dbContext.Database.GetCosmosDatabaseId(), "Articles");
 
@@ -1898,6 +1855,7 @@ namespace Sky.Cms.Controllers
                 var model = data.Select(s => new
                 {
                     s.ArticleNumber,
+                    s.ArticleType,
                     s.Title,
                     IsDefault = s.UrlPath == "root",
                     LastPublished = s.Published.HasValue ? s.Published.Value.UtcDateTime.ToString("o") : null,
@@ -1911,9 +1869,9 @@ namespace Sky.Cms.Controllers
             {
                 // LINQ equivalent for the SQL GROUP BY and MAX aggregate
                 var query = publishedOnly ? dbContext.Articles
-                    .Where(a => a.Published != null && a.StatusCode == (int)StatusCodeEnum.Active) :
+                    .Where(a => a.Published != null && a.StatusCode == (int)StatusCodeEnum.Active && a.ArticleType != blogPostArticleType) :
                     dbContext.Articles
-                    .Where(a => a.StatusCode == (int)StatusCodeEnum.Active);
+                    .Where(a => a.StatusCode == (int)StatusCodeEnum.Active && a.ArticleType == 0);
 
                 if (!string.IsNullOrEmpty(term))
                 {
@@ -2008,20 +1966,9 @@ namespace Sky.Cms.Controllers
         [Authorize(Roles = "Editors,Administrators")]
         public async Task<IActionResult> PublishStaticPages([FromBody] List<Guid> guids)
         {
-            var pages = await dbContext.Pages.Where(w => guids.Contains(w.Id) && w.Published.HasValue).ToListAsync();
-            foreach (var page in pages)
-            {
-                await articleLogic.CreateStaticWebpage(page);
-            }
+            await publishingService.CreateStaticPages(guids);
 
-            if (!string.IsNullOrEmpty(editorSettings.BackupStorageConnectionString))
-            {
-                var backupService = new FileBackupRestoreService(editorSettings.BackupStorageConnectionString, new MemoryCache(new MemoryCacheOptions()));
-                var connectionString = dbContext.Database.GetConnectionString();
-                await backupService.UploadAsync(connectionString);
-            }
-
-            return Json(new { pages.Count });
+            return Json(new { guids.Count });
         }
 
         /// <summary>
@@ -2033,7 +1980,7 @@ namespace Sky.Cms.Controllers
         [Authorize(Roles = "Editors,Administrators")]
         public async Task<IActionResult> PublishTOC(string path = "/")
         {
-            await articleLogic.CreateStaticTableOfContentsJsonFile(path);
+            await publishingService.WriteTocAsync(path);
             return Ok();
         }
 
@@ -2316,46 +2263,15 @@ namespace Sky.Cms.Controllers
             var article = await dbContext.Articles.Where(w => w.ArticleNumber == articleNumber).OrderByDescending(o => o.VersionNumber).FirstOrDefaultAsync();
             if (article == null)
             {
-               return null;
+                return null;
             }
 
             if (article.Published.HasValue)
             {
-                return await NewVersion(article);
+                return await this.articleLogic.NewVersion(article);
             }
 
             return article;
-        }
-
-        /// <summary>
-        ///  Creates a new layout from an existing layout.
-        /// </summary>
-        /// <param name="article">Exiting article.</param>
-        /// <returns>New layout with an incremented version number.</returns>
-        private async Task<Article> NewVersion(Article article)
-        {
-            var nextVersion = new Article()
-            {
-                VersionNumber = (await dbContext.Articles.Where(a => a.ArticleNumber == article.ArticleNumber).CountAsync()) + 1,
-                Published = null,
-                Id = Guid.NewGuid(),
-                ArticleNumber = article.ArticleNumber,
-                BannerImage = article.BannerImage,
-                Content = article.Content,
-                FooterJavaScript = article.FooterJavaScript,
-                HeaderJavaScript = article.HeaderJavaScript,
-                StatusCode = article.StatusCode,
-                Title = article.Title,
-                UrlPath = article.UrlPath,
-                Updated = DateTimeOffset.UtcNow,
-                TemplateId = article.TemplateId,
-                UserId = article.UserId,
-                Expires = article.Expires,
-            };
-
-            dbContext.Articles.Add(nextVersion);
-            await dbContext.SaveChangesAsync();
-            return nextVersion;
         }
 
     }

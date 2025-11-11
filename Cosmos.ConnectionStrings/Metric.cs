@@ -1,15 +1,14 @@
 ﻿// <copyright file="Metrics.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
-// See https://github.com/MoonriseSoftwareCalifornia/CosmosCMS
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using System.ComponentModel.DataAnnotations;
+
 namespace Cosmos.DynamicConfig
 {
-    using System;
-    using System.ComponentModel.DataAnnotations;
-
     /// <summary>
     /// Cosmos CMS Metrics Class.
     /// </summary>
@@ -52,7 +51,7 @@ namespace Cosmos.DynamicConfig
         /// <remarks>
         /// In Azure Storage, a transaction refers to any operation that interacts with the storage account. These operations can include reading, writing, deleting, or listing data across the different storage services:
         /// </remarks>
-        public double? BlobStorageTransactions {  get; set; } = 0;
+        public double? BlobStorageTransactions { get; set; } = 0;
 
         /// <summary>
         /// Gets or sets the total size of database storage in bytes for the day.

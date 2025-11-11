@@ -1,0 +1,190 @@
+﻿<!-- Blog Stream Container -->
+<style>
+    /* Blog Stream Container - Main wrapper with centered layout and white background */
+    .blog-stream {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+    }
+
+    /* Stream Header - Centers the banner, title, and description section */
+    .stream-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    /* Stream Banner - Header image constrained to 30% viewport height with aspect ratio preservation */
+    .stream-banner {
+        width: 100%;
+        max-height: 30vh;
+        height: auto;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+
+    /* Stream Title - Main heading for the blog stream */
+    .stream-title {
+        font-size: 2em;
+        margin-top: 20px;
+        color: #2c3e50;
+    }
+
+    /* Stream Description - Subtitle text describing the blog stream content */
+    .stream-description {
+        font-size: 1.1em;
+        color: #555;
+        margin-top: 10px;
+    }
+
+    /* Blog Items - Two-column grid layout for blog post cards */
+    .blog-items {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+    /* Blog Item - Individual blog post card with light background and hover effect */
+    .blog-item {
+        background-color: #f0f4f8;
+        padding: 15px;
+        border-radius: 8px;
+        transition: box-shadow 0.3s ease;
+    }
+
+        /* Blog Item Hover - Adds subtle shadow on hover for interactivity */
+        .blog-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+    /* Blog Banner - Thumbnail image for individual blog posts */
+    .blog-banner {
+        width: 100%;
+        height: auto;
+        border-radius: 6px;
+    }
+
+    /* Blog Title - Heading for individual blog post within a card */
+    .blog-title {
+        font-size: 1.5em;
+        margin: 15px 0 10px;
+        color: #34495e;
+    }
+
+    /* Blog Intro - Brief description or excerpt text for blog post */
+    .blog-intro {
+        font-size: 1em;
+        color: #666;
+    }
+
+    /* Tablet Styles - Adjusts layout for medium screens */
+    @media (max-width: 768px) {
+        .blog-stream {
+            margin: 20px auto;
+            padding: 15px;
+        }
+
+        .stream-title {
+            font-size: 1.75em;
+        }
+
+        .stream-description {
+            font-size: 1em;
+        }
+
+        .blog-items {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .blog-title {
+            font-size: 1.3em;
+        }
+    }
+
+    /* Mobile Styles - Optimizes layout for small screens */
+    @media (max-width: 480px) {
+        .blog-stream {
+            margin: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .stream-header {
+            margin-bottom: 20px;
+        }
+
+        .stream-banner {
+            max-height: 25vh;
+            border-radius: 4px;
+        }
+
+        .stream-title {
+            font-size: 1.5em;
+            margin-top: 15px;
+        }
+
+        .stream-description {
+            font-size: 0.9em;
+        }
+
+        .blog-items {
+            gap: 15px;
+        }
+
+        .blog-item {
+            padding: 12px;
+            border-radius: 4px;
+        }
+
+        .blog-banner {
+            border-radius: 4px;
+        }
+
+        .blog-title {
+            font-size: 1.2em;
+            margin: 10px 0 8px;
+        }
+
+        .blog-intro {
+            font-size: 0.9em;
+        }
+    }
+</style>
+<section class='blog-stream'>
+    <div class='stream-header'>
+        <img src='/images/samples/20250920_OHR.OktoberfestSwing_EN-US7916182497_UHD_bing.jpg' alt='Stream Banner' class='stream-banner' />
+        <h1 class='stream-title'>Tech & Innovation</h1>
+        <p class='stream-description'>Latest insights and trends in technology, startups, and digital innovation.</p>
+    </div>
+
+    <!-- Blog Items go here -->
+    <div class='blog-items'>
+        <article class='blog-item'>
+            <img src='/images/samples/20250921_OHR.IceOtters_EN-US7982442590_UHD_bing.jpg'  alt='Blog 1 Banner' class='blog-banner' />
+            <h2 class='blog-title'>Blog Post 1</h2>
+            <p class='blog-intro'>Discover how artificial intelligence is transforming our homes, workplaces, and cities.</p>
+        </article>
+
+        <article class='blog-item'>
+            <img src='/images/samples/20250924_OHR.BearLodge_EN-US9061134971_UHD_bing.jpg' class='blog-banner' />
+            <h2 class='blog-title'>Blog Post 2</h2>
+            <p class='blog-intro'>A beginner-friendly look at quantum computing and why it matters for the future.</p>
+        </article>
+
+        <article class='blog-item'>
+            <img src='/images/samples/20250926_OHR.AutumnChipmunk_EN-US9248365602_UHD_bing.jpg' class='blog-banner'/>
+            <h2 class='blog-title'>Blog Post 3</h2>
+            <p class='blog-intro'>A beginner-friendly look at quantum computing and why it matters for the future.</p>
+        </article>
+
+        <article class='blog-item'>
+            <img src='/images/samples/20250917_OHR.YoungMoose_EN-US2991221135_UHD_bing.jpg' class='blog-banner' />
+            <h2 class='blog-title'>Blog Post 4</h2>
+            <p class='blog-intro'>A beginner-friendly look at quantum computing and why it matters for the future.</p>
+        </article>
+
+        <!-- Add more blog-item blocks as needed -->
+    </div>
+</section>
