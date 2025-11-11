@@ -1,5 +1,13 @@
 # SkyCMS - Traditional CMS Architecture with Modern Performance
 
+## Overview
+
+**SkyCMS is a traditional content management system** that delivers the performance benefits of modern JAMstack architectures without the complexity. This document explains:
+
+1. **Why SkyCMS is not a headless CMS** and the advantages of traditional page rendering
+2. **How SkyCMS compares to Git-based static site deployment** (JAMstack/CI/CD workflows)
+3. **When to use optional API mode** for headless scenarios
+
 ## Not a Headless CMS
 
 **SkyCMS is primarily a traditional content management system that renders complete web pages**, not a headless CMS. Unlike headless CMSs that deliver content via API endpoints, SkyCMS's core strength is generating and serving fully-rendered HTML pages—either as static files or through dynamic server-side rendering.
@@ -39,9 +47,107 @@
 - Lower development and maintenance costs
 - Fewer points of failure
 
-## Addressing Headless CMS Criticisms
+## SkyCMS vs. Git-Based Static Site Deployment
 
-While headless CMSs offer flexibility, they also face criticisms: complexity, steep learning curve, high maintenance costs, and API dependency. Here's how SkyCMS addresses these concerns **by not being headless**:
+Another popular approach to modern web publishing is **Git-based static site deployment** (also called JAMstack or CI/CD for static sites), used by platforms like GitHub Pages, Netlify, Vercel, and Cloudflare Pages. While this approach has gained popularity, **SkyCMS offers significant advantages** by achieving the same benefits with dramatically reduced complexity:
+
+### Traditional Git-Based Static Site Workflow
+
+The typical JAMstack workflow involves:
+
+1. **Content stored in Git repository** (often as Markdown files)
+2. **Git push triggers CI/CD pipeline** (GitHub Actions, Netlify Build, etc.)
+3. **Static site generator runs** (Jekyll, Hugo, Gatsby, Next.js, Eleventy)
+4. **Build process generates HTML** (can take minutes)
+5. **Deployment to hosting platform** (CDN, object storage)
+
+**Pain Points:**
+
+- ❌ Content creators must learn Git workflows (clone, commit, push, branches, merge conflicts)
+- ❌ Separate CI/CD pipeline must be configured and maintained
+- ❌ External static site generator required (additional tool to learn)
+- ❌ Build time delays (minutes per deployment, longer for large sites)
+- ❌ Complex troubleshooting across multiple systems (Git → CI/CD → Generator → Deployment)
+- ❌ Multiple tools and services to integrate and maintain
+- ❌ Must choose between static OR dynamic content
+- ❌ Preview URLs require additional CI/CD configuration
+- ❌ Pipeline failures can block content publishing
+- ❌ Difficult for non-technical users
+
+### SkyCMS Integrated Approach
+
+SkyCMS eliminates the entire pipeline by integrating all capabilities into a single platform:
+
+1. **Content created in CMS interface** (WYSIWYG, visual designer, or code editor)
+2. **Automatic trigger on publish** (built into the system)
+3. **Direct rendering by Publisher component** (no external generator)
+4. **Instant deployment to cloud storage** (Azure, AWS, Cloudflare)
+
+**Advantages:**
+
+- ✅ **No Git Knowledge Required**: Content creators use intuitive CMS interface
+- ✅ **No CI/CD Pipeline**: Automatic triggers built into the system
+- ✅ **No External Generators**: Publisher renders directly (no Jekyll, Hugo, Gatsby, Next.js)
+- ✅ **Instant Publishing**: Changes go live immediately without build delays
+- ✅ **Single Integrated Platform**: All tools in one system
+- ✅ **Simplified Operations**: Fewer moving parts, fewer failure points
+- ✅ **Hybrid Architecture**: Static files AND dynamic content simultaneously
+- ✅ **Built-in Preview**: Preview before publishing without CI/CD configuration
+- ✅ **No Pipeline Failures**: Direct deployment eliminates intermediate failures
+- ✅ **User-Friendly**: Non-technical users can publish content confidently
+
+### Performance Comparison
+
+Both approaches can achieve excellent performance, but SkyCMS gets there with less complexity:
+
+| Metric | Git-Based JAMstack | SkyCMS |
+|--------|-------------------|---------|
+| **Page Load Speed** | Excellent (CDN) | Excellent (CDN) |
+| **Publishing Speed** | Slow (2-15 min builds) | Instant (direct deployment) |
+| **Scalability** | Excellent (static files) | Excellent (static files) |
+| **Reliability** | Good (pipeline dependencies) | Excellent (fewer failure points) |
+| **Time to First Publish** | Hours (setup pipeline) | Minutes (configure storage) |
+| **Operational Complexity** | High (multiple systems) | Low (single platform) |
+| **Content Editor UX** | Poor (Git required) | Excellent (visual tools) |
+
+### Technical Superiority
+
+**SkyCMS achieves JAMstack benefits without JAMstack complexity:**
+
+- **Same performance**: Static files served from cloud storage with CDN
+- **Same scalability**: Handle massive traffic with minimal infrastructure
+- **Same global distribution**: Edge hosting with Cloudflare R2 + Workers
+- **Better publishing speed**: No build pipeline delays
+- **Better reliability**: Fewer systems means fewer failures
+- **Better user experience**: No Git knowledge required
+- **Better operational efficiency**: Single platform to maintain
+- **Additional capability**: Can serve dynamic content when needed
+
+### When Git-Based Workflow Makes Sense
+
+Git-based static site deployment may be preferred when:
+
+- Development team already expert in JAMstack tools
+- Content is primarily code documentation (API docs, SDK guides)
+- Contributors are developers comfortable with Git workflows
+- Site is very simple with infrequent updates
+- Organization has existing investment in specific static site generators
+
+**However**, even in these scenarios, SkyCMS can provide a superior experience through its code editor (Monaco), version control system, and direct Git integration capabilities.
+
+### Conclusion: CMS-Native Approach
+
+SkyCMS represents a **CMS-native approach** to static site publishing. Rather than bolting a CMS onto a Git-based workflow (like Netlify CMS, Forestry, or Decap CMS), SkyCMS integrates all capabilities natively:
+
+- **Version control**: Built into the CMS
+- **Rendering engine**: Integrated Publisher component
+- **Deployment**: Direct cloud storage integration
+- **Preview**: Native preview functionality
+- **Rollback**: Built-in version management
+
+This integrated approach delivers the same benefits as JAMstack (speed, scale, security) while **eliminating the complexity** of managing multiple systems, pipelines, and tools.
+
+## Addressing Headless CMS Criticisms
 
 ### Complexity and Technical Expertise
 

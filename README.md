@@ -8,15 +8,15 @@
 
 <!-- [Project Website](https://Sky.moonrise.net) | [Documentation](https://Sky.moonrise.net/Docs) | [Get Free Help](https://Sky.moonrise.net/Support) | [YouTube Channel](https://www.youtube.com/@Sky-cms) | [Slack Channel](https://Sky-cms.slack.com/) -->
 
-Deploy anywhere: Azure, AWS, Cloudflare — or any cloud that supports Docker containers and either S3‑compatible object storage or Azure Storage.
+Deploy anywhere: AWS, Azure, Cloudflare, Google — or any cloud that supports Docker containers, one of our supported databases (SQLite, MySQL, MS SQL or Cosmos DB), and either S3‑compatible object storage or Azure Storage.
 
-> SkyCMS lives high in the clouds—like a kestrel that can soar for months without landing. It manages static, dynamic, and origin-less edge-hosted websites with ease.
+Content tools are intuitive and rich, making them developer-friendly and non-technical user-friendly, perfect for web professionals working together with content creators.
 
 Choose your hosting model: [Static](./Docs/StorageConfig.md#static-website-hosting-azure) | [Edge (origin-less)](./Docs/CloudflareEdgeHosting.md) | [Dynamic](./Publisher/README.md) | [Decoupled](./Publisher/README.md)
 
 ## Overview
 
-[SkyCMS](https://Sky.moonrise.net/) is an open-source, cloud-native Content Management System designed for high-performance, scalability, and ease of use. Built with modern web technologies, **SkyCMS is primarily a traditional CMS that renders complete web pages**, either dynamically or as static files. It runs in multiple modes to meet different deployment needs and can be hosted traditionally or at the edge (origin-less) using Cloudflare Workers + R2:
+[SkyCMS](https://Sky-cms.com/) is an open-source, cloud-native Content Management System designed for high-performance, scalability, and ease of use. Built with modern web technologies, **SkyCMS is primarily a traditional CMS that renders complete web pages**, either dynamically or as static files. It runs in multiple modes to meet different deployment needs and can be hosted traditionally or at the edge (origin-less) using Cloudflare Workers + R2:
 
 - **Static Mode** (Primary): Content rendered as static HTML files and hosted on cloud storage (Azure Blob, S3, Cloudflare R2) - highest performance, stability, and operational simplicity
   - Can be deployed as an **origin-less, edge-hosted** site via Cloudflare R2 + Worker
@@ -35,8 +35,36 @@ SkyCMS was built with the following core objectives:
 - **Flexible Deployment**: Support for static, dynamic, decoupled, and optional API modes
 - **Cloud-Native**: Built for modern cloud infrastructure with global scalability
 - **Complete Page Rendering**: Primary focus on delivering complete HTML pages rather than API-first architecture
+- **Integrated Publishing**: Built-in version control, automatic triggers, and direct cloud deployment—eliminating the complexity of traditional Git-based static site workflows
 
 ## ✨ Key Features
+
+### Advantages Over Traditional Git-Based Static Site Deployment
+
+SkyCMS represents a **next-generation approach** to static site publishing that eliminates the complexity and friction of traditional Git-based CI/CD workflows:
+
+| **Traditional Approach** | **SkyCMS Approach** |
+|--------------------------|---------------------|
+| External Git repository required | Built-in version control integrated into CMS |
+| Separate CI/CD pipeline (GitHub Actions, Netlify, etc.) | Automatic triggers built into the system |
+| Static site generator needed (Jekyll, Hugo, Gatsby, Next.js) | Direct rendering without external build tools |
+| Multiple tools to learn and configure | Single integrated platform |
+| Build time delays (minutes per deployment) | Instant publishing with Publisher component |
+| Complex pipeline debugging | Streamlined troubleshooting |
+| Content creators need Git knowledge | User-friendly content management interface |
+| Static OR dynamic content | **Hybrid: simultaneous static AND dynamic content** |
+
+**Key Technical Advantages:**
+
+- **No Build Pipeline Required**: Content is rendered directly by the Publisher component, eliminating wait times and pipeline configuration
+- **Integrated Version Control**: Full versioning system built into the CMS—no external Git workflow needed
+- **Automatic Deployment**: Direct deployment to Azure Blob Storage, AWS S3, or Cloudflare R2 without intermediary services
+- **Faster Publishing**: Changes go live immediately without waiting for CI/CD builds
+- **Hybrid Architecture**: Serve static files for performance while maintaining dynamic capabilities when needed
+- **Simplified Operations**: Fewer moving parts mean less infrastructure to maintain and fewer points of failure
+- **Multi-Cloud Native**: Deploy to any cloud platform that supports Docker containers and object storage
+
+This **CMS-native approach** achieves the same benefits as JAMstack (speed, scalability, global distribution) but with dramatically reduced complexity and operational overhead.
 
 ### Content Management
 
@@ -60,11 +88,13 @@ SkyCMS includes robust blogging capabilities built on its flexible article syste
 
 ### Performance & Scalability
 
-- **Static Site Generation**: Automatic static file creation for maximum performance
+- **Static Site Generation**: Automatic static file creation for maximum performance—without external build tools or CI/CD pipelines
+- **Integrated Publishing**: Built-in Publisher component handles rendering and deployment, eliminating the complexity of traditional Git-based static site workflows
 - **CDN Integration**: Built-in support for content delivery networks
 - **Edge Hosting**: Origin-less deployment via Cloudflare Workers
 - **Multi-Cloud Storage**: Azure Blob, AWS S3, Cloudflare R2 support
 - **Caching Strategies**: Intelligent caching for optimal performance
+- **Instant Deployment**: Changes published immediately without waiting for build pipelines
 
 ### Security & Access Control
 
