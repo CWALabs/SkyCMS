@@ -16,6 +16,7 @@
     <input type="hidden" asp-for="HtmlHeader"/>
     <input type="hidden" asp-for="FooterHtmlContent" />
     <input type="hidden" asp-for="EditorType" />
+    <input type="hidden" asp-for="Publish" />
 </form>
 
 <script>
@@ -84,7 +85,8 @@
             Head: encryptData($("#Head").val()),
             HtmlHeader: encryptData($("#HtmlHeader").val()),
             FooterHtmlContent: encryptData($("#FooterHtmlContent").val()),
-            EditorType: $("#EditorType").val()
+            EditorType: $("#EditorType").val(),
+            Publish: $("#Publish").val(),
         };
 
         $.post("/Layouts/EditCode", model, function(response) {
@@ -105,6 +107,12 @@
                 }
                 
                 toastMsg("Layout saved successfully.");
+
+                if (typeof next !== 'undefined' && next !== null && typeof next === 'function') {
+                    next();
+                    next = null;
+                }
+
             } else {
                 var errorMsg = "<h5>Error(s) detected while saving:</h5>";
                 $.each(response.Errors, function (index, error) {

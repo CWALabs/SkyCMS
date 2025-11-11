@@ -68,6 +68,11 @@ namespace Sky.Cms.Models
         public bool IsValid { get; set; }
 
         /// <summary>
+        /// Gets or sets the published date and time.
+        /// </summary>
+        public DateTimeOffset? Publish { get; set; }
+
+        /// <summary>
         /// Gets or sets editor type.
         /// </summary>
         public string EditorType { get; set; } = nameof(LayoutCodeViewModel);

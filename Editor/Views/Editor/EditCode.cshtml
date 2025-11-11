@@ -139,10 +139,12 @@
                 if (typeof checkDisplayLiveEditorButton === 'function') {
                     checkDisplayLiveEditorButton('Content');
                 }
+
                 if (typeof next !== 'undefined' && next !== null && typeof next === 'function') {
                     next();
                     next = null;
                 }
+
             } else {
                 var errorMsg = "Error(s):";
                 $.each(response.Errors, function (index, error) {

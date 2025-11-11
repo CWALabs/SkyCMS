@@ -100,6 +100,11 @@
                 }
                 
                 toastMsg("File saved successfully.");
+
+                if (typeof next !== 'undefined' && next !== null && typeof next === 'function') {
+                    next();
+                    next = null;
+                }
             } else {
                 var errorMsg = "<h5>Error(s) detected while saving:</h5>";
                 $.each(response.Errors, function (index, error) {

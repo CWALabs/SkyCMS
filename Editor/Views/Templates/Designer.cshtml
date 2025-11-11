@@ -26,6 +26,10 @@
     async function saveChanges() {
         // Activated from _LayoutEditor.cshtml in multiple locations;
         await editor.store();
+        if (typeof next !== 'undefined' && next !== null && typeof next === 'function') {
+            next();
+            next = null;
+        }
     }
 
     $("#frmSave").submit(function(event) {
