@@ -1,9 +1,9 @@
 ﻿namespace Sky.Tests.FlexDb
 {
-    using System;
     using global::AspNetCore.Identity.FlexDb.Strategies;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
 
     /// <summary>
     /// Tests for Cosmos DB configuration strategy.

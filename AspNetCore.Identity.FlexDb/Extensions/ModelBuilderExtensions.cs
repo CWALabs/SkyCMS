@@ -1,7 +1,7 @@
-﻿using System;
+﻿using AspNetCore.Identity.FlexDb.EntityConfigurations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using AspNetCore.Identity.FlexDb.EntityConfigurations;
+using System;
 
 namespace AspNetCore.Identity.FlexDb.Extensions
 {

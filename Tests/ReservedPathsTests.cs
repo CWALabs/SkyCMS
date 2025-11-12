@@ -259,7 +259,7 @@ public class ReservedPathsTests : SkyCmsTestBase
         var paths = await _reservedPaths.GetReservedPaths();
         var found = paths.FirstOrDefault(p => p.Path == "removable-path");
         Assert.IsNull(found);
-        
+
         var isReserved = await _reservedPaths.IsReserved("removable-path");
         Assert.IsFalse(isReserved);
     }
@@ -302,7 +302,7 @@ public class ReservedPathsTests : SkyCmsTestBase
         await _reservedPaths.Remove("non-existent-path");
 
         // Assert - If we get here, no exception was thrown
-        
+
     }
 
     #endregion
@@ -337,12 +337,12 @@ public class ReservedPathsTests : SkyCmsTestBase
         var initialCount = (await _reservedPaths.GetReservedPaths()).Count;
 
         // Add
-        await _reservedPaths.Upsert(new ReservedPath 
-        { 
-            Id = Guid.NewGuid(), 
-            Path = "temp1", 
-            CosmosRequired = false, 
-            Notes = "Temp" 
+        await _reservedPaths.Upsert(new ReservedPath
+        {
+            Id = Guid.NewGuid(),
+            Path = "temp1",
+            CosmosRequired = false,
+            Notes = "Temp"
         });
         await Db.SaveChangesAsync();
         var afterAdd = (await _reservedPaths.GetReservedPaths()).Count;
@@ -369,7 +369,7 @@ public class ReservedPathsTests : SkyCmsTestBase
         // Assert
         foreach (var path in paths)
         {
-            Assert.IsFalse(string.IsNullOrWhiteSpace(path.Notes), 
+            Assert.IsFalse(string.IsNullOrWhiteSpace(path.Notes),
                 $"Path '{path.Path}' should have notes");
         }
     }

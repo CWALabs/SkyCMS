@@ -7,12 +7,12 @@
 
 namespace Cosmos.Publisher.Controllers
 {
-    using System;
-    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Common;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Mvc;
+    using System;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Secure file access controller and proxy.

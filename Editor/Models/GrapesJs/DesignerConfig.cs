@@ -7,10 +7,10 @@
 
 namespace Sky.Editor.Models.GrapesJs
 {
-    using System.Collections.Generic;
-    using System.Linq;
     using Cosmos.Common.Data;
     using Sky.Editor.Data.Logic;
+    using System.Collections.Generic;
+    using System.Linq;
 
     /// <summary>
     /// Designer configuration.

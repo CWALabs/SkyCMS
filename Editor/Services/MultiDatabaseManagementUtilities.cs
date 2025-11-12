@@ -7,16 +7,16 @@
 
 namespace Cosmos.Editor.Services
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.DynamicConfig;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Utility class for querying and updating multiple Cosmos DB databases based on the configured connections.

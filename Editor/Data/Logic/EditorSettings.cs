@@ -7,7 +7,6 @@
 
 namespace Sky.Editor.Data.Logic
 {
-    using System;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
@@ -15,6 +14,7 @@ namespace Sky.Editor.Data.Logic
     using Microsoft.Extensions.Configuration;
     using Sky.Cms.Services;
     using Sky.Editor.Models;
+    using System;
 
     /// <summary>
     ///   Logic for managing settings in the application.

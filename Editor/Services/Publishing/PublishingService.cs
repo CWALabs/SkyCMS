@@ -7,12 +7,6 @@
 
 namespace Sky.Editor.Services.Publishing
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.BlobService.Models;
     using Cosmos.Cms.Common.Services.Configurations;
@@ -20,7 +14,6 @@ namespace Sky.Editor.Services.Publishing
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
     using Microsoft.AspNetCore.Http;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Logging;
@@ -30,6 +23,14 @@ namespace Sky.Editor.Services.Publishing
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.BlogPublishing;
     using Sky.Editor.Services.CDN;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Orchestrates publishing of articles and blog content.
@@ -261,22 +262,31 @@ namespace Sky.Editor.Services.Publishing
         /// </para>
         /// <list type="number">
         ///   <item><description>Retrieves all published pages matching the provided IDs from the database</description></item>
-        ///   <item><description>Generates and uploads static HTML files for each page to blob storage</description></item>
+        ///   <item><description>Generates and uploads static HTML files for each page to blob storage in parallel with retry logic</description></item>
         ///   <item><description>Regenerates the table of contents (TOC) JSON file</description></item>
         ///   <item><description>Triggers a full CDN cache purge if a CDN service is configured</description></item>
         /// </list>
         /// <para>
         /// Unlike <see cref="PublishAsync(Article)"/>, this method performs a full CDN purge rather than selective path purging.
         /// Only processes pages if <see cref="IEditorSettings.StaticWebPages"/> is enabled.
+        /// Static file generation is parallelized with a configurable degree of parallelism (default: 4).
+        /// Failed uploads are retried up to 3 times with exponential backoff (initial delay: 500ms, multiplier: 2).
         /// </para>
         /// </remarks>
         public async Task CreateStaticPages(IEnumerable<Guid> ids)
         {
             var pages = await _db.Pages.Where(w => ids.Contains(w.Id)).ToListAsync();
-            foreach (var page in pages)
+
+            // Process pages in parallel with controlled concurrency
+            var options = new ParallelOptions
             {
-                await CreateStaticFile(page);
-            }
+                MaxDegreeOfParallelism = 4 // Adjust based on storage account throttling limits
+            };
+
+            await Parallel.ForEachAsync(pages, options, async (page, cancellationToken) =>
+            {
+                await CreateStaticFileWithRetryAsync(page, cancellationToken);
+            });
 
             // Write the table of contents.
             await WriteTocAsync("/");
@@ -287,6 +297,99 @@ namespace Sky.Editor.Services.Publishing
             {
                 await cdnService.PurgeCdn();
             }
+        }
+
+        /// <summary>
+        /// Creates a static file with retry logic and exponential backoff.
+        /// </summary>
+        /// <param name="page">The published page to generate a static file for.</param>
+        /// <param name="cancellationToken">Cancellation token for the operation.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// <para>
+        /// Wraps <see cref="CreateStaticFile(PublishedPage)"/> with resilience logic:
+        /// </para>
+        /// <list type="bullet">
+        ///   <item><description>Maximum 3 retry attempts (4 total attempts including initial)</description></item>
+        ///   <item><description>Initial delay: 500ms, doubled on each retry (500ms, 1s, 2s)</description></item>
+        ///   <item><description>Retries on transient storage exceptions (IO, timeout, HTTP 5xx, throttling)</description></item>
+        ///   <item><description>Logs warnings on retries, errors on final failure</description></item>
+        /// </list>
+        /// <para>
+        /// After all retries exhausted, the exception is logged but not rethrown to avoid
+        /// failing the entire batch operation.
+        /// </para>
+        /// </remarks>
+        private async Task CreateStaticFileWithRetryAsync(PublishedPage page, CancellationToken cancellationToken = default)
+        {
+            const int maxRetries = 3;
+            const int initialDelayMs = 500;
+            var currentDelay = initialDelayMs;
+
+            for (int attempt = 0; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    await CreateStaticFile(page);
+
+                    // Success - log if this was a retry
+                    if (attempt > 0)
+                    {
+                        _logger.LogInformation(
+                            "Successfully created static file for page {PageId} ({UrlPath}) after {Attempts} attempt(s)",
+                            page.Id, page.UrlPath, attempt + 1);
+                    }
+
+                    return;
+                }
+                catch (Exception ex) when (attempt < maxRetries && IsTransientException(ex))
+                {
+                    _logger.LogWarning(ex,
+                        "Transient error creating static file for page {PageId} ({UrlPath}). Attempt {Attempt} of {MaxAttempts}. Retrying in {Delay}ms...",
+                        page.Id, page.UrlPath, attempt + 1, maxRetries + 1, currentDelay);
+
+                    await Task.Delay(currentDelay, cancellationToken);
+                    currentDelay *= 2; // Exponential backoff
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Failed to create static file for page {PageId} ({UrlPath}) after {Attempts} attempt(s). Skipping this page.",
+                        page.Id, page.UrlPath, attempt + 1);
+
+                    return; // Don't throw - allow other pages to continue
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determines if an exception represents a transient storage failure that should trigger a retry.
+        /// </summary>
+        /// <param name="ex">The exception to evaluate.</param>
+        /// <returns>True if the exception is likely transient and the operation should be retried; otherwise false.</returns>
+        /// <remarks>
+        /// <para>
+        /// Transient failures include:
+        /// </para>
+        /// <list type="bullet">
+        ///   <item><description>IO exceptions (network interruptions, disk errors)</description></item>
+        ///   <item><description>Timeout exceptions</description></item>
+        ///   <item><description>HTTP request exceptions with 5xx status codes (server errors) or 429 (throttling)</description></item>
+        /// </list>
+        /// <para>
+        /// Non-transient failures (e.g., authentication errors, malformed requests) return false.
+        /// </para>
+        /// </remarks>
+        private static bool IsTransientException(Exception ex)
+        {
+            return ex switch
+            {
+                IOException => true,
+                TimeoutException => true,
+                HttpRequestException httpEx => httpEx.StatusCode >= System.Net.HttpStatusCode.InternalServerError ||
+                                               httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests,
+                _ => false
+            };
         }
 
         /// <inheritdoc/>
@@ -593,8 +696,7 @@ namespace Sky.Editor.Services.Publishing
 
                 var path = page.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
                     ? "/"
-                    : $"{_settings.PublisherUrl.TrimEnd('/')}/{page.UrlPath.TrimStart('/')}";
-
+                    : $"{_settings.PublisherUrl.TrimEnd('/')}/{page.UrlPath.TrimStart('/')} Entwickeln Sie Anwendungen in der Cloud ? Für viele mag dies neu sein, aber keine Sorge, wir haben die Lösung!";
                 var paths = new List<string> { path };
 
                 results = await cdnService.PurgeCdn(paths);

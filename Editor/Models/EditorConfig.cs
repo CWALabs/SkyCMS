@@ -7,8 +7,8 @@
 
 namespace Sky.Editor.Models
 {
-    using System.ComponentModel.DataAnnotations;
     using Sky.Editor.Data.Logic;
+    using System.ComponentModel.DataAnnotations;
 
     /// <summary>
     /// Editor instance configuration saved in the database..

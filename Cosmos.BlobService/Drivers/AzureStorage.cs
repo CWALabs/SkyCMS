@@ -7,12 +7,6 @@
 
 namespace Cosmos.BlobService.Drivers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using Azure;
     using Azure.Identity;
     using Azure.Storage.Blobs;
@@ -20,6 +14,12 @@ namespace Cosmos.BlobService.Drivers
     using Azure.Storage.Blobs.Specialized;
     using Cosmos.BlobService.Config;
     using Cosmos.BlobService.Models;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
 
     /// <summary>
     ///     Azure blob storage driver.

@@ -7,11 +7,6 @@
 
 namespace Sky.Cms.Controllers
 {
-    using System;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
@@ -27,6 +22,11 @@ namespace Sky.Cms.Controllers
     using Microsoft.Net.Http.Headers;
     using Sky.Cms.Models;
     using Sky.Editor.Data.Logic;
+    using System;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Home page controller.
@@ -141,7 +141,7 @@ namespace Sky.Cms.Controllers
                 return NotFound(ModelState);
             }
 
-           
+
             var data = await dbContext.Articles.OrderByDescending(o => o.VersionNumber)
                 .Where(a => a.ArticleNumber == article.ArticleNumber).Select(s => new ArticleEditMenuItem
                 {

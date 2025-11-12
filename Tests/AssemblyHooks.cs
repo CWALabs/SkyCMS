@@ -1,8 +1,6 @@
 using Cosmos.BlobService;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 
 namespace Sky.Tests
 {

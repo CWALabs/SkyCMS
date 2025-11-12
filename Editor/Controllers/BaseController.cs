@@ -7,12 +7,6 @@
 
 namespace Sky.Cms.Controllers
 {
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
     using Cosmos.Common.Data;
     using Cosmos.Common.Models;
     using HtmlAgilityPack;
@@ -21,6 +15,12 @@ namespace Sky.Cms.Controllers
     using Microsoft.AspNetCore.Mvc.ModelBinding;
     using Microsoft.AspNetCore.Mvc.Rendering;
     using Microsoft.EntityFrameworkCore;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
 
     /// <summary>
     /// Base controller.

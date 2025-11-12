@@ -7,11 +7,11 @@
 
 namespace Sky.Editor.Services.Publishing;
 
+using Cosmos.Common.Data;
+using Sky.Editor.Services.CDN;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Cosmos.Common.Data;
-using Sky.Editor.Services.CDN;
 
 /// <summary>
 /// Defines operations for publishing articles to the database and static web pages,

@@ -7,13 +7,13 @@
 
 namespace Sky.Tests.Services.Catalog
 {
-    using System;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Sky.Editor.Services.Html;
+    using System;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Unit tests for the <see cref="CatalogService"/> class.
@@ -62,10 +62,10 @@ namespace Sky.Tests.Services.Catalog
 
             // Assert
             Assert.IsNotNull(result);
-            
+
             var catalogCount = await Db.ArticleCatalog.CountAsync();
             Assert.AreEqual(1, catalogCount, "Database should contain exactly one catalog entry");
-            
+
             var savedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.IsNotNull(savedEntry, "Catalog entry should exist in database");
             Assert.AreEqual(article.ArticleNumber, savedEntry.ArticleNumber);
@@ -114,10 +114,10 @@ namespace Sky.Tests.Services.Catalog
 
             // Assert
             Assert.IsNotNull(result);
-            
+
             var catalogCount = await Db.ArticleCatalog.CountAsync();
             Assert.AreEqual(1, catalogCount, "Should still have only one entry after update");
-            
+
             var updatedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.AreEqual("Updated Title", updatedEntry.Title);
             Assert.AreEqual("Updated introduction", updatedEntry.Introduction);
@@ -144,7 +144,7 @@ namespace Sky.Tests.Services.Catalog
 
             // Assert
             Assert.AreEqual("Inactive", result.Status);
-            
+
             var savedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.AreEqual("Inactive", savedEntry.Status);
         }
@@ -170,7 +170,7 @@ namespace Sky.Tests.Services.Catalog
 
             // Assert
             Assert.AreEqual("Active", result.Status);
-            
+
             var savedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.AreEqual("Active", savedEntry.Status);
         }
@@ -183,18 +183,18 @@ namespace Sky.Tests.Services.Catalog
         {
             // Arrange
             const string htmlContent = "<p>This is extracted introduction from content</p>";
-            
+
             // Create a custom mock for IArticleHtmlService
             var mockHtmlService = new Mock<IArticleHtmlService>();
             mockHtmlService
                 .Setup(x => x.ExtractIntroduction(It.IsAny<string>()))
                 .Returns("Extracted introduction from content");
-            
+
             // Create a custom CatalogService instance with the mocked HTML service
             var customCatalogService = new Sky.Editor.Services.Catalog.CatalogService(
-                Db, 
-                mockHtmlService.Object, 
-                Clock, 
+                Db,
+                mockHtmlService.Object,
+                Clock,
                 new Microsoft.Extensions.Logging.Abstractions.NullLogger<Sky.Editor.Services.Catalog.CatalogService>());
 
             var article = new Article
@@ -224,7 +224,7 @@ namespace Sky.Tests.Services.Catalog
             // Assert
             Assert.AreEqual("Extracted introduction from content", result.Introduction);
             mockHtmlService.Verify(x => x.ExtractIntroduction(It.IsAny<string>()), Times.Once);
-            
+
             var savedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.AreEqual("Extracted introduction from content", savedEntry.Introduction);
         }
@@ -237,14 +237,14 @@ namespace Sky.Tests.Services.Catalog
         {
             // Arrange
             const string providedIntro = "Provided introduction";
-            
+
             // Create a custom mock for IArticleHtmlService to verify it's NOT called
             var mockHtmlService = new Mock<IArticleHtmlService>();
-            
+
             var customCatalogService = new Sky.Editor.Services.Catalog.CatalogService(
-                Db, 
-                mockHtmlService.Object, 
-                Clock, 
+                Db,
+                mockHtmlService.Object,
+                Clock,
                 new Microsoft.Extensions.Logging.Abstractions.NullLogger<Sky.Editor.Services.Catalog.CatalogService>());
 
             var article = new Article
@@ -263,7 +263,7 @@ namespace Sky.Tests.Services.Catalog
             // Assert
             Assert.AreEqual(providedIntro, result.Introduction);
             mockHtmlService.Verify(x => x.ExtractIntroduction(It.IsAny<string>()), Times.Never);
-            
+
             var savedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.AreEqual(providedIntro, savedEntry.Introduction);
         }
@@ -289,7 +289,7 @@ namespace Sky.Tests.Services.Catalog
 
             // Assert
             Assert.AreEqual(string.Empty, result.AuthorInfo);
-            
+
             var savedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.AreEqual(string.Empty, savedEntry.AuthorInfo);
         }
@@ -325,7 +325,7 @@ namespace Sky.Tests.Services.Catalog
             // Assert
             var countAfter = await Db.ArticleCatalog.CountAsync();
             Assert.AreEqual(0, countAfter, "Database should be empty after delete");
-            
+
             var deletedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.IsNull(deletedEntry, "Entry should no longer exist in database");
         }
@@ -401,7 +401,7 @@ namespace Sky.Tests.Services.Catalog
 
             // Assert
             Assert.IsNull(result.TemplateId);
-            
+
             var savedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.IsNull(savedEntry.TemplateId);
         }
@@ -428,7 +428,7 @@ namespace Sky.Tests.Services.Catalog
 
             // Assert
             Assert.IsNull(result.Published);
-            
+
             var savedEntry = await Db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == 1);
             Assert.IsNull(savedEntry.Published);
         }

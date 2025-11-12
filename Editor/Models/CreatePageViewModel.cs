@@ -7,12 +7,12 @@
 
 namespace Sky.Cms.Models
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel.DataAnnotations;
     using Cosmos.Cms.Data;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Mvc.Rendering;
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel.DataAnnotations;
 
     /// <summary>
     /// Create page view model.

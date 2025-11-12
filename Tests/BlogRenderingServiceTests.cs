@@ -7,14 +7,13 @@
 
 namespace Sky.Tests.Services.BlogPublishing
 {
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Services.BlogRenderingService;
+    using System;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Unit tests for the <see cref="BlogRenderingService"/> class.
@@ -262,10 +261,10 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            
+
             // Note: The service modifies the entry in-memory but does NOT save to database
             // So we verify the returned HTML contains the extracted text, not the database record
-            Assert.IsTrue(result.Contains("This is the first paragraph."), 
+            Assert.IsTrue(result.Contains("This is the first paragraph."),
                 "Result should contain the extracted introduction text.");
         }
 
@@ -464,7 +463,7 @@ namespace Sky.Tests.Services.BlogPublishing
         {
             // Arrange & Act - This will throw when service tries to use the null context
             Assert.Throws<ArgumentNullException>(() => new BlogRenderingService(null!));
-            
+
             // To actually trigger the exception, we need to call a method
             // But since the constructor doesn't validate, we document the expected behavior
             // Assert - Exception expected when service is used
@@ -554,8 +553,8 @@ namespace Sky.Tests.Services.BlogPublishing
             bool isRedirect = false,
             string introduction = "Default introduction")
         {
-            var statusCode = isDeleted 
-                ? (int)StatusCodeEnum.Deleted 
+            var statusCode = isDeleted
+                ? (int)StatusCodeEnum.Deleted
                 : (isRedirect ? (int)StatusCodeEnum.Redirect : (int)StatusCodeEnum.Active);
 
             var article = new Article

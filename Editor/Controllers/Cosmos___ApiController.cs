@@ -7,10 +7,6 @@
 
 namespace Sky.Editor.Controllers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Net.Mail;
-    using System.Threading.Tasks;
     using AspNetCore.Identity.FlexDb;
     using Cosmos.Common.Data;
     using Cosmos.DynamicConfig;
@@ -18,6 +14,10 @@ namespace Sky.Editor.Controllers
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
+    using System;
+    using System.Collections.Generic;
+    using System.Net.Mail;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Cosmos___ApiController class.

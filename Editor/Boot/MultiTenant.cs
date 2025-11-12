@@ -7,36 +7,16 @@
 
 namespace Sky.Editor.Boot
 {
-    using System;
-    using System.Text.RegularExpressions;
-    using System.Threading.RateLimiting;
-    using System.Threading.Tasks;
-    using System.Web;
     using AspNetCore.Identity.FlexDb;
-    using AspNetCore.Identity.FlexDb.Extensions;
     using Azure.Identity;
-    using Cosmos.BlobService;
-    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
-    using Cosmos.Common.Services.Configurations;
     using Cosmos.DynamicConfig;
     using Cosmos.Editor.Services;
-    using Cosmos.EmailServices;
-    using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Builder;
-    using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.HttpOverrides;
-    using Microsoft.AspNetCore.Identity;
-    using Microsoft.AspNetCore.RateLimiting;
     using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Hosting;
-    using Newtonsoft.Json.Serialization;
-    using Sky.Cms.Hubs;
-    using Sky.Cms.Services;
-    using Sky.Editor.Data.Logic;
+    using System;
 
     /// <summary>
     ///  Creates a multi-tenant web application.

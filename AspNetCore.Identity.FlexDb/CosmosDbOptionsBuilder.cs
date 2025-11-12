@@ -1,10 +1,8 @@
-﻿using Azure.Identity;
+﻿using AspNetCore.Identity.FlexDb.Strategies;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Linq;
-using Microsoft.Data.Sqlite;
 using System.Collections.Generic;
-using AspNetCore.Identity.FlexDb.Strategies;
+using System.Linq;
 
 namespace AspNetCore.Identity.FlexDb
 {

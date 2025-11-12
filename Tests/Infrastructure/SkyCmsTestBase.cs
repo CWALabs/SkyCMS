@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
-using RazorLight;
 using Sky.Cms.Services;
 using Sky.Editor.Data.Logic;
 using Sky.Editor.Domain.Events;
@@ -155,7 +154,7 @@ namespace Sky.Tests
             BlogRenderingService = new BlogRenderingService(Db);
             ReservedPaths = new ReservedPaths(Db);
             AuthorInfoService = new AuthorInfoService(Db, Cache);
-            
+
             var mockViewRenderService = new Mock<IViewRenderService>();
             mockViewRenderService
                 .Setup(x => x.RenderToStringAsync(It.IsAny<string>(), It.IsAny<object>()))
@@ -169,7 +168,7 @@ namespace Sky.Tests
                 Clock,
                 BlogRenderingService,
                 ViewRenderService);
-            
+
             RedirectService = new RedirectService(Db, SlugService, Clock, PublishingService);
             TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, Clock, EventDispatcher, PublishingService, ReservedPaths, BlogRenderingService, new LoggerFactory().CreateLogger<TitleChangeService>());
             var webHostEnvironmentMock = new Mock<IWebHostEnvironment>();

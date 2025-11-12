@@ -7,12 +7,6 @@
 
 namespace Sky.Cms.Controllers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
@@ -44,6 +38,12 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Services.ReservedPaths;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
 
     /// <summary>
     /// Editor controller.

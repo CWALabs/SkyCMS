@@ -7,12 +7,6 @@
 
 namespace Sky.Editor.Data.Logic
 {
-    // PATCHED: orchestrates via services; legacy method names preserved
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
@@ -37,6 +31,12 @@ namespace Sky.Editor.Data.Logic
     using Sky.Editor.Services.Slugs;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
+    // PATCHED: orchestrates via services; legacy method names preserved
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Article editing and management logic (editor-facing). Inherits read/view logic from <see cref="ArticleLogic"/>.

@@ -7,9 +7,6 @@
 
 namespace Sky.Editor.Controllers
 {
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.AspNetCore.Authorization;
@@ -22,6 +19,9 @@ namespace Sky.Editor.Controllers
     using Sky.Editor.Services.Slugs;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Editor-facing controller for managing blog streams (multi-blog support) and their entries (blog posts).
@@ -565,7 +565,7 @@ namespace Sky.Editor.Controllers
             var blogStreamArticleNumber = blog.ArticleNumber;
             var entries = await db.Articles
                 .Where(c => c.BlogKey == blogKey && c.ArticleNumber != blogStreamArticleNumber && c.StatusCode != deletedEnum)
-                .Select(c => new 
+                .Select(c => new
                 {
                     c.BlogKey,
                     c.ArticleNumber,

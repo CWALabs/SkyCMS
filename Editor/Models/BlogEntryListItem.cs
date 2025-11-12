@@ -8,8 +8,6 @@
 namespace Sky.Editor.Models.Blogs
 {
     using System;
-    using System.Collections.Generic;
-    using System.ComponentModel.DataAnnotations;
 
     /// <summary>
     /// Lightweight projection of a blog entry for list/table display.

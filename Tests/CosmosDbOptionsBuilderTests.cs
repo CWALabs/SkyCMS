@@ -7,12 +7,12 @@
 
 namespace Sky.Tests.FlexDb
 {
-    using System;
-    using System.Collections.Generic;
     using AspNetCore.Identity.FlexDb;
     using AspNetCore.Identity.FlexDb.Strategies;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Tests for CosmosDbOptionsBuilder.

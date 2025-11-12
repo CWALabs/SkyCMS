@@ -4,7 +4,6 @@
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
-
 using System.Diagnostics;
 using System.Net;
 using System.Security.Claims;

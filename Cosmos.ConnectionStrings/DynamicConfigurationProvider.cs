@@ -145,7 +145,7 @@ namespace Cosmos.DynamicConfig
             {
                 return string.Empty;
             }
-             
+
             if (useReferer)
             {
                 var referer = httpContextAccessor.HttpContext.Request.Headers.Referer.ToString();

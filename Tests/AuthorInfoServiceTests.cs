@@ -7,13 +7,13 @@
 
 namespace Sky.Tests.Services.Authors
 {
-    using System;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Services.Authors;
+    using System;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Unit tests for the <see cref="AuthorInfoService"/> class.
@@ -182,7 +182,7 @@ namespace Sky.Tests.Services.Authors
 
             // Act - First call should hit database
             var firstResult = await AuthorInfoService.GetOrCreateAsync(userId);
-            
+
             // Clear EF tracking to ensure DB would return updated value
             Db.ChangeTracker.Clear();
 
@@ -195,9 +195,9 @@ namespace Sky.Tests.Services.Authors
             var secondResult = await AuthorInfoService.GetOrCreateAsync(userId);
 
             // Assert
-            Assert.AreEqual("Cached Author", secondResult.AuthorName, 
+            Assert.AreEqual("Cached Author", secondResult.AuthorName,
                 "Should return cached value, not modified database value.");
-            Assert.AreSame(firstResult, secondResult, 
+            Assert.AreSame(firstResult, secondResult,
                 "Should return same cached instance.");
         }
 
@@ -317,9 +317,9 @@ namespace Sky.Tests.Services.Authors
 
             // Assert
             var count = await Db.AuthorInfos.CountAsync(a => a.Id == userId.ToString());
-            Assert.AreEqual(1, count, 
+            Assert.AreEqual(1, count,
                 "Exactly one AuthorInfo record should exist despite concurrent calls.");
-            
+
             // All results should reference the same or equal data
             foreach (var result in results)
             {

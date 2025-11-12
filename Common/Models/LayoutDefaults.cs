@@ -7,8 +7,8 @@
 
 namespace Cosmos.Common.Models
 {
-    using System.Collections.Generic;
     using Cosmos.Common.Data;
+    using System.Collections.Generic;
 
     /// <summary>
     ///     Default layouts installed during setup.

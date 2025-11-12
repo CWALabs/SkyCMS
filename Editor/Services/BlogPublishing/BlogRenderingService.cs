@@ -7,13 +7,13 @@
 
 namespace Sky.Editor.Services.BlogRenderingService
 {
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.EntityFrameworkCore;
     using Sky.Editor.Services.BlogPublishing;
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <summary>
     ///  Blog publishing service implementation.

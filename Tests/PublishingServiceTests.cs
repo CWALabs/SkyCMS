@@ -347,7 +347,7 @@ namespace Sky.Tests.Services.Publishing
             // Assert
             var page1Exists = await Storage.BlobExistsAsync("/page1");
             var page2Exists = await Storage.BlobExistsAsync("/page2");
-            
+
             Assert.IsTrue(page1Exists, "Static file for page1 should be created");
             Assert.IsTrue(page2Exists, "Static file for page2 should be created");
         }

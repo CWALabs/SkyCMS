@@ -7,15 +7,15 @@
 
 namespace Sky.Editor.Services.Scheduling
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Infrastructure.Time;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <inheritdoc/>
     public class ArticleScheduler : IArticleScheduler

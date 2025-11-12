@@ -34,7 +34,7 @@ namespace Sky.Editor.Boot
 
             // Backup storage connection string
             var backupConnectionString = builder.Configuration.GetConnectionString("BackupStorageConnectionString");
-            
+
             // If there is a backup connection string, then restore the database file now.
             // Also, on shutdown of the application, upload the database file to storage.
             if (!string.IsNullOrEmpty(backupConnectionString))

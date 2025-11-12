@@ -7,8 +7,8 @@
 
 namespace Sky.Cms.Models
 {
-    using System.ComponentModel.DataAnnotations;
     using Cosmos.Cms.Common.Services.Configurations;
+    using System.ComponentModel.DataAnnotations;
 
     /// <summary>
     ///     Configuration index view model.

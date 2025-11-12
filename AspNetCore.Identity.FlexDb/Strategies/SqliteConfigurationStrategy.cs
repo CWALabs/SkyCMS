@@ -7,10 +7,10 @@
 
 namespace AspNetCore.Identity.FlexDb.Strategies
 {
-    using System;
-    using System.Linq;
     using Microsoft.Data.Sqlite;
     using Microsoft.EntityFrameworkCore;
+    using System;
+    using System.Linq;
 
     /// <summary>
     /// Configuration strategy for SQLite.
@@ -78,7 +78,7 @@ namespace AspNetCore.Identity.FlexDb.Strategies
         private static string GetConnectionStringPart(string[] parts, string prefix)
         {
             var part = parts.FirstOrDefault(p => p.StartsWith(prefix, StringComparison.InvariantCultureIgnoreCase));
-            
+
             if (part == null)
             {
                 return null;

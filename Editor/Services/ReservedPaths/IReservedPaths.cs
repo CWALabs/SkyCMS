@@ -28,7 +28,7 @@ namespace Sky.Editor.Services.ReservedPaths
         /// <param name="path">The path of the item to remove. This must be a valid, non-null, and non-empty string.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
         Task Remove(string path);
-        
+
         /// <summary>
         /// Checks if the specified path is reserved.
         /// </summary>

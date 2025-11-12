@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AspNetCore.Identity.FlexDb.Contracts;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using AspNetCore.Identity.FlexDb.Contracts;
 using System;
 using System.Linq;
 using System.Linq.Expressions;

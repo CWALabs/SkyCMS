@@ -7,8 +7,8 @@
 
 namespace AspNetCore.Identity.FlexDb.Strategies
 {
-    using System;
     using Microsoft.EntityFrameworkCore;
+    using System;
 
     /// <summary>
     /// Configuration strategy for SQL Server.
