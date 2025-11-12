@@ -28,6 +28,10 @@
 		<Title>ASP.NET Core Identity Provider for Azure Cosmos DB</Title>
 	</PropertyGroup>
 
+	<PropertyGroup>
+	  <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
         <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.10" />
