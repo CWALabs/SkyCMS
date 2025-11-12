@@ -12,6 +12,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using RazorLight;
+using Sky.Cms.Services;
 using Sky.Editor.Data.Logic;
 using Sky.Editor.Domain.Events;
 using Sky.Editor.Infrastructure.Time;
@@ -57,6 +59,7 @@ namespace Sky.Tests
         protected UserManager<IdentityUser> UserManager = null!;
         protected ITemplateService TemplateService = null!;
         protected IBlogRenderingService BlogRenderingService = null!;
+        protected IViewRenderService ViewRenderService = null!;
 
         private async Task EnsureBlogStreamTemplateExistsAsync()
         {
@@ -152,9 +155,20 @@ namespace Sky.Tests
             BlogRenderingService = new BlogRenderingService(Db);
             ReservedPaths = new ReservedPaths(Db);
             AuthorInfoService = new AuthorInfoService(Db, Cache);
+            
+            var mockViewRenderService = new Mock<IViewRenderService>();
+            mockViewRenderService
+                .Setup(x => x.RenderToStringAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .ReturnsAsync("<html>Mocked Rendered View</html>");
+
+            ViewRenderService = mockViewRenderService.Object;
 
             PublishingService = new PublishingService(Db, Storage, EditorSettings,
-                new LoggerFactory().CreateLogger<PublishingService>(), HttpContextAccessor, authorInfoService, Clock, BlogRenderingService);
+                new LoggerFactory().CreateLogger<PublishingService>(),
+                HttpContextAccessor, authorInfoService,
+                Clock,
+                BlogRenderingService,
+                ViewRenderService);
             
             RedirectService = new RedirectService(Db, SlugService, Clock, PublishingService);
             TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, Clock, EventDispatcher, PublishingService, ReservedPaths, BlogRenderingService, new LoggerFactory().CreateLogger<TitleChangeService>());
@@ -174,7 +188,7 @@ namespace Sky.Tests
                 EditorSettings,
                 new NullLogger<PublishingService>(),
                 HttpContextAccessor,
-                authorInfoService, Clock, BlogRenderingService
+                authorInfoService, Clock, BlogRenderingService, ViewRenderService
             );
             var redirectService = new RedirectService(Db, SlugService, Clock, publishingArtifactService);
 

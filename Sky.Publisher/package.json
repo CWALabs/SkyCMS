@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "name": "sky.publisher",
+  "private": true,
+  "devDependencies": {
+    "eslint": "^8.46.0"
+  },
+  "dependencies": {
+  }
+}

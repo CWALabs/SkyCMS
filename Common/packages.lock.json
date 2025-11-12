@@ -112,21 +112,21 @@
       },
       "X.Web.Sitemap": {
         "type": "Direct",
-        "requested": "[2.11.0, )",
-        "resolved": "2.11.0",
-        "contentHash": "lIZfMbom3m7P/5SbwXuuGqFTgl1UpDjguN86bgikGe6VIGMgVILQe0Ge/WFN/gJ/q8/nz753q0gWWD+d6r1WzQ=="
+        "requested": "[2.11.3, )",
+        "resolved": "2.11.3",
+        "contentHash": "fRR23CE/O0yjJVGgshgFeo3VzsFFddSVYPVvuGeVeKX/squH0d4RvdQasXkv5TdrH9WzP7xcRzep8zS7001qyw=="
       },
       "AWSSDK.Core": {
         "type": "Transitive",
-        "resolved": "4.0.1.3",
-        "contentHash": "IAJXGnwNesYbPzEd9xTSnQ5pygiDTjSQPWA9cJsi1ziHSmpmmBgR952s2qV2YnjcAzq+56uH/Lpi4x0HEw4SsA=="
+        "resolved": "4.0.3",
+        "contentHash": "haZXE5wMsr1MISFmeMC6wbHjFjQ5f+g84W8EIcqvV/Su5ET6N8BOJxtFPvm3EnHElRuaaTgMwTEn2G9JZ4wBpw=="
       },
       "AWSSDK.S3": {
         "type": "Transitive",
-        "resolved": "4.0.9",
-        "contentHash": "GPtzLk6RPqKzoDnaSAQCoU//S+HaDb/qnxCw1GR0PMbbq0Guw9ufu0BwDpskEEEe5c0gajXDKNsF52NscXs1sA==",
+        "resolved": "4.0.11.1",
+        "contentHash": "VJF0IYSJBc6u4ODm3ijByLnyyZdHVNtxt9tvtEeLPelp4XtRbZt9+Gqd/tbMtV2WWOBQ2CKIgWjmI3RXjQCUCw==",
         "dependencies": {
-          "AWSSDK.Core": "[4.0.1.3, 5.0.0)"
+          "AWSSDK.Core": "[4.0.3, 5.0.0)"
         }
       },
       "Azure.Core": {
@@ -1420,7 +1420,7 @@
       "cosmos.blobservice": {
         "type": "Project",
         "dependencies": {
-          "AWSSDK.S3": "[4.0.9, )",
+          "AWSSDK.S3": "[4.0.11.1, )",
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.1, )",
           "Azure.Identity": "[1.17.0, )",
           "Azure.Storage.Files.Shares": "[12.24.0, )",

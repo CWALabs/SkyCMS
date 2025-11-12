@@ -69,10 +69,10 @@ namespace Sky.Cms.Services
         /// <summary>
         /// Render view as a string.
         /// </summary>
-        /// <param name="viewPath"></param>
-        /// <param name="model"></param>
+        /// <param name="viewPath">Path to view.</param>
+        /// <param name="model">Page model.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException">Null argument exception.</exception>
         public async Task<string> RenderToStringAsync(string viewPath, object model)
         {
             var httpContext = new DefaultHttpContext { RequestServices = _serviceProvider };

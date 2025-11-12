@@ -2,9 +2,9 @@
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
-		<AssemblyVersion>9.0.16.5</AssemblyVersion>
-		<FileVersion>9.0.16.5</FileVersion>
-		<Version>9.0.16.5</Version>
+		<AssemblyVersion>9.0.16.6</AssemblyVersion>
+		<FileVersion>9.0.16.6</FileVersion>
+		<Version>9.0.16.6</Version>
 		<Title>Sky CMS Azure Storage Provider</Title>
 		<Authors>toiyabe62</Authors>
 		<Company>Moonrise Software LLC</Company>
@@ -39,7 +39,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AWSSDK.S3" Version="4.0.9" />
+		<PackageReference Include="AWSSDK.S3" Version="4.0.11.1" />
 		<PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.1" />
 		<PackageReference Include="Azure.Identity" Version="1.17.0" />
 		<PackageReference Include="Azure.Storage.Files.Shares" Version="12.24.0" />

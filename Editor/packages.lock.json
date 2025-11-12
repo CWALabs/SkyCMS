@@ -43,18 +43,18 @@
       },
       "Hangfire.AspNetCore": {
         "type": "Direct",
-        "requested": "[1.8.21, )",
-        "resolved": "1.8.21",
-        "contentHash": "G3yP92rPC313zRA1DIaROmF6UYB9NRtMHy64CCq4StqWmyUuFQQsYgZxo+Kp6gd2CbjaSI8JN8canTMYSGfrMw==",
+        "requested": "[1.8.22, )",
+        "resolved": "1.8.22",
+        "contentHash": "Ud5ZNnH9q5+3MryiuPTW7baRERN9QYLyX+8muLwH9BqumoE9eWZRxna9RrunYaMVkNGbTUUuwOfSYIvCC222TQ==",
         "dependencies": {
-          "Hangfire.NetCore": "[1.8.21]"
+          "Hangfire.NetCore": "[1.8.22]"
         }
       },
       "Hangfire.Core": {
         "type": "Direct",
-        "requested": "[1.8.21, )",
-        "resolved": "1.8.21",
-        "contentHash": "UfIDfDKJTue82ShKV/HHEBScAIJMnuiS8c5jcLHThY8i8O0eibCcNjFkVqlvY9cnDiOBZ7EBGWJ8horH9Ykq+g==",
+        "requested": "[1.8.22, )",
+        "resolved": "1.8.22",
+        "contentHash": "fjgEtlfkLNnUcX9IB+fp3gTPtt5G7VJ0PCcoKLEWnXJXn5qTm/mvrm/t3/T+Xj35ZePtbWBm+j2PXE0beFwzbA==",
         "dependencies": {
           "Newtonsoft.Json": "11.0.1"
         }
@@ -138,9 +138,9 @@
       },
       "Microsoft.Graph": {
         "type": "Direct",
-        "requested": "[5.95.0, )",
-        "resolved": "5.95.0",
-        "contentHash": "FqSSWy8+uWYGkgop/C8S1yM3C4mMLfmhPi1FYhNfU4R8cbja77gpZr2OxnW9TyCK4Tjn3WF7df3GXIf10hRVdw==",
+        "requested": "[5.96.0, )",
+        "resolved": "5.96.0",
+        "contentHash": "4ihInCDMH4YBYCBqKuRFIo+uyo6fFuXPCk9aoABOxE1mOZGX+5BeJIi8NKjAN7db6oaEDLea7D849r9XEc3huQ==",
         "dependencies": {
           "Microsoft.Graph.Core": "3.2.4"
         }
@@ -208,15 +208,15 @@
       },
       "AWSSDK.Core": {
         "type": "Transitive",
-        "resolved": "4.0.1.3",
-        "contentHash": "IAJXGnwNesYbPzEd9xTSnQ5pygiDTjSQPWA9cJsi1ziHSmpmmBgR952s2qV2YnjcAzq+56uH/Lpi4x0HEw4SsA=="
+        "resolved": "4.0.3",
+        "contentHash": "haZXE5wMsr1MISFmeMC6wbHjFjQ5f+g84W8EIcqvV/Su5ET6N8BOJxtFPvm3EnHElRuaaTgMwTEn2G9JZ4wBpw=="
       },
       "AWSSDK.S3": {
         "type": "Transitive",
-        "resolved": "4.0.9",
-        "contentHash": "GPtzLk6RPqKzoDnaSAQCoU//S+HaDb/qnxCw1GR0PMbbq0Guw9ufu0BwDpskEEEe5c0gajXDKNsF52NscXs1sA==",
+        "resolved": "4.0.11.1",
+        "contentHash": "VJF0IYSJBc6u4ODm3ijByLnyyZdHVNtxt9tvtEeLPelp4XtRbZt9+Gqd/tbMtV2WWOBQ2CKIgWjmI3RXjQCUCw==",
         "dependencies": {
-          "AWSSDK.Core": "[4.0.1.3, 5.0.0)"
+          "AWSSDK.Core": "[4.0.3, 5.0.0)"
         }
       },
       "Azure.Communication.Email": {
@@ -339,10 +339,10 @@
       },
       "Hangfire.NetCore": {
         "type": "Transitive",
-        "resolved": "1.8.21",
-        "contentHash": "NR8BvQqgvVstgY/YZVisuV/XdkKSZGiD+5b+NABuGxu/xDEhycFHS1uIC9zhIYkPr1tThGoThRIH07JWxPZTvQ==",
+        "resolved": "1.8.22",
+        "contentHash": "I7LiUHpC3ks7k+vLFOdwwCwDHxT83H+Mv6bT+7vkI1SLOc4Vwv2zOWdeeN1K86vddu7R36ho+eKP0gvfYlSZjg==",
         "dependencies": {
-          "Hangfire.Core": "[1.8.21]",
+          "Hangfire.Core": "[1.8.22]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "3.0.0",
           "Microsoft.Extensions.Hosting.Abstractions": "3.0.0",
           "Microsoft.Extensions.Logging.Abstractions": "3.0.0"
@@ -2081,8 +2081,8 @@
       },
       "X.Web.Sitemap": {
         "type": "Transitive",
-        "resolved": "2.11.0",
-        "contentHash": "lIZfMbom3m7P/5SbwXuuGqFTgl1UpDjguN86bgikGe6VIGMgVILQe0Ge/WFN/gJ/q8/nz753q0gWWD+d6r1WzQ=="
+        "resolved": "2.11.3",
+        "contentHash": "fRR23CE/O0yjJVGgshgFeo3VzsFFddSVYPVvuGeVeKX/squH0d4RvdQasXkv5TdrH9WzP7xcRzep8zS7001qyw=="
       },
       "AspNetCore.Identity.CosmosDb": {
         "type": "Project",
@@ -2105,7 +2105,7 @@
       "cosmos.blobservice": {
         "type": "Project",
         "dependencies": {
-          "AWSSDK.S3": "[4.0.9, )",
+          "AWSSDK.S3": "[4.0.11.1, )",
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.1, )",
           "Azure.Identity": "[1.17.0, )",
           "Azure.Storage.Files.Shares": "[12.24.0, )",
@@ -2128,7 +2128,7 @@
           "Microsoft.EntityFrameworkCore.SqlServer": "[9.0.10, )",
           "Microsoft.PowerBI.Api": "[4.22.0, )",
           "Otp.NET": "[1.4.0, )",
-          "X.Web.Sitemap": "[2.11.0, )"
+          "X.Web.Sitemap": "[2.11.3, )"
         }
       },
       "cosmos.dynamicconfig": {

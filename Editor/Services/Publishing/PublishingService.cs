@@ -18,11 +18,14 @@ namespace Sky.Editor.Services.Publishing
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
+    using Cosmos.Common.Models;
     using Microsoft.AspNetCore.Http;
+    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
+    using Sky.Cms.Services;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.BlogPublishing;
@@ -47,6 +50,8 @@ namespace Sky.Editor.Services.Publishing
         private readonly Authors.IAuthorInfoService _authors;
         private readonly IClock _systemClock;
         private readonly IBlogRenderingService blogRenderingService;
+        private readonly IViewRenderService viewRenderService;
+        private readonly LayoutViewModel defaultLayout;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PublishingService"/> class.
@@ -59,6 +64,7 @@ namespace Sky.Editor.Services.Publishing
         /// <param name="authors">The author information service.</param>
         /// <param name="systemClock">The system clock.</param>
         /// <param name="blogRenderingService">The blog stream and post rendering service.</param>
+        /// <param name="viewRenderService">View rendering service.</param>
         public PublishingService(
             ApplicationDbContext db,
             StorageContext storage,
@@ -67,7 +73,8 @@ namespace Sky.Editor.Services.Publishing
             IHttpContextAccessor accessor,
             Authors.IAuthorInfoService authors,
             IClock systemClock,
-            IBlogRenderingService blogRenderingService)
+            IBlogRenderingService blogRenderingService,
+            IViewRenderService viewRenderService)
         {
             _db = db;
             _storage = storage;
@@ -77,22 +84,25 @@ namespace Sky.Editor.Services.Publishing
             _authors = authors;
             _systemClock = systemClock;
             this.blogRenderingService = blogRenderingService;
+            this.viewRenderService = viewRenderService;
+            var layout = db.Layouts.FirstOrDefaultAsync(l => l.IsDefault).Result;
+            this.defaultLayout = new LayoutViewModel(layout);
         }
 
-    /// <summary>
-    /// Publishes (or updates) a blog stream page for the specified blog key and user.
-    /// </summary>
-    /// <param name="blog">The blog stream metadata and content input. The <see cref="Article.BlogKey"/> identifies the stream; the HTML is generated with <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/>.</param>
-    /// <param name="userId">The ID of the user performing the publish; stored on the resulting article for auditing and author attribution.</param>
-    /// <returns>A list of CDN purge results indicating cache invalidation status per provider after publishing.</returns>
-    /// <remarks>
-    /// If a blog stream article already exists for the given <see cref="Article.BlogKey"/>,
-    /// its metadata is updated and the <see cref="Article.VersionNumber"/> is incremented;
-    /// otherwise a new article record is created. In both cases, content is produced by
-    /// <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/> and the operation
-    /// delegates to <see cref="PublishAsync(Article)"/> to create the published page, write
-    /// optional static files, update the TOC, and purge the CDN.
-    /// </remarks>
+        /// <summary>
+        /// Publishes (or updates) a blog stream page for the specified blog key and user.
+        /// </summary>
+        /// <param name="blog">The blog stream metadata and content input. The <see cref="Article.BlogKey"/> identifies the stream; the HTML is generated with <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/>.</param>
+        /// <param name="userId">The ID of the user performing the publish; stored on the resulting article for auditing and author attribution.</param>
+        /// <returns>A list of CDN purge results indicating cache invalidation status per provider after publishing.</returns>
+        /// <remarks>
+        /// If a blog stream article already exists for the given <see cref="Article.BlogKey"/>,
+        /// its metadata is updated and the <see cref="Article.VersionNumber"/> is incremented;
+        /// otherwise a new article record is created. In both cases, content is produced by
+        /// <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/> and the operation
+        /// delegates to <see cref="PublishAsync(Article)"/> to create the published page, write
+        /// optional static files, update the TOC, and purge the CDN.
+        /// </remarks>
         public async Task<List<CdnResult>> PublishAsync(Article blog, Guid userId)
         {
             var article = await _db.Articles
@@ -256,7 +266,7 @@ namespace Sky.Editor.Services.Publishing
         ///   <item><description>Triggers a full CDN cache purge if a CDN service is configured</description></item>
         /// </list>
         /// <para>
-    /// Unlike <see cref="PublishAsync(Article)"/>, this method performs a full CDN purge rather than selective path purging.
+        /// Unlike <see cref="PublishAsync(Article)"/>, this method performs a full CDN purge rather than selective path purging.
         /// Only processes pages if <see cref="IEditorSettings.StaticWebPages"/> is enabled.
         /// </para>
         /// </remarks>
@@ -348,7 +358,7 @@ namespace Sky.Editor.Services.Publishing
             });
         }
 
-    /// <summary>
+        /// <summary>
         /// Unpublishes earlier versions of an article to ensure only the latest published version is active.
         /// </summary>
         /// <param name="article">The article being published. Must have a valid <see cref="Article.ArticleNumber"/> and <see cref="Article.VersionNumber"/>.</param>
@@ -501,18 +511,37 @@ namespace Sky.Editor.Services.Publishing
                 ? "/index.html"
                 : "/" + page.UrlPath.TrimStart('/');
 
-            var html = new StringBuilder()
-                .Append("<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><title>")
-                .Append(System.Net.WebUtility.HtmlEncode(page.Title))
-                .Append("</title>")
-                .Append(page.HeaderJavaScript)
-                .Append("</head><body>")
-                .Append(page.Content)
-                .Append(page.FooterJavaScript)
-                .Append("</body></html>")
-                .ToString();
+            var model = new ArticleViewModel()
+            {
+                ArticleNumber = page.ArticleNumber,
+                Title = page.Title,
+                Content = page.Content,
+                HeadJavaScript = page.HeaderJavaScript,
+                FooterJavaScript = page.FooterJavaScript,
+                Updated = page.Updated,
+                AuthorInfo = page.AuthorInfo,
+                Published = page.Published,
+                Expires = page.Expires,
+                BannerImage = page.BannerImage,
+                UrlPath = page.UrlPath,
+                ArticleType = (ArticleType)(page.ArticleType ?? 0),
+                Category = page.Category,
+                Introduction = page.Introduction,
+                Id = page.Id,
+                EditModeOn = false,
+                PreviewMode = false,
+                ReadWriteMode = false,
+                VersionNumber = page.VersionNumber,
+                CacheDuration = 0,
+                Layout = defaultLayout
+            };
 
-            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(html));
+            var html = await this.viewRenderService.RenderToStringAsync("~/Views/Home/Static.cshtml", model);
+
+            var result = NUglify.Uglify.Html(html);
+            var contentToUpload = result.HasErrors ? html : result.Code; // Use minified if no errors.
+
+            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(contentToUpload));
             await _storage.AppendBlob(ms, new FileUploadMetaData
             {
                 ChunkIndex = 0,
