@@ -1424,13 +1424,13 @@
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.1, )",
           "Azure.Identity": "[1.17.0, )",
           "Azure.Storage.Files.Shares": "[12.24.0, )",
-          "Cosmos.DynamicConfig": "[9.0.16.5, )"
+          "Cosmos.DynamicConfig": "[9.0.16.6, )"
         }
       },
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.CosmosDb": "[9.0.16.5, )",
+          "AspNetCore.Identity.CosmosDb": "[9.0.16.6, )",
           "Microsoft.AspNetCore.Http.Abstractions": "[2.3.0, )",
           "Microsoft.EntityFrameworkCore": "[9.0.10, )",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.10, )",
