@@ -6,23 +6,28 @@
 // </copyright>
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Cosmos.DynamicConfig
 {
     /// <summary>
-    /// Domain name middleware service. Gets the domain name of the current request.
+    /// Domain name middleware service. Gets the domain name of the current request and validates tenant access.
     /// </summary>
     public class DomainMiddleware
     {
         private readonly RequestDelegate next;
+        private readonly ILogger<DomainMiddleware> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DomainMiddleware"/> class.
         /// </summary>
         /// <param name="next">Request delegate.</param>
-        public DomainMiddleware(RequestDelegate next)
+        /// <param name="logger">Logger service.</param>
+        public DomainMiddleware(RequestDelegate next, ILogger<DomainMiddleware> logger)
         {
             this.next = next;
+            this._logger = logger;
         }
 
         /// <summary>
@@ -32,7 +37,41 @@ namespace Cosmos.DynamicConfig
         /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
         public async Task InvokeAsync(HttpContext context)
         {
-            var domain = context.Request.Host.Host;
+            var domain = context.Request.Host.Host.ToLowerInvariant();
+            
+            _logger.LogDebug("Domain middleware processing request for domain: {Domain}", domain);
+            
+            // Validate domain exists in configuration
+            var configProvider = context.RequestServices.GetService<IDynamicConfigurationProvider>();
+            
+            if (configProvider != null)
+            {
+                try
+                {
+                    var connectionString = configProvider.GetDatabaseConnectionString(domain);
+                    var isValid = !string.IsNullOrEmpty(connectionString);
+                    
+                    if (!isValid)
+                    {
+                        _logger.LogWarning("Unauthorized domain access attempt: {Domain}, Path: {Path}, IP: {IP}", 
+                            domain, 
+                            context.Request.Path,
+                            context.Connection.RemoteIpAddress?.ToString());
+                        
+                        context.Response.StatusCode = 404; // Return 404 instead of exposing tenant information
+                        await context.Response.WriteAsync("Not Found");
+                        return;
+                    }
+                    
+                    _logger.LogInformation("Valid domain access: {Domain}", domain);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error validating domain: {Domain}", domain);
+                    // Continue processing - fail open for availability, but log the error
+                }
+            }
+            
             context.Items["Domain"] = domain;
             await next(context);
         }

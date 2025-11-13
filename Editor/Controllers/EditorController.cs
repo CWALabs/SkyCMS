@@ -1039,6 +1039,37 @@ namespace Sky.Cms.Controllers
         /// <returns>IActionResult.</returns>
         public async Task<IActionResult> PublishPage(Guid articleId, DateTimeOffset? datetime, string editorUrl)
         {
+            if (!string.IsNullOrWhiteSpace(editorUrl))
+            {
+                // Define allowed return paths
+                var allowedPaths = new[]
+                {
+                    "/Editor/Index",
+                    "/Editor/Versions",
+                    "/Editor/EditCode",
+                    "/Editor/Edit",
+                    "/Editor/Designer",
+                    "/Templates/EditCode",
+                    "/Templates/Edit",
+                    "/Templates/Designer"
+                };
+
+                // Parse and validate the URL
+                if (!Uri.TryCreate(editorUrl, UriKind.RelativeOrAbsolute, out var uri))
+                {
+                    logger.LogWarning("Invalid URL format: {EditorUrl}", editorUrl);
+                    return RedirectToAction("Index", "Editor");
+                }
+
+                var path = uri.IsAbsoluteUri ? uri.AbsolutePath : editorUrl.Split('?')[0];
+
+                if (!allowedPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+                {
+                    logger.LogWarning("Redirect to unauthorized path: {Path}", path);
+                    return RedirectToAction("Index", "Editor");
+                }
+            }
+
             await articleLogic.PublishArticle(articleId, datetime);
 
             if (!string.IsNullOrEmpty(editorSettings.BackupStorageConnectionString))

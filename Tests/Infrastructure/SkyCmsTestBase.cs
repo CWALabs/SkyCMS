@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -59,6 +60,7 @@ namespace Sky.Tests
         protected ITemplateService TemplateService = null!;
         protected IBlogRenderingService BlogRenderingService = null!;
         protected IViewRenderService ViewRenderService = null!;
+        protected IServiceProvider Services = null!;
 
         private async Task EnsureBlogStreamTemplateExistsAsync()
         {
@@ -154,6 +156,19 @@ namespace Sky.Tests
             BlogRenderingService = new BlogRenderingService(Db);
             ReservedPaths = new ReservedPaths(Db);
             AuthorInfoService = new AuthorInfoService(Db, Cache);
+            Services = new ServiceCollection()
+                .AddSingleton(EditorSettings)
+                .AddSingleton(Storage)
+                .AddSingleton(Db)
+                .AddSingleton(HttpContextAccessor)
+                .AddSingleton(SlugService)
+                .AddSingleton(ArticleHtmlService)
+                .AddSingleton(CatalogService)
+                .AddSingleton(EventDispatcher)
+                .AddSingleton(Clock)
+                .AddSingleton(BlogRenderingService)
+                .AddSingleton(AuthorInfoService)
+                .BuildServiceProvider();
 
             var mockViewRenderService = new Mock<IViewRenderService>();
             mockViewRenderService
@@ -187,8 +202,12 @@ namespace Sky.Tests
                 EditorSettings,
                 new NullLogger<PublishingService>(),
                 HttpContextAccessor,
-                authorInfoService, Clock, BlogRenderingService, ViewRenderService
+                authorInfoService,
+                Clock,
+                BlogRenderingService,
+                ViewRenderService
             );
+
             var redirectService = new RedirectService(Db, SlugService, Clock, publishingArtifactService);
 
             var titleChangeService = new TitleChangeService(

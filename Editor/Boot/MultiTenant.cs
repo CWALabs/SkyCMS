@@ -7,6 +7,7 @@
 
 namespace Sky.Editor.Boot
 {
+    using System;
     using AspNetCore.Identity.FlexDb;
     using Azure.Identity;
     using Cosmos.Common.Data;
@@ -16,7 +17,7 @@ namespace Sky.Editor.Boot
     using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.DependencyInjection;
-    using System;
+    using Microsoft.Extensions.Logging;
 
     /// <summary>
     ///  Creates a multi-tenant web application.
@@ -53,17 +54,36 @@ namespace Sky.Editor.Boot
         /// </summary>
         /// <param name="services">Services collection.</param>
         /// <returns>DbApplicationContext.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when tenant connection cannot be resolved.</exception>
         private static DbContextOptionsBuilder<ApplicationDbContext> GetDynamicOptionsBuilder(IServiceProvider services)
         {
             var connectionStringProvider = services.GetRequiredService<IDynamicConfigurationProvider>();
-            var connectionString = connectionStringProvider.GetDatabaseConnectionString();
-
-            // Note: This may be null if the cookie or website URL has not yet been set.
-            if (string.IsNullOrEmpty(connectionString))
+            var logger = services.GetService<ILogger<ApplicationDbContext>>();
+            
+            string? connectionString = null;
+            
+            try
             {
-                return new DbContextOptionsBuilder<ApplicationDbContext>();
+                connectionString = connectionStringProvider.GetDatabaseConnectionString();
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger?.LogError(ex, "Failed to resolve tenant database connection");
+                throw new InvalidOperationException(
+                    "Cannot create ApplicationDbContext: Tenant connection string resolution failed. " +
+                    "This may occur during application startup or in background jobs without HTTP context. " +
+                    "Ensure domain context is available or provide domain explicitly.", ex);
             }
 
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                logger?.LogError("Tenant connection string is null or empty");
+                throw new InvalidOperationException(
+                    "Cannot create ApplicationDbContext: Tenant connection string is null or empty. " +
+                    "Verify that the domain is correctly configured in the multi-tenant configuration database.");
+            }
+
+            logger?.LogDebug("Creating DbContext with tenant connection string");
             return CosmosDbOptionsBuilder.GetDbOptionsBuilder<ApplicationDbContext>(connectionString);
         }
     }

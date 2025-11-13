@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>c44b0fbc-a20c-4a15-8e5b-1a9eb09e6ac1</UserSecretsId>
-    <Version>9.1.0.8</Version>
+    <Version>9.1.0.9</Version>
   </PropertyGroup>
 
   <ItemGroup>

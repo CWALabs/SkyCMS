@@ -13,6 +13,7 @@ namespace Cosmos.Editor.Services
     using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.Logging;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -25,6 +26,7 @@ namespace Cosmos.Editor.Services
     {
         private readonly string connectionString;
         private readonly bool isMultiTenant;
+        private readonly ILogger<MultiDatabaseManagementUtilities> _logger;
 
         /// <summary>
         /// Gets a value indicating whether the application is configured for multi-tenancy.
@@ -35,10 +37,12 @@ namespace Cosmos.Editor.Services
         /// Initializes a new instance of the <see cref="MultiDatabaseManagementUtilities"/> class with the provided database context.
         /// </summary>
         /// <param name="configuration">Application configuration.</param>
-        public MultiDatabaseManagementUtilities(IConfiguration configuration)
+        /// <param name="logger">Logger instance.</param>
+        public MultiDatabaseManagementUtilities(IConfiguration configuration, ILogger<MultiDatabaseManagementUtilities> logger)
         {
             this.connectionString = configuration.GetConnectionString("ConfigDbConnectionString");
             this.isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+            this._logger = logger;
         }
 
         /// <summary>
@@ -92,7 +96,7 @@ namespace Cosmos.Editor.Services
         {
             if (!isMultiTenant)
             {
-                return; // Go no further.
+                return;
             }
 
             if (identityUser == null)
@@ -100,10 +104,13 @@ namespace Cosmos.Editor.Services
                 throw new ArgumentNullException(nameof(identityUser), "Identity user cannot be null.");
             }
 
-            // Retrieve all connections from the database context for the user.
-            var connections = await GetConnectionsForEmailAddress(identityUser.Email);
+            _logger.LogWarning("Cross-tenant user update initiated for email: {Email}, UserId: {UserId}", 
+                identityUser.Email, identityUser.Id);
 
-            // Iterate through each connection to update the user in Cosmos DB
+            var connections = await GetConnectionsForEmailAddress(identityUser.Email);
+            
+            _logger.LogInformation("User {Email} found in {Count} tenant(s)", identityUser.Email, connections.Count);
+
             foreach (var connection in connections)
             {
                 using var applicationDbContext = new ApplicationDbContext(connection.DbConn);
@@ -113,6 +120,9 @@ namespace Cosmos.Editor.Services
 
                 if (identity != null && identity.Id != identityUser.Id)
                 {
+                    _logger.LogWarning("Updating user {Email} in tenant {Domain}, OriginalUserId: {OriginalId}, TargetUserId: {TargetId}", 
+                        identityUser.Email, connection.WebsiteUrl, identityUser.Id, identity.Id);
+                    
                     identity.UserName = identityUser.UserName;
                     identity.NormalizedUserName = identityUser.NormalizedUserName;
                     identity.Email = identityUser.Email;
@@ -129,8 +139,13 @@ namespace Cosmos.Editor.Services
                     identity.PasswordHash = identityUser.PasswordHash;
 
                     await applicationDbContext.SaveChangesAsync();
+                    
+                    _logger.LogInformation("Successfully updated user {Email} in tenant {Domain}", 
+                        identityUser.Email, connection.WebsiteUrl);
                 }
             }
+            
+            _logger.LogInformation("Completed cross-tenant user update for email: {Email}", identityUser.Email);
         }
 
         /// <summary>

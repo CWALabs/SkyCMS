@@ -7,6 +7,11 @@
 
 namespace Cosmos.BlobService
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Azure.Identity;
     using Cosmos.BlobService.Config;
     using Cosmos.BlobService.Drivers;
@@ -15,11 +20,6 @@ namespace Cosmos.BlobService
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>
     ///     Multi cloud blob service context.
@@ -385,6 +385,14 @@ namespace Cosmos.BlobService
             if (this.isMultiTenant == true)
             {
                 var connectionString = this.dynamicConfigurationProvider.GetStorageConnectionString();
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException(
+                        "Cannot resolve tenant storage connection. Ensure HttpContext is available or provide domain explicitly. " +
+                        "For background jobs, consider storing domain context before invoking storage operations.");
+                }
+
                 return GetDriverFromConnectionString(connectionString);
             }
 

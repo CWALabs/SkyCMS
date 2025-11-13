@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Cosmos.DynamicConfig
 {
@@ -26,6 +27,8 @@ namespace Cosmos.DynamicConfig
         private readonly IMemoryCache memoryCache;
         private readonly StringBuilder errorMessages = new();
         private readonly string connectionString;
+        private readonly ILogger<DynamicConfigurationProvider> _logger;
+        private const string CacheKeyPrefix = "tenant:connection:";
 
         /// <summary>
         /// Gets the database connection
@@ -52,42 +55,64 @@ namespace Cosmos.DynamicConfig
         public DynamicConfigurationProvider(
             IConfiguration configuration,
             IHttpContextAccessor httpContextAccessor,
-            IMemoryCache memoryCache)
+            IMemoryCache memoryCache,
+            ILogger<DynamicConfigurationProvider> logger)
         {
             this.configuration = configuration;
-            this.httpContextAccessor = httpContextAccessor;
-            if (this.httpContextAccessor == null || this.httpContextAccessor.HttpContext == null)
-            {
-                throw new ArgumentNullException(nameof(httpContextAccessor));
-            }
-            // Replace this line:
-            // connectionString = this.configuration.GetConnectionString("ConfigDbConnectionString");
-            // With the following to ensure non-null assignment:
+            this.httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            
             connectionString = this.configuration.GetConnectionString("ConfigDbConnectionString") ?? string.Empty;
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentException("Connection string 'ConfigDbConnectionString' not found or is empty.");
             }
             this.memoryCache = memoryCache;
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new ArgumentException("Connection string 'ConfigDbConnectionString' not found.");
-            }
+            _logger = logger;
         }
 
         /// <summary>
         /// Gets the database connection string.
-        /// </summary>
+        /// /// </summary>
         /// <param name="domainName">Domain name</param>
         /// <returns>Database connection string.</returns>
-        public string? GetDatabaseConnectionString(string domainName)
+        /// <exception cref="InvalidOperationException">Thrown when HttpContext is unavailable and no domain is provided.</exception>
+        public string? GetDatabaseConnectionString(string domainName = "")
         {
+            if (httpContextAccessor.HttpContext == null)
+            {
+                if (string.IsNullOrWhiteSpace(domainName))
+                {
+                    _logger?.LogError("Cannot resolve tenant connection: HttpContext unavailable and no domain provided");
+                    throw new InvalidOperationException(
+                        "Cannot resolve tenant connection: HttpContext unavailable and no domain provided. " +
+                        "For background jobs or operations outside HTTP context, you must explicitly provide the domain name.");
+                }
+
+                _logger?.LogWarning("HttpContext not available - using provided domain: {Domain}", domainName);
+            }
+
             if (string.IsNullOrWhiteSpace(domainName))
             {
                 domainName = GetTenantDomainNameFromRequest();
             }
+            
+            // Normalize domain name
+            domainName = NormalizeDomainName(domainName);
+            
+            _logger?.LogDebug("Resolving database connection string for domain: {Domain}", domainName);
+            
             var connection = GetTenantConnection(domainName);
-            return connection?.DbConn;
+            
+            if (connection == null)
+            {
+                _logger?.LogWarning("No connection found for domain: {Domain}", domainName);
+                return null;
+            }
+            
+            _logger?.LogInformation("Successfully resolved database connection for domain: {Domain}, ConnectionId: {ConnectionId}", 
+                domainName, connection.Id);
+            
+            return connection.DbConn;
         }
 
         /// <summary>
@@ -95,14 +120,44 @@ namespace Cosmos.DynamicConfig
         /// </summary>
         /// <param name="domainName">Domain name</param>
         /// <returns>Database connection string.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when HttpContext is unavailable and no domain is provided.</exception>
         public string? GetStorageConnectionString(string domainName = "")
         {
+            if (httpContextAccessor.HttpContext == null)
+            {
+                if (string.IsNullOrWhiteSpace(domainName))
+                {
+                    _logger?.LogError("Cannot resolve tenant storage connection: HttpContext unavailable and no domain provided");
+                    throw new InvalidOperationException(
+                        "Cannot resolve tenant storage connection: HttpContext unavailable and no domain provided. " +
+                        "For background jobs or operations outside HTTP context, you must explicitly provide the domain name.");
+                }
+
+                _logger?.LogWarning("HttpContext not available for storage connection - using provided domain: {Domain}", domainName);
+            }
+
             if (string.IsNullOrWhiteSpace(domainName))
             {
                 domainName = GetTenantDomainNameFromRequest();
             }
+            
+            // Normalize domain name
+            domainName = NormalizeDomainName(domainName);
+            
+            _logger?.LogDebug("Resolving storage connection string for domain: {Domain}", domainName);
+            
             var connection = GetTenantConnection(domainName);
-            return connection?.StorageConn;
+            
+            if (connection == null)
+            {
+                _logger?.LogWarning("No storage connection found for domain: {Domain}", domainName);
+                return null;
+            }
+            
+            _logger?.LogInformation("Successfully resolved storage connection for domain: {Domain}, ConnectionId: {ConnectionId}", 
+                domainName, connection.Id);
+            
+            return connection.StorageConn;
         }
 
         /// <summary>
@@ -143,6 +198,7 @@ namespace Cosmos.DynamicConfig
         {
             if (httpContextAccessor.HttpContext == null)
             {
+                _logger?.LogWarning("HttpContext is null when attempting to get tenant domain name from request");
                 return string.Empty;
             }
 
@@ -151,12 +207,20 @@ namespace Cosmos.DynamicConfig
                 var referer = httpContextAccessor.HttpContext.Request.Headers.Referer.ToString();
                 if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
                 {
-                    return refererUri.Host.ToLower();
+                    var domain = refererUri.Host.ToLowerInvariant();
+                    _logger?.LogDebug("Resolved domain from referer: {Domain}", domain);
+                    return domain;
                 }
             }
-            return httpContextAccessor.HttpContext.Request == null ?
-                throw new InvalidOperationException("HTTP request is not available.") :
-                httpContextAccessor.HttpContext.Request.Host.Host;
+            
+            if (httpContextAccessor.HttpContext.Request == null)
+            {
+                throw new InvalidOperationException("HTTP request is not available.");
+            }
+            
+            var hostDomain = httpContextAccessor.HttpContext.Request.Host.Host.ToLowerInvariant();
+            _logger?.LogDebug("Resolved domain from request host: {Domain}", hostDomain);
+            return hostDomain;
         }
 
         /// <summary>
@@ -173,23 +237,23 @@ namespace Cosmos.DynamicConfig
 
             if (Uri.TryCreate(value, UriKind.Absolute, out var referrerUri))
             {
-                return referrerUri.Host.ToLower();
+                return referrerUri.Host.ToLowerInvariant();
             }
 
-            return value.ToLower();
+            return value.ToLowerInvariant();
         }
 
         /// <summary>
         /// Tests to see if there is a connection defined for the specified domain name.
         /// </summary>
-        /// <param name="configuration"></param>
-        /// <param name="domainName"></param>
+        /// <param name="domainName">Domain name to validate.</param>
         /// <returns>Domain is valid (true) or not (false).</returns>
-        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentException">Thrown when ConfigDbConnectionString is not configured.</exception>
         public async Task<bool> ValidateDomainName(string domainName)
         {
             if (string.IsNullOrWhiteSpace(domainName))
             {
+                _logger?.LogWarning("ValidateDomainName called with null or empty domain name");
                 return false;
             }
 
@@ -197,9 +261,53 @@ namespace Cosmos.DynamicConfig
             {
                 throw new ArgumentException("Connection string 'ConfigDbConnectionString' not found.");
             }
+            
+            // Normalize domain name for consistency
+            domainName = NormalizeDomainName(domainName);
+            
+            _logger?.LogDebug("Validating domain name: {Domain}", domainName);
+            
             using var dbContext = GetDbContext();
             var result = await dbContext.Connections.FirstOrDefaultAsync(c => c.DomainNames.Any(a => a == domainName));
-            return result != null;
+            
+            var isValid = result != null;
+            
+            if (!isValid)
+            {
+                _logger?.LogWarning("Domain validation failed for: {Domain}", domainName);
+            }
+            else
+            {
+                _logger?.LogInformation("Domain validated successfully: {Domain}, ConnectionId: {ConnectionId}", 
+                    domainName, result.Id);
+            }
+            
+            return isValid;
+        }
+
+        /// <summary>
+        /// Normalizes a domain name to lowercase for consistent comparison and caching.
+        /// </summary>
+        /// <param name="domainName">Domain name to normalize.</param>
+        /// <returns>Normalized domain name.</returns>
+        private static string NormalizeDomainName(string domainName)
+        {
+            if (string.IsNullOrWhiteSpace(domainName))
+            {
+                return domainName;
+            }
+            
+            return domainName.Trim().ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Gets the cache key for a domain name with proper namespacing.
+        /// </summary>
+        /// <param name="domainName">Domain name.</param>
+        /// <returns>Cache key.</returns>
+        private static string GetCacheKey(string domainName)
+        {
+            return $"{CacheKeyPrefix}{NormalizeDomainName(domainName)}";
         }
 
         private DynamicConfigDbContext GetDbContext()
@@ -210,32 +318,67 @@ namespace Cosmos.DynamicConfig
 
         private Connection? GetTenantConnection(string domainName)
         {
-
-            if (string.IsNullOrEmpty(domainName))
+            if (string.IsNullOrWhiteSpace(domainName))
             {
+                _logger?.LogDebug("GetTenantConnection called with null or empty domain name");
                 return null;
             }
 
-            memoryCache.TryGetValue<Connection>(domainName, out var connection);
-
-            if (connection != null)
+            // Normalize domain name
+            domainName = NormalizeDomainName(domainName);
+            
+            // Use namespaced cache key to prevent cache poisoning
+            var cacheKey = GetCacheKey(domainName);
+            
+            if (memoryCache.TryGetValue<Connection>(cacheKey, out var connection))
             {
-                return connection;
+                _logger?.LogDebug("Cache hit for domain: {Domain}, ConnectionId: {ConnectionId}", domainName, connection.Id);
+                
+                // Validate cached connection still has this domain (prevents stale cache issues)
+                if (connection.DomainNames != null && connection.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase))
+                {
+                    return connection;
+                }
+                
+                _logger?.LogWarning("Cached connection for domain {Domain} no longer contains this domain - removing from cache", domainName);
+                memoryCache.Remove(cacheKey);
             }
 
-            var dbContext = GetDbContext();
+            _logger?.LogDebug("Cache miss for domain: {Domain}, querying database", domainName);
+            
+            using var dbContext = GetDbContext();
 
-            var connections = dbContext.Connections.ToListAsync().Result;
-
-            connection = dbContext.Connections.FirstOrDefaultAsync(c => c.DomainNames.Any(a => a == domainName)).Result;
-
-            if (connection != null)
+            try
             {
-                memoryCache.Set<Connection>(domainName, connection, TimeSpan.FromSeconds(10));
+                connection = dbContext.Connections
+                    .AsEnumerable() // Cosmos DB doesn't support .Any() in Where, so we pull and filter client-side
+                    .FirstOrDefault(c => c.DomainNames != null && 
+                                        c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
+
+                if (connection != null)
+                {
+                    _logger?.LogInformation("Found connection for domain: {Domain}, ConnectionId: {ConnectionId}, caching for 10 seconds", 
+                        domainName, connection.Id);
+                    
+                    // Cache with absolute expiration to ensure fresh data
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromSeconds(10))
+                        .SetPriority(CacheItemPriority.High);
+                    
+                    memoryCache.Set(cacheKey, connection, cacheOptions);
+                }
+                else
+                {
+                    _logger?.LogWarning("No connection found in database for domain: {Domain}", domainName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving connection for domain: {Domain}", domainName);
+                return null;
             }
 
             return connection;
         }
-
     }
 }

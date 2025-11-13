@@ -52,7 +52,7 @@ namespace Sky.Editor.Services.Publishing
         private readonly IClock _systemClock;
         private readonly IBlogRenderingService blogRenderingService;
         private readonly IViewRenderService viewRenderService;
-        private readonly LayoutViewModel defaultLayout;
+        private LayoutViewModel defaultLayout;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PublishingService"/> class.
@@ -86,8 +86,20 @@ namespace Sky.Editor.Services.Publishing
             _systemClock = systemClock;
             this.blogRenderingService = blogRenderingService;
             this.viewRenderService = viewRenderService;
-            var layout = db.Layouts.FirstOrDefaultAsync(l => l.IsDefault).Result;
-            this.defaultLayout = new LayoutViewModel(layout);
+        }
+
+        /// <summary>
+        /// Gets the default layout lazily from the database.
+        /// </summary>
+        /// <returns>The default layout view model.</returns>
+        private async Task<LayoutViewModel> GetDefaultLayoutAsync()
+        {
+            if (defaultLayout == null)
+            {
+                var layout = await _db.Layouts.FirstOrDefaultAsync(l => l.IsDefault);
+                defaultLayout = new LayoutViewModel(layout);
+            }
+            return defaultLayout;
         }
 
         /// <summary>
@@ -98,6 +110,7 @@ namespace Sky.Editor.Services.Publishing
         /// <returns>A list of CDN purge results indicating cache invalidation status per provider after publishing.</returns>
         /// <remarks>
         /// If a blog stream article already exists for the given <see cref="Article.BlogKey"/>,
+
         /// its metadata is updated and the <see cref="Article.VersionNumber"/> is incremented;
         /// otherwise a new article record is created. In both cases, content is produced by
         /// <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/> and the operation
@@ -277,16 +290,10 @@ namespace Sky.Editor.Services.Publishing
         {
             var pages = await _db.Pages.Where(w => ids.Contains(w.Id)).ToListAsync();
 
-            // Process pages in parallel with controlled concurrency
-            var options = new ParallelOptions
+            foreach (var page in pages)
             {
-                MaxDegreeOfParallelism = 4 // Adjust based on storage account throttling limits
-            };
-
-            await Parallel.ForEachAsync(pages, options, async (page, cancellationToken) =>
-            {
-                await CreateStaticFileWithRetryAsync(page, cancellationToken);
-            });
+                await CreateStaticFileWithRetryAsync(page);
+            }
 
             // Write the table of contents.
             await WriteTocAsync("/");
@@ -614,6 +621,8 @@ namespace Sky.Editor.Services.Publishing
                 ? "/index.html"
                 : "/" + page.UrlPath.TrimStart('/');
 
+            var layout = await GetDefaultLayoutAsync(); // CHANGED: Use lazy-loaded layout
+
             var model = new ArticleViewModel()
             {
                 ArticleNumber = page.ArticleNumber,
@@ -636,7 +645,7 @@ namespace Sky.Editor.Services.Publishing
                 ReadWriteMode = false,
                 VersionNumber = page.VersionNumber,
                 CacheDuration = 0,
-                Layout = defaultLayout
+                Layout = layout // CHANGED: Use lazy-loaded layout
             };
 
             var html = await this.viewRenderService.RenderToStringAsync("~/Views/Home/Static.cshtml", model);
@@ -696,7 +705,7 @@ namespace Sky.Editor.Services.Publishing
 
                 var path = page.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
                     ? "/"
-                    : $"{_settings.PublisherUrl.TrimEnd('/')}/{page.UrlPath.TrimStart('/')} Entwickeln Sie Anwendungen in der Cloud ? Für viele mag dies neu sein, aber keine Sorge, wir haben die Lösung!";
+                    : $"{_settings.PublisherUrl.TrimEnd('/')}/{page.UrlPath.TrimStart('/')}";
                 var paths = new List<string> { path };
 
                 results = await cdnService.PurgeCdn(paths);
