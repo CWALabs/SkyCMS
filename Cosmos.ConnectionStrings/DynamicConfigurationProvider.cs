@@ -99,8 +99,6 @@ namespace Cosmos.DynamicConfig
             // Normalize domain name
             domainName = NormalizeDomainName(domainName);
             
-            _logger?.LogDebug("Resolving database connection string for domain: {Domain}", domainName);
-            
             var connection = GetTenantConnectionAsync(domainName).GetAwaiter().GetResult();
             
             if (connection == null)
@@ -108,9 +106,6 @@ namespace Cosmos.DynamicConfig
                 _logger?.LogWarning("No connection found for domain: {Domain}", domainName);
                 return null;
             }
-            
-            _logger?.LogInformation("Successfully resolved database connection for domain: {Domain}, ConnectionId: {ConnectionId}", 
-                domainName, connection.Id);
             
             return connection.DbConn;
         }
@@ -144,8 +139,6 @@ namespace Cosmos.DynamicConfig
             // Normalize domain name
             domainName = NormalizeDomainName(domainName);
             
-            _logger?.LogDebug("Resolving storage connection string for domain: {Domain}", domainName);
-            
             var connection = GetTenantConnectionAsync(domainName).GetAwaiter().GetResult();
             
             if (connection == null)
@@ -153,9 +146,6 @@ namespace Cosmos.DynamicConfig
                 _logger?.LogWarning("No storage connection found for domain: {Domain}", domainName);
                 return null;
             }
-            
-            _logger?.LogInformation("Successfully resolved storage connection for domain: {Domain}, ConnectionId: {ConnectionId}", 
-                domainName, connection.Id);
             
             return connection.StorageConn;
         }
@@ -208,7 +198,6 @@ namespace Cosmos.DynamicConfig
                 if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
                 {
                     var domain = refererUri.Host.ToLowerInvariant();
-                    _logger?.LogDebug("Resolved domain from referer: {Domain}", domain);
                     return domain;
                 }
             }
@@ -219,7 +208,6 @@ namespace Cosmos.DynamicConfig
             }
             
             var hostDomain = httpContextAccessor.HttpContext.Request.Host.Host.ToLowerInvariant();
-            _logger?.LogDebug("Resolved domain from request host: {Domain}", hostDomain);
             return hostDomain;
         }
 
@@ -264,9 +252,7 @@ namespace Cosmos.DynamicConfig
             
             // Normalize domain name for consistency
             domainName = NormalizeDomainName(domainName);
-            
-            _logger?.LogDebug("Validating domain name: {Domain}", domainName);
-            
+                        
             using var dbContext = GetDbContext();
             var allConnections = await dbContext.Connections.ToListAsync();
             var result = allConnections.FirstOrDefault(c => c.DomainNames != null && c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
@@ -276,11 +262,6 @@ namespace Cosmos.DynamicConfig
             if (!isValid)
             {
                 _logger?.LogWarning("Domain validation failed for: {Domain}", domainName);
-            }
-            else
-            {
-                _logger?.LogInformation("Domain validated successfully: {Domain}, ConnectionId: {ConnectionId}", 
-                    domainName, result.Id);
             }
             
             return isValid;
