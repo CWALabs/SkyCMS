@@ -38,7 +38,7 @@ namespace Cosmos.DynamicConfig
         /// <summary>
         /// Gets a value indicating whether the connection is configured for multi-tenant.
         /// </summary>
-        public bool IsMultiTenantConfigured { get { return GetTenantConnection("") != null; } }
+        public bool IsMultiTenantConfigured { get { return GetTenantConnectionAsync("").GetAwaiter().GetResult() != null; } }
 
         /// <summary>
         /// Gets a value indicating the error messages that may exist.
@@ -101,7 +101,7 @@ namespace Cosmos.DynamicConfig
             
             _logger?.LogDebug("Resolving database connection string for domain: {Domain}", domainName);
             
-            var connection = GetTenantConnection(domainName);
+            var connection = GetTenantConnectionAsync(domainName).GetAwaiter().GetResult();
             
             if (connection == null)
             {
@@ -146,7 +146,7 @@ namespace Cosmos.DynamicConfig
             
             _logger?.LogDebug("Resolving storage connection string for domain: {Domain}", domainName);
             
-            var connection = GetTenantConnection(domainName);
+            var connection = GetTenantConnectionAsync(domainName).GetAwaiter().GetResult();
             
             if (connection == null)
             {
@@ -268,7 +268,8 @@ namespace Cosmos.DynamicConfig
             _logger?.LogDebug("Validating domain name: {Domain}", domainName);
             
             using var dbContext = GetDbContext();
-            var result = await dbContext.Connections.FirstOrDefaultAsync(c => c.DomainNames.Any(a => a == domainName));
+            var allConnections = await dbContext.Connections.ToListAsync();
+            var result = allConnections.FirstOrDefault(c => c.DomainNames != null && c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
             
             var isValid = result != null;
             
@@ -316,7 +317,7 @@ namespace Cosmos.DynamicConfig
             return new DynamicConfigDbContext(options);
         }
 
-        private Connection? GetTenantConnection(string domainName)
+        private async Task<Connection?> GetTenantConnectionAsync(string domainName)
         {
             if (string.IsNullOrWhiteSpace(domainName))
             {
@@ -350,10 +351,11 @@ namespace Cosmos.DynamicConfig
 
             try
             {
-                connection = dbContext.Connections
-                    .AsEnumerable() // Cosmos DB doesn't support .Any() in Where, so we pull and filter client-side
-                    .FirstOrDefault(c => c.DomainNames != null && 
-                                        c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
+                // Load all connections asynchronously, then filter client-side
+                // Cosmos DB doesn't support complex LINQ queries with .Any() inside Where clauses
+                var allConnections = await dbContext.Connections.ToListAsync();
+                connection = allConnections.FirstOrDefault(c => c.DomainNames != null && 
+                                                               c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
 
                 if (connection != null)
                 {
