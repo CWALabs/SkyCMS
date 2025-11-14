@@ -38,7 +38,7 @@ namespace Cosmos.DynamicConfig
         /// <summary>
         /// Gets a value indicating whether the connection is configured for multi-tenant.
         /// </summary>
-        public bool IsMultiTenantConfigured { get { return GetTenantConnectionAsync("").GetAwaiter().GetResult() != null; } }
+        public bool IsMultiTenantConfigured { get { return configuration.GetValue<bool?>("MultiTenant") ?? false; } }
 
         /// <summary>
         /// Gets a value indicating the error messages that may exist.
@@ -265,6 +265,29 @@ namespace Cosmos.DynamicConfig
             }
             
             return isValid;
+        }
+
+        /// <summary>
+        /// Gets all primary domain names defined in the configuration database.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<string>> GetAllDomainNamesAsync()
+        {
+            using var dbContext = GetDbContext();
+            var allConnections = await dbContext.Connections.ToListAsync();
+            var domainNames = new List<string>();
+            foreach (var connection in allConnections)
+            {
+                if (connection.DomainNames != null)
+                {
+                    var domainName = connection.DomainNames.FirstOrDefault();
+                    if (domainName != null)
+                    {
+                        domainNames.Add(domainName);
+                    }
+                }
+            }
+            return domainNames.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         /// <summary>

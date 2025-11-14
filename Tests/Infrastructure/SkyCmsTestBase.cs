@@ -1,6 +1,7 @@
 ﻿using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
 using Cosmos.Common.Data;
+using Cosmos.DynamicConfig;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -25,6 +26,7 @@ using Sky.Editor.Services.Html;
 using Sky.Editor.Services.Publishing;
 using Sky.Editor.Services.Redirects;
 using Sky.Editor.Services.ReservedPaths;
+using Sky.Editor.Services.Scheduling;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
@@ -55,12 +57,14 @@ namespace Sky.Tests
         protected IReservedPaths ReservedPaths = null!;
         protected IRedirectService RedirectService = null!;
         protected ITitleChangeService TitleChangeService = null!;
-        protected IClock Clock { get; } = new SystemClock();
+        protected IClock Clock { get; set; } = new SystemClock();
         protected UserManager<IdentityUser> UserManager = null!;
         protected ITemplateService TemplateService = null!;
         protected IBlogRenderingService BlogRenderingService = null!;
         protected IViewRenderService ViewRenderService = null!;
         protected IServiceProvider Services = null!;
+        protected IArticleScheduler ArticleScheduler = null!;
+        protected IDynamicConfigurationProvider DynamicConfigurationProvider = null!;
 
         private async Task EnsureBlogStreamTemplateExistsAsync()
         {
@@ -130,10 +134,18 @@ namespace Sky.Tests
             Cache = new MemoryCache(new MemoryCacheOptions());
             var cfg = Options.Create(new CosmosConfig());
 
+            var initialConfig = new Dictionary<string, string>
+            {
+                // File-based SQLite database for tests to allow persistence and inspection.
+                // Uses a unique file per test run to avoid conflicts. ConfigDbConnectionString
+                ["ConnectionStrings:ApplicationDbContextConnection"] = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;",
+                ["ConnectionStrings:ConfigDbConnectionString"] = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-m-{Guid.NewGuid()}.db")};Password=strong-password;",
+            };
+
             // Lightweight configuration (all in-memory).
             var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(initialConfig)
                 .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: false)
-                .AddInMemoryCollection()
                 .Build();
 
             HttpContextAccessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
@@ -230,6 +242,32 @@ namespace Sky.Tests
                 titleChangeService,
                 redirectService,
                 TemplateService);
+
+            DynamicConfigurationProvider = new DynamicConfigurationProvider(
+                configuration,
+                HttpContextAccessor,
+                new MemoryCache(new MemoryCacheOptions()),
+                new Logger<DynamicConfigurationProvider>(new NullLoggerFactory())
+                );
+
+            ArticleScheduler = new ArticleScheduler(
+                Db,
+                cfg,
+                Cache,
+                Storage,
+                new NullLogger<ArticleScheduler>(),
+                HttpContextAccessor,
+                EditorSettings,
+                Clock,
+                SlugService,
+                ArticleHtmlService,
+                CatalogService,
+                PublishingService,
+                titleChangeService,
+                redirectService,
+                TemplateService,
+                DynamicConfigurationProvider);
+
 
             // User manager setup.
             var userStore = new UserStore<IdentityUser>(Db);

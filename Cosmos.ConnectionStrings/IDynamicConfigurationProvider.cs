@@ -43,6 +43,12 @@ namespace Cosmos.DynamicConfig
         /// <param name="name">Connection string name.</param>
         /// <returns>Connection string.</returns>
         string? GetConnectionStringByName(string name);
+
+        /// <summary>
+        /// Get all primary domain names for each tenant.
+        /// </summary>
+        /// <returns></returns>
+        Task<List<string>> GetAllDomainNamesAsync();
     }
 }
 
