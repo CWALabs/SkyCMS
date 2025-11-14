@@ -1,0 +1,27 @@
+CKEditor 5 - GPL 2.0-or-later License
+
+Copyright (c) 2003-2024, CKSource Holding sp. z o.o. All rights reserved.
+
+CKEditor 5 is licensed under the terms of any of the following licenses at your choice:
+
+* GNU General Public License Version 2 or later (the "GPL")
+  http://www.gnu.org/licenses/gpl.html
+
+* GNU Lesser General Public License Version 2.1 or later (the "LGPL")
+  http://www.gnu.org/licenses/lgpl.html
+
+* Mozilla Public License Version 1.1 or later (the "MPL")
+  http://www.mozilla.org/MPL/MPL-1.1.html
+
+SkyCMS uses CKEditor under the GPL 2.0-or-later license terms.
+
+For the complete GPL 2.0 license text, see LICENSE-GPL in this repository.
+
+Sources of Intellectual Property Included in CKEditor
+------------------------------------------------------
+
+Where not otherwise indicated, all CKEditor content is authored by
+CKSource engineers and consists of CKSource-owned intellectual property.
+
+For more information about CKEditor licensing options, including commercial licenses,
+visit: https://ckeditor.com/pricing/

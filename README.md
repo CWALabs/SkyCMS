@@ -4,7 +4,7 @@
 
 [![CodeQL](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/codeql.yml/badge.svg)](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/codeql.yml)
 [![Publish Docker Images CI](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/docker-image.yml/badge.svg)](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/docker-image.yml)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 
 <!-- [Project Website](https://Sky.moonrise.net) | [Documentation](https://Sky.moonrise.net/Docs) | [Get Free Help](https://Sky.moonrise.net/Support) | [YouTube Channel](https://www.youtube.com/@Sky-cms) | [Slack Channel](https://Sky-cms.slack.com/) -->
 
@@ -183,7 +183,7 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 - **Frontend**: JavaScript (70% of codebase), HTML5, CSS3, SCSS
 - **Database**: Azure Cosmos DB (NoSQL), MS SQL, MySQL or SQLite
 - **Storage**: Azure Blob Storage, Amazon S3, Cloudflare R2 (S3-compatible)
-- **Hosting**: Linux Docker containers; Cloudflare Workers (edge/origin-less)
+- **Hosting**: Linux Docker containers
 - **Authentication**: ASP.NET Core Identity, Google and Microsoft
 
 ### Infrastructure Components
@@ -202,10 +202,9 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 
 ## 📁 Project Structure
 
-```text
 SkyCMS/
-├── ArmTemplates/           # Azure Resource Manager deployment templates
-├── Common/                 # Shared libraries and utilities
+├── ArmTemplates/ # Azure Resource Manager deployment templates
+├── Common/					# Shared libraries and utilities
 ├── Cosmos.BlobService/     # File storage service layer
 ├── Cosmos.ConnectionStrings/ # Dynamic configuration management
 ├── AspNetCore.Identity.FlexDb/ # Flexible identity framework
@@ -213,7 +212,7 @@ SkyCMS/
 ├── Publisher/              # Public website application
 ├── docker-compose.yml      # Local development orchestration
 └── SkyCMS.sln             # Visual Studio solution file
-```
+
 
 ## 📚 Component Documentation
 
@@ -285,20 +284,6 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/Moonrise
 2. Fill in required parameters (email configuration, storage options)
 3. Deploy and access your SkyCMS instance
 
-### Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/MoonriseSoftwareCalifornia/SkyCMS.git
-cd SkyCMS
-
-# Run with Docker Compose
-docker-compose up
-
-# Or build and run locally
-dotnet build SkyCMS.sln
-dotnet run --project Editor
-```
 
 ### System Requirements
 
@@ -364,14 +349,86 @@ SkyCMS supports multiple email providers:
 
 See the [deployment documentation](./ArmTemplates/README.md) for configuration details.
 
-## 🌟 Key Features
+---
 
-- **Multi-Mode Operation**: Static, headless, and decoupled deployment options
-- **High Performance**: Optimized for speed with blob storage and CDN integration
-- **User-Friendly**: Intuitive interface for both developers and content creators
-- **Scalable**: Built for high-traffic websites with global distribution
-- **Secure**: Modern authentication with Azure B2C integration
-- **Open Source**: GPL v3 licensed with active community support
+# SkyCMS Licensing
+
+SkyCMS is **dual-licensed** to provide maximum flexibility:
+
+## GPL 2.0-or-later License (Default for Open Source Use)
+
+When using SkyCMS with the included open-source **CKEditor 5**, the entire 
+application is licensed under **GNU General Public License Version 2.0 or later (GPL-2.0-or-later)**.
+
+This matches CKEditor's licensing and allows you to choose GPL 2.0, GPL 3.0, 
+or any later version of the GPL.
+
+**License Files:**
+- [LICENSE-GPL](LICENSE-GPL) - Full GPL 2.0 license text
+- [LICENSE-CKEDITOR-GPL](LICENSE-CKEDITOR-GPL) - CKEditor-specific licensing information
+
+**This means:**
+- ✅ Free to use for open-source projects
+- ✅ Must distribute source code of modifications
+- ✅ Derivative works must also be GPL-licensed
+
+---
+
+## MIT License (For Commercial Use)
+
+### Option 1: Source Code MIT License
+All **original SkyCMS source code** (excluding CKEditor and other third-party components) 
+is available under the **MIT License**.
+
+See [LICENSE-MIT](LICENSE-MIT) for full MIT license terms.
+
+### Option 2: Complete Application with Commercial CKEditor
+If you purchase a **commercial license for CKEditor** from CKSource, 
+you may use the **entire SkyCMS application** under the **MIT License**.
+
+**This means:**
+- ✅ Use in proprietary/commercial applications
+- ✅ No requirement to distribute source code
+- ✅ Minimal restrictions
+
+---
+
+## How to Choose Your License
+
+| Your Use Case | License to Use | Action Required |
+|---------------|----------------|-----------------|
+| **Open Source Project** | GPL 2.0-or-later | Use freely (no cost) |
+| **Commercial Product** | MIT + Commercial CKEditor | [Purchase CKEditor license](https://ckeditor.com/pricing/) |
+| **Using SkyCMS Source Code Only** (without CKEditor) | MIT | Use freely (no cost) |
+
+---
+
+## Third-Party Components
+
+SkyCMS integrates several third-party libraries with their own licenses.
+
+**Full attribution and licensing details**: [NOTICE.md](NOTICE.md)
+
+### CKEditor 5
+- **Copyright**: © 2003-2024 CKSource Holding sp. z o.o.
+- **License**: GPL 2.0-or-later (open source) or Commercial
+- **Website**: https://ckeditor.com/
+- **Source**: https://github.com/ckeditor/ckeditor5
+- **Commercial License**: https://ckeditor.com/pricing/
+
+CKEditor 5 is a powerful rich text editor. SkyCMS uses it under the GPL 2.0-or-later license.
+
+For questions about CKEditor licensing, contact CKSource directly.
+
+### Other Components
+- **GrapesJS**: BSD 3-Clause License (© 2024 Artur Arseniev)
+- **Monaco Editor**: MIT License (© Microsoft Corporation)
+- **Filerobot Image Editor**: MIT License (© Scaleflex)
+- **FilePond**: MIT License (© 2024 PQINA | Rik Schennink)
+
+See [NOTICE.md](NOTICE.md) for complete third-party license information and full legal text.
+
+---
 
 <!-- ## 📞 Support
 
@@ -380,23 +437,12 @@ See the [deployment documentation](./ArmTemplates/README.md) for configuration d
 - **GitHub Issues**: Report bugs and request features
 - **Professional Support**: Available through Moonrise Software -->
 
-## 📄 License
+## 📄 License Summary
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE.md](./Docs/License.md) file for details.
-
-## 🙏 Acknowledgments
-
-SkyCMS integrates several excellent open-source projects:
-
-- CKEditor for rich text editing
-- GrapesJS for visual page building
-- Monaco Editor for code editing
-- Filerobot for image editing
-- FilePond for file uploads
+This project is dual-licensed under GPL 2.0-or-later (with open-source CKEditor) or MIT License (with commercial CKEditor license). See [LICENSE-GPL](LICENSE-GPL), [LICENSE-MIT](LICENSE-MIT), and [NOTICE.md](NOTICE.md) for full license terms and third-party attributions.
 
 ---
 
 **Copyright (c) 2025 Moonrise Software, LLC. All rights reserved.**
 
 Built with ❤️ by the [Moonrise Software](https://moonrise.net) team.
-

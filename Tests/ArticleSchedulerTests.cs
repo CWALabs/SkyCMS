@@ -40,6 +40,9 @@ namespace Sky.Tests.Services.Scheduling
         [TestInitialize]
         public void TestInitialize()
         {
+            // Initialize SQLite
+            SQLitePCL.Batteries.Init();
+
             testClock = new TestClock();
             Clock = testClock; // Set BEFORE InitializeTestContext
 
@@ -801,323 +804,268 @@ namespace Sky.Tests.Services.Scheduling
         [TestMethod]
         public async Task ExecuteAsync_WithMultiTenantConfiguration_ProcessesAllTenantsCorrectly()
         {
+            // Initialize SQLite once per test
+
             // Arrange
             var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
             testClock.SetUtcNow(now);
 
             var userId = TestUserId.ToString();
 
-            // Setup multi-tenant configuration database
-            var configDbOptions = new DbContextOptionsBuilder<DynamicConfigDbContext>()
-                .UseInMemoryDatabase(databaseName: $"ConfigDb-{Guid.NewGuid()}")
-                .Options;
+            // Create tenant connection strings (using SQLite in-memory databases)
+            var tenant1ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;";
+            var tenant2ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;";
+            var tenant3ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;";
 
-            using var configDbContext = new DynamicConfigDbContext(configDbOptions);
-
-            // Define three tenants
-            var tenant1Domain = "tenant1.com";
-            var tenant2Domain = "tenant2.com";
-            var tenant3Domain = "tenant3.com";
-
-            // Create tenant connection strings (using in-memory databases)
-            var tenant1ConnectionString = $"Data Source=InMemoryTenant1-{Guid.NewGuid()};Mode=Memory;Cache=Shared";
-            var tenant2ConnectionString = $"Data Source=InMemoryTenant2-{Guid.NewGuid()};Mode=Memory;Cache=Shared";
-            var tenant3ConnectionString = $"Data Source=InMemoryTenant3-{Guid.NewGuid()};Mode=Memory;Cache=Shared";
-
-            // Add tenant connections to config database
-            configDbContext.Connections.AddRange(
-                new Connection
+            try
+            {
+                // Seed Tenant 1 database
+                using (var tenant1Db = new ApplicationDbContext(tenant1ConnectionString))
                 {
-                    Id = Guid.NewGuid(),
-                    DomainNames = new[] { tenant1Domain },
-                    DbConn = tenant1ConnectionString,
-                    StorageConn = "UseDevelopmentStorage=true",
-                    WebsiteUrl = $"https://{tenant1Domain}",
-                    Customer = "Tenant 1 Customer",
-                    ResourceGroup = "test-resource-group-1"  // Add this line
-                },
-                new Connection
-                {
-                    Id = Guid.NewGuid(),
-                    DomainNames = new[] { tenant2Domain },
-                    DbConn = tenant2ConnectionString,
-                    StorageConn = "UseDevelopmentStorage=true",
-                    WebsiteUrl = $"https://{tenant2Domain}",
-                    Customer = "Tenant 2 Customer",
-                    ResourceGroup = "test-resource-group-2"  // Add this line
-                },
-                new Connection
-                {
-                    Id = Guid.NewGuid(),
-                    DomainNames = new[] { tenant3Domain },
-                    DbConn = tenant3ConnectionString,
-                    StorageConn = "UseDevelopmentStorage=true",
-                    WebsiteUrl = $"https://{tenant3Domain}",
-                    Customer = "Tenant 3 Customer",
-                    ResourceGroup = "test-resource-group-3"  // Add this line
+                    await tenant1Db.Database.OpenConnectionAsync();
+                    await tenant1Db.Database.EnsureCreatedAsync();
+                    tenant1Db.Articles.AddRange(
+                        new Article
+                        {
+                            ArticleNumber = 100,
+                            VersionNumber = 1,
+                            Title = "Tenant1 Article V1",
+                            Content = "Content V1",
+                            Published = now.AddDays(-5),
+                            StatusCode = (int)StatusCodeEnum.Active,
+                            UserId = userId,
+                            UrlPath = "/tenant1-article"
+                        },
+                        new Article
+                        {
+                            ArticleNumber = 100,
+                            VersionNumber = 2,
+                            Title = "Tenant1 Article V2",
+                            Content = "Content V2",
+                            Published = now.AddDays(-1),
+                            StatusCode = (int)StatusCodeEnum.Active,
+                            UserId = userId,
+                            UrlPath = "/tenant1-article"
+                        }
+                    );
+                    await tenant1Db.SaveChangesAsync();
                 }
-            );
-            await configDbContext.SaveChangesAsync();
 
-            // Create separate in-memory databases for each tenant
-            var tenant1DbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(databaseName: $"Tenant1Db-{Guid.NewGuid()}")
-                .Options;
-            var tenant2DbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(databaseName: $"Tenant2Db-{Guid.NewGuid()}")
-                .Options;
-            var tenant3DbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(databaseName: $"Tenant3Db-{Guid.NewGuid()}")
-                .Options;
-
-            // Seed Tenant 1 database with 2 article versions
-            using (var tenant1Db = new ApplicationDbContext(tenant1DbOptions))
-            {
-                tenant1Db.Articles.AddRange(
-                    new Article
-                    {
-                        ArticleNumber = 100,
-                        VersionNumber = 1,
-                        Title = "Tenant1 Article V1",
-                        Content = "Content V1",
-                        Published = now.AddDays(-5),
-                        StatusCode = (int)StatusCodeEnum.Active,
-                        UserId = userId,
-                        UrlPath = "/tenant1-article"
-                    },
-                    new Article
-                    {
-                        ArticleNumber = 100,
-                        VersionNumber = 2,
-                        Title = "Tenant1 Article V2",
-                        Content = "Content V2",
-                        Published = now.AddDays(-1),
-                        StatusCode = (int)StatusCodeEnum.Active,
-                        UserId = userId,
-                        UrlPath = "/tenant1-article"
-                    }
-                );
-                await tenant1Db.SaveChangesAsync();
-            }
-
-            // Seed Tenant 2 database with 3 article versions
-            using (var tenant2Db = new ApplicationDbContext(tenant2DbOptions))
-            {
-                tenant2Db.Articles.AddRange(
-                    new Article
-                    {
-                        ArticleNumber = 200,
-                        VersionNumber = 1,
-                        Title = "Tenant2 Article V1",
-                        Content = "Content V1",
-                        Published = now.AddDays(-10),
-                        StatusCode = (int)StatusCodeEnum.Active,
-                        UserId = userId,
-                        UrlPath = "/tenant2-article"
-                    },
-                    new Article
-                    {
-                        ArticleNumber = 200,
-                        VersionNumber = 2,
-                        Title = "Tenant2 Article V2",
-                        Content = "Content V2",
-                        Published = now.AddDays(-5),
-                        StatusCode = (int)StatusCodeEnum.Active,
-                        UserId = userId,
-                        UrlPath = "/tenant2-article"
-                    },
-                    new Article
-                    {
-                        ArticleNumber = 200,
-                        VersionNumber = 3,
-                        Title = "Tenant2 Article V3",
-                        Content = "Content V3",
-                        Published = now.AddDays(-2),
-                        StatusCode = (int)StatusCodeEnum.Active,
-                        UserId = userId,
-                        UrlPath = "/tenant2-article"
-                    }
-                );
-                await tenant2Db.SaveChangesAsync();
-            }
-
-            // Seed Tenant 3 database with 2 article versions
-            using (var tenant3Db = new ApplicationDbContext(tenant3DbOptions))
-            {
-                tenant3Db.Articles.AddRange(
-                    new Article
-                    {
-                        ArticleNumber = 300,
-                        VersionNumber = 1,
-                        Title = "Tenant3 Article V1",
-                        Content = "Content V1",
-                        Published = now.AddDays(-3),
-                        StatusCode = (int)StatusCodeEnum.Active,
-                        UserId = userId,
-                        UrlPath = "/tenant3-article"
-                    },
-                    new Article
-                    {
-                        ArticleNumber = 300,
-                        VersionNumber = 2,
-                        Title = "Tenant3 Article V2",
-                        Content = "Content V2",
-                        Published = now.AddDays(-1),
-                        StatusCode = (int)StatusCodeEnum.Active,
-                        UserId = userId,
-                        UrlPath = "/tenant3-article"
-                    }
-                );
-                await tenant3Db.SaveChangesAsync();
-            }
-
-            // Setup multi-tenant configuration
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
+                // Seed Tenant 2 database
+                using (var tenant2Db = new ApplicationDbContext(tenant2ConnectionString))
                 {
-                    ["MultiTenant"] = "true",
-                    ["ConnectionStrings:ConfigDbConnectionString"] = $"Data Source=InMemoryConfig-{Guid.NewGuid()};Mode=Memory;Cache=Shared"
-                })
-                .Build();
+                    await tenant2Db.Database.EnsureCreatedAsync();
+                    tenant2Db.Articles.AddRange(
+                        new Article
+                        {
+                            ArticleNumber = 200,
+                            VersionNumber = 1,
+                            Title = "Tenant2 Article V1",
+                            Content = "Content V1",
+                            Published = now.AddDays(-10),
+                            StatusCode = (int)StatusCodeEnum.Active,
+                            UserId = userId,
+                            UrlPath = "/tenant2-article"
+                        },
+                        new Article
+                        {
+                            ArticleNumber = 200,
+                            VersionNumber = 2,
+                            Title = "Tenant2 Article V2",
+                            Content = "Content V2",
+                            Published = now.AddDays(-5),
+                            StatusCode = (int)StatusCodeEnum.Active,
+                            UserId = userId,
+                            UrlPath = "/tenant2-article"
+                        },
+                        new Article
+                        {
+                            ArticleNumber = 200,
+                            VersionNumber = 3,
+                            Title = "Tenant2 Article V3",
+                            Content = "Content V3",
+                            Published = now.AddDays(-2),
+                            StatusCode = (int)StatusCodeEnum.Active,
+                            UserId = userId,
+                            UrlPath = "/tenant2-article"
+                        }
+                    );
+                    await tenant2Db.SaveChangesAsync();
+                }
 
-            var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-            mockHttpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null);
+                // Seed Tenant 3 database
+                using (var tenant3Db = new ApplicationDbContext(tenant3ConnectionString))
+                {
+                    await tenant3Db.Database.EnsureCreatedAsync();
+                    tenant3Db.Articles.AddRange(
+                        new Article
+                        {
+                            ArticleNumber = 300,
+                            VersionNumber = 1,
+                            Title = "Tenant3 Article V1",
+                            Content = "Content V1",
+                            Published = now.AddDays(-3),
+                            StatusCode = (int)StatusCodeEnum.Active,
+                            UserId = userId,
+                            UrlPath = "/tenant3-article"
+                        },
+                        new Article
+                        {
+                            ArticleNumber = 300,
+                            VersionNumber = 2,
+                            Title = "Tenant3 Article V2",
+                            Content = "Content V2",
+                            Published = now.AddDays(-1),
+                            StatusCode = (int)StatusCodeEnum.Active,
+                            UserId = userId,
+                            UrlPath = "/tenant3-article"
+                        }
+                    );
+                    await tenant3Db.SaveChangesAsync();
+                }
 
-            var mockConfigProvider = new Mock<IDynamicConfigurationProvider>();
-            mockConfigProvider.Setup(x => x.IsMultiTenantConfigured).Returns(true);
-            mockConfigProvider.Setup(x => x.GetAllDomainNamesAsync())
-                .ReturnsAsync(new List<string> { tenant1Domain, tenant2Domain, tenant3Domain });
+                // Rest of your test setup (mock configuration provider, etc.)
+                var mockConfigProvider = new Mock<IDynamicConfigurationProvider>();
+                mockConfigProvider.Setup(x => x.IsMultiTenantConfigured).Returns(true);
+                mockConfigProvider.Setup(x => x.GetAllDomainNamesAsync())
+                    .ReturnsAsync(new List<string> { "tenant1.com", "tenant2.com", "tenant3.com" });
 
-            // Return correct connection string for each domain
-            mockConfigProvider.Setup(x => x.GetDatabaseConnectionString(tenant1Domain))
-                .Returns(tenant1ConnectionString);
-            mockConfigProvider.Setup(x => x.GetDatabaseConnectionString(tenant2Domain))
-                .Returns(tenant2ConnectionString);
-            mockConfigProvider.Setup(x => x.GetDatabaseConnectionString(tenant3Domain))
-                .Returns(tenant3ConnectionString);
+                mockConfigProvider.Setup(x => x.GetDatabaseConnectionString("tenant1.com"))
+                    .Returns(tenant1ConnectionString);
+                mockConfigProvider.Setup(x => x.GetDatabaseConnectionString("tenant2.com"))
+                    .Returns(tenant2ConnectionString);
+                mockConfigProvider.Setup(x => x.GetDatabaseConnectionString("tenant3.com"))
+                    .Returns(tenant3ConnectionString);
 
-            // Create ArticleScheduler with mocked multi-tenant config
-            var mockLogger = new Mock<ILogger<ArticleScheduler>>();
-            var scheduler = new ArticleScheduler(
-                Db, // Won't be used in multi-tenant mode
-                Options.Create(new CosmosConfig()),
-                new MemoryCache(new MemoryCacheOptions()),
-                Storage,
-                mockLogger.Object,
-                mockHttpContextAccessor.Object,
-                EditorSettings,
-                testClock,
-                SlugService,
-                ArticleHtmlService,
-                CatalogService,
-                PublishingService,
-                TitleChangeService,
-                RedirectService,
-                TemplateService,
-                mockConfigProvider.Object
-            );
+                var mockLogger = new Mock<ILogger<ArticleScheduler>>();
+                var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+                mockHttpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null);
 
-            // Act
-            await scheduler.ExecuteAsync();
+                var scheduler = new ArticleScheduler(
+                    Db,
+                    Options.Create(new CosmosConfig()),
+                    new MemoryCache(new MemoryCacheOptions()),
+                    Storage,
+                    mockLogger.Object,
+                    mockHttpContextAccessor.Object,
+                    EditorSettings,
+                    testClock,
+                    SlugService,
+                    ArticleHtmlService,
+                    CatalogService,
+                    PublishingService,
+                    TitleChangeService,
+                    RedirectService,
+                    TemplateService,
+                    mockConfigProvider.Object
+                );
 
-            // Assert - Verify Tenant 1 articles were processed
-            using (var tenant1Db = new ApplicationDbContext(tenant1DbOptions))
-            {
-                var tenant1Article1 = await tenant1Db.Articles
-                    .FirstOrDefaultAsync(a => a.ArticleNumber == 100 && a.VersionNumber == 1);
-                var tenant1Article2 = await tenant1Db.Articles
-                    .FirstOrDefaultAsync(a => a.ArticleNumber == 100 && a.VersionNumber == 2);
+                // Act
+                await scheduler.ExecuteAsync();
 
-                Assert.IsNotNull(tenant1Article1, "Tenant1 Article V1 should exist");
-                Assert.IsNull(tenant1Article1.Published, "Tenant1 Article V1 should be unpublished");
+                // Assert - Verify Tenant 1 articles were processed
+                using (var tenant1Db = new ApplicationDbContext(tenant1ConnectionString))
+                {
+                    var tenant1Article1 = await tenant1Db.Articles
+                        .FirstOrDefaultAsync(a => a.ArticleNumber == 100 && a.VersionNumber == 1);
+                    var tenant1Article2 = await tenant1Db.Articles
+                        .FirstOrDefaultAsync(a => a.ArticleNumber == 100 && a.VersionNumber == 2);
 
-                Assert.IsNotNull(tenant1Article2, "Tenant1 Article V2 should exist");
-                Assert.IsNotNull(tenant1Article2.Published, "Tenant1 Article V2 should remain published");
+                    Assert.IsNotNull(tenant1Article1, "Tenant1 Article V1 should exist");
+                    Assert.IsNull(tenant1Article1.Published, "Tenant1 Article V1 should be unpublished");
+
+                    Assert.IsNotNull(tenant1Article2, "Tenant1 Article V2 should exist");
+                    Assert.IsNotNull(tenant1Article2.Published, "Tenant1 Article V2 should remain published");
+                }
+
+                // Assert - Verify Tenant 2 articles were processed
+                using (var tenant2Db = new ApplicationDbContext(tenant2ConnectionString))
+                {
+                    var tenant2Article1 = await tenant2Db.Articles
+                        .FirstOrDefaultAsync(a => a.ArticleNumber == 200 && a.VersionNumber == 1);
+                    var tenant2Article2 = await tenant2Db.Articles
+                        .FirstOrDefaultAsync(a => a.ArticleNumber == 200 && a.VersionNumber == 2);
+                    var tenant2Article3 = await tenant2Db.Articles
+                        .FirstOrDefaultAsync(a => a.ArticleNumber == 200 && a.VersionNumber == 3);
+
+                    Assert.IsNotNull(tenant2Article1, "Tenant2 Article V1 should exist");
+                    Assert.IsNull(tenant2Article1.Published, "Tenant2 Article V1 should be unpublished");
+
+                    Assert.IsNotNull(tenant2Article2, "Tenant2 Article V2 should exist");
+                    Assert.IsNull(tenant2Article2.Published, "Tenant2 Article V2 should be unpublished");
+
+                    Assert.IsNotNull(tenant2Article3, "Tenant2 Article V3 should exist");
+                    Assert.IsNotNull(tenant2Article3.Published, "Tenant2 Article V3 should remain published");
+                }
+
+                // Assert - Verify Tenant 3 articles were processed
+                using (var tenant3Db = new ApplicationDbContext(tenant3ConnectionString))
+                {
+                    var tenant3Article1 = await tenant3Db.Articles
+                        .FirstOrDefaultAsync(a => a.ArticleNumber == 300 && a.VersionNumber == 1);
+                    var tenant3Article2 = await tenant3Db.Articles
+                        .FirstOrDefaultAsync(a => a.ArticleNumber == 300 && a.VersionNumber == 2);
+
+                    Assert.IsNotNull(tenant3Article1, "Tenant3 Article V1 should exist");
+                    Assert.IsNull(tenant3Article1.Published, "Tenant3 Article V1 should be unpublished");
+
+                    Assert.IsNotNull(tenant3Article2, "Tenant3 Article V2 should exist");
+                    Assert.IsNotNull(tenant3Article2.Published, "Tenant3 Article V2 should remain published");
+                }
+
+                // Assert - Verify logging for each domain
+                mockLogger.Verify(
+                    x => x.Log(
+                        LogLevel.Information,
+                        It.IsAny<EventId>(),
+                        It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Starting scheduled execution")),
+                        It.IsAny<Exception>(),
+                        It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                    Times.Once,
+                    "Should log starting execution once");
+
+                mockLogger.Verify(
+                    x => x.Log(
+                        LogLevel.Information,
+                        It.IsAny<EventId>(),
+                        It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Completed execution for domain") && v.ToString().Contains("tenant1.com")),
+                        It.IsAny<Exception>(),
+                        It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                    Times.Once,
+                    "Should log completion for tenant1.com");
+
+                mockLogger.Verify(
+                    x => x.Log(
+                        LogLevel.Information,
+                        It.IsAny<EventId>(),
+                        It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Completed execution for domain") && v.ToString().Contains("tenant2.com")),
+                        It.IsAny<Exception>(),
+                        It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                    Times.Once,
+                    "Should log completion for tenant2.com");
+
+                mockLogger.Verify(
+                    x => x.Log(
+                        LogLevel.Information,
+                        It.IsAny<EventId>(),
+                        It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Completed execution for domain") && v.ToString().Contains("tenant3.com")),
+                        It.IsAny<Exception>(),
+                        It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                    Times.Once,
+                    "Should log completion for tenant3.com");
+
+                // Assert - Verify GetAllDomainNamesAsync was called
+                mockConfigProvider.Verify(x => x.GetAllDomainNamesAsync(), Times.Once);
+
+                // Assert - Verify GetDatabaseConnectionString was called for each domain
+                mockConfigProvider.Verify(x => x.GetDatabaseConnectionString("tenant1.com"), Times.Once);
+                mockConfigProvider.Verify(x => x.GetDatabaseConnectionString("tenant2.com"), Times.Once);
+                mockConfigProvider.Verify(x => x.GetDatabaseConnectionString("tenant3.com"), Times.Once);
             }
-
-            // Assert - Verify Tenant 2 articles were processed
-            using (var tenant2Db = new ApplicationDbContext(tenant2DbOptions))
+            finally
             {
-                var tenant2Article1 = await tenant2Db.Articles
-                    .FirstOrDefaultAsync(a => a.ArticleNumber == 200 && a.VersionNumber == 1);
-                var tenant2Article2 = await tenant2Db.Articles
-                    .FirstOrDefaultAsync(a => a.ArticleNumber == 200 && a.VersionNumber == 2);
-                var tenant2Article3 = await tenant2Db.Articles
-                    .FirstOrDefaultAsync(a => a.ArticleNumber == 200 && a.VersionNumber == 3);
-
-                Assert.IsNotNull(tenant2Article1, "Tenant2 Article V1 should exist");
-                Assert.IsNull(tenant2Article1.Published, "Tenant2 Article V1 should be unpublished");
-
-                Assert.IsNotNull(tenant2Article2, "Tenant2 Article V2 should exist");
-                Assert.IsNull(tenant2Article2.Published, "Tenant2 Article V2 should be unpublished");
-
-                Assert.IsNotNull(tenant2Article3, "Tenant2 Article V3 should exist");
-                Assert.IsNotNull(tenant2Article3.Published, "Tenant2 Article V3 should remain published");
+               
             }
-
-            // Assert - Verify Tenant 3 articles were processed
-            using (var tenant3Db = new ApplicationDbContext(tenant3DbOptions))
-            {
-                var tenant3Article1 = await tenant3Db.Articles
-                    .FirstOrDefaultAsync(a => a.ArticleNumber == 300 && a.VersionNumber == 1);
-                var tenant3Article2 = await tenant3Db.Articles
-                    .FirstOrDefaultAsync(a => a.ArticleNumber == 300 && a.VersionNumber == 2);
-
-                Assert.IsNotNull(tenant3Article1, "Tenant3 Article V1 should exist");
-                Assert.IsNull(tenant3Article1.Published, "Tenant3 Article V1 should be unpublished");
-
-                Assert.IsNotNull(tenant3Article2, "Tenant3 Article V2 should exist");
-                Assert.IsNotNull(tenant3Article2.Published, "Tenant3 Article V2 should remain published");
-            }
-
-            // Assert - Verify logging for each domain
-            mockLogger.Verify(
-                x => x.Log(
-                    LogLevel.Information,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Starting scheduled execution")),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once,
-                "Should log starting execution once");
-
-            mockLogger.Verify(
-                x => x.Log(
-                    LogLevel.Information,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Completed execution for domain") && v.ToString().Contains(tenant1Domain)),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once,
-                "Should log completion for tenant1.com");
-
-            mockLogger.Verify(
-                x => x.Log(
-                    LogLevel.Information,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Completed execution for domain") && v.ToString().Contains(tenant2Domain)),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once,
-                "Should log completion for tenant2.com");
-
-            mockLogger.Verify(
-                x => x.Log(
-                    LogLevel.Information,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Completed execution for domain") && v.ToString().Contains(tenant3Domain)),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once,
-                "Should log completion for tenant3.com");
-
-            // Assert - Verify GetAllDomainNamesAsync was called
-            mockConfigProvider.Verify(x => x.GetAllDomainNamesAsync(), Times.Once);
-
-            // Assert - Verify GetDatabaseConnectionString was called for each domain
-            mockConfigProvider.Verify(x => x.GetDatabaseConnectionString(tenant1Domain), Times.Once);
-            mockConfigProvider.Verify(x => x.GetDatabaseConnectionString(tenant2Domain), Times.Once);
-            mockConfigProvider.Verify(x => x.GetDatabaseConnectionString(tenant3Domain), Times.Once);
         }
 
         /// <summary>

@@ -9,10 +9,10 @@
   "settings": {
     "documentationRules": {
       "companyName": "Moonrise Software, LLC",
-      "copyrightText": "Copyright (c) {companyName}. All rights reserved.\nLicensed under the GNU Public License, Version 3.0 ({licenseFile})\nSee https://github.com/MoonriseSoftwareCalifornia/SkyCMS\nfor more information concerning the license and the contributors participating to this project.",
+      "copyrightText": "Copyright (c) {companyName}. All rights reserved.\nLicensed under the {licenseName} ({licenseFile})\nSee https://github.com/MoonriseSoftwareCalifornia/SkyCMS\nfor more information concerning the license and the contributors participating to this project.",
       "variables": {
-        "licenseName": "GNU Public License",
-        "licenseFile": "https://www.gnu.org/licenses/gpl-3.0.html"
+        "licenseName": "MIT License",
+        "licenseFile": "https://opensource.org/licenses/MIT"
       }
     }
   }
