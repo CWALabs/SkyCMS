@@ -10,6 +10,7 @@ namespace AspNetCore.Identity.FlexDb.Strategies
     using Microsoft.Data.Sqlite;
     using Microsoft.EntityFrameworkCore;
     using System;
+    using System.Data.Common;
     using System.Linq;
 
     /// <summary>
@@ -64,14 +65,24 @@ namespace AspNetCore.Identity.FlexDb.Strategies
                     nameof(connectionString));
             }
 
-            var connectionStringBuilder = new SqliteConnectionStringBuilder
+            if (connectionString.Contains("Password=InMemory;"))
             {
-                DataSource = dataSource,
-                Mode = SqliteOpenMode.ReadWriteCreate,
-                Password = password
-            };
+                // ONLY FOR DEBUGGING AND UNIT TESTS - IN MEMORY DATABASE
+                connectionString = connectionString.Replace("Password=InMemory;", string.Empty);
+            }
+            else
+            {
+                var connectionStringBuilder = new SqliteConnectionStringBuilder
+                {
+                    DataSource = dataSource,
+                    Mode = SqliteOpenMode.ReadWriteCreate,
+                    Password = password
+                };
 
-            var sqliteConnection = new SqliteConnection(connectionStringBuilder.ToString());
+                connectionString = connectionStringBuilder.ToString();
+            }
+
+            var sqliteConnection = new SqliteConnection(connectionString);
             optionsBuilder.UseSqlite(sqliteConnection);
         }
 

@@ -813,9 +813,9 @@ namespace Sky.Tests.Services.Scheduling
             var userId = TestUserId.ToString();
 
             // Create tenant connection strings (using SQLite in-memory databases)
-            var tenant1ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;";
-            var tenant2ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;";
-            var tenant3ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;";
+            var tenant1ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=InMemory;";
+            var tenant2ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=InMemory;";
+            var tenant3ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=InMemory;";
 
             try
             {
