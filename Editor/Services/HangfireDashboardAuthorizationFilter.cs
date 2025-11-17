@@ -1,6 +1,6 @@
 // <copyright file="HangfireDashboardAuthorizationFilter.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
-// Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // </copyright>
 
 namespace Sky.Editor.Services

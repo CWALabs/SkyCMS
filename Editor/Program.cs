@@ -1,6 +1,6 @@
 ﻿// <copyright file="Program.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
-// Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
@@ -14,7 +14,6 @@ using Cosmos.Common.Services.Configurations;
 using Cosmos.DynamicConfig;
 using Cosmos.EmailServices;
 using Hangfire;
-using Hangfire.InMemory;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +23,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Sky.Cms.Hubs;
 using Sky.Cms.Services;
@@ -43,6 +43,7 @@ using Sky.Editor.Services.Scheduling;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
+using SQLitePCL;
 using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -71,25 +72,6 @@ builder.Services.AddApplicationInsightsTelemetry();
 var cosmosStartup = new CosmosStartup(builder.Configuration);
 var options = cosmosStartup.Build();
 builder.Services.AddSingleton(options);
-
-// Add Hang fire services
-builder.Services.AddHangfire(config => config
-        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-        .UseSimpleAssemblyNameTypeSerializer()
-        .UseIgnoredAssemblyVersionTypeResolver()
-        .UseInMemoryStorage(new InMemoryStorageOptions
-        {
-            IdType = InMemoryStorageIdType.Long
-        }));
-
-builder.Services.AddHangfireServer(options =>
-{
-    options.Queues = new[] { "critical", "default" };
-    options.WorkerCount = Math.Max(Environment.ProcessorCount, 1);
-    options.SchedulePollingInterval = TimeSpan.FromMinutes(1);
-    options.ShutdownTimeout = TimeSpan.FromMinutes(2);
-    options.HeartbeatInterval = TimeSpan.FromMinutes(5);
-});
 
 // ---------------------------------------------------------------
 // Build the app based on single-tenant or multi-tenant mode
@@ -128,6 +110,10 @@ builder.Services.AddHttpContextAccessor();
 // ---------------------------------------------------------------
 // Continue registering services common to both single-tenant and multi-tenant modes
 // ---------------------------------------------------------------
+builder.Services.AddHangFireScheduling(builder.Configuration); // Add Hangfire services for scheduling
+
+// Add logging to see Hangfire queries
+builder.Logging.AddFilter("Hangfire", LogLevel.Debug);
 builder.Services.AddCosmosEmailServices(builder.Configuration); // Add Email services
 builder.Services.AddCosmosStorageContext(builder.Configuration); // Add the BLOB and File Storage contexts for Cosmos
 builder.Services.AddCosmosCmsDataProtection(builder.Configuration, defaultAzureCredential); // Add shared data protection here
@@ -210,6 +196,7 @@ builder.Services.AddCors(options =>
             policy.AllowAnyOrigin().AllowAnyMethod();
         });
 });
+
 // https://docs.microsoft.com/en-us/aspnet/core/security/enforcing-ssl?view=aspnetcore-2.1&tabs=visual-studio#http-strict-transport-security-protocol-hsts
 builder.Services.AddHsts(options =>
 {
@@ -330,6 +317,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
+app.UseHangfireDashboard("/Editor/CCMS___PageScheduler", new DashboardOptions()
+{
+    DashboardTitle = "SkyCMS - Page Scheduler",
+    Authorization = new[] { new Sky.Editor.Services.Scheduling.HangfireAuthorizationFilter() },
+});
+
 app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext context) =>
 {
     var tokens = forgeryService.GetAndStoreTokens(context);
@@ -355,7 +348,7 @@ using (var scope = app.Services.CreateScope())
     recurring.AddOrUpdate<ArticleScheduler>(
         "article-version-publisher",
         x => x.ExecuteAsync(),
-        "*/5 * * * *");
+        Cron.MinuteInterval(10)); // Runs every 10 minutes
 }
 
 await app.RunAsync();

@@ -1,6 +1,6 @@
 ﻿// <copyright file="ArticleVersionPublisher.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
-// Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
@@ -48,7 +48,7 @@ namespace Sky.Editor.Services.Scheduling
         private readonly ITitleChangeService titleChangeService;
         private readonly IRedirectService redirectService;
         private readonly ITemplateService templateService;
-        private readonly IDynamicConfigurationProvider configurationProvider;
+        private readonly IDynamicConfigurationProvider? configurationProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ArticleScheduler"/> class.
@@ -68,7 +68,7 @@ namespace Sky.Editor.Services.Scheduling
         /// <param name="config">Cosmos configuration.</param>
         /// <param name="memoryCache">Memory cache.</param>
         /// <param name="storageContext">Storage context.</param>
-        /// <param name="configurationProvider">Configuration provider.</param>
+        /// <param name="configurationProvider">Configuration provider (optional - only for multi-tenant mode).</param>
         public ArticleScheduler(
             ApplicationDbContext dbContext,
             IOptions<CosmosConfig> config,
@@ -85,7 +85,7 @@ namespace Sky.Editor.Services.Scheduling
             ITitleChangeService titleChangeService,
             IRedirectService redirectService,
             ITemplateService templateService,
-            IDynamicConfigurationProvider configurationProvider)
+            IDynamicConfigurationProvider? configurationProvider = null)
         {
             this._dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             this.config = config ?? throw new ArgumentNullException(nameof(config));
@@ -102,7 +102,7 @@ namespace Sky.Editor.Services.Scheduling
             this.titleChangeService = titleChangeService ?? throw new ArgumentNullException(nameof(titleChangeService));
             this.redirectService = redirectService ?? throw new ArgumentNullException(nameof(redirectService));
             this.templateService = templateService ?? throw new ArgumentNullException(nameof(templateService));
-            this.configurationProvider = configurationProvider ?? throw new ArgumentNullException(nameof(configurationProvider));
+            this.configurationProvider = configurationProvider;
         }
 
         /// <inheritdoc/>
@@ -111,7 +111,7 @@ namespace Sky.Editor.Services.Scheduling
             var now = clock.UtcNow;
             logger.LogInformation("ArticleVersionPublisher: Starting scheduled execution at {ExecutionTime}", now);
 
-            if (configurationProvider.IsMultiTenantConfigured)
+            if (settings.IsMultiTenantEditor && configurationProvider?.IsMultiTenantConfigured == true)
             {
                 var domainNames = await configurationProvider.GetAllDomainNamesAsync();
                 foreach (var domainName in domainNames)

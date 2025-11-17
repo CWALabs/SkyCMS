@@ -7,9 +7,9 @@
 		<EnableNETAnalyzers>false</EnableNETAnalyzers>
 		<RepositoryUrl>https://github.com/CosmosSoftware/CosmosCms</RepositoryUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<Version>9.1.0.11</Version>
-		<AssemblyVersion>9.1.0.11</AssemblyVersion>
-		<FileVersion>9.1.0.11</FileVersion>
+		<Version>9.1.2.1</Version>
+		<AssemblyVersion>9.1.2.1</AssemblyVersion>
+		<FileVersion>9.1.2.1</FileVersion>
 		<RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
 		<Authors></Authors>
 		<ApplicationInsightsResourceId>/subscriptions/9bdb8e29-156f-4fc9-a1fe-1bb6a915a4f0/resourceGroups/CosmosCMS/providers/microsoft.insights/components/edit-cosmos-cms202107021426</ApplicationInsightsResourceId>
@@ -42,6 +42,7 @@
 	  <Content Remove="C:\Users\toiya\.nuget\packages\cosmos.cms.common\7.0.0.10\contentFiles\any\net6.0\Views\CCMS_Examples\TextFile1.txt" />
 	  <Content Remove="C:\Users\toiya\.nuget\packages\cosmos.cms.common\7.0.0.10\contentFiles\any\net6.0\Views\CCMS_Examples\_CosmosLayout.cshtml" />
 	  <Content Remove="stylecop.json" />
+	  <Content Remove="wwwroot\css\hangfire-dark.css" />
 	  <Content Remove="wwwroot\images\samples\134038968578143524.jpg" />
 	  <Content Remove="wwwroot\images\samples\20250917_OHR.YoungMoose_EN-US2991221135_UHD_bing.jpg" />
 	  <Content Remove="wwwroot\images\samples\20250920_OHR.OktoberfestSwing_EN-US7916182497_UHD_bing.jpg" />
@@ -61,6 +62,10 @@
 	  <Content Remove="wwwroot\lib\cosmos\ckeditor\ckeditor-widget.301.js" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<EmbeddedResource Include="wwwroot\css\hangfire-dark.css" />
+	</ItemGroup>
+	
 	<ItemGroup>
 		<None Remove="appsettings.json.BAK" />
 		<None Remove="Data\DropAllTables.sql" />
@@ -86,7 +91,11 @@
 		<PackageReference Include="Cosmos.EmailServices" Version="9.0.1" />
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
 		<PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
+		<PackageReference Include="Hangfire.AzureCosmosDB" Version="2.0.8" />
 		<PackageReference Include="Hangfire.InMemory" Version="1.0.0" />
+		<PackageReference Include="Hangfire.MySqlStorage" Version="2.0.3" />
+		<PackageReference Include="Hangfire.SqlServer" Version="1.8.22" />
+		<PackageReference Include="Hangfire.Storage.SQLite" Version="0.4.2" />
 		<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="9.0.10" />
@@ -101,6 +110,7 @@
 		<PackageReference Include="NUglify" Version="1.21.17" />
 		<PackageReference Include="PasswordGenerator" Version="2.1.0" />
 		<PackageReference Include="RestSharp" Version="112.1.0" />
+		<PackageReference Include="rodriGS750.Hangfire.Dashboard.Themes.Dark" Version="1.2.2" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 		<PackageReference Include="MimeTypeMapOfficial" Version="1.0.17" />
 		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118">

@@ -1,6 +1,6 @@
 ﻿// <copyright file="CosmosDbConfigurationStrategy.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
-// Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
@@ -8,6 +8,7 @@
 namespace AspNetCore.Identity.FlexDb.Strategies
 {
     using Azure.Identity;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using System;
     using System.Linq;
@@ -43,27 +44,49 @@ namespace AspNetCore.Identity.FlexDb.Strategies
                 throw new ArgumentNullException(nameof(connectionString));
             }
 
+            var accountProperties = GetAccountProperties(connectionString);
+
+            ValidateRequiredParts(accountProperties.DatabaseName, accountProperties.AccountEndpoint, accountProperties.AccountKey);
+
+            if (IsTokenAuthentication(accountProperties.AccountKey))
+            {
+                optionsBuilder.UseCosmos(
+                    accountEndpoint: accountProperties.AccountEndpoint,
+                    tokenCredential: new DefaultAzureCredential(),
+                    databaseName: accountProperties.DatabaseName);
+            }
+            else
+            {
+                optionsBuilder.UseCosmos(
+                    accountEndpoint: accountProperties.AccountEndpoint,
+                    accountKey: accountProperties.AccountKey,
+                    databaseName: accountProperties.DatabaseName);
+            }
+        }
+
+        /// <summary>
+        /// Gets the Cosmos DB account properties from the connection string.
+        /// </summary>
+        /// <param name="connectionString"></param>
+        /// <returns>Account properties</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static CosmosDbAccountProperties GetAccountProperties(string connectionString)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException(nameof(connectionString));
+            }
             var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
             var databaseName = GetConnectionStringPart(parts, "Database=");
             var accountEndpoint = GetConnectionStringPart(parts, "AccountEndpoint=");
             var accountKey = GetConnectionStringPart(parts, "AccountKey=");
 
-            ValidateRequiredParts(databaseName, accountEndpoint, accountKey);
-
-            if (IsTokenAuthentication(accountKey))
+            return new CosmosDbAccountProperties
             {
-                optionsBuilder.UseCosmos(
-                    accountEndpoint: accountEndpoint,
-                    tokenCredential: new DefaultAzureCredential(),
-                    databaseName: databaseName);
-            }
-            else
-            {
-                optionsBuilder.UseCosmos(
-                    accountEndpoint: accountEndpoint,
-                    accountKey: accountKey,
-                    databaseName: databaseName);
-            }
+                DatabaseName = databaseName,
+                AccountEndpoint = accountEndpoint,
+                AccountKey = accountKey
+            };
         }
 
         private static string GetConnectionStringPart(string[] parts, string prefix)
@@ -95,5 +118,26 @@ namespace AspNetCore.Identity.FlexDb.Strategies
                     "Required: AccountEndpoint, AccountKey (or 'AccessToken' for managed identity), and Database.");
             }
         }
+    }
+
+    /// <summary>
+    /// Cosmos DB account properties.
+    /// </summary>
+    public class CosmosDbAccountProperties
+    {
+        /// <summary>
+        /// Gets or sets the database name.
+        /// </summary>
+        public string DatabaseName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the account endpoint.
+        /// </summary>
+        public string AccountEndpoint { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the account key.
+        /// </summary>
+        public string AccountKey { get; set; } = string.Empty;
     }
 }

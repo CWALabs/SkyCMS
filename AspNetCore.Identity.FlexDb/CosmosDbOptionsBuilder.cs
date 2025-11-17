@@ -16,7 +16,6 @@ namespace AspNetCore.Identity.FlexDb
             new CosmosDbConfigurationStrategy(),
             new SqlServerConfigurationStrategy(),
             new MySqlConfigurationStrategy(),
-            new SqliteConfigurationStrategy()
         };
 
         /// <summary>

@@ -1,6 +1,6 @@
 ﻿// <copyright file="EditorController.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
-// Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
@@ -1773,6 +1773,20 @@ namespace Sky.Cms.Controllers
             }
 
             return View(model);
+        }
+
+        /// <summary>
+        /// Opens the page scheduler.
+        /// </summary>
+        /// <returns>View.</returns>
+        public IActionResult Scheduler()
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            return View();
         }
 
         /// <summary>

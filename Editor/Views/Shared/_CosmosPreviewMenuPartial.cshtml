@@ -48,23 +48,23 @@
                         Back to edit <i class="fa-solid fa-arrow-rotate-left"></i>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" id="liPubNow">
                     <a href="#" role="button" class="btn btn-sm btn-secondary mt-1 ms-2 btnPublish">
                         Publish now <i class="fa-solid fa-cloud-arrow-up"></i>
                     </a>
                 </li>
-                @if (options.StaticWebPages == false && previewType.Equals("article") && (isEditor || isAdministrator))
+                @if (previewType.Equals("article") && (isEditor || isAdministrator))
                 {
                     <li class="nav-item" id="publishLater">
-                        <a id="btnPublishLater" href="#" role="button" class="btn btn-sm btn-secondary mt-1 ms-2">
-                            Publish later <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <a id="publishLater" href="#" role="button" class="btn btn-sm btn-secondary mt-1 ms-2">
+                            Publish later <i class="fa-solid fa-calendar-day"></i>
                         </a>
                     </li>
                     <li class="nav-item" id="publishedTitleGroup" style="display:none">
                         <div class="input-group input-group-sm mt-1">
                             <div id="lblPublished" class="input-group-text" style="height:31px;">Publish date/time:</div>
                             <input autocomplete="off" class="form-control text-truncate" name="tbPublished" id="tbPublished" placeholder="Choose date/time" value="" />
-                            <button class="btn btn-sm btn-secondary btnPublish" title="Publish now if new, or republish using previous date and time." type="button">Publish</button>
+                            <button id="btnPublishLater" class="btn btn-sm btn-secondary" title="Publish at the set date and time." type="button" disabled>Publish</button>
                         </div>
                     </li>
                 }
@@ -87,6 +87,7 @@
 
     $("#publishLater").on("click", function (e) {
       $("#publishLater").hide();
+      $("#liPubNow").hide();
       $("#publishedTitleGroup").show();
     });
 
@@ -94,12 +95,23 @@
         e.preventDefault();
         switch (previewType) {
             case "article":
-                location.href = "/Editor/PublishPage?articleId=@articleId&dateTime=" + $("#tbPublished").val() + "&editorUrl=@editorUrl";
+                location.href = "/Editor/PublishPage?articleId=@articleId&datetime=" + $("#tbPublished").val() + "&editorUrl=@editorUrl";
                 break;
             case "layout":
                 location.href = "/Layouts/Publish/@layoutId";
                 break;
         }
+    });
+
+    $("#btnPublishLater").on("click", function (e) {
+        e.preventDefault();
+        const publishDate = $("#tbPublished").val();
+        if (publishDate == "") {
+            alert("Please select a date and time to publish.");
+            return;
+        }
+        const utcDateTime = moment(publishDate, 'MM/DD/YYYY hh:mm A').utc().format('YYYY-MM-DDTHH:mm:ss[Z]');
+        location.href = "/Editor/PublishPage?articleId=@articleId&datetime=" + utcDateTime + "&editorUrl=@editorUrl";
     });
 
     $('#tbPublished').daterangepicker({
@@ -118,9 +130,8 @@
             alert("Only Editors and Administratos can publish changes.");
         } else {
             $('#tbPublished').val(picker.startDate.format('MM/DD/YYYY hh:mm A'));
-            //displayLastPublished($('#tbPublished').val());
             $("#Published").val($('#tbPublished').val());
-            $("#frmSave").submit();
+            $("#btnPublishLater").prop("disabled", false);
         }
     });
 </script>
