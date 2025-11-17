@@ -36,58 +36,70 @@ namespace Sky.Editor.Services.Scheduling
         {
             var multi = config.GetValue<bool?>("MultiTenantEditor") ?? false;
 
-            var connectionString = multi ? config.GetConnectionString("ConfigDbConnectionString")
-                : config.GetConnectionString("ApplicationDbContextConnection");
-
-            // Determine if using Cosmos DB
-            var isCosmosDb = CosmosDbOptionsBuilder
-                .GetDefaultStrategies()
-                .OfType<CosmosDbConfigurationStrategy>()
-                .Any(strategy => strategy.CanHandle(connectionString));
-
-            var isMsSql = CosmosDbOptionsBuilder
-                .GetDefaultStrategies()
-                .OfType<SqlServerConfigurationStrategy>()
-                .Any(strategy => strategy.CanHandle(connectionString));
-
-            var isMySql = CosmosDbOptionsBuilder
-                .GetDefaultStrategies()
-                .OfType<MySqlConfigurationStrategy>()
-                .Any(strategy => strategy.CanHandle(connectionString));
-
-            if (isCosmosDb)
+            if (multi)
             {
-                // Parse Cosmos DB connection details from connection string.
-                var accountProperties = CosmosDbConfigurationStrategy.GetAccountProperties(connectionString);
-
-                services.AddHangfire(hangfireConfig =>
+                services.AddHangfire(config =>
                 {
-                    hangfireConfig.UseAzureCosmosDbStorage(
-                        accountProperties.AccountEndpoint,
-                        accountProperties.AccountKey,
-                        accountProperties.DatabaseName,
-                        "hangfire",
-                        new CosmosClientOptions());
-                });
-            }
-            else if (isMsSql)
-            {
-                services.AddHangfire(hangfireConfig =>
-                {
-                    hangfireConfig.UseSqlServerStorage(connectionString);
-                });
-            }
-            else if (isMySql)
-            {
-                services.AddHangfire(hangfireConfig =>
-                {
-                    hangfireConfig.UseStorage(
-                        new MySqlStorage(connectionString + "Allow User Variables=true;", new MySqlStorageOptions()));
+                    // Do this for now until I get the multi-tenant storage figured out.
+                    config.UseInMemoryStorage();
                 });
             }
             else
             {
-                throw new InvalidOperationException("Unsupported database provider for Hangfire storage.");
+                var connectionString = multi ? config.GetConnectionString("ConfigDbConnectionString")
+                        : config.GetConnectionString("ApplicationDbContextConnection");
+
+                // Determine if using Cosmos DB
+                var isCosmosDb = CosmosDbOptionsBuilder
+                    .GetDefaultStrategies()
+                    .OfType<CosmosDbConfigurationStrategy>()
+                    .Any(strategy => strategy.CanHandle(connectionString));
+
+                var isMsSql = CosmosDbOptionsBuilder
+                    .GetDefaultStrategies()
+                    .OfType<SqlServerConfigurationStrategy>()
+                    .Any(strategy => strategy.CanHandle(connectionString));
+
+                var isMySql = CosmosDbOptionsBuilder
+                    .GetDefaultStrategies()
+                    .OfType<MySqlConfigurationStrategy>()
+                    .Any(strategy => strategy.CanHandle(connectionString));
+
+                if (isCosmosDb)
+                {
+                    // Parse Cosmos DB connection details from connection string.
+                    services.AddHangfire(hangfireConfig =>
+                    {
+                        var conn = multi ? config.GetConnectionString("ConfigDbConnectionString")
+                                : config.GetConnectionString("ApplicationDbContextConnection");
+                        var accountProperties = CosmosDbConfigurationStrategy.GetAccountProperties(conn);
+                        hangfireConfig.UseAzureCosmosDbStorage(
+                            accountProperties.AccountEndpoint,
+                            accountProperties.AccountKey,
+                            accountProperties.DatabaseName,
+                            "hangfire",
+                            new CosmosClientOptions());
+                    });
+                }
+                else if (isMsSql)
+                {
+                    services.AddHangfire(hangfireConfig =>
+                    {
+                        hangfireConfig.UseSqlServerStorage(connectionString);
+                    });
+                }
+                else if (isMySql)
+                {
+                    services.AddHangfire(hangfireConfig =>
+                    {
+                        hangfireConfig.UseStorage(
+                            new MySqlStorage(connectionString + "Allow User Variables=true;", new MySqlStorageOptions()));
+                    });
+                }
+                else
+                {
+                    throw new InvalidOperationException("Unsupported database provider for Hangfire storage.");
+                }
             }
 
             // Configure Hangfire server options
