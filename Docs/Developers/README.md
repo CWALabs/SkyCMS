@@ -4,7 +4,7 @@ Welcome to the developer documentation area. This section complements the featur
 
 ## Overview
 
-SkyCMS is a cloud-native content management system built on .NET 9.0 with a modular architecture that separates concerns across multiple projects. The system supports multiple database providers (Cosmos DB, SQL Server, MySQL, SQLite) and multiple storage providers (Azure Blob Storage, Amazon S3, Cloudflare R2).
+SkyCMS is a cloud-native content management system built on .NET 9.0 with a modular architecture that separates concerns across multiple projects. The system supports multiple database providers (Cosmos DB, SQL Server, MySQL) and multiple storage providers (Azure Blob Storage, Amazon S3, Cloudflare R2).
 
 ## Architecture
 
@@ -24,7 +24,7 @@ SkyCMS is a cloud-native content management system built on .NET 9.0 with a modu
 - **Authentication**: ASP.NET Core Identity with external providers (Google, Microsoft)
 - **Frontend**: Bootstrap 5, CKEditor 5, GrapesJS, Monaco Editor, FilePond
 - **Storage**: Azure Blob Storage, AWS S3, Cloudflare R2 (via abstraction layer)
-- **Databases**: Azure Cosmos DB, SQL Server, MySQL, SQLite
+- **Databases**: Azure Cosmos DB, SQL Server, MySQL
 
 ## Sections
 
@@ -44,7 +44,6 @@ SkyCMS automatically detects and configures the appropriate database provider ba
 - **Cosmos DB**: `AccountEndpoint=...`
 - **SQL Server**: `Server=...` or `Data Source=...`
 - **MySQL**: `server=...` (lowercase)
-- **SQLite**: `Data Source=...` with `.db` extension
 
 See [DatabaseConfig.md](../DatabaseConfig.md) for detailed configuration.
 

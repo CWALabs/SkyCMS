@@ -46,7 +46,7 @@ The Publisher operates in two primary modes, determined by the `CosmosStaticWebP
 **Traditional CMS functionality with full page rendering:**
 
 - **Server-side HTML generation** - Complete pages rendered on each request
-- **Database-driven content** from Azure Cosmos DB, SQL Server, MySQL, or SQLite
+- **Database-driven content** from Azure Cosmos DB, SQL Server, MySQL
 - **User authentication and authorization** support
 - **Real-time content** with dynamic data integration
 - **Interactive features** like comments, forms, and user sessions
@@ -167,7 +167,7 @@ Publisher/
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `CosmosStaticWebPages` | Enable static mode | `true` or `false` |
-| `ConnectionStrings__ApplicationDbContextConnection` | Database connection | `Data Source=/data/sqlite/skycms.db` |
+| `ConnectionStrings__ApplicationDbContextConnection` | Database connection | `AccountEndpoint=...;AccountKey=...;Database=...` |
 | `ConnectionStrings__StorageConnectionString` | Azure Storage connection | `DefaultEndpointsProtocol=https;...` |
 
 ### Optional Configuration
@@ -192,7 +192,7 @@ docker pull toiyabe/sky-publisher:latest
 docker run -d \
   -p 8080:8080 \
   -e CosmosStaticWebPages=false \
-  -e ConnectionStrings__ApplicationDbContextConnection="Data Source=/data/sqlite/skycms.db" \
+  -e ConnectionStrings__ApplicationDbContextConnection="AccountEndpoint=...;AccountKey=...;Database=..." \
   toiyabe/sky-publisher:latest
 ```
 
@@ -201,8 +201,7 @@ docker run -d \
 1. **Create App Service** with Linux container support
 2. **Configure container** to use `toiyabe/sky-publisher:latest`
 3. **Set environment variables** in Application Settings
-4. **Configure storage mount** for SQLite database (if using)
-5. **Enable Application Insights** for monitoring
+4. **Enable Application Insights** for monitoring
 
 ### Local Development
 

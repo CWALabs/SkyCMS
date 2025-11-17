@@ -21,7 +21,8 @@ With a CDN in static mode, this website can be configured to support high user d
    - Stores static files and website content
    - Configured with either locally-redundant (LRS) or geo-redundant (GRS) storage
    - Includes blob storage with `$web` container for static website hosting
-   - File share for SQLite database storage
+      - BLOB storage for static assets (HTML, CSS, JS, images)
+   - Optional: Backup storage account
 
 2. **App Service Plan**
    - Linux-based hosting plan
@@ -38,7 +39,8 @@ With a CDN in static mode, this website can be configured to support high user d
 - **Content Management**: Full CMS capabilities through the editor interface
 - **Static Website Generation**: Publisher can generate static websites
 - **Email Integration**: Multiple email service options
-- **Shared Database**: SQLite database shared between editor and publisher via Azure File Share
+- **Blob Storage**: Public container for static website hosting
+- **Application Insights**: Performance monitoring and diagnostics
 
 ## Parameters
 
@@ -136,7 +138,6 @@ After successful deployment:
          │ Storage Account │
          │  - Blob Storage │
          │  - File Share   │
-         │  - SQLite DB    │
          └─────────────────┘
 ```
 
@@ -161,7 +162,7 @@ After successful deployment:
 ### Common Issues
 
 1. **Container startup issues**: Check Docker image availability and app service logs
-2. **Database connection**: Verify file share mount and SQLite file permissions
+1. **Storage connection**: Check blob container and file share configuration
 3. **Email not working**: Confirm email service configuration and credentials
 
 ### Monitoring

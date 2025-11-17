@@ -16,7 +16,7 @@ The SkyCMS Editor is the authoring & administration application of the SkyCMS pl
 | Page Metadata | Title / URL path change dialog with validation |
 | Realtime Helpers | SignalR (live status / potential for collaborative extensions) |
 | Storage Abstraction | Multi‑cloud blob (Azure Blob, S3, Cloudflare R2) via `Cosmos.BlobService` |
-| Database Providers | Cosmos DB, SQL Server, MySQL, SQLite (.NET 9 / EF Core) |
+| Database Providers | Cosmos DB, SQL Server, MySQL (.NET 9 / EF Core) |
 | Security | ASP.NET Core Identity / external providers (shared with Publisher) |
 | Extensibility | Domain events, pluggable UI actions, utility & logic layer separation |
 
@@ -25,7 +25,7 @@ The SkyCMS Editor is the authoring & administration application of the SkyCMS pl
 - Runtime: **.NET 9**, ASP.NET Core **Razor Pages / MVC hybrid**
 - UI: Bootstrap 5, CKEditor 5, GrapesJS, Monaco, FilePond, Filerobot Image Editor, Font Awesome
 - Realtime: SignalR
-- Data: EF Core multi-provider (Cosmos DB, SQL Server, MySQL, SQLite)
+- Data: EF Core multi-provider (Cosmos DB, SQL Server, MySQL)
 - Storage: Abstraction over Azure Blob / S3 / R2
 - Auth: ASP.NET Core Identity (roles: *Authors*, *Reviewers*, *Administrators*, etc.)
 
@@ -102,7 +102,7 @@ The main controller handling content editing operations:
 
 - .NET 9.0 SDK
 - Storage: Azure Blob or Amazon S3 (see StorageConfig)
-- Database: SQLite (quick start), or Azure SQL / SQL Server / Cosmos DB / MySQL
+- Database: Azure SQL / SQL Server / Cosmos DB / MySQL
 - Node.js (for frontend dependencies)
 
 ### Installation
@@ -151,8 +151,6 @@ The main controller handling content editing operations:
    ```bash
    dotnet ef database update
    ```
-
-   For SQLite quick start, the database file will be created automatically on first run.
 
 5. **Run the Application**
 

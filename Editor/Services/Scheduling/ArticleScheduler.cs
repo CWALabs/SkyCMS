@@ -31,6 +31,11 @@ namespace Sky.Editor.Services.Scheduling
     using Sky.Editor.Services.Titles;
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// TODO: Enforce that when a content creator uses calendar date/time scheduling,
+    /// they can only publish in the future to prevent conflicts with currently published versions.
+    /// This validation should be added in the UI/controller layer before saving.
+    /// </remarks>
     public class ArticleScheduler : IArticleScheduler
     {
         private readonly ApplicationDbContext _dbContext;
@@ -106,6 +111,10 @@ namespace Sky.Editor.Services.Scheduling
         }
 
         /// <inheritdoc/>
+        /// <remarks>
+        /// TODO: Implement notification system to alert content creators when their scheduled
+        /// publications go live. Consider email notifications, in-app notifications, or webhook integrations.
+        /// </remarks>
         public async Task ExecuteAsync()
         {
             var now = clock.UtcNow;
@@ -188,6 +197,9 @@ namespace Sky.Editor.Services.Scheduling
                 if (versions.Count < 2)
                 {
                     // No longer has multiple versions (race condition or concurrent delete)
+                    // TODO: Investigate potential race conditions when users manually publish/unpublish
+                    // while the scheduler is running. Consider implementing optimistic concurrency control
+                    // or row-level locking to prevent conflicts.
                     return;
                 }
 
@@ -243,6 +255,9 @@ namespace Sky.Editor.Services.Scheduling
                     ex,
                     "Error processing article versions for ArticleNumber {ArticleNumber}",
                     articleNumber);
+                // TODO: Implement retry mechanism for failed publications and/or
+                // notification system to alert administrators about publication failures.
+                // Consider using Hangfire's automatic retry features or a separate notification service.
             }
         }
     }

@@ -24,7 +24,7 @@ Cosmos.DynamicConfig is a configuration management system for multi-tenant appli
 
 - **Domain Validation**: Validate domain names against configured tenants via `ValidateDomainName()`
 - **Metrics Collection**: Built-in metrics tracking for tenant resource usage
-- **Entity Framework Integration**: Works with Cosmos DB, SQL Server, MySQL, and SQLite via FlexDb provider detection
+- **Entity Framework Integration**: Works with Cosmos DB, SQL Server, and MySQL via FlexDb provider detection
 - **HTTP Context Integration**: Seamless integration with ASP.NET Core pipeline
 
 ## Architecture
@@ -61,7 +61,7 @@ The main implementation that handles configuration resolution, caching, and data
 
 #### DynamicConfigDbContext
 
-Entity Framework DbContext for managing configuration data, connections, and metrics. The backing database is determined by your `ConfigDbConnectionString` (Cosmos DB, SQL Server, MySQL, or SQLite).
+Entity Framework DbContext for managing configuration data, connections, and metrics. The backing database is determined by your `ConfigDbConnectionString` (Cosmos DB, SQL Server, or MySQL).
 
 **Containers/Tables:**
 - `Connections`: Tenant configuration entities (container: "config")
@@ -140,16 +140,6 @@ MySQL:
 {
     "ConnectionStrings": {
         "ConfigDbConnectionString": "Server=your-mysql;Port=3306;uid=youruser;pwd=yourpassword;database=YourConfigDb;"
-    }
-}
-```
-
-SQLite:
-
-```json
-{
-    "ConnectionStrings": {
-        "ConfigDbConnectionString": "Data Source=your-config.db"
     }
 }
 ```

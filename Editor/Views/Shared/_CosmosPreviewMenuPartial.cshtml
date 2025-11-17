@@ -48,13 +48,13 @@
                         Back to edit <i class="fa-solid fa-arrow-rotate-left"></i>
                     </a>
                 </li>
-                <li class="nav-item" id="liPubNow">
-                    <a href="#" role="button" class="btn btn-sm btn-secondary mt-1 ms-2 btnPublish">
-                        Publish now <i class="fa-solid fa-cloud-arrow-up"></i>
-                    </a>
-                </li>
                 @if (previewType.Equals("article") && (isEditor || isAdministrator))
                 {
+                    <li class="nav-item" id="liPubNow">
+                        <a href="#" role="button" class="btn btn-sm btn-secondary mt-1 ms-2 btnPublish">
+                            Publish now <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </a>
+                    </li>
                     <li class="nav-item" id="publishLater">
                         <a id="publishLater" href="#" role="button" class="btn btn-sm btn-secondary mt-1 ms-2">
                             Publish later <i class="fa-solid fa-calendar-day"></i>
@@ -120,6 +120,7 @@
         singleDatePicker: true,
         showDropdowns: true,
         startDate: new Date(),
+        minDate: moment(),
         locale: {
             format: 'MM/DD/YYYY hh:mm A'
         }

@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![NuGet](https://img.shields.io/nuget/v/AspNetCore.Identity.CosmosDb.svg)](https://www.nuget.org/packages/AspNetCore.Identity.CosmosDb/)
 
-A flexible, multi-database implementation of ASP.NET Core Identity that **automatically selects the appropriate database provider** based on your connection string. Supports Azure Cosmos DB, SQL Server, MySQL, and SQLite with seamless switching between providers.
+A flexible, multi-database implementation of ASP.NET Core Identity that **automatically selects the appropriate database provider** based on your connection string. Supports Azure Cosmos DB, SQL Server, and MySQL with seamless switching between providers.
 
 ---
 
@@ -35,7 +35,6 @@ A flexible, multi-database implementation of ASP.NET Core Identity that **automa
 - ✅ **Enhanced Strategy Pattern** with improved provider detection
 - ✅ **Thread-safe** stateless strategy implementations
 - ✅ **Improved documentation** with comprehensive XML comments
-- ✅ **SQLite encryption** support via SQLCipher package
 - ✅ **Performance optimizations** for all providers
 - ✅ **Better error messages** with detailed provider information
 
@@ -49,7 +48,7 @@ AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database p
 
 - 🔄 **Zero Code Changes**: Switch databases by changing connection strings only
 - 🚀 **Rapid Development**: No provider-specific configuration needed
-- 🌐 **Multi-Environment**: Use SQLite for dev, SQL Server for staging, Cosmos DB for production
+- 🌐 **Multi-Environment**: Use MySQL for dev, SQL Server for staging, Cosmos DB for production
 - 📦 **Single Package**: All providers in one NuGet package
 - 🔧 **Extensible**: Add custom providers by implementing `IDatabaseConfigurationStrategy`
 - 🛡️ **Secure**: Built-in personal data encryption and protection
@@ -59,7 +58,7 @@ AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database p
 | Feature | Description |
 |---------|-------------|
 | **Automatic Provider Detection** | Intelligently selects database provider from connection string patterns |
-| **Multi-Database Support** | Cosmos DB, SQL Server, MySQL, and SQLite out of the box |
+| **Multi-Database Support** | Cosmos DB, SQL Server, and MySQL out of the box |
 | **Strategy Pattern** | Clean, extensible architecture for adding new providers |
 | **Azure Integration** | Native support for Azure Cosmos DB and Azure SQL Database |
 | **Backward Compatibility** | Supports legacy Cosmos DB configurations |
@@ -116,23 +115,6 @@ AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database p
 | **Features** | Open source, wide hosting support, good performance |
 | **Connection String** | `Server=server;Port=3306;uid=user;pwd=password;database=dbname;` |
 | **Use Cases** | Linux hosting, open-source projects, budget-conscious deployments |
-
-### SQLite
-
-**Best for:** Development, testing, single-user applications, edge deployments
-
-| Aspect | Details |
-|--------|---------|
-| **Provider Priority** | 40 |
-| **Detection Pattern** | `Data Source=` with `.db` extension |
-| **Features** | Zero configuration, file-based, optional encryption via SQLCipher |
-| **Connection String** | `Data Source=database.db;Password=strong-password;` |
-| **Use Cases** | Local development, testing, mobile apps, embedded systems |
-
-**Important for Containers:**
-- Mount a persistent volume for the SQLite file
-- Example: `Data Source=/data/sqlite/app.db;`
-- Ensure write permissions on the mounted volume
 
 ---
 
@@ -228,8 +210,7 @@ public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, Identi
   "ConnectionStrings": {
     "CosmosDb": "AccountEndpoint=https://myaccount.documents.azure.com:443/;AccountKey=mykey;Database=MyDatabase;",
     "SqlServer": "Server=tcp:myserver.database.windows.net,1433;Initial Catalog=MyDatabase;User ID=myuser;Password=mypassword;",
-    "MySQL": "Server=myserver;Port=3306;uid=myuser;pwd=mypassword;database=MyDatabase;",
-    "SQLite": "Data Source=myapp.db"
+    "MySQL": "Server=myserver;Port=3306;uid=myuser;pwd=mypassword;database=MyDatabase;"
   }
 }
 ```
@@ -272,8 +253,7 @@ public static class CosmosDbOptionsBuilder
 
 - **Cosmos DB**: Detects `AccountEndpoint=` pattern
 - **SQL Server**: Detects `User ID` pattern
-- **MySQL**: Detects `uid=` pattern  
-- **SQLite**: Detects `Data Source=` with `.db` extension
+- **MySQL**: Detects `uid=` pattern
 
 #### Identity Stores
 
@@ -509,7 +489,6 @@ public class MultiTenantDbContext : CosmosIdentityDbContext<IdentityUser, Identi
 // Cosmos DB: Must include "AccountEndpoint="
 // SQL Server: Must include "User ID"
 // MySQL: Must include "uid="
-// SQLite: Must include "Data Source=" with ".db"
 ```
 
 #### Cosmos DB Container Creation
@@ -530,12 +509,6 @@ public async Task MigrateFromCosmosToSql()
     // Import to SQL Server
 }
 ```
-
-#### SQLite: "no such table" or schema errors
-
-- Ensure the schema exists for the selected provider
-- For quick start scenarios use: `await context.Database.EnsureCreatedAsync();`
-- For production, prefer EF Core migrations to manage versioned schema changes
 
 ### Performance Tuning
 

@@ -25,7 +25,7 @@ namespace Sky.Editor.Services.Scheduling
         public bool Authorize(DashboardContext context)
         {
             var httpContext = context.GetHttpContext();
-            return httpContext.User.Identity.IsAuthenticated; // Add role checks if needed
+            return httpContext.User.Identity.IsAuthenticated && (httpContext.User.IsInRole("Administrators") || httpContext.User.IsInRole("Editors")); // Add role checks if needed
         }
     }
 }

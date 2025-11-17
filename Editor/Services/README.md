@@ -348,11 +348,85 @@ Implementation of reserved URL path management to prevent conflicts with system 
 
 Interface for article scheduling services.
 
+**Key Methods:**
+
+- `ExecuteAsync()` - Executes the scheduled job to process article versions with multiple published dates
+
 ### ArticleScheduler
 
 **Location:** `Services\Scheduling\ArticleScheduler.cs`
 
-Implementation of article scheduling for timed content publication.
+Implementation of article scheduling for timed content publication using Hangfire. Automatically publishes web pages that content creators have scheduled for future dates.
+
+**Key Features:**
+
+- Runs every 10 minutes via Hangfire recurring job
+- Supports both single-tenant and multi-tenant modes
+- Manages article versions with scheduled publication dates
+- Automatically activates the most recent non-future version
+- Unpublishes older versions when new versions go live
+
+**Key Methods:**
+
+- `ExecuteAsync()` - Main entry point for the Hangfire recurring job
+- `Run(ApplicationDbContext, string)` - Processes articles for a single tenant/database
+- `ProcessArticleVersions(DateTimeOffset, ApplicationDbContext, int)` - Handles version activation logic for a specific article
+
+**Constructor Parameters:**
+
+- `dbContext` - Database context for querying articles
+- `config` - Cosmos configuration options
+- `memoryCache` - Memory cache for performance optimization
+- `storageContext` - Storage context for file operations
+- `logger` - Logger for tracking execution and errors
+- `accessor` - HTTP context accessor
+- `settings` - Editor settings
+- `clock` - Clock abstraction for testable time operations
+- `slugService` - URL slug generation service
+- `htmlService` - HTML processing service
+- `catalogService` - Catalog management service
+- `publishingService` - Publishing service for generating static files
+- `titleChangeService` - Service for handling title changes
+- `redirectService` - Redirect management service
+- `templateService` - Template service
+- `configurationProvider` - Optional configuration provider for multi-tenant mode
+
+**Related Documentation:**
+
+- [Page Scheduling Guide](../../Docs/Editors/PageScheduling.md) - Complete user and developer documentation
+- [Hangfire Dashboard](https://docs.hangfire.io/) - Background job monitoring
+
+### HangfireAuthorizationFilter
+
+**Location:** `Services\Scheduling\HangfireAuthorizationFilter.cs`
+
+Authorization filter for restricting access to the Hangfire dashboard.
+
+**Key Methods:**
+
+- `Authorize(DashboardContext)` - Determines if the current user can access the dashboard
+
+**Authorization Rules:**
+
+- User must be authenticated
+- User must be in Administrator or Editor role
+
+### HangFireExtensions
+
+**Location:** `Services\Scheduling\HangFireExtensions.cs`
+
+Extension methods for configuring Hangfire with SkyCMS.
+
+**Key Methods:**
+
+- `AddHangFireScheduling(IServiceCollection, IConfiguration)` - Configures Hangfire with appropriate database storage
+
+**Supported Databases:**
+
+- Cosmos DB
+- SQL Server
+- MySQL
+- SQLite (for testing)
 
 ---
 

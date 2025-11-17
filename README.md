@@ -1,4 +1,4 @@
-# A light-weight, high-Performance, full-featured, multi-cloud content management system
+# SkyCMS: The Edge-Native CMS
 
 ![SkyCMS Logo](/Editor/wwwroot/images/skycms/SkyCMSLogoNoWiTextDarkTransparent30h.png)
 
@@ -8,22 +8,131 @@
 
 <!-- [Project Website](https://Sky.moonrise.net) | [Documentation](https://Sky.moonrise.net/Docs) | [Get Free Help](https://Sky.moonrise.net/Support) | [YouTube Channel](https://www.youtube.com/@Sky-cms) | [Slack Channel](https://Sky-cms.slack.com/) -->
 
-Deploy anywhere: AWS, Azure, Cloudflare, Google — or any cloud that supports Docker containers, one of our supported databases (SQLite, MySQL, MS SQL or Cosmos DB), and either S3‑compatible object storage or Azure Storage.
+**A light-weight, high-performance, multi-cloud content management system built for edge delivery and static site generation.**
+
+Deploy anywhere: AWS, Azure, Cloudflare, Google — or any cloud that supports Docker containers, one of our supported databases (MySQL, MS SQL or Cosmos DB), and either S3‑compatible object storage or Azure Storage.
 
 Content tools are intuitive and rich, making them developer-friendly and non-technical user-friendly, perfect for web professionals working together with content creators.
 
 Choose your hosting model: [Static](./Docs/StorageConfig.md#static-website-hosting-azure) | [Edge (origin-less)](./Docs/CloudflareEdgeHosting.md) | [Dynamic](./Publisher/README.md) | [Decoupled](./Publisher/README.md)
 
+---
+
+## What is an Edge-Native CMS?
+
+**SkyCMS is an Edge-Native CMS** — a new category of content management system that combines the **editing experience of traditional CMSs** with the **performance and simplicity of static site generators**, all while being optimized for **edge delivery and global CDN distribution**.
+
+### The Problem We Solve
+
+Modern web teams face a difficult choice:
+
+**Traditional CMSs** (WordPress, Drupal, etc.)
+
+- ✅ Easy for editors to use
+- ✅ Real-time content updates
+- ❌ Slow performance under load
+- ❌ Security vulnerabilities
+- ❌ High hosting costs
+- ❌ Complex scaling requirements
+
+**Static Site Generators** (Jekyll, Hugo, Gatsby, Next.js)
+
+- ✅ Blazing fast performance
+- ✅ Low hosting costs
+- ✅ Great security
+- ❌ Complex Git-based workflows
+- ❌ Requires technical knowledge
+- ❌ Long build times
+- ❌ Multiple tools to configure and maintain
+
+**Headless CMSs** (Contentful, Strapi, Sanity)
+
+- ✅ Modern editing experience
+- ✅ API-driven content delivery
+- ❌ Expensive API usage costs
+- ❌ Requires custom frontend development
+- ❌ Complex architecture with multiple systems
+- ❌ Ongoing maintenance burden
+
+### The SkyCMS Solution
+
+**SkyCMS eliminates this false choice** by being purpose-built for edge deployment while maintaining a complete CMS editing experience:
+
+#### 🎯 **For Content Editors**
+
+- Familiar WYSIWYG editing (CKEditor 5)
+- Visual page building (GrapesJS)
+- No Git knowledge required
+- Instant content previews
+- Built-in version control
+- One-click publishing
+
+#### ⚡ **For Developers**
+
+- No external build pipelines to configure
+- No CI/CD complexity
+- Direct deployment to edge locations
+- Code editor with Monaco (VS Code)
+- Multiple deployment modes
+- Docker-based infrastructure
+
+#### 🚀 **For Performance**
+
+- Static file generation at the edge
+- Global CDN distribution
+- Origin-less hosting via Cloudflare
+- Sub-second page loads
+- Handles massive traffic spikes
+- Minimal infrastructure costs
+
+### How SkyCMS Fills Its Niche
+
+SkyCMS sits at the **intersection of three architectures**, taking the best from each:
+
+```text
+Traditional CMS          SkyCMS (Edge-Native)      Static Site Generator
+(WordPress)              (Best of Both)            (Jekyll/Hugo)
+     │                          │                         │
+     └──────────────────────────┴─────────────────────────┘
+           Easy Editing    +    Edge Performance    =    Modern Web
+```
+
+**What Makes SkyCMS Different:**
+
+1. **Integrated Publishing Pipeline**: Built-in Publisher component handles rendering and deployment — no external build tools, no Git workflows, no CI/CD pipelines to configure
+
+2. **Hybrid Architecture**: Render content as static files for edge delivery while maintaining dynamic capabilities when needed
+
+3. **Multi-Cloud Native**: Deploy to Azure, AWS, Cloudflare, or any S3-compatible storage without vendor lock-in
+
+4. **Origin-Less Edge Hosting**: Deploy directly to Cloudflare's edge network using R2 + Workers — no origin servers required
+
+5. **Instant Publishing**: Changes go live in seconds, not minutes — no waiting for build pipelines
+
+6. **Complete CMS Experience**: Full-featured content management with version control, templates, media management, and user roles — not just a "content API"
+
+### Real-World Impact
+
+| Scenario | Traditional CMS | Static Site Generator | SkyCMS |
+|----------|----------------|----------------------|---------|
+| **Content update time** | Instant (but slow delivery) | 2-15 minutes (build + deploy) | < 5 seconds |
+| **Technical skill required** | Low | High (Git, CLI, build tools) | Low |
+| **Performance under load** | Poor (requires scaling) | Excellent | Excellent |
+| **Hosting cost (100k pageviews)** | $50-500/month | $0-10/month | $0-10/month |
+| **Setup complexity** | Moderate | High (multiple tools) | Low (single platform) |
+| **Maintenance burden** | High (security, updates) | High (build pipeline) | Low (containerized) |
+
 ## Overview
 
-[SkyCMS](https://Sky-cms.com/) is an open-source, cloud-native Content Management System designed for high-performance, scalability, and ease of use. Built with modern web technologies, **SkyCMS is primarily a traditional CMS that renders complete web pages**, either dynamically or as static files. It runs in multiple modes to meet different deployment needs and can be hosted traditionally or at the edge (origin-less) using Cloudflare Workers + R2:
+[SkyCMS](https://Sky-cms.com/) is an open-source, cloud-native Edge-Native CMS that **renders complete web pages** optimized for edge delivery and global distribution. Built with modern web technologies, SkyCMS runs in multiple modes to meet different deployment needs:
 
-- **Static Mode** (Primary): Content rendered as static HTML files and hosted on cloud storage (Azure Blob, S3, Cloudflare R2) - highest performance, stability, and operational simplicity
+- **Static Mode** (Primary): Content rendered as static HTML files and hosted on cloud storage (Azure Blob, S3, Cloudflare R2) — highest performance, stability, and operational simplicity
   - Can be deployed as an **origin-less, edge-hosted** site via Cloudflare R2 + Worker
-  - Automatic static site generation from CMS content
-- **Dynamic Mode**: Publisher application dynamically renders pages on-demand - full CMS functionality with server-side rendering
-- **Decoupled Mode**: Separate editor and publisher applications - near-static performance with backend functionality
-- **API Mode** (Optional): RESTful API available for headless scenarios - content delivered as JSON for multi-channel distribution
+  - Automatic static site generation without external build tools
+  - Integrated publishing pipeline eliminates CI/CD complexity
+- **Dynamic Mode**: Publisher application dynamically renders pages on-demand — full CMS functionality with server-side rendering
+- **Decoupled Mode**: Separate editor and publisher applications — near-static performance with backend functionality
+- **API Mode** (Optional): RESTful API available for headless scenarios — content delivered as JSON for multi-channel distribution
 
 ## 🎯 Design Objectives
 
@@ -53,12 +162,14 @@ SkyCMS represents a **next-generation approach** to static site publishing that 
 | Complex pipeline debugging | Streamlined troubleshooting |
 | Content creators need Git knowledge | User-friendly content management interface |
 | Static OR dynamic content | **Hybrid: simultaneous static AND dynamic content** |
+| Manual scheduling or cron-based rebuilds | **Built-in page scheduling with calendar widget** |
 
 **Key Technical Advantages:**
 
 - **No Build Pipeline Required**: Content is rendered directly by the Publisher component, eliminating wait times and pipeline configuration
 - **Integrated Version Control**: Full versioning system built into the CMS—no external Git workflow needed
 - **Automatic Deployment**: Direct deployment to Azure Blob Storage, AWS S3, or Cloudflare R2 without intermediary services
+- **Built-in Page Scheduling**: Schedule pages for future publication with a simple calendar widget—no GitHub Actions, cron jobs, or CI/CD scheduling needed
 - **Faster Publishing**: Changes go live immediately without waiting for CI/CD builds
 - **Hybrid Architecture**: Serve static files for performance while maintaining dynamic capabilities when needed
 - **Simplified Operations**: Fewer moving parts mean less infrastructure to maintain and fewer points of failure
@@ -75,6 +186,7 @@ Real-world comparison of publishing workflows:
 | Image optimization | Build-time penalty | On-upload processing |
 | Preview environment | Separate branch + build | Instant preview mode |
 | Rollback time | Redeploy previous build (2-5 min) | Instant version restore |
+| **Scheduled publishing** | **Cron job + full rebuild** | **Calendar widget + instant activation** |
 
 This **CMS-native approach** achieves the same benefits as JAMstack (speed, scalability, global distribution) but with dramatically reduced complexity and operational overhead.
 
@@ -84,6 +196,7 @@ This **CMS-native approach** achieves the same benefits as JAMstack (speed, scal
 - **Rich Editing Tools**: CKEditor 5, GrapesJS, Monaco Editor, and Filerobot image editor
 - **Version Control**: Full versioning system with restore capabilities
 - **Template System**: Reusable page templates with editable regions
+- **Page Scheduling**: Schedule pages for automatic publication at future dates and times using Hangfire
 - **Multi-Mode Publishing**: Static file generation, dynamic rendering, or optional API delivery
 
 ### Blogging Platform
@@ -111,7 +224,7 @@ SkyCMS includes robust blogging capabilities built on its flexible article syste
 ### Security & Access Control
 
 - **Role-Based Access**: Administrator and Editor roles
-- **Identity Integration**: ASP.NET Core Identity with Azure B2C support
+- **Identity Integration**: ASP.NET Core Identity
 - **External Providers**: Google and Microsoft authentication
 - **Permission System**: Article-level access control
 - **Secure File Storage**: Encrypted and authenticated storage access
@@ -181,7 +294,7 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 
 - **Backend**: ASP.NET Core 9.0+ (C#)
 - **Frontend**: JavaScript (70% of codebase), HTML5, CSS3, SCSS
-- **Database**: Azure Cosmos DB (NoSQL), MS SQL, MySQL or SQLite
+- **Database**: Azure Cosmos DB (NoSQL), MS SQL, MySQL
 - **Storage**: Azure Blob Storage, Amazon S3, Cloudflare R2 (S3-compatible)
 - **Hosting**: Linux Docker containers
 - **Authentication**: ASP.NET Core Identity, Google and Microsoft
@@ -191,7 +304,6 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 - **Database Options**
   - Azure Cosmos DB: Multi-user, globally distributed NoSQL database
   - MS SQL, MySQL: Relational databases
-  - SQLite: Built in database for single editor applications
 - **Cloud Storage Options**
   - Azure Storage: File share and BLOB storage
   - Amazon S3 (and compatible): BLOB storage
@@ -204,7 +316,7 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 
 SkyCMS/
 ├── ArmTemplates/ # Azure Resource Manager deployment templates
-├── Common/					# Shared libraries and utilities
+├── Common/                 # Shared libraries and utilities
 ├── Cosmos.BlobService/     # File storage service layer
 ├── Cosmos.ConnectionStrings/ # Dynamic configuration management
 ├── AspNetCore.Identity.FlexDb/ # Flexible identity framework
@@ -243,7 +355,7 @@ Each component has detailed documentation explaining its purpose, configuration,
 ### Shared Libraries
 
 - **[Common Library](./Common/README.md)** - Core shared functionality
-  - Multi-database support (Cosmos DB, SQL Server, MySQL, SQLite)
+  - Multi-database support (Cosmos DB, SQL Server, MySQL)
   - Base controllers and data models
   - Authentication utilities and services
   - Article management and content processing
@@ -306,7 +418,7 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/Moonrise
   - AWS: [AWS S3 access keys (quick guide)](./Docs/AWS-S3-AccessKeys.md)
   - Cloudflare: [Cloudflare R2 access keys (quick guide)](./Docs/Cloudflare-R2-AccessKeys.md)
   - Cloudflare: [Edge/origin-less hosting guide (R2 + Worker)](./Docs/CloudflareEdgeHosting.md)
-- **Database Configuration**: [Docs/DatabaseConfig.md](./Docs/DatabaseConfig.md) — Provider options (Cosmos DB, SQL Server, MySQL, SQLite), connection strings, EF configuration, and migration guidance
+- **Database Configuration**: [Docs/DatabaseConfig.md](./Docs/DatabaseConfig.md) — Provider options (Cosmos DB, SQL Server, MySQL), connection strings, EF Configuration, and migration guidance
 
 ### Content Creation
 
@@ -316,6 +428,7 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/Moonrise
 - **Code Editor**: [Code Editor Documentation](./Docs/Editors/CodeEditor/README.md) — HTML editing with Monaco Editor
 - **Image Editing**: [Image Editing Documentation](./Docs/Editors/ImageEditing/README.md) — Filerobot image editor guide
 - **File Management**: [File Management Guide](./Docs/FileManagement/README.md) — Managing media and files
+- **Page Scheduling**: [Page Scheduling Guide](./Docs/Editors/PageScheduling.md) — Schedule pages for automatic future publication
 
 ### Blogging
 
@@ -351,23 +464,25 @@ See the [deployment documentation](./ArmTemplates/README.md) for configuration d
 
 ---
 
-# SkyCMS Licensing
+## SkyCMS Licensing
 
 SkyCMS is **dual-licensed** to provide maximum flexibility:
 
 ## GPL 2.0-or-later License (Default for Open Source Use)
 
-When using SkyCMS with the included open-source **CKEditor 5**, the entire 
+When using SkyCMS with the included open-source **CKEditor 5**, the entire
 application is licensed under **GNU General Public License Version 2.0 or later (GPL-2.0-or-later)**.
 
-This matches CKEditor's licensing and allows you to choose GPL 2.0, GPL 3.0, 
+This matches CKEditor's licensing and allows you to choose GPL 2.0, GPL 3.0,
 or any later version of the GPL.
 
 **License Files:**
+
 - [LICENSE-GPL](LICENSE-GPL) - Full GPL 2.0 license text
 - [LICENSE-CKEDITOR-GPL](LICENSE-CKEDITOR-GPL) - CKEditor-specific licensing information
 
 **This means:**
+
 - ✅ Free to use for open-source projects
 - ✅ Must distribute source code of modifications
 - ✅ Derivative works must also be GPL-licensed
@@ -377,16 +492,19 @@ or any later version of the GPL.
 ## MIT License (For Commercial Use)
 
 ### Option 1: Source Code MIT License
-All **original SkyCMS source code** (excluding CKEditor and other third-party components) 
+
+All **original SkyCMS source code** (excluding CKEditor and other third-party components)
 is available under the **MIT License**.
 
 See [LICENSE-MIT](LICENSE-MIT) for full MIT license terms.
 
 ### Option 2: Complete Application with Commercial CKEditor
-If you purchase a **commercial license for CKEditor** from CKSource, 
+
+If you purchase a **commercial license for CKEditor** from CKSource,
 you may use the **entire SkyCMS application** under the **MIT License**.
 
 **This means:**
+
 - ✅ Use in proprietary/commercial applications
 - ✅ No requirement to distribute source code
 - ✅ Minimal restrictions
@@ -409,18 +527,20 @@ SkyCMS integrates several third-party libraries with their own licenses.
 
 **Full attribution and licensing details**: [NOTICE.md](NOTICE.md)
 
-### CKEditor 5
+### CKEditor 5 License
+
 - **Copyright**: © 2003-2024 CKSource Holding sp. z o.o.
 - **License**: GPL 2.0-or-later (open source) or Commercial
-- **Website**: https://ckeditor.com/
-- **Source**: https://github.com/ckeditor/ckeditor5
-- **Commercial License**: https://ckeditor.com/pricing/
+- **Website**: <https://ckeditor.com/>
+- **Source**: <https://github.com/ckeditor/ckeditor5>
+- **Commercial License**: <https://ckeditor.com/pricing/>
 
 CKEditor 5 is a powerful rich text editor. SkyCMS uses it under the GPL 2.0-or-later license.
 
 For questions about CKEditor licensing, contact CKSource directly.
 
 ### Other Components
+
 - **GrapesJS**: BSD 3-Clause License (© 2024 Artur Arseniev)
 - **Monaco Editor**: MIT License (© Microsoft Corporation)
 - **Filerobot Image Editor**: MIT License (© Scaleflex)

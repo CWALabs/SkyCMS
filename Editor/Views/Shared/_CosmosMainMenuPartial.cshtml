@@ -69,17 +69,20 @@
                                     <a class="dropdown-item" title="Manage layouts" href="/Layouts/Index">Site Design</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" title="Publish entire website and refresh CDN." href="/Editor/Publish">Publish Website</a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
                                     <a class="dropdown-item" title="Manage customer contacts." asp-action="Index" asp-controller="Cosmos___Contacts">Contacts</a>
                                 </li>
+                                <li>
+                                    <a id="btnPublicWebsite" class="dropdown-item" title="Open public (publisher) website" href="" target="_blank">Public Website</a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" title="Manage user accounts." asp-action="Index" asp-controller="Users">Users</a>
                                 </li>
                                 <li>
-                                    <a id="btnPublicWebsite" class="dropdown-item" title="Open public (publisher) website" href="" target="_blank">Public Website</a>
+                                    <a class="dropdown-item" title="Publish entire website and refresh CDN." href="/Editor/Publish">Publish Website</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" title="Open page scheduling service." href="/Editor/Scheduler">Page Scheduler</a>
                                 </li>
                             }
                             @if (isAdministrator)

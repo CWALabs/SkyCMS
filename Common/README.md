@@ -13,7 +13,7 @@ Cosmos.Common is the foundational library for the SkyCMS content management syst
 
 ### Core Infrastructure
 
-- **Multi-Database Support**: Entity Framework integration with Cosmos DB, SQL Server, MySQL, and SQLite
+- **Multi-Database Support**: Entity Framework integration with Cosmos DB, SQL Server, and MySQL
 - **Base Controllers**: Common controller functionality for Editor and Publisher applications
 - **Data Models**: Comprehensive set of entities for content management
 - **Utility Functions**: Essential helper methods and extensions
@@ -47,7 +47,7 @@ Cosmos.Common is the foundational library for the SkyCMS content management syst
 
 #### ApplicationDbContext
 
-The main Entity Framework DbContext that provides access to all CMS entities with support for multiple database providers including Cosmos DB, SQL Server, MySQL, and SQLite.
+The main Entity Framework DbContext that provides access to all CMS entities with support for multiple database providers including Cosmos DB, SQL Server, and MySQL.
 
 #### Base Controllers
 
@@ -106,11 +106,8 @@ if (cs.Contains("AccountEndpoint="))
 }
 else if (cs.Contains("Server=") || cs.Contains("Data Source="))
 {
-    // SQL Server / SQLite (example)
-    if (cs.Contains(".db"))
-        builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlite(cs));
-    else
-        builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlServer(cs));
+    // SQL Server
+    builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseSqlServer(cs));
 }
 else if (cs.Contains("server=") || cs.Contains("Server="))
 {
@@ -149,16 +146,6 @@ else if (cs.Contains("server=") || cs.Contains("Server="))
 }
 ```
 
-#### SQLite
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=your-database.db"
-  }
-}
-```
-
 ## Usage
 
 ### Service Registration
@@ -171,7 +158,7 @@ using Microsoft.EntityFrameworkCore;
 
 // Register ApplicationDbContext with your chosen provider (see example above)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString)); // Or UseCosmos / UseMySQL / UseSqlite
+    options.UseSqlServer(connectionString)); // Or UseCosmos / UseMySQL
 
 // Register other common services
 builder.Services.AddScoped<ArticleLogic>();
@@ -447,7 +434,7 @@ if (connectionString.Contains("AccountEndpoint"))
 // SQL Server detection
 else if (connectionString.Contains("Server=") || connectionString.Contains("Data Source="))
 {
-    // Configure for SQL Server or SQLite
+    // Configure for SQL Server
 }
 // MySQL detection
 else if (connectionString.Contains("server="))
