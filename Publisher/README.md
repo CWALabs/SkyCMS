@@ -63,7 +63,7 @@ The Publisher operates in two primary modes, determined by the `CosmosStaticWebP
 - **Minimal server overhead** - Publisher acts as a smart proxy to storage
 - **Maximum scalability** - Handle massive traffic with minimal infrastructure
 - **Automatic static site generation** triggered by content publishing in Editor
-- **Edge hosting support** - Deploy origin-less sites with Cloudflare Workers + R2
+- **Edge hosting support** - Deploy origin-less sites with Cloudflare R2 + Rules (no Worker required)
 
 **When to use:** Public-facing websites, high-traffic sites, edge hosting, maximum performance requirements
 

@@ -87,7 +87,7 @@ Best practice: Scope IAM permissions to the specific bucket and required actions
 
 Cloudflare R2 is S3-compatible. With SkyCMS you’ll provide your Account ID, bucket name, and S3-style credentials (Key ID/Secret).
 
-Quick setup guide: see [Cloudflare R2 access keys for SkyCMS](./Cloudflare-R2-AccessKeys.md) to find your Account ID and bucket, and to generate an S3 API token (read/write/delete).
+Quick setup guide: see [Cloudflare R2 access keys for SkyCMS](./Cloudflare-R2-AccessKeys.md) to find your Account ID and bucket, and to generate an S3 API token (read/write/delete). For edge/origin-less hosting with Cloudflare, see [Cloudflare Edge Hosting](./CloudflareEdgeHosting.md) for instructions on binding your R2 bucket and configuring Cloudflare Rules (no Worker required).
 
 Format the connection string for R2 storage in the following manner. Note it requires
 an Account ID, Bucket name, Key ID and Key Secret:
@@ -110,7 +110,7 @@ Use what your team already knows when possible. Quick guidance:
 |--------------------|-----------------------------------------------|-----------------------------------------------------|----------------|
 | Azure Blob Storage | Azure-native deployments, static website CDN  | First-class Azure integration, managed identity     | Requires Azure account/roles |
 | Amazon S3          | AWS-native or multi-cloud compatibility       | Ubiquitous, scalable, rich tooling                  | Access keys management, region selection |
-| Cloudflare R2      | S3-compatible, egress-friendly pricing        | Cost model benefits                                 | Custom endpoint not currently configurable |
+| Cloudflare R2      | S3-compatible, egress-friendly pricing        | Cost model benefits                                 | Custom endpoint may be required for R2; see Cloudflare docs and [CloudflareEdgeHosting.md](./CloudflareEdgeHosting.md) |
 
 ---
 

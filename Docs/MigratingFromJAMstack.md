@@ -14,7 +14,7 @@
 - Hybrid static + dynamic content
 - Built-in version control
 - Integrated media management
-- Edge-native hosting (Cloudflare R2 + Workers, origin-less deployment)
+- Edge-native hosting (Cloudflare R2 + Rules, origin-less deployment)
 - Multi-cloud storage support (Azure Blob, AWS S3, Cloudflare R2)
 - Single integrated Publisher – no external static site generator or CI/CD pipeline required
 - Page scheduling and instantaneous rollbacks with version history
@@ -55,7 +55,7 @@
 
     - Publish directly to your chosen storage provider; no external build steps
 
-    - Point your DNS to the CDN or Cloudflare Worker URL for origin-less distribution
+    - Point your DNS to the CDN or configure Cloudflare DNS + Rules for origin-less distribution
 
 ### Common Scenarios
 

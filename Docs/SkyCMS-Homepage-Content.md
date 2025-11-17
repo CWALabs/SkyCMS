@@ -15,7 +15,7 @@
 
 **SkyCMS Solutions:**
 - **Static Mode**: ~50ms average response times with 99.99% uptime
-- **Edge Hosting**: Origin-less deployment via Cloudflare Workers for global performance
+- **Edge Hosting**: Origin-less deployment via Cloudflare R2 + Rules for global performance (no Worker required)
 - **CDN-Optimized**: Automatic static site generation with intelligent caching
 - **Scalable Architecture**: Handle massive traffic without breaking the bank
 
@@ -43,7 +43,7 @@
 - **Any Cloud Platform**: Azure, AWS, Google Cloud, or any Docker-compatible host
 - **Flexible Storage**: Azure Blob, Amazon S3, Cloudflare R2, or any S3-compatible storage
 - **Multiple Deployment Modes**: Static, headless, decoupled, or traditional CMS
-- **Edge-Native**: Origin-less hosting with Cloudflare Workers + R2
+- **Edge-Native**: Origin-less hosting with Cloudflare R2 + Rules (no Worker required)
 
 ## What Makes SkyCMS Different
 

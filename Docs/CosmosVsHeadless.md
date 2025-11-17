@@ -116,7 +116,7 @@ Both approaches can achieve excellent performance, but SkyCMS gets there with le
 
 - **Same performance**: Static files served from cloud storage with CDN
 - **Same scalability**: Handle massive traffic with minimal infrastructure
-- **Same global distribution**: Edge hosting with Cloudflare R2 + Workers
+- **Same global distribution**: Edge hosting with Cloudflare R2 + Rules (no Worker required)
 - **Better publishing speed**: No build pipeline delays
 - **Better reliability**: Fewer systems means fewer failures
 - **Better user experience**: No Git knowledge required
@@ -182,7 +182,7 @@ This integrated approach delivers the same benefits as JAMstack (speed, scale, s
 - Eliminates API performance bottlenecks
 - Reduces security attack surface
 - Provides better caching and CDN integration
-- Supports edge deployment (Cloudflare Workers + R2)
+- Supports edge deployment (Cloudflare R2 + Rules)
 - Enables origin-less website hosting
 
 ## When to Use the API Mode

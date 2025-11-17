@@ -80,7 +80,7 @@ Modern web teams face a difficult choice:
 
 - Static file generation at the edge
 - Global CDN distribution
-- Origin-less hosting via Cloudflare
+- Origin-less hosting via Cloudflare R2 + Rules (no Worker required)
 - Sub-second page loads
 - Handles massive traffic spikes
 - Minimal infrastructure costs
@@ -105,7 +105,7 @@ Traditional CMS          SkyCMS (Edge-Native)      Static Site Generator
 
 3. **Multi-Cloud Native**: Deploy to Azure, AWS, Cloudflare, or any S3-compatible storage without vendor lock-in
 
-4. **Origin-Less Edge Hosting**: Deploy directly to Cloudflare's edge network using R2 + Workers — no origin servers required
+4. **Origin-Less Edge Hosting**: Deploy directly to Cloudflare's edge network using Cloudflare R2 + Rules (no Worker required) — no origin servers required
 
 5. **Instant Publishing**: Changes go live in seconds, not minutes — no waiting for build pipelines
 
@@ -127,7 +127,7 @@ Traditional CMS          SkyCMS (Edge-Native)      Static Site Generator
 [SkyCMS](https://Sky-cms.com/) is an open-source, cloud-native Edge-Native CMS that **renders complete web pages** optimized for edge delivery and global distribution. Built with modern web technologies, SkyCMS runs in multiple modes to meet different deployment needs:
 
 - **Static Mode** (Primary): Content rendered as static HTML files and hosted on cloud storage (Azure Blob, S3, Cloudflare R2) — highest performance, stability, and operational simplicity
-  - Can be deployed as an **origin-less, edge-hosted** site via Cloudflare R2 + Worker
+  - Can be deployed as an **origin-less, edge-hosted** site via Cloudflare R2 + Rules (no Worker required)
   - Automatic static site generation without external build tools
   - Integrated publishing pipeline eliminates CI/CD complexity
 - **Dynamic Mode**: Publisher application dynamically renders pages on-demand — full CMS functionality with server-side rendering
@@ -213,13 +213,7 @@ SkyCMS includes robust blogging capabilities built on its flexible article syste
 
 ### Performance & Scalability
 
-- **Static Site Generation**: Automatic static file creation for maximum performance—without external build tools or CI/CD pipelines
-- **Integrated Publishing**: Built-in Publisher component handles rendering and deployment, eliminating the complexity of traditional Git-based static site workflows
-- **CDN Integration**: Built-in support for content delivery networks
-- **Edge Hosting**: Origin-less deployment via Cloudflare Workers
-- **Multi-Cloud Storage**: Azure Blob, AWS S3, Cloudflare R2 support
-- **Caching Strategies**: Intelligent caching for optimal performance
-- **Instant Deployment**: Changes published immediately without waiting for build pipelines
+- **Edge Hosting**: Origin-less deployment via Cloudflare R2 + Rules (no Worker required)
 
 ### Security & Access Control
 
@@ -310,7 +304,7 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
   - Cloudflare R2 for BLOB storage
   - Any SMB or NFS persistent file share storage
 - **Edge Hosting Options**
-  - Cloudflare Workers + R2: Origin-less static hosting at the edge
+  - Cloudflare R2 + Rules: Origin-less static hosting at the edge (no Worker required)
 
 ## 📁 Project Structure
 
@@ -417,7 +411,7 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/Moonrise
 - **Storage Configuration**: [Docs/StorageConfig.md](./Docs/StorageConfig.md) — Supported providers (Azure Blob, AWS S3, Cloudflare R2), container/bucket naming, CDN integration, and recommended settings
   - AWS: [AWS S3 access keys (quick guide)](./Docs/AWS-S3-AccessKeys.md)
   - Cloudflare: [Cloudflare R2 access keys (quick guide)](./Docs/Cloudflare-R2-AccessKeys.md)
-  - Cloudflare: [Edge/origin-less hosting guide (R2 + Worker)](./Docs/CloudflareEdgeHosting.md)
+  - Cloudflare: [Edge/origin-less hosting guide (R2 + Rules)](./Docs/CloudflareEdgeHosting.md)
 - **Database Configuration**: [Docs/DatabaseConfig.md](./Docs/DatabaseConfig.md) — Provider options (Cosmos DB, SQL Server, MySQL), connection strings, EF Configuration, and migration guidance
 
 ### Content Creation
