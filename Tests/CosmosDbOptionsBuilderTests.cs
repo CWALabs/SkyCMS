@@ -93,7 +93,7 @@ namespace Sky.Tests.FlexDb
 
             // Assert
             Assert.IsNotNull(strategies);
-            Assert.AreEqual(4, strategies.Count); // Cosmos, SQL Server, MySQL, SQLite
+            Assert.AreEqual(3, strategies.Count); // Cosmos, SQL Server, MySQL
         }
 
         [TestMethod]
