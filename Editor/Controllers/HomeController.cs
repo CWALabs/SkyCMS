@@ -201,12 +201,6 @@ namespace Sky.Cms.Controllers
                 }
             }
 
-            if (this.options.IsMultiTenantEditor && !EnsureSettingsExist())
-            {
-                // If we do not yet have a layout, go to a page where we can select one.
-                return RedirectToAction("Index", "Cosmos___Settings");
-            }
-
             // If we do not yet have a layout, go to a page where we can select one.
             if (!await EnsureLayoutExists())
             {
