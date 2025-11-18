@@ -10,6 +10,7 @@ using Azure.Identity;
 using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
 using Cosmos.Common.Data;
+using Cosmos.Common;
 using Cosmos.Common.Services.Configurations;
 using Cosmos.DynamicConfig;
 using Cosmos.EmailServices;
@@ -90,8 +91,6 @@ else
 // Register transient services - common to both single-tenant and multi-tenant modes
 // Transient services are created each time they are requested.
 builder.Services.AddTransient<ITemplateService, TemplateService>();
-builder.Services.AddTransient<ArticleScheduler>();
-builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddTransient<IArticleHtmlService, ArticleHtmlService>();
 builder.Services.AddTransient<IAuthorInfoService, AuthorInfoService>();
 builder.Services.AddTransient<ICatalogService, CatalogService>();
@@ -105,6 +104,9 @@ builder.Services.AddTransient<ISlugService, SlugService>();
 builder.Services.AddTransient<IViewRenderService, ViewRenderService>();
 builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IBlogRenderingService, BlogRenderingService>();
+builder.Services.AddTransient<StorageContext>();
+builder.Services.AddTransient<ArticleScheduler>();
+builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddHttpContextAccessor();
 
 // ---------------------------------------------------------------
@@ -115,8 +117,7 @@ builder.Services.AddHangFireScheduling(builder.Configuration); // Add Hangfire s
 // Add logging to see Hangfire queries
 builder.Logging.AddFilter("Hangfire", LogLevel.Debug);
 builder.Services.AddCosmosEmailServices(builder.Configuration); // Add Email services
-builder.Services.AddCosmosStorageContext(builder.Configuration); // Add the BLOB and File Storage contexts for Cosmos
-builder.Services.AddCosmosCmsDataProtection(builder.Configuration, defaultAzureCredential); // Add shared data protection here
+builder.Services.AddFlexDbDataProtection(builder.Configuration); // Add shared data protection here
 builder.Services.AddSignalR(); // Add SignalR services
 
 // Add this before identity

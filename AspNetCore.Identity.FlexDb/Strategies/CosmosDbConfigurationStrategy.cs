@@ -10,6 +10,7 @@ namespace AspNetCore.Identity.FlexDb.Strategies
     using Azure.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Diagnostics;
     using System;
     using System.Linq;
 
@@ -62,6 +63,9 @@ namespace AspNetCore.Identity.FlexDb.Strategies
                     accountKey: accountProperties.AccountKey,
                     databaseName: accountProperties.DatabaseName);
             }
+
+            // Data protection sync operations are not supported in Cosmos DB.  TODO remove in .Net 11
+            optionsBuilder.ConfigureWarnings(w => w.Ignore(CosmosEventId.SyncNotSupported));
         }
 
         /// <summary>
