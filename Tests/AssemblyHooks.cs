@@ -17,8 +17,9 @@ namespace Sky.Tests
 
             // Lightweight configuration (all in-memory).
             var configuration = new ConfigurationBuilder()
-                .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: false)
+                .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: true)
                 .AddInMemoryCollection()
+                .AddEnvironmentVariables()
                 .Build();
 
             // Provide a safe fallback for storage if no connection string is configured.
