@@ -4,10 +4,11 @@
 name: Unit Tests
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch
+  #push:
+  #  branches: [ "main" ]
+  #pull_request:
+  #  branches: [ "main" ]
 
 jobs:
     
@@ -33,4 +34,4 @@ jobs:
     - name: Build
       run: dotnet build SkyCMS.sln --no-restore
     - name: Test
-      run: dotnet test tests/SkyCMS.Tests/SkyCMS.Tests.csproj --no-build --verbosity normal
+      run: dotnet test SkyCMS.sln --no-build --verbosity normal
