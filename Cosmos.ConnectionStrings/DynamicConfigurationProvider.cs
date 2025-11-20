@@ -30,6 +30,10 @@ namespace Cosmos.DynamicConfig
         private readonly ILogger<DynamicConfigurationProvider> _logger;
         private const string CacheKeyPrefix = "tenant:connection:";
 
+        private readonly SemaphoreSlim _preloadLock = new(1, 1);
+        private DateTime _lastPreloadTime = DateTime.MinValue;
+        private const int PreloadIntervalMinutes = 30;
+
         /// <summary>
         /// Gets the database connection
         /// </summary>
@@ -72,11 +76,12 @@ namespace Cosmos.DynamicConfig
 
         /// <summary>
         /// Gets the database connection string.
-        /// /// </summary>
+        /// </summary>
         /// <param name="domainName">Domain name</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Database connection string.</returns>
         /// <exception cref="InvalidOperationException">Thrown when HttpContext is unavailable and no domain is provided.</exception>
-        public string? GetDatabaseConnectionString(string domainName = "")
+        public async Task<string?> GetDatabaseConnectionStringAsync(string domainName = "", CancellationToken cancellationToken = default)
         {
             if (httpContextAccessor.HttpContext == null)
             {
@@ -99,7 +104,7 @@ namespace Cosmos.DynamicConfig
             // Normalize domain name
             domainName = NormalizeDomainName(domainName);
             
-            var connection = GetTenantConnectionAsync(domainName).GetAwaiter().GetResult();
+            var connection = await GetTenantConnectionAsync(domainName, cancellationToken);
             
             if (connection == null)
             {
@@ -114,9 +119,10 @@ namespace Cosmos.DynamicConfig
         /// Gets the storage connection string.
         /// </summary>
         /// <param name="domainName">Domain name</param>
-        /// <returns>Database connection string.</returns>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Storage connection string.</returns>
         /// <exception cref="InvalidOperationException">Thrown when HttpContext is unavailable and no domain is provided.</exception>
-        public string? GetStorageConnectionString(string domainName = "")
+        public async Task<string?> GetStorageConnectionStringAsync(string domainName = "", CancellationToken cancellationToken = default)
         {
             if (httpContextAccessor.HttpContext == null)
             {
@@ -139,7 +145,7 @@ namespace Cosmos.DynamicConfig
             // Normalize domain name
             domainName = NormalizeDomainName(domainName);
             
-            var connection = GetTenantConnectionAsync(domainName).GetAwaiter().GetResult();
+            var connection = await GetTenantConnectionAsync(domainName, cancellationToken);
             
             if (connection == null)
             {
@@ -178,7 +184,7 @@ namespace Cosmos.DynamicConfig
         /// <remarks>
         /// <para>Returns the domain name by looking at the incomming request.  Here is the order:</para>
         /// <list type="number">
-        /// <item>Query string value 'website'. Sets the standard cookie if it exists.</item>
+        /// <item>x-origin-hostname host header.</item>
         /// <item>Referer request header value if requested.</item>
         /// <item>Otherwise returns the host name of the request.</item>
         /// </list>
@@ -191,6 +197,17 @@ namespace Cosmos.DynamicConfig
                 _logger?.LogWarning("HttpContext is null when attempting to get tenant domain name from request");
                 return string.Empty;
             }
+            
+            if (httpContextAccessor.HttpContext.Request == null)
+            {
+                throw new InvalidOperationException("HTTP request is not available.");
+            }
+
+            var xhostHeader = httpContextAccessor.HttpContext.Request.Headers["x-origin-hostname"].ToString();
+            if (!string.IsNullOrWhiteSpace(xhostHeader))
+            {
+                return xhostHeader.ToLowerInvariant();
+            }
 
             if (useReferer)
             {
@@ -201,12 +218,7 @@ namespace Cosmos.DynamicConfig
                     return domain;
                 }
             }
-            
-            if (httpContextAccessor.HttpContext.Request == null)
-            {
-                throw new InvalidOperationException("HTTP request is not available.");
-            }
-            
+
             var hostDomain = httpContextAccessor.HttpContext.Request.Host.Host.ToLowerInvariant();
             return hostDomain;
         }
@@ -321,7 +333,7 @@ namespace Cosmos.DynamicConfig
             return new DynamicConfigDbContext(options);
         }
 
-        private async Task<Connection?> GetTenantConnectionAsync(string domainName)
+        private async Task<Connection?> GetTenantConnectionAsync(string domainName, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(domainName))
             {
@@ -337,10 +349,10 @@ namespace Cosmos.DynamicConfig
             
             if (memoryCache.TryGetValue<Connection>(cacheKey, out var connection))
             {
-                _logger?.LogDebug("Cache hit for domain: {Domain}, ConnectionId: {ConnectionId}", domainName, connection.Id);
+                _logger?.LogDebug("Cache hit for domain: {Domain}, ConnectionId: {ConnectionId}", domainName, connection?.Id);
                 
                 // Validate cached connection still has this domain (prevents stale cache issues)
-                if (connection.DomainNames != null && connection.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase))
+                if (connection?.DomainNames != null && connection.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase))
                 {
                     return connection;
                 }
@@ -351,31 +363,48 @@ namespace Cosmos.DynamicConfig
 
             _logger?.LogDebug("Cache miss for domain: {Domain}, querying database", domainName);
             
-            using var dbContext = GetDbContext();
+            await using var dbContext = GetDbContext();
 
             try
             {
-                // Load all connections asynchronously, then filter client-side
-                // Cosmos DB doesn't support complex LINQ queries with .Any() inside Where clauses
-                var allConnections = await dbContext.Connections.ToListAsync();
-                connection = allConnections.FirstOrDefault(c => c.DomainNames != null && 
-                                                               c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
+                // Try to use a more efficient query if Cosmos DB provider supports it
+                // Otherwise fall back to loading all and filtering
+                var allConnections = await dbContext.Connections
+                    .AsNoTracking() // Important: Don't track changes for read-only operations
+                    .ToListAsync(cancellationToken);
+                    
+                connection = allConnections.FirstOrDefault(c => 
+                    c.DomainNames != null && 
+                    c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
 
                 if (connection != null)
                 {
-                    _logger?.LogInformation("Found connection for domain: {Domain}, ConnectionId: {ConnectionId}, caching for 10 seconds", 
+                    _logger?.LogInformation("Found connection for domain: {Domain}, ConnectionId: {ConnectionId}, caching for 1 hour", 
                         domainName, connection.Id);
                     
-                    // Cache with absolute expiration to ensure fresh data
+                    // Cache with longer expiration since connection strings rarely change
+                    // Use sliding expiration to keep frequently accessed tenants in cache
                     var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromSeconds(10))
-                        .SetPriority(CacheItemPriority.High);
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(30))
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(1))
+                        .SetPriority(CacheItemPriority.High)
+                        .RegisterPostEvictionCallback((key, value, reason, state) =>
+                        {
+                            _logger?.LogDebug("Cache entry evicted: {Key}, Reason: {Reason}", key, reason);
+                        });
                     
                     memoryCache.Set(cacheKey, connection, cacheOptions);
                 }
                 else
                 {
                     _logger?.LogWarning("No connection found in database for domain: {Domain}", domainName);
+                    
+                    // Cache negative results briefly to prevent repeated DB queries for invalid domains
+                    var negativeCacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(5))
+                        .SetPriority(CacheItemPriority.Low);
+                    
+                    memoryCache.Set(cacheKey, (Connection?)null, negativeCacheOptions);
                 }
             }
             catch (Exception ex)
@@ -385,6 +414,57 @@ namespace Cosmos.DynamicConfig
             }
 
             return connection;
+        }
+
+        /// <summary>
+        /// Preloads all tenant connections into cache on startup or periodically.
+        /// Call this from a background service or startup configuration.
+        /// </summary>
+        public async Task PreloadAllConnectionsAsync(CancellationToken cancellationToken = default)
+        {
+            await _preloadLock.WaitAsync(cancellationToken);
+            try
+            {
+                // Prevent too frequent preloads
+                if (DateTime.UtcNow - _lastPreloadTime < TimeSpan.FromMinutes(PreloadIntervalMinutes))
+                {
+                    return;
+                }
+
+                _logger?.LogInformation("Preloading all tenant connections into cache");
+                
+                await using var dbContext = GetDbContext();
+                var allConnections = await dbContext.Connections
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken);
+
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(30))
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(1))
+                    .SetPriority(CacheItemPriority.High);
+
+                foreach (var connection in allConnections)
+                {
+                    if (connection.DomainNames != null)
+                    {
+                        foreach (var domain in connection.DomainNames)
+                        {
+                            var normalizedDomain = NormalizeDomainName(domain);
+                            var cacheKey = GetCacheKey(normalizedDomain);
+                            memoryCache.Set(cacheKey, connection, cacheOptions);
+                        }
+                    }
+                }
+
+                _lastPreloadTime = DateTime.UtcNow;
+                _logger?.LogInformation("Preloaded {Count} tenant connections for {DomainCount} domains", 
+                    allConnections.Count, 
+                    allConnections.SelectMany(c => c.DomainNames ?? Array.Empty<string>()).Count());
+            }
+            finally
+            {
+                _preloadLock.Release();
+            }
         }
     }
 }

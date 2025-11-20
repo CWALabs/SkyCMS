@@ -48,7 +48,7 @@ namespace Cosmos.DynamicConfig
             {
                 try
                 {
-                    var connectionString = configProvider.GetDatabaseConnectionString(domain);
+                    var connectionString = await configProvider.GetDatabaseConnectionStringAsync(domain, context.RequestAborted);
                     var isValid = !string.IsNullOrEmpty(connectionString);
                     
                     if (!isValid)
@@ -58,7 +58,7 @@ namespace Cosmos.DynamicConfig
                             context.Request.Path,
                             context.Connection.RemoteIpAddress?.ToString());
                         
-                        context.Response.StatusCode = 404; // Return 404 instead of exposing tenant information
+                        context.Response.StatusCode = 404;
                         await context.Response.WriteAsync("Not Found");
                         return;
                     }

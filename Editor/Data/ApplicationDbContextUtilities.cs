@@ -52,7 +52,7 @@ namespace Sky.Editor.Data
                 throw new InvalidOperationException("Dynamic configuration provider is not configured for multi-tenancy.");
             }
 
-            var connectionString = provider.GetDatabaseConnectionString(domainName);
+            var connectionString = provider.GetDatabaseConnectionStringAsync(domainName).Result;
 
             if (string.IsNullOrEmpty(connectionString))
             {

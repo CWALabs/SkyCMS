@@ -15,21 +15,23 @@ namespace Cosmos.DynamicConfig
         /// Gets a value indicating if the service is configured.
         /// </summary>
         bool IsMultiTenantConfigured { get; }
-
+    
         /// <summary>
         /// Get database connection string based on domain.
         /// </summary>
         /// <param name="domainName">domain name.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Connection string.</returns>
-        string? GetDatabaseConnectionString(string domainName = "");
-
+        Task<string?> GetDatabaseConnectionStringAsync(string domainName = "", CancellationToken cancellationToken = default);
+    
         /// <summary>
         /// Get storage connection string based on domain.
         /// </summary>
         /// <param name="domainName">Domain name.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Connection string.</returns>
-        string? GetStorageConnectionString(string domainName = "");
-
+        Task<string?> GetStorageConnectionStringAsync(string domainName = "", CancellationToken cancellationToken = default);
+        
         /// <summary>
         /// Get configuration value.
         /// </summary>
@@ -43,12 +45,19 @@ namespace Cosmos.DynamicConfig
         /// <param name="name">Connection string name.</param>
         /// <returns>Connection string.</returns>
         string? GetConnectionStringByName(string name);
-
+    
         /// <summary>
         /// Get all primary domain names for each tenant.
         /// </summary>
         /// <returns></returns>
         Task<List<string>> GetAllDomainNamesAsync();
+        
+        /// <summary>
+        /// Preload all connections asynchronously.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns></returns>
+        Task PreloadAllConnectionsAsync(CancellationToken cancellationToken = default);
     }
 }
 

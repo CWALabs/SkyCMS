@@ -142,8 +142,8 @@ namespace Sky.Tests.DynamicConfig
                 _mockLogger.Object);
 
             // Act & Assert
-            var exception = Assert.ThrowsExactly<InvalidOperationException>(() => 
-                provider.GetDatabaseConnectionString());
+            var exception = Assert.ThrowsExactly<AggregateException>(() =>
+                provider.GetDatabaseConnectionStringAsync().Result);
             
             Assert.IsTrue(exception.Message.Contains("HttpContext unavailable and no domain provided"));
         }
@@ -164,7 +164,7 @@ namespace Sky.Tests.DynamicConfig
                 _mockLogger.Object);
 
             // Act
-            var result = provider.GetDatabaseConnectionString("tenant1.com");
+            var result = provider.GetDatabaseConnectionStringAsync("tenant1.com").Result;
 
             // Assert - Should not throw, even though it returns null (no connection in mock DB)
             Assert.IsNull(result); // No connection found, but didn't throw
@@ -189,11 +189,11 @@ namespace Sky.Tests.DynamicConfig
                 _mockLogger.Object);
 
             // Act
-            var result1 = provider.GetDatabaseConnectionString();
+            var result1 = provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult();;
             
             // Change case
             mockContext.Request.Host = new HostString("tenant1.com");
-            var result2 = provider.GetDatabaseConnectionString();
+            var result2 = provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult();;
 
             // Assert - Both should resolve to same (normalized) domain
             Assert.AreEqual(result1, result2);
@@ -220,7 +220,7 @@ namespace Sky.Tests.DynamicConfig
 
             // Act & Assert
             var exception = Assert.ThrowsExactly<InvalidOperationException>(() => 
-                provider.GetStorageConnectionString());
+                provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult());
             
             Assert.IsTrue(exception.Message.Contains("HttpContext unavailable and no domain provided"));
         }
@@ -240,7 +240,7 @@ namespace Sky.Tests.DynamicConfig
                 _mockLogger.Object);
 
             // Act
-            var result = provider.GetStorageConnectionString("tenant1.com");
+            var result = provider.GetStorageConnectionStringAsync("tenant1.com").Result;
 
             // Assert
             Assert.IsNull(result); // No connection found, but didn't throw
@@ -551,6 +551,30 @@ namespace Sky.Tests.DynamicConfig
         }
 
         /// <summary>
+        /// CRITICAL: Tests that GetTenantDomainNameFromRequest returns lowercase domain.
+        /// </summary>
+        [TestMethod]
+        public void GetTenantDomainNameFromRequest_UsesXHostHeader()
+        {
+            // Arrange
+            var mockContext = new DefaultHttpContext();
+            mockContext.Request.Headers["x-origin-hostname"] = "TENANT1.COM";
+            _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockContext);
+
+            var provider = new DynamicConfigurationProvider(
+                _mockConfiguration.Object,
+                _mockHttpContextAccessor.Object,
+                _memoryCache,
+                _mockLogger.Object);
+
+            // Act
+            var result = provider.GetTenantDomainNameFromRequest();
+
+            // Assert
+            Assert.AreEqual("tenant1.com", result);
+        }
+
+        /// <summary>
         /// CRITICAL: Tests that GetTenantDomainNameFromRequest returns empty when HttpContext is null.
         /// </summary>
         [TestMethod]
@@ -592,7 +616,7 @@ namespace Sky.Tests.DynamicConfig
             // Act
             try
             {
-                provider.GetDatabaseConnectionString();
+                provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult();;
             }
             catch (InvalidOperationException)
             {

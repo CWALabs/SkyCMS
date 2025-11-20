@@ -125,7 +125,7 @@ namespace Sky.Editor.Services.Scheduling
                 var domainNames = await configurationProvider.GetAllDomainNamesAsync();
                 foreach (var domainName in domainNames)
                 {
-                    var connectionString = configurationProvider.GetDatabaseConnectionString(domainName);
+                    var connectionString = await configurationProvider.GetDatabaseConnectionStringAsync(domainName);
                     using (var dbContext = new ApplicationDbContext(connectionString))
                     {
                         await Run(dbContext, domainName);

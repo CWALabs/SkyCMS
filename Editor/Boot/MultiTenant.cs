@@ -64,7 +64,7 @@ namespace Sky.Editor.Boot
             
             try
             {
-                connectionString = connectionStringProvider.GetDatabaseConnectionString();
+                connectionString = connectionStringProvider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult();
             }
             catch (InvalidOperationException ex)
             {

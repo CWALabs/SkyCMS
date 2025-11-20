@@ -158,6 +158,19 @@ namespace Cosmos.BlobService
         }
 
         /// <summary>
+        /// Gets all the file names for a given path, including files in subfolders.
+        /// </summary>
+        /// <param name="path">Path to search.</param>
+        /// <returns>List of files found including full path.</returns>
+        public async Task<List<string>> GetFilesAsync(string path)
+        {
+            var driver = this.GetPrimaryDriver();
+            path = path.TrimStart('/');
+            var blobNames = await driver.GetBlobNamesByPath(path);
+            return blobNames;
+        }
+
+        /// <summary>
         ///     Gets the metadata for a file.
         /// </summary>
         /// <param name="path">Path to file.</param>
@@ -384,7 +397,9 @@ namespace Cosmos.BlobService
         {
             if (this.isMultiTenant == true)
             {
-                var connectionString = this.dynamicConfigurationProvider.GetStorageConnectionString();
+                var task = this.dynamicConfigurationProvider.GetStorageConnectionStringAsync();
+                task.Wait();
+                var connectionString = task.Result;
 
                 if (string.IsNullOrWhiteSpace(connectionString))
                 {
