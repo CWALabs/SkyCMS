@@ -31,6 +31,6 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore SkyCMS.sln
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build SkyCMS.sln --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test tests/SkyCMS.Tests/SkyCMS.Tests.csproj --no-build --verbosity normal
