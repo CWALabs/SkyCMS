@@ -145,7 +145,8 @@ namespace Sky.Tests
             // Lightweight configuration (all in-memory).
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(initialConfig)
-                .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: false)
+                .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: true) // For local development overrides
+                .AddEnvironmentVariables() // For CI/CD overrides
                 .Build();
 
             HttpContextAccessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
