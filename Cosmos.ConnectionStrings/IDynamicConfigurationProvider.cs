@@ -45,7 +45,23 @@ namespace Cosmos.DynamicConfig
         /// <param name="name">Connection string name.</param>
         /// <returns>Connection string.</returns>
         string? GetConnectionStringByName(string name);
-    
+
+        /// <summary>
+        /// Gets the tenant website domain name from the request.
+        /// </summary>
+        /// <param name="useReferer">Get the domain name from the referer instead of the domain name of website.</param>
+        /// <returns>Domain Name.</returns>
+        /// <remarks>
+        /// <para>Returns the domain name by looking at the incomming request.  Here is the order:</para>
+        /// <list type="number">
+        /// <item>x-origin-hostname host header.</item>
+        /// <item>Referer request header value if requested.</item>
+        /// <item>Otherwise returns the host name of the request.</item>
+        /// </list>
+        /// <para>Note: This should ONLY be used for multi-tenant, single editor website setup.</para>
+        /// </remarks>
+        string GetTenantDomainNameFromRequest();
+
         /// <summary>
         /// Get all primary domain names for each tenant.
         /// </summary>
@@ -58,6 +74,14 @@ namespace Cosmos.DynamicConfig
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns></returns>
         Task PreloadAllConnectionsAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Tests to see if there is a connection defined for the specified domain name.
+        /// </summary>
+        /// <param name="domainName">Domain name to validate.</param>
+        /// <returns>Domain is valid (true) or not (false).</returns>
+        /// <exception cref="ArgumentException">Thrown when ConfigDbConnectionString is not configured.</exception>
+        Task<bool> ValidateDomainName(string domainName);
     }
 }
 

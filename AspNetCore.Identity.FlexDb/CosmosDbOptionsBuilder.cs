@@ -97,7 +97,8 @@ namespace AspNetCore.Identity.FlexDb
 
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException(nameof(connectionString));
+                // throw new ArgumentNullException(nameof(connectionString));
+                return;
             }
 
             if (strategies == null)

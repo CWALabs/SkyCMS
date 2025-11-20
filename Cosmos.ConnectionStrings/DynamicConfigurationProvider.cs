@@ -28,6 +28,7 @@ namespace Cosmos.DynamicConfig
         private readonly StringBuilder errorMessages = new();
         private readonly string connectionString;
         private readonly ILogger<DynamicConfigurationProvider> _logger;
+
         private const string CacheKeyPrefix = "tenant:connection:";
 
         private readonly SemaphoreSlim _preloadLock = new(1, 1);
@@ -70,6 +71,7 @@ namespace Cosmos.DynamicConfig
             {
                 throw new ArgumentException("Connection string 'ConfigDbConnectionString' not found or is empty.");
             }
+
             this.memoryCache = memoryCache;
             _logger = logger;
         }
@@ -190,7 +192,7 @@ namespace Cosmos.DynamicConfig
         /// </list>
         /// <para>Note: This should ONLY be used for multi-tenant, single editor website setup.</para>
         /// </remarks>
-        public string GetTenantDomainNameFromRequest(bool useReferer = false)
+        public string GetTenantDomainNameFromRequest()
         {
             if (httpContextAccessor.HttpContext == null)
             {
@@ -207,16 +209,6 @@ namespace Cosmos.DynamicConfig
             if (!string.IsNullOrWhiteSpace(xhostHeader))
             {
                 return xhostHeader.ToLowerInvariant();
-            }
-
-            if (useReferer)
-            {
-                var referer = httpContextAccessor.HttpContext.Request.Headers.Referer.ToString();
-                if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
-                {
-                    var domain = refererUri.Host.ToLowerInvariant();
-                    return domain;
-                }
             }
 
             var hostDomain = httpContextAccessor.HttpContext.Request.Host.Host.ToLowerInvariant();

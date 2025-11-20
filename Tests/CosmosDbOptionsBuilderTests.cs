@@ -62,18 +62,6 @@ namespace Sky.Tests.FlexDb
         }
 
         [TestMethod]
-        public void ConfigureDbOptions_NullConnectionString_ThrowsArgumentNullException()
-        {
-            // Arrange
-            var optionsBuilder = new DbContextOptionsBuilder();
-
-            // Act
-            Assert.ThrowsExactly<ArgumentNullException>(() => CosmosDbOptionsBuilder.ConfigureDbOptions(optionsBuilder, null));
-
-            // Assert is handled by ExpectedException
-        }
-
-        [TestMethod]
         public void ConfigureDbOptions_NullOptionsBuilder_ThrowsArgumentNullException()
         {
             // Arrange

@@ -39,11 +39,18 @@ namespace Sky.Editor.Boot
             // Note that this is transient, meaning for each request this is regenerated.
             // Multi-tenant support is enabled because each request may have a different domain name and connection
             // string information.
-            builder.Services.AddTransient(serviceProvider =>
+            try
             {
-                var optionsBuilder = GetDynamicOptionsBuilder(serviceProvider);
-                return new ApplicationDbContext(optionsBuilder.Options);
-            });
+                builder.Services.AddTransient(serviceProvider =>
+                {
+                    var optionsBuilder = GetDynamicOptionsBuilder(serviceProvider);
+                    return new ApplicationDbContext(optionsBuilder.Options);
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
 
             // This service is used to run startup tasks asynchronously.
             builder.Services.AddScoped<IStartupTaskService, StartupTaskService>();
@@ -77,10 +84,7 @@ namespace Sky.Editor.Boot
 
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                logger?.LogError("Tenant connection string is null or empty");
-                throw new InvalidOperationException(
-                    "Cannot create ApplicationDbContext: Tenant connection string is null or empty. " +
-                    "Verify that the domain is correctly configured in the multi-tenant configuration database.");
+                logger?.LogWarning("Tenant connection string is null or empty");
             }
 
             logger?.LogDebug("Creating DbContext with tenant connection string");

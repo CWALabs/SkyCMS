@@ -9,13 +9,14 @@ using AspNetCore.Identity.FlexDb.Extensions;
 using Azure.Identity;
 using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
-using Cosmos.Common.Data;
 using Cosmos.Common;
+using Cosmos.Common.Data;
 using Cosmos.Common.Services.Configurations;
 using Cosmos.DynamicConfig;
 using Cosmos.EmailServices;
 using Hangfire;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -94,7 +95,7 @@ builder.Services.AddTransient<ITemplateService, TemplateService>();
 builder.Services.AddTransient<IArticleHtmlService, ArticleHtmlService>();
 builder.Services.AddTransient<IAuthorInfoService, AuthorInfoService>();
 builder.Services.AddTransient<ICatalogService, CatalogService>();
-builder.Services.AddTransient<IClock, SystemClock>();
+builder.Services.AddTransient<IClock, Sky.Editor.Infrastructure.Time.SystemClock>();
 builder.Services.AddTransient<IDomainEventDispatcher>(sp => new DomainEventDispatcher(type => sp.GetServices(type)));
 builder.Services.AddTransient<IEditorSettings, EditorSettings>();
 builder.Services.AddTransient<IPublishingService, PublishingService>();
@@ -210,6 +211,56 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.Name = "CosmosAuthCookie";
     options.ExpireTimeSpan = TimeSpan.FromDays(5);
     options.SlidingExpiration = true;
+
+    // For multi-tenant: dynamically set cookie domain based on x-origin-hostname header
+    if (isMultiTenantEditor)
+    {
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            var httpContext = context.HttpContext;
+            var xOriginHostname = httpContext.Request.Headers["x-origin-hostname"].ToString();
+            
+            // Get the current domain from x-origin-hostname header or request host
+            var currentDomain = !string.IsNullOrWhiteSpace(xOriginHostname) 
+                ? xOriginHostname.ToLowerInvariant() 
+                : httpContext.Request.Host.Host.ToLowerInvariant();
+            
+            // If cookie was issued for a different domain, reject the authentication
+            if (context.Principal?.Identity?.IsAuthenticated == true)
+            {
+                var cookieDomainClaim = context.Principal.FindFirst("CookieDomain");
+                if (cookieDomainClaim != null && !cookieDomainClaim.Value.Equals(currentDomain, StringComparison.OrdinalIgnoreCase))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                }
+            }
+        };
+        
+        options.Events.OnSigningIn = context =>
+        {
+            var httpContext = context.HttpContext;
+            var xOriginHostname = httpContext.Request.Headers["x-origin-hostname"].ToString();
+            
+            // Store the domain where the cookie was issued
+            var currentDomain = !string.IsNullOrWhiteSpace(xOriginHostname) 
+                ? xOriginHostname.ToLowerInvariant() 
+                : httpContext.Request.Host.Host.ToLowerInvariant();
+            
+            var identity = (System.Security.Claims.ClaimsIdentity)context.Principal.Identity;
+            identity.AddClaim(new System.Security.Claims.Claim("CookieDomain", currentDomain));
+            
+            return Task.CompletedTask;
+        };
+        
+        // Don't set a specific domain - let it default to the current request domain
+        options.Cookie.Domain = null;
+    }
+    
+    // Ensure cookie security
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
 
     // This section docs are here: https://docs.microsoft.com/en-us/aspnet/core/security/authentication/scaffold-identity?view=aspnetcore-3.1&tabs=visual-studio#full
     // The following is when using Docker container with a proxy like
@@ -330,6 +381,7 @@ app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext 
     context.Response.Headers["XSRF-TOKEN"] = tokens.RequestToken;
     return Results.Ok();
 });
+
 app.MapHub<LiveEditorHub>("/___cwps_hubs_live_editor"); // Point to the route that will return the SignalR Hub.
 app.MapControllerRoute("MsValidation", ".well-known/microsoft-identity-association.json", new { controller = "Home", action = "GetMicrosoftIdentityAssociation" }).AllowAnonymous();
 app.MapControllerRoute("MyArea", "{area:exists}/{controller=Home}/{action=Index}/{id?}");
@@ -339,6 +391,7 @@ app.MapControllerRoute(name: "blog_post", pattern: "blog/post/{*slug}", defaults
 app.MapControllerRoute(name: "blog_rss", pattern: "blog/rss", defaults: new { controller = "Blog", action = "Rss" });
 app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 app.MapFallbackToController("Index", "Home"); // Deep path
+
 app.MapRazorPages();
 
 using (var scope = app.Services.CreateScope())

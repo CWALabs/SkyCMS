@@ -39,6 +39,7 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         private readonly IOptions<SiteSettings> options;
         private readonly IServiceProvider services;
         private readonly bool isMultiTenant;
+        private readonly string _multiTenantRedirectUrl;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LoginModel"/> class.
@@ -60,6 +61,7 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
             this.options = options;
             this.services = services;
             this.isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+            this._multiTenantRedirectUrl = configuration.GetValue<string>("MultiTenantRedirectUrl") ?? "https://sky-cms.com";
         }
 
         /// <summary>
@@ -121,7 +123,7 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         {
             if (isMultiTenant && !IsDbContextConfigured())
             {
-                return NotFound("This site is not yet configured. Please contact your administrator.");
+                return Redirect(_multiTenantRedirectUrl);
             }
 
             // Get a clean return URL.
