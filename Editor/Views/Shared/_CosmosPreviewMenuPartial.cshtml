@@ -13,6 +13,7 @@
 
     var layoutId = Context.Request.Query["layoutId"].ToString() ?? "";
     var articleId = Context.Request.Query["articleId"].ToString() ?? "";
+    var templateId = Context.Request.Query["templateId"].ToString() ?? "";
 
     if (User != null && User.IsInRole("Editors"))
     {
@@ -68,6 +69,14 @@
                         </div>
                     </li>
                 }
+                else if ((previewType.Equals("layout") || previewType.Equals("template")) && (isEditor || isAdministrator))
+                {
+                    <li class="nav-item">
+                        <a href="#" role="button" class="btn btn-sm btn-secondary mt-1 ms-2 btnPublish">
+                            Publish layout <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </a>
+                    </li>
+                }
             </ul>
         </div>
     </div>
@@ -99,6 +108,9 @@
                 break;
             case "layout":
                 location.href = "/Layouts/Publish/@layoutId";
+                break;
+            case "template":
+                location.href = "/Templates/Publish/@templateId";
                 break;
         }
     });

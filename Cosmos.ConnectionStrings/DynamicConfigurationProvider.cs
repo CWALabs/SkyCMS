@@ -65,7 +65,7 @@ namespace Cosmos.DynamicConfig
         {
             this.configuration = configuration;
             this.httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
-            
+
             connectionString = this.configuration.GetConnectionString("ConfigDbConnectionString") ?? string.Empty;
             if (string.IsNullOrWhiteSpace(connectionString))
             {
@@ -102,18 +102,18 @@ namespace Cosmos.DynamicConfig
             {
                 domainName = GetTenantDomainNameFromRequest();
             }
-            
+
             // Normalize domain name
             domainName = NormalizeDomainName(domainName);
-            
+
             var connection = await GetTenantConnectionAsync(domainName, cancellationToken);
-            
+
             if (connection == null)
             {
                 _logger?.LogWarning("No connection found for domain: {Domain}", domainName);
                 return null;
             }
-            
+
             return connection.DbConn;
         }
 
@@ -143,18 +143,18 @@ namespace Cosmos.DynamicConfig
             {
                 domainName = GetTenantDomainNameFromRequest();
             }
-            
+
             // Normalize domain name
             domainName = NormalizeDomainName(domainName);
-            
+
             var connection = await GetTenantConnectionAsync(domainName, cancellationToken);
-            
+
             if (connection == null)
             {
                 _logger?.LogWarning("No storage connection found for domain: {Domain}", domainName);
                 return null;
             }
-            
+
             return connection.StorageConn;
         }
 
@@ -199,7 +199,7 @@ namespace Cosmos.DynamicConfig
                 _logger?.LogWarning("HttpContext is null when attempting to get tenant domain name from request");
                 return string.Empty;
             }
-            
+
             if (httpContextAccessor.HttpContext.Request == null)
             {
                 throw new InvalidOperationException("HTTP request is not available.");
@@ -253,21 +253,21 @@ namespace Cosmos.DynamicConfig
             {
                 throw new ArgumentException("Connection string 'ConfigDbConnectionString' not found.");
             }
-            
+
             // Normalize domain name for consistency
             domainName = NormalizeDomainName(domainName);
-                        
+
             using var dbContext = GetDbContext();
             var allConnections = await dbContext.Connections.ToListAsync();
             var result = allConnections.FirstOrDefault(c => c.DomainNames != null && c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
-            
+
             var isValid = result != null;
-            
+
             if (!isValid)
             {
                 _logger?.LogWarning("Domain validation failed for: {Domain}", domainName);
             }
-            
+
             return isValid;
         }
 
@@ -305,7 +305,7 @@ namespace Cosmos.DynamicConfig
             {
                 return domainName;
             }
-            
+
             return domainName.Trim().ToLowerInvariant();
         }
 
@@ -335,74 +335,35 @@ namespace Cosmos.DynamicConfig
 
             // Normalize domain name
             domainName = NormalizeDomainName(domainName);
-            
+
             // Use namespaced cache key to prevent cache poisoning
             var cacheKey = GetCacheKey(domainName);
-            
-            if (memoryCache.TryGetValue<Connection>(cacheKey, out var connection))
-            {
-                _logger?.LogDebug("Cache hit for domain: {Domain}, ConnectionId: {ConnectionId}", domainName, connection?.Id);
-                
-                // Validate cached connection still has this domain (prevents stale cache issues)
-                if (connection?.DomainNames != null && connection.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase))
-                {
-                    return connection;
-                }
-                
-                _logger?.LogWarning("Cached connection for domain {Domain} no longer contains this domain - removing from cache", domainName);
-                memoryCache.Remove(cacheKey);
-            }
 
-            _logger?.LogDebug("Cache miss for domain: {Domain}, querying database", domainName);
-            
-            await using var dbContext = GetDbContext();
-
-            try
+            if (!memoryCache.TryGetValue<Connection>(cacheKey, out var connection))
             {
-                // Try to use a more efficient query if Cosmos DB provider supports it
-                // Otherwise fall back to loading all and filtering
-                var allConnections = await dbContext.Connections
-                    .AsNoTracking() // Important: Don't track changes for read-only operations
-                    .ToListAsync(cancellationToken);
-                    
-                connection = allConnections.FirstOrDefault(c => 
-                    c.DomainNames != null && 
-                    c.DomainNames.Contains(domainName, StringComparer.OrdinalIgnoreCase));
+                await using var dbContext = GetDbContext();
+                connection = await dbContext.Connections.FirstOrDefaultAsync(c =>
+                    c.DomainNames != null &&
+                    c.DomainNames.Contains(domainName));
 
-                if (connection != null)
+                if (connection == null)
                 {
-                    _logger?.LogInformation("Found connection for domain: {Domain}, ConnectionId: {ConnectionId}, caching for 1 hour", 
-                        domainName, connection.Id);
-                    
-                    // Cache with longer expiration since connection strings rarely change
-                    // Use sliding expiration to keep frequently accessed tenants in cache
-                    var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetSlidingExpiration(TimeSpan.FromMinutes(30))
-                        .SetAbsoluteExpiration(TimeSpan.FromHours(1))
-                        .SetPriority(CacheItemPriority.High)
-                        .RegisterPostEvictionCallback((key, value, reason, state) =>
-                        {
-                            _logger?.LogDebug("Cache entry evicted: {Key}, Reason: {Reason}", key, reason);
-                        });
-                    
-                    memoryCache.Set(cacheKey, connection, cacheOptions);
+                    _logger?.LogDebug("Connection data not found in database for domain: {Domain}.", domainName);
+                    return null;
                 }
-                else
-                {
-                    _logger?.LogWarning("No connection found in database for domain: {Domain}", domainName);
-                    
-                    // Cache negative results briefly to prevent repeated DB queries for invalid domains
-                    var negativeCacheOptions = new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(5))
-                        .SetPriority(CacheItemPriority.Low);
-                    
-                    memoryCache.Set(cacheKey, (Connection?)null, negativeCacheOptions);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error retrieving connection for domain: {Domain}", domainName);
-                return null;
+
+                // Cache with longer expiration since connection strings rarely change
+                // Use sliding expiration to keep frequently accessed tenants in cache
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(5))
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(20))
+                    .SetPriority(CacheItemPriority.High)
+                    .RegisterPostEvictionCallback((key, value, reason, state) =>
+                    {
+                        _logger?.LogDebug("Cache entry evicted: {Key}, Reason: {Reason}", key, reason);
+                    });
+
+                memoryCache.Set(cacheKey, connection, cacheOptions);
             }
 
             return connection;
@@ -424,7 +385,7 @@ namespace Cosmos.DynamicConfig
                 }
 
                 _logger?.LogInformation("Preloading all tenant connections into cache");
-                
+
                 await using var dbContext = GetDbContext();
                 var allConnections = await dbContext.Connections
                     .AsNoTracking()
@@ -449,8 +410,8 @@ namespace Cosmos.DynamicConfig
                 }
 
                 _lastPreloadTime = DateTime.UtcNow;
-                _logger?.LogInformation("Preloaded {Count} tenant connections for {DomainCount} domains", 
-                    allConnections.Count, 
+                _logger?.LogInformation("Preloaded {Count} tenant connections for {DomainCount} domains",
+                    allConnections.Count,
                     allConnections.SelectMany(c => c.DomainNames ?? Array.Empty<string>()).Count());
             }
             finally

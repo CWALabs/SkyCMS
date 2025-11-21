@@ -57,12 +57,25 @@ namespace Sky.Editor.Services.CDN
         /// <returns>CdnService.</returns>
         public static CdnService GetCdnService(ApplicationDbContext dbContext, ILogger logger, HttpContext context)
         {
-            var cdnSettings = dbContext.Settings
-                .Where(f => f.Group == CDNGROUPNAME)
-                .AsNoTracking()
-                .ToListAsync().Result
-                .Select(s => JsonConvert.DeserializeObject<CdnSetting>(s.Value))
-                .ToList();
+            var data = dbContext.Settings
+                .Where(f => f.Group == CDNGROUPNAME && f.Value != null && f.Value != "").ToListAsync().Result;
+
+            var cdnSettings = new List<CdnSetting>();
+
+            foreach (var setting in data)
+            {
+                try
+                {
+                    var cdnSetting = JsonConvert.DeserializeObject<CdnSetting>(setting.Value);
+                    cdnSettings.Add(cdnSetting);
+                }
+                catch
+                {
+                    // Invalid JSON, remove setting
+                    dbContext.Settings.Remove(setting);
+                    _ = dbContext.SaveChangesAsync().Result;
+                }
+            }
 
             return new CdnService(cdnSettings, logger, context);
         }
