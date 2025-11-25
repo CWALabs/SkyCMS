@@ -32,6 +32,7 @@ namespace Sky.Editor.Services.Catalog
         /// Must contain a valid <c>ArticleNumber</c> and any fields required to project catalog metadata
         /// (e.g. Title, StatusCode, UrlPath, Published, Updated, BannerImage, Introduction, TemplateId, permissions, etc.).
         /// </param>
+        /// <param name="cancellationToken"></param>
         /// <returns>
         /// A task that resolves to the up-to-date <see cref="CatalogEntry" /> snapshot after persistence.
         /// </returns>
@@ -45,7 +46,7 @@ namespace Sky.Editor.Services.Catalog
         /// </list>
         /// </remarks>
         /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="article"/> is null.</exception>
-        Task<CatalogEntry> UpsertAsync(Article article);
+        Task<CatalogEntry> UpsertAsync(Article article, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Deletes the catalog entry associated with the specified <paramref name="articleNumber"/>.

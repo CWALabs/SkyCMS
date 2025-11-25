@@ -54,9 +54,9 @@ namespace Sky.Cms.Services
         /// Initializes a new instance of the <see cref="ViewRenderService"/> class.
         /// Constructor.
         /// </summary>
-        /// <param name="razorViewEngine"></param>
-        /// <param name="tempDataProvider"></param>
-        /// <param name="serviceProvider"></param>
+        /// <param name="razorViewEngine">View engine.</param>
+        /// <param name="tempDataProvider">Temp data provider.</param>
+        /// <param name="serviceProvider">Services provider.</param>
         public ViewRenderService(IRazorViewEngine razorViewEngine,
             ITempDataProvider tempDataProvider,
             IServiceProvider serviceProvider)

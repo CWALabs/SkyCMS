@@ -119,7 +119,7 @@ namespace Sky.Tests.Services.Titles
             EventDispatcher.Clear();
 
             // Act
-            await TitleChangeService.HandleTitleChangeAsync(article, "Test Article");
+            await TitleChangeService.HandleTitleChangeAsync(article, "Test Article", "test-article");
 
             // Assert - no title changed event should have been dispatched
             var titleChangedEvent = EventDispatcher.Last<TitleChangedEvent>();
@@ -159,7 +159,7 @@ namespace Sky.Tests.Services.Titles
 
             // Act & Assert - should throw
             await Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await TitleChangeService.HandleTitleChangeAsync(article, "Old Title"));
+                async () => await TitleChangeService.HandleTitleChangeAsync(article, "Old Title", "old-title"));
         }
 
         /// <summary>
@@ -184,7 +184,7 @@ namespace Sky.Tests.Services.Titles
             EventDispatcher.Clear();
 
             // Act
-            await TitleChangeService.HandleTitleChangeAsync(article, "Old Title");
+            await TitleChangeService.HandleTitleChangeAsync(article, "Old Title", "old-title");
 
             // Assert
             Assert.AreEqual("new-title", article.UrlPath);
@@ -208,7 +208,7 @@ namespace Sky.Tests.Services.Titles
                 Title = "New Title",
                 ArticleType = (int)ArticleType.General,
                 UrlPath = "old-title",
-                Published = now.AddMinutes(-10),
+                Published = DateTimeOffset.UtcNow.AddMinutes(-10),
                 StatusCode = (int)StatusCodeEnum.Active,
                 UserId = TestUserId.ToString()
             };
@@ -217,7 +217,7 @@ namespace Sky.Tests.Services.Titles
             await Db.SaveChangesAsync();
 
             // Act
-            await TitleChangeService.HandleTitleChangeAsync(article, "Old Title");
+            await TitleChangeService.HandleTitleChangeAsync(article, "Old Title", "old-title");
 
             // Assert
             Assert.AreEqual("new-title", article.UrlPath);
@@ -242,14 +242,15 @@ namespace Sky.Tests.Services.Titles
                 ArticleType = (int)ArticleType.General,
                 UrlPath = "old-title",
                 StatusCode = (int)StatusCodeEnum.Active,
-                UserId = TestUserId.ToString()
+                UserId = TestUserId.ToString(),
+                Published = DateTimeOffset.UtcNow.AddMinutes(-10) // ✅ ADD THIS LINE
             };
 
             Db.Articles.Add(article);
             await Db.SaveChangesAsync();
 
             // Act
-            await TitleChangeService.HandleTitleChangeAsync(article, "Old Title");
+            await TitleChangeService.HandleTitleChangeAsync(article, "Old Title", "old-title");
 
             // Assert - CORRECTED
             var redirect = await Db.Articles.FirstOrDefaultAsync(a =>
@@ -257,7 +258,7 @@ namespace Sky.Tests.Services.Titles
                 a.UrlPath == "old-title");
 
             Assert.IsNotNull(redirect, "Redirect should have been created");
-            Assert.Contains("/new-title", redirect.Content); // ✅ FIXED
+            Assert.Contains("/new-title", redirect.Content);
         }
 
         /// <summary>
@@ -307,7 +308,7 @@ namespace Sky.Tests.Services.Titles
             EventDispatcher.Clear();
 
             // Act
-            await TitleChangeService.HandleTitleChangeAsync(blogStream, "Old Blog");
+            await TitleChangeService.HandleTitleChangeAsync(blogStream, "Old Blog", "old-blog");
 
             // Assert
             Assert.AreEqual("new-blog-title", blogStream.BlogKey);
@@ -377,7 +378,7 @@ namespace Sky.Tests.Services.Titles
             await Db.SaveChangesAsync();
 
             // Act
-            await TitleChangeService.HandleTitleChangeAsync(article3, "Old Title");
+            await TitleChangeService.HandleTitleChangeAsync(article3, "Old Title", "old-title");
 
             // Assert
             var version1 = await Db.Articles.FirstOrDefaultAsync(a => a.ArticleNumber == 1 && a.VersionNumber == 1);
@@ -411,7 +412,7 @@ namespace Sky.Tests.Services.Titles
             await Db.SaveChangesAsync();
 
             // Act
-            await TitleChangeService.HandleTitleChangeAsync(blogStream, "Old Blog Stream");
+            await TitleChangeService.HandleTitleChangeAsync(blogStream, "Old Blog Stream", "old-blog-stream");
 
             // Assert
             Assert.AreEqual("new-blog-stream", blogStream.UrlPath);
@@ -440,7 +441,7 @@ namespace Sky.Tests.Services.Titles
             await Db.SaveChangesAsync();
 
             // Act
-            await TitleChangeService.HandleTitleChangeAsync(blogPost, "Old Post Title");
+            await TitleChangeService.HandleTitleChangeAsync(blogPost, "Old Post Title", "old-post-title");
 
             // Assert
             Assert.AreEqual("my-blog/new-post-title", blogPost.UrlPath);

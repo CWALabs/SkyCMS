@@ -5,15 +5,14 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Sky.Editor.Services.BlogRenderingService
+namespace Sky.Editor.Services.BlogPublishing
 {
-    using Cosmos.Common.Data;
-    using Cosmos.Common.Data.Logic;
-    using Microsoft.EntityFrameworkCore;
-    using Sky.Editor.Services.BlogPublishing;
     using System;
     using System.Linq;
     using System.Threading.Tasks;
+    using Cosmos.Common.Data;
+    using Cosmos.Common.Data.Logic;
+    using Microsoft.EntityFrameworkCore;
 
     /// <summary>
     ///  Blog publishing service implementation.

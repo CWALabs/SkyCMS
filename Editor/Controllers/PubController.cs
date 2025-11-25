@@ -11,7 +11,7 @@ namespace Sky.Editor.Controllers
     using Cosmos.Common.Data;
     using Cosmos.Publisher.Controllers;
     using Microsoft.AspNetCore.Mvc;
-    using Sky.Editor.Data.Logic;
+    using Sky.Editor.Services.EditorSettings;
 
     /// <summary>
     /// Secure file access controller and proxy.

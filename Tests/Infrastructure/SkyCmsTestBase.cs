@@ -6,10 +6,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -20,8 +23,8 @@ using Sky.Editor.Domain.Events;
 using Sky.Editor.Infrastructure.Time;
 using Sky.Editor.Services.Authors;
 using Sky.Editor.Services.BlogPublishing;
-using Sky.Editor.Services.BlogRenderingService;
 using Sky.Editor.Services.Catalog;
+using Sky.Editor.Services.EditorSettings;
 using Sky.Editor.Services.Html;
 using Sky.Editor.Services.Publishing;
 using Sky.Editor.Services.Redirects;
@@ -30,7 +33,16 @@ using Sky.Editor.Services.Scheduling;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
+using Sky.Editor.Features.Shared;
+using Sky.Editor.Features.Articles.Create;
+using Cosmos.Common.Models;
+using System.Diagnostics;
 using System.Reflection;
+using Sky.Editor.Features.Articles.Save;
+using Sky.Cms.Controllers;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Sky.Tests
 {
@@ -59,12 +71,22 @@ namespace Sky.Tests
         protected ITitleChangeService TitleChangeService = null!;
         protected IClock Clock { get; set; } = new SystemClock();
         protected UserManager<IdentityUser> UserManager = null!;
+        protected RoleManager<IdentityRole> RoleManager = null!;
         protected ITemplateService TemplateService = null!;
         protected IBlogRenderingService BlogRenderingService = null!;
         protected IViewRenderService ViewRenderService = null!;
         protected IServiceProvider Services = null!;
         protected IArticleScheduler ArticleScheduler = null!;
         protected IDynamicConfigurationProvider DynamicConfigurationProvider = null!;
+        protected ITenantArticleLogicFactory TenantArticleLogicFactory = null!;
+        protected ILogger<EditorController> Logger = null!;
+        protected Mock<IHubContext<Sky.Cms.Hubs.LiveEditorHub>> Hub = null!;
+        protected EditorController EditorController = null!;
+
+        // ADD THESE PROPERTIES FOR VERTICAL SLICE ARCHITECTURE
+        protected IMediator Mediator = null!;
+        protected ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>> CreateArticleHandler = null!;
+        protected ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>> SaveArticleHandler = null!;
 
         private async Task EnsureBlogStreamTemplateExistsAsync()
         {
@@ -136,8 +158,6 @@ namespace Sky.Tests
 
             var initialConfig = new Dictionary<string, string>
             {
-                // File-based SQLite database for tests to allow persistence and inspection.
-                // Uses a unique file per test run to avoid conflicts. ConfigDbConnectionString
                 ["ConnectionStrings:ApplicationDbContextConnection"] = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;",
                 ["ConnectionStrings:ConfigDbConnectionString"] = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-m-{Guid.NewGuid()}.db")};Password=strong-password;",
             };
@@ -145,14 +165,19 @@ namespace Sky.Tests
             // Lightweight configuration (all in-memory).
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(initialConfig)
-                .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: true) // For local development overrides
-                .AddEnvironmentVariables() // For CI/CD overrides
+                .AddUserSecrets(typeof(SkyCmsTestBase).Assembly, optional: true)
+                .AddEnvironmentVariables()
                 .Build();
 
             HttpContextAccessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
             HttpContextAccessor.HttpContext!.Request.Host = new HostString("example.com");
 
-            EditorSettings = new EditorSettings(configuration, Db, HttpContextAccessor, Cache);
+            // FIX: Create webHostEnvironmentMock and webHostEnvironment before ServiceCollection
+            var webHostEnvironmentMock = new Mock<IWebHostEnvironment>();
+            var assem = Assembly.GetAssembly(typeof(TemplateService));
+            var path = Path.GetDirectoryName(assem!.Location)!;
+            webHostEnvironmentMock.Setup(m => m.ContentRootPath).Returns(path);
+            var webHostEnvironment = webHostEnvironmentMock.Object;
 
             // Provide a safe fallback for storage if no connection string is configured.
             var storageConnectionString = configuration.GetConnectionString("StorageConnectionString")
@@ -169,119 +194,135 @@ namespace Sky.Tests
             BlogRenderingService = new BlogRenderingService(Db);
             ReservedPaths = new ReservedPaths(Db);
             AuthorInfoService = new AuthorInfoService(Db, Cache);
-            Services = new ServiceCollection()
-                .AddSingleton(EditorSettings)
-                .AddSingleton(Storage)
-                .AddSingleton(Db)
-                .AddSingleton(HttpContextAccessor)
-                .AddSingleton(SlugService)
-                .AddSingleton(ArticleHtmlService)
-                .AddSingleton(CatalogService)
-                .AddSingleton(EventDispatcher)
-                .AddSingleton(Clock)
-                .AddSingleton(BlogRenderingService)
-                .AddSingleton(AuthorInfoService)
-                .BuildServiceProvider();
 
             var mockViewRenderService = new Mock<IViewRenderService>();
-            mockViewRenderService
-                .Setup(x => x.RenderToStringAsync(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync("<html>Mocked Rendered View</html>");
-
+            mockViewRenderService.Setup(x => x.RenderToStringAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .ReturnsAsync("<html>test</html>");
             ViewRenderService = mockViewRenderService.Object;
+
+            EditorSettings = new EditorSettings(configuration, Db, HttpContextAccessor, Cache, null!);
 
             PublishingService = new PublishingService(Db, Storage, EditorSettings,
                 new LoggerFactory().CreateLogger<PublishingService>(),
                 HttpContextAccessor, authorInfoService,
                 Clock,
                 BlogRenderingService,
-                ViewRenderService);
+                ViewRenderService, null!);
 
             RedirectService = new RedirectService(Db, SlugService, Clock, PublishingService);
             TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, Clock, EventDispatcher, PublishingService, ReservedPaths, BlogRenderingService, new LoggerFactory().CreateLogger<TitleChangeService>());
-            var webHostEnvironmentMock = new Mock<IWebHostEnvironment>();
-            var assem = Assembly.GetAssembly(typeof(TemplateService));
-            var path = Path.GetDirectoryName(assem!.Location)!;
-            webHostEnvironmentMock.Setup(m => m.ContentRootPath).Returns(path);
-            var webHostEnvironment = webHostEnvironmentMock.Object;
-
             TemplateService = new TemplateService(webHostEnvironment, new LoggerFactory().CreateLogger<TemplateService>(), Db);
             TemplateService.EnsureDefaultTemplatesExistAsync().Wait();
 
-
-            var publishingArtifactService = new PublishingService(
-                Db,
-                Storage,
-                EditorSettings,
-                new NullLogger<PublishingService>(),
-                HttpContextAccessor,
-                authorInfoService,
-                Clock,
-                BlogRenderingService,
-                ViewRenderService
-            );
-
-            var redirectService = new RedirectService(Db, SlugService, Clock, publishingArtifactService);
-
-            var titleChangeService = new TitleChangeService(
-                Db, SlugService, redirectService, Clock, EventDispatcher, publishingArtifactService, ReservedPaths, BlogRenderingService, new NullLogger<TitleChangeService>());
-
-            // Construct logic (using explicit DI constructor).
-            Logic = new ArticleEditLogic(
-                Db,
-                cfg,
-                Cache,
-                Storage,
-                new NullLogger<ArticleEditLogic>(),
-                HttpContextAccessor,
-                EditorSettings,
-                Clock,
-                SlugService,
-                ArticleHtmlService,
-                CatalogService,
-                PublishingService,
-                titleChangeService,
-                redirectService,
-                TemplateService);
+            Logic = new ArticleEditLogic(Db, cfg, Cache, Storage, new NullLogger<ArticleEditLogic>(), EditorSettings, Clock, SlugService, ArticleHtmlService, CatalogService, PublishingService, TitleChangeService, RedirectService, TemplateService);
 
             DynamicConfigurationProvider = new DynamicConfigurationProvider(
                 configuration,
                 HttpContextAccessor,
                 new MemoryCache(new MemoryCacheOptions()),
-                new Logger<DynamicConfigurationProvider>(new NullLoggerFactory())
-                );
+                new Logger<DynamicConfigurationProvider>(new NullLoggerFactory()));
 
-            ArticleScheduler = new ArticleScheduler(
+            // CREATE MOCK TENANT ARTICLE LOGIC FACTORY
+            var mockTenantArticleLogicFactory = new Mock<ITenantArticleLogicFactory>();
+            mockTenantArticleLogicFactory
+                .Setup(f => f.CreateForTenantAsync(It.IsAny<string>()))
+                .ReturnsAsync(Logic);
+            TenantArticleLogicFactory = mockTenantArticleLogicFactory.Object;
+
+            // CREATE FEATURE HANDLER
+            CreateArticleHandler = new CreateArticleHandler(
                 Db,
-                cfg,
-                Cache,
-                Storage,
-                new NullLogger<ArticleScheduler>(),
-                HttpContextAccessor,
-                EditorSettings,
-                Clock,
-                SlugService,
                 ArticleHtmlService,
                 CatalogService,
                 PublishingService,
-                titleChangeService,
-                redirectService,
+                TitleChangeService,
                 TemplateService,
-                DynamicConfigurationProvider);
+                Clock,
+                new NullLogger<CreateArticleHandler>());
 
+            SaveArticleHandler = new SaveArticleHandler(
+                Db,
+                ArticleHtmlService,
+                CatalogService,
+                PublishingService,
+                TitleChangeService,
+                Clock,
+                new NullLogger<SaveArticleHandler>());
 
-            // User manager setup.
+            // SETUP IDENTITY MANAGERS (UserManager and RoleManager)
             var userStore = new UserStore<IdentityUser>(Db);
             UserManager = new UserManager<IdentityUser>(
-                    userStore,
-                    Options.Create(new IdentityOptions()),
-                    new PasswordHasher<IdentityUser>(),
-                    Array.Empty<IUserValidator<IdentityUser>>(),
-                    Array.Empty<IPasswordValidator<IdentityUser>>(),
-                    new UpperInvariantLookupNormalizer(),
-                    new IdentityErrorDescriber(),
-                    null!,
-                    new NullLogger<UserManager<IdentityUser>>());
+                userStore,
+                Options.Create(new IdentityOptions()),
+                new PasswordHasher<IdentityUser>(),
+                Array.Empty<IUserValidator<IdentityUser>>(),
+                Array.Empty<IPasswordValidator<IdentityUser>>(),
+                new UpperInvariantLookupNormalizer(),
+                new IdentityErrorDescriber(),
+                null!,
+                new NullLogger<UserManager<IdentityUser>>());
+
+            var roleStore = new RoleStore<IdentityRole>(Db);
+            RoleManager = new RoleManager<IdentityRole>(
+                roleStore,
+                Array.Empty<IRoleValidator<IdentityRole>>(),
+                new UpperInvariantLookupNormalizer(),
+                new IdentityErrorDescriber(),
+                new NullLogger<RoleManager<IdentityRole>>());
+
+            // CREATE LOGGER FOR EDITORCONTROLLER
+            Logger = new NullLogger<Sky.Cms.Controllers.EditorController>();
+
+            // CREATE MOCK SIGNALR HUB
+            Hub = new Mock<Microsoft.AspNetCore.SignalR.IHubContext<Sky.Cms.Hubs.LiveEditorHub>>();
+            var mockHubClients = new Mock<Microsoft.AspNetCore.SignalR.IHubClients>();
+            var mockClientProxy = new Mock<Microsoft.AspNetCore.SignalR.IClientProxy>();
+            mockHubClients.Setup(clients => clients.All).Returns(mockClientProxy.Object);
+            Hub.Setup(h => h.Clients).Returns(mockHubClients.Object);
+
+            // BUILD FINAL SERVICE PROVIDER WITH ALL SERVICES INCLUDING FEATURE HANDLERS
+            Services = new ServiceCollection()
+                .AddLogging()
+                .AddSingleton<DiagnosticSource>(new DiagnosticListener("TestListener"))
+                .AddSingleton<DiagnosticListener>(new DiagnosticListener("TestListener"))
+                .AddSingleton<IWebHostEnvironment>(webHostEnvironment)
+                .AddSingleton<IConfiguration>(configuration)
+                .AddSingleton<IMemoryCache>(Cache)
+                .AddSingleton<ApplicationDbContext>(sp => Db)
+                .AddSingleton<StorageContext>(Storage)
+                .AddSingleton<IHttpContextAccessor>(HttpContextAccessor)
+                .AddSingleton<ISlugService>(SlugService)
+                .AddSingleton<IArticleHtmlService>(ArticleHtmlService)
+                .AddSingleton<ICatalogService>(CatalogService)
+                .AddSingleton<IDomainEventDispatcher>(EventDispatcher)
+                .AddSingleton<IClock>(Clock)
+                .AddSingleton<IBlogRenderingService>(BlogRenderingService)
+                .AddSingleton<IAuthorInfoService>(AuthorInfoService)
+                .AddSingleton<IViewRenderService>(ViewRenderService)
+                .AddSingleton<IReservedPaths>(ReservedPaths)
+                .AddSingleton<IEditorSettings>(EditorSettings)
+                .AddSingleton<IPublishingService>(PublishingService)
+                .AddSingleton<IRedirectService>(RedirectService)
+                .AddSingleton<ITitleChangeService>(TitleChangeService)
+                .AddSingleton<ITemplateService>(TemplateService)
+                .AddSingleton<ITenantArticleLogicFactory>(TenantArticleLogicFactory)
+                .AddSingleton(Options.Create(new CosmosConfig()))
+                .AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>>(sp => CreateArticleHandler)
+                .AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>>(sp => SaveArticleHandler)
+                .AddScoped<IMediator, Mediator>()
+                .AddRazorPages()
+                .Services
+                .BuildServiceProvider();
+
+            // GET MEDIATOR FROM SERVICE PROVIDER
+            Mediator = Services.GetRequiredService<IMediator>();
+
+            ArticleScheduler = new ArticleScheduler(
+                cfg,
+                new NullLogger<ArticleScheduler>(),
+                EditorSettings,
+                Clock,
+                Services);
 
             EnsureBlogStreamTemplateExistsAsync().Wait();
             EnsureBlogPostTemplateExistsAsync().Wait();
@@ -323,7 +364,6 @@ namespace Sky.Tests
                 return Task.CompletedTask;
             }
 
-            // Cancellation-capable overloads required by interface.
             public Task DispatchAsync(IDomainEvent @event, CancellationToken cancellationToken)
             {
                 if (@event == null) return Task.CompletedTask;
@@ -346,6 +386,54 @@ namespace Sky.Tests
                 events.LastOrDefault(e => e is T) as T;
 
             public void Clear() => events.Clear();
+        }
+
+        [TestInitialize]
+        public void Setup()
+        {
+            InitializeTestContext();
+
+            // CREATE AN ACTUAL USER IN THE DATABASE
+            var user = new IdentityUser
+            {
+                Id = TestUserId.ToString(),
+                UserName = "test@example.com",
+                Email = "test@example.com",
+                NormalizedUserName = "TEST@EXAMPLE.COM",
+                NormalizedEmail = "TEST@EXAMPLE.COM"
+            };
+            UserManager.CreateAsync(user).Wait();
+
+            // Create controller with all dependencies
+            EditorController = new EditorController(
+                Logger,
+                Db,
+                UserManager,
+                RoleManager,
+                Logic,
+                EditorSettings,
+                ViewRenderService,
+                Storage,
+                Hub.Object,
+                PublishingService,
+                ArticleHtmlService,
+                ReservedPaths,
+                TitleChangeService,
+                TemplateService,
+                Mediator);
+
+            // Setup user context
+            var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, TestUserId.ToString()),
+                new Claim(ClaimTypes.Name, "test@example.com"),
+                new Claim(ClaimTypes.Role, "Administrators")
+            }, "TestAuth"));
+
+            EditorController.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = claimsPrincipal }
+            };
         }
     }
 }

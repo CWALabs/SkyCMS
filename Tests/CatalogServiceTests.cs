@@ -58,7 +58,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await CatalogService.UpsertAsync(article);
+            var result = await CatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.IsNotNull(result);
@@ -110,7 +110,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await CatalogService.UpsertAsync(article);
+            var result = await CatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.IsNotNull(result);
@@ -140,7 +140,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await CatalogService.UpsertAsync(article);
+            var result = await CatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.AreEqual("Inactive", result.Status);
@@ -166,7 +166,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await CatalogService.UpsertAsync(article);
+            var result = await CatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.AreEqual("Active", result.Status);
@@ -219,7 +219,7 @@ namespace Sky.Tests.Services.Catalog
             await Db.SaveChangesAsync();
 
             // Act
-            var result = await customCatalogService.UpsertAsync(article);
+            var result = await customCatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.AreEqual("Extracted introduction from content", result.Introduction);
@@ -258,7 +258,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await customCatalogService.UpsertAsync(article);
+            var result = await customCatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.AreEqual(providedIntro, result.Introduction);
@@ -285,7 +285,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await CatalogService.UpsertAsync(article);
+            var result = await CatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.AreEqual(string.Empty, result.AuthorInfo);
@@ -397,7 +397,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await CatalogService.UpsertAsync(article);
+            var result = await CatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.IsNull(result.TemplateId);
@@ -424,7 +424,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await CatalogService.UpsertAsync(article);
+            var result = await CatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert
             Assert.IsNull(result.Published);
@@ -459,7 +459,7 @@ namespace Sky.Tests.Services.Catalog
             };
 
             // Act
-            var result = await CatalogService.UpsertAsync(article);
+            var result = await CatalogService.UpsertAsync(article, CancellationToken.None);
 
             // Assert - verify returned object
             Assert.AreEqual(42, result.ArticleNumber);

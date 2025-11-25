@@ -67,7 +67,15 @@ namespace Cosmos.DynamicConfig
         /// </summary>
         /// <returns></returns>
         Task<List<string>> GetAllDomainNamesAsync();
-        
+
+        /// <summary>
+        /// Get the tenant connection information based on domain name.
+        /// </summary>
+        /// <param name="domainName"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<Connection?> GetTenantConnectionAsync(string domainName, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Preload all connections asynchronously.
         /// </summary>

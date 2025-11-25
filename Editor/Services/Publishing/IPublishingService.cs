@@ -39,6 +39,7 @@ public interface IPublishingService
     /// Publishes an article to the database and generates associated static content.
     /// </summary>
     /// <param name="article">The article to publish. Must have valid <see cref="Article.ArticleNumber"/>, <see cref="Article.UrlPath"/>, and content properties.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>
     /// A task producing a list of <see cref="CdnResult"/> objects representing the outcome of CDN purge operations.
     /// Returns an empty list if no CDN service is configured or if the operation fails.
@@ -61,7 +62,7 @@ public interface IPublishingService
     /// to ensure immediate publication.
     /// </para>
     /// </remarks>
-    Task<List<CdnResult>> PublishAsync(Article article);
+    Task<List<CdnResult>> PublishAsync(Article article, System.Threading.CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates static HTML files for the specified published pages and purges the CDN cache.

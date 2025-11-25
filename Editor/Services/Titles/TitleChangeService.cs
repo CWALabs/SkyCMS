@@ -107,17 +107,44 @@ namespace Sky.Editor.Services.Titles
         }
 
         /// <inheritdoc/>
-        public async Task HandleTitleChangeAsync(Article article, string oldTitle)
+        public async Task HandleTitleChangeAsync(Article article, string oldTitle, string oldUrlPath)
         {
             // Use a local dictionary to track URL changes for this operation
             var changedUrls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            var oldSlug = slugs.Normalize(oldTitle);
+            var oldSlug = oldUrlPath; // The old URL path is already normalized
             var newSlug = BuildArticleUrl(article);
 
             // Only proceed if the slug actually changed
             if (oldSlug.Equals(newSlug, StringComparison.OrdinalIgnoreCase))
             {
+                return;
+            }
+
+            // **PRESERVE ROOT PAGE URL PATH**
+            // The root page must always remain at "root" regardless of title changes
+            var isRootPage = article.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase);
+            
+            if (isRootPage)
+            {
+                logger.LogInformation(
+                    "Title change for root page (article {ArticleNumber}) from '{OldTitle}' to '{NewTitle}'. UrlPath will remain 'root'.",
+                    article.ArticleNumber,
+                    oldTitle,
+                    article.Title);
+                
+                // Update versions but don't change URL paths for root page
+                await UpdateVersionsForRootPageAsync(article);
+                
+                // Republish if the article is currently published
+                if (article.Published != null && article.Published <= clock.UtcNow)
+                {
+                    await publishingService.PublishAsync(article);
+                }
+                
+                // ✅ FIX: Dispatch event with the actual old title, not the URL path
+                await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
+                
                 return;
             }
 
@@ -143,14 +170,12 @@ namespace Sky.Editor.Services.Titles
 
             // Update the article's URL path and blog key (for blog posts and blog streams)
             article.UrlPath = newSlug;
-
+            
             // If this is a blog stream, the blog key must match the UrlPath (new slug).
             if (article.ArticleType == (int)ArticleType.BlogStream)
             {
                 article.BlogKey = newSlug;
             }
-
-            await db.SaveChangesAsync();
 
             // If this is a blog stream, cascade changes to all associated blog posts
             if (article.ArticleType == (int)ArticleType.BlogStream)
@@ -171,13 +196,13 @@ namespace Sky.Editor.Services.Titles
                 await publishingService.PublishAsync(article);
             }
 
-            // Create redirects for all changed URLs
-            if (changedUrls.Any())
+            // Create redirects for all changed URLs (ONLY if article is published)
+            if (changedUrls.Any() && article.Published.HasValue && article.Published <= clock.UtcNow)
             {
                 await CreateRedirectsAsync(changedUrls, article.UserId);
             }
 
-            // Notify subscribers of the title change
+            // ✅ FIX: Dispatch event with the actual old title
             await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
         }
 
@@ -380,9 +405,17 @@ namespace Sky.Editor.Services.Titles
                 }
 
                 // Always update the URL path using the BuildArticleUrl logic
-                version.UrlPath = version.ArticleType == (int)ArticleType.BlogPost
-                    ? slugs.Normalize(version.Title, newSlug)
-                    : slugs.Normalize(version.Title);
+                // UNLESS it's a root page version (preserve "root")
+                if (version.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase))
+                {
+                    version.UrlPath = "root";
+                }
+                else
+                {
+                    version.UrlPath = version.ArticleType == (int)ArticleType.BlogPost
+                        ? slugs.Normalize(version.Title, newSlug)
+                        : slugs.Normalize(version.Title);
+                }
 
                 // Republish if this version is currently published
                 if (version.Published.HasValue && version.Published <= clock.UtcNow)
@@ -542,6 +575,64 @@ namespace Sky.Editor.Services.Titles
                     await db.SaveChangesAsync();
                     count = 0;
                     await publishingService.PublishAsync(child);
+                }
+
+                // Batch save every 20 records to optimize performance
+                if (++count >= 20)
+                {
+                    await db.SaveChangesAsync();
+                    count = 0;
+                }
+            }
+
+            // Save any remaining changes
+            if (count > 0)
+            {
+                await db.SaveChangesAsync();
+            }
+        }
+
+        /// <summary>
+        /// Updates all versions of the root page article, preserving the "root" URL path.
+        /// </summary>
+        /// <param name="article">The root page article whose title has changed.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// The root page is special - its URL path must always remain "root" regardless of title changes.
+        /// This method ensures all versions maintain this constraint while allowing title updates.
+        /// </remarks>
+        private async Task UpdateVersionsForRootPageAsync(Article article)
+        {
+            var articleNumber = article.ArticleNumber;
+            var id = article.Id;
+
+            // Find all other versions of this article
+            var versions = await db.Articles
+                .Where(av => av.ArticleNumber == articleNumber && av.Id != id)
+                .ToListAsync();
+
+            if (!versions.Any())
+            {
+                return;
+            }
+
+            logger.LogInformation(
+                "Updating {Count} versions for root page article {ArticleNumber}, preserving 'root' URL path",
+                versions.Count,
+                articleNumber);
+
+            var count = 0;
+            foreach (var version in versions)
+            {
+                // Ensure UrlPath remains "root" for all versions
+                version.UrlPath = "root";
+
+                // Republish if this version is currently published
+                if (version.Published.HasValue && version.Published <= clock.UtcNow)
+                {
+                    await db.SaveChangesAsync();
+                    count = 0;
+                    await publishingService.PublishAsync(version);
                 }
 
                 // Batch save every 20 records to optimize performance

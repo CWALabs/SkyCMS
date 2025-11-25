@@ -11,7 +11,7 @@ namespace Sky.Tests.Services.BlogPublishing
     using Cosmos.Common.Data.Logic;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Sky.Editor.Services.BlogRenderingService;
+    using Sky.Editor.Services.BlogPublishing;
     using System;
     using System.Threading.Tasks;
 

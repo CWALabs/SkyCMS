@@ -33,6 +33,7 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.CDN;
+    using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.ReservedPaths;
@@ -44,6 +45,8 @@ namespace Sky.Cms.Controllers
     using System.Text;
     using System.Threading.Tasks;
     using System.Web;
+    using Sky.Editor.Features.Shared;
+    using Sky.Editor.Features.Articles.Save;
 
     /// <summary>
     /// Editor controller.
@@ -53,6 +56,7 @@ namespace Sky.Cms.Controllers
     [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public class EditorController : BaseController
     {
+        private readonly IMediator mediator;
         private readonly ArticleEditLogic articleLogic;
         private readonly ApplicationDbContext dbContext;
         private readonly RoleManager<IdentityRole> roleManager;
@@ -78,7 +82,7 @@ namespace Sky.Cms.Controllers
         /// <param name="userManager">User manager.</param>
         /// <param name="roleManager">Role manager.</param>
         /// <param name="articleLogic">Article logic.</param>
-        /// <param name="options">Cosmos options.</param>
+        /// <param name="editorSettings">Cosmos options.</param>
         /// <param name="viewRenderService">View rendering service.</param>
         /// <param name="storageContext">Storage context.</param>
         /// <param name="hub">Editor SignalR hub.</param>
@@ -87,13 +91,14 @@ namespace Sky.Cms.Controllers
         /// <param name="reservedPaths">Reserved path service.</param>
         /// <param name="titleChangeService">Title change service.</param>
         /// <param name="templateService">Template service.</param>
+        /// <param name="mediator">Mediator instance.</param>
         public EditorController(
             ILogger<EditorController> logger,
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
             RoleManager<IdentityRole> roleManager,
             ArticleEditLogic articleLogic,
-            IEditorSettings options,
+            IEditorSettings editorSettings,
             IViewRenderService viewRenderService,
             StorageContext storageContext,
             IHubContext<LiveEditorHub> hub,
@@ -101,12 +106,13 @@ namespace Sky.Cms.Controllers
             IArticleHtmlService htmlService,
             IReservedPaths reservedPaths,
             ITitleChangeService titleChangeService,
-            ITemplateService templateService)
+            ITemplateService templateService,
+            IMediator mediator)
             : base(dbContext, userManager)
         {
             this.logger = logger;
             this.dbContext = dbContext;
-            this.editorSettings = options;
+            this.editorSettings = editorSettings;
             this.roleManager = roleManager;
             this.userManager = userManager;
             this.articleLogic = articleLogic;
@@ -117,16 +123,17 @@ namespace Sky.Cms.Controllers
             this.reservedPaths = reservedPaths;
             this.titleChangeService = titleChangeService;
             this.templateService = templateService;
+            this.mediator = mediator;
 
             var htmlUtilities = new HtmlUtilities();
 
-            if (htmlUtilities.IsAbsoluteUri(options.BlobPublicUrl))
+            if (string.IsNullOrWhiteSpace(editorSettings.BlobPublicUrl) == false && htmlUtilities.IsAbsoluteUri(editorSettings.BlobPublicUrl))
             {
-                blobPublicAbsoluteUrl = new Uri(options.BlobPublicUrl);
+                blobPublicAbsoluteUrl = new Uri(editorSettings.BlobPublicUrl);
             }
             else
             {
-                blobPublicAbsoluteUrl = new Uri($"{options.PublisherUrl.TrimEnd('/')}/{options.BlobPublicUrl.TrimStart('/')}");
+                blobPublicAbsoluteUrl = new Uri($"{editorSettings.PublisherUrl.TrimEnd('/')}/{editorSettings.BlobPublicUrl.TrimStart('/')}");
             }
 
             this.viewRenderService = viewRenderService;
@@ -258,13 +265,11 @@ namespace Sky.Cms.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Check for nested editable regions.
             if (!NestedEditableRegionValidation.Validate(model.HtmlContent))
             {
                 return BadRequest("Cannot have nested editable regions.");
             }
 
-            // Next pull the original. This is a view model, not tracked by DbContext.
             var article = await articleLogic.GetArticleByArticleNumber(model.ArticleNumber, null);
 
             if (article == null)
@@ -273,33 +278,50 @@ namespace Sky.Cms.Controllers
             }
 
             var designerUtils = new DesignerUtilities();
-            var html = designerUtils.AssembleDesignerOutput(new DesignerDataViewModel() { CssContent = model.CssContent, HtmlContent = model.HtmlContent, Title = model.Title, Id = model.Id });
+            var html = designerUtils.AssembleDesignerOutput(
+                new DesignerDataViewModel()
+                {
+                    CssContent = model.CssContent,
+                    HtmlContent = model.HtmlContent,
+                    Title = model.Title,
+                    Id = model.Id
+                });
 
             try
             {
-                var result = await articleLogic.SaveArticle(
-                                    new ArticleViewModel()
-                                    {
-                                        Id = article.Id,
-                                        ArticleNumber = article.ArticleNumber,
-                                        BannerImage = article.BannerImage,
-                                        Content = html,
-                                        Title = model.Title,
-                                        Expires = article.Expires,
-                                        FooterJavaScript = article.FooterJavaScript,
-                                        HeadJavaScript = article.HeadJavaScript,
-                                        StatusCode = article.StatusCode,
-                                        UrlPath = article.UrlPath,
-                                        VersionNumber = article.VersionNumber,
-                                        Updated = DateTimeOffset.UtcNow
-                                    }, Guid.Parse(await GetUserId()));
+                // NEW: Use SaveArticle command
+                var command = new SaveArticleCommand
+                {
+                    ArticleNumber = article.ArticleNumber,
+                    Title = model.Title,
+                    Content = html,
+                    HeadJavaScript = article.HeadJavaScript,
+                    FooterJavaScript = article.FooterJavaScript,
+                    BannerImage = article.BannerImage,
+                    UrlPath = article.UrlPath,
+                    ArticleType = (ArticleType)article.ArticleType,
+                    Category = article.Category,
+                    Introduction = article.Introduction,
+                    Published = article.Published,
+                    UserId = Guid.Parse(await GetUserId())
+                };
+
+                var result = await mediator.SendAsync(command);
+
+                if (!result.IsSuccess)
+                {
+                    var errorMessage = result.ErrorMessage ??
+                        string.Join(", ", result.Errors?.SelectMany(e => e.Value) ?? Array.Empty<string>());
+                    return Json(new DesignerResult { success = false, message = errorMessage });
+                }
+
+                return Json(new DesignerResult { success = true });
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Error saving designer content for article {ArticleNumber}", model.ArticleNumber);
                 return Json(new { success = false, message = ex.Message });
             }
-
-            return Json(new { success = true });
         }
 
         /// <summary>
@@ -1481,41 +1503,66 @@ namespace Sky.Cms.Controllers
                 throw new ArgumentException("SaveEditorContent method, model was null.");
             }
 
-            // Next pull the original. This is a view model, not tracked by DbContext.
+            // Get original article
             var article = await articleLogic.GetArticleByArticleNumber(model.ArticleNumber, null);
             if (article == null)
             {
-                throw new NotFoundException($"CScould not find artile with #: {model.ArticleNumber}.");
+                throw new NotFoundException($"Could not find article with #: {model.ArticleNumber}.");
             }
 
+            // Update content if editor region specified
             if (!string.IsNullOrWhiteSpace(model.EditorId))
             {
-                // Now carry over what's being UPDATED to the original.
-                article.Content = UpdateRegionInDocument(model.EditorId, article.Content, CryptoJsDecryption.Decrypt(model.Data));
+                article.Content = UpdateRegionInDocument(
+                    model.EditorId,
+                    article.Content,
+                    CryptoJsDecryption.Decrypt(model.Data));
             }
 
-            // Banner image
-            article.BannerImage = model.BannerImage;
-            article.ArticleType = model.ArticleType;
-            article.Category = model.Category;
-            article.Introduction = model.Introduction;
+            // NEW: Use SaveArticle command
+            var command = new SaveArticleCommand
+            {
+                ArticleNumber = model.ArticleNumber,
+                Title = model.Title,
+                Content = article.Content,
+                HeadJavaScript = article.HeadJavaScript,
+                FooterJavaScript = article.FooterJavaScript,
+                BannerImage = model.BannerImage,
+                ArticleType = model.ArticleType,
+                Category = model.Category,
+                Introduction = model.Introduction,
+                UrlPath = article.UrlPath,
+                Published = article.Published,
+                UserId = Guid.Parse(await GetUserId())
+            };
 
-            // Make sure we are setting to the orignal updated date/time
-            // This is validated to make sure that someone else hasn't already edited this
-            // entity
-            article.Updated = DateTimeOffset.UtcNow;
-            article.Title = model.Title;
+            var result = await mediator.SendAsync(command);
 
-            // Save changes back to the database
-            var result = await articleLogic.SaveArticle(article, Guid.Parse(await GetUserId()));
+            if (!result.IsSuccess)
+            {
+                return Json(new
+                {
+                    success = false,
+                    errors = result.Errors ?? new Dictionary<string, string[]>
+                    {
+                        ["general"] = new[] { result.ErrorMessage ?? "Save failed" }
+                    }
+                });
+            }
 
-            // Notify others of the changes.
+            // Notify SignalR clients of changes
             if (!string.IsNullOrWhiteSpace(model.EditorId))
             {
                 await hub.Clients.All.SendCoreAsync("UpdateEditors", [model.Id, model.Data]);
             }
 
-            return Json(result);
+            // Return ArticleUpdateResult wrapped in compatible format
+            return Json(new
+            {
+                ServerSideSuccess = result.Data!.ServerSideSuccess,
+                Model = result.Data.Model,
+                CdnResults = result.Data.CdnResults
+            });
         }
 
         /// <summary>
@@ -1674,10 +1721,8 @@ namespace Sky.Cms.Controllers
                     ModelState.AddModelError("Content", "Cannot have nested editable regions.");
                 }
 
-                // Next pull the original. This is a view model, not tracked by DbContext.
-                // var article = await articleLogic.GetArticleByArticleNumber(model.ArticleNumber, null);
-                var article = await dbContext.Articles.Where(w => w.ArticleNumber == model.ArticleNumber).OrderBy(o => o.VersionNumber).LastOrDefaultAsync();
-                var entry = await articleLogic.GetCatalogEntry(article);
+                // CHANGED: Use articleLogic to get the full article with all properties
+                var article = await articleLogic.GetArticleByArticleNumber(model.ArticleNumber, null);
 
                 if (article == null)
                 {
@@ -1691,34 +1736,68 @@ namespace Sky.Cms.Controllers
                 {
                     try
                     {
-                        var result = await articleLogic.SaveArticle(
-                            new ArticleViewModel()
+                        // NEW: Use SaveArticle command instead of ArticleEditLogic
+                        var command = new SaveArticleCommand
+                        {
+                            ArticleNumber = model.ArticleNumber,
+                            Title = model.Title,
+                            Content = model.Content,
+                            HeadJavaScript = model.HeadJavaScript,
+                            FooterJavaScript = model.FooterJavaScript,
+                            BannerImage = article.BannerImage,
+                            UrlPath = article.UrlPath,
+                            ArticleType = (ArticleType)article.ArticleType,
+                            Category = article.Category,
+                            Introduction = article.Introduction,
+                            Published = article.Published,
+                            UserId = Guid.Parse(await GetUserId())
+                        };
+
+                        var result = await mediator.SendAsync(command);
+
+                        if (!result.IsSuccess)
+                        {
+                            // Handle validation errors
+                            if (result.Errors != null)
                             {
-                                Id = model.Id,
-                                ArticleNumber = article.ArticleNumber,
-                                BannerImage = article.BannerImage,
-                                Content = model.Content,
-                                Title = model.Title,
-                                Expires = article.Expires,
-                                FooterJavaScript = model.FooterJavaScript,
-                                HeadJavaScript = model.HeadJavaScript,
-                                StatusCode = (StatusCodeEnum)article.StatusCode,
-                                UrlPath = article.UrlPath,
-                                VersionNumber = article.VersionNumber,
-                                Updated = model.Updated.Value
-                            }, Guid.Parse(await GetUserId()));
+                                foreach (var error in result.Errors)
+                                {
+                                    foreach (var message in error.Value)
+                                    {
+                                        ModelState.AddModelError(error.Key, message);
+                                    }
+                                }
+                            }
+                            else if (result.ErrorMessage != null)
+                            {
+                                ModelState.AddModelError("Save", result.ErrorMessage);
+                            }
+
+                            jsonModel.ErrorCount = ModelState.ErrorCount;
+                            jsonModel.IsValid = false;
+                            jsonModel.Errors.AddRange(ModelState.Values
+                                .Where(w => w.ValidationState == ModelValidationState.Invalid)
+                                .ToList());
+                            jsonModel.ValidationState = ModelValidationState.Invalid;
+
+                            return Json(jsonModel);
+                        }
+
+                        // Success - result.Data.Model contains the updated article
+                        logger.LogInformation(
+                            "Successfully saved article {ArticleNumber} via mediator",
+                            model.ArticleNumber);
                     }
                     catch (Exception e)
                     {
                         ViewData["Version"] = article.VersionNumber;
                         var provider = new EmptyModelMetadataProvider();
                         ModelState.AddModelError("Save", e, provider.GetMetadataForType(typeof(string)));
-                        logger.LogError(e, e.Message);
+                        logger.LogError(e, "Error saving article {ArticleNumber}", model.ArticleNumber);
                     }
 
                     jsonModel.ErrorCount = ModelState.ErrorCount;
                     jsonModel.IsValid = ModelState.IsValid;
-
                     jsonModel.Errors.AddRange(ModelState.Values
                         .Where(w => w.ValidationState == ModelValidationState.Invalid)
                         .ToList());
@@ -1728,6 +1807,7 @@ namespace Sky.Cms.Controllers
                 }
             }
 
+            // Error handling (unchanged)
             saveError.AppendLine("Error(s):");
             saveError.AppendLine("<ul>");
 

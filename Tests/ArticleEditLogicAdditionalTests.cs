@@ -72,6 +72,7 @@ public class ArticleEditLogicAdditionalTests : SkyCmsTestBase
         var parent = await Logic.CreateArticle("Parent Section", TestUserId);
         var child = await Logic.CreateArticle("Parent Section/Child Doc", TestUserId);
         var oldPath = parent.UrlPath;
+        var oldUrlPath = child.UrlPath;
 
         // rename parent
         var parentVm = await Logic.GetArticleByArticleNumber(parent.ArticleNumber, null);
@@ -82,7 +83,7 @@ public class ArticleEditLogicAdditionalTests : SkyCmsTestBase
 
         var updatedParent = await Db.Articles.FirstOrDefaultAsync(a => a.Id == articleId);
 
-        await TitleChangeService.HandleTitleChangeAsync(updatedParent, oldPath);
+        await TitleChangeService.HandleTitleChangeAsync(updatedParent, oldPath, oldUrlPath);
 
         var childVm = await Logic.GetArticleByArticleNumber(child.ArticleNumber, null);
         Assert.IsTrue(childVm.UrlPath.StartsWith("parent-renamed", StringComparison.OrdinalIgnoreCase),

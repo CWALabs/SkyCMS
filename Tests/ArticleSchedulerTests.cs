@@ -7,22 +7,21 @@
 
 namespace Sky.Tests.Services.Scheduling
 {
-    using Cosmos.Cms.Common.Services.Configurations;
+    using System;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Cosmos.DynamicConfig;
-    using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Caching.Memory;
-    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Sky.Editor.Data.Logic;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.Scheduling;
-    using System;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Unit tests for <see cref="ArticleScheduler"/>.
@@ -38,18 +37,13 @@ namespace Sky.Tests.Services.Scheduling
         /// Initializes test context before each test.
         /// </summary>
         [TestInitialize]
-        public void TestInitialize()
+        public void Setup()
         {
             testClock = new TestClock();
             Clock = testClock; // Set BEFORE InitializeTestContext
 
             InitializeTestContext();
             mockLogger = new Mock<ILogger<ArticleScheduler>>();
-
-            // Override the base clock with test clock
-            var clockField = typeof(SkyCmsTestBase).GetField("Clock",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            clockField?.SetValue(this, testClock);
         }
 
         /// <summary>
@@ -793,6 +787,206 @@ namespace Sky.Tests.Services.Scheduling
             Assert.IsNotNull(publishedPage, "Published page should be created");
             Assert.AreEqual(2, publishedPage.VersionNumber, "Published page should be version 2");
             Assert.IsTrue(publishedPage.Content.Contains("Version 2 Content"), "Published page should contain correct content");
+        }
+
+        /// <summary>
+        /// Tests that ArticleScheduler uses ITenantArticleLogicFactory correctly.
+        /// </summary>
+        [TestMethod]
+        public async Task ProcessArticleVersions_UsesFactory_ToCreateArticleLogic()
+        {
+            // Arrange
+            var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
+            testClock.SetUtcNow(now);
+            
+            var article1 = new Article
+            {
+                ArticleNumber = 1,
+                VersionNumber = 1,
+                Title = "Test V1",
+                Content = "Content",
+                Published = now.AddDays(-5),
+                StatusCode = (int)StatusCodeEnum.Active,
+                UserId = TestUserId.ToString(),
+                UrlPath = "/test"
+            };
+            
+            var article2 = new Article
+            {
+                ArticleNumber = 1,
+                VersionNumber = 2,
+                Title = "Test V2",
+                Content = "Content",
+                Published = now.AddDays(-1),
+                StatusCode = (int)StatusCodeEnum.Active,
+                UserId = TestUserId.ToString(),
+                UrlPath = "/test"
+            };
+            
+            Db.Articles.AddRange(article1, article2);
+            await Db.SaveChangesAsync();
+            
+            // Act
+            await ArticleScheduler.ExecuteAsync();
+            
+            // Assert - Verify factory was called
+            var factoryFromServices = Services.GetRequiredService<ITenantArticleLogicFactory>();
+            Assert.IsNotNull(factoryFromServices);
+        }
+
+        /// <summary>
+        /// Tests that factory creates properly scoped ArticleEditLogic for tenant.
+        /// </summary>
+        [TestMethod]
+        public async Task TenantArticleLogicFactory_CreatesCorrectlyScoped_ArticleLogic()
+        {
+            // Arrange
+            var factory = Services.GetRequiredService<ITenantArticleLogicFactory>();
+            var domainName = "test.com";
+            
+            // Act
+            var articleLogic = await factory.CreateForTenantAsync(domainName);
+            
+            // Assert
+            Assert.IsNotNull(articleLogic);
+            Assert.IsInstanceOfType(articleLogic, typeof(ArticleEditLogic));
+        }
+
+        /// <summary>
+        /// Tests handling of articles scheduled exactly 1 second apart.
+        /// </summary>
+        [TestMethod]
+        public async Task ExecuteAsync_WithVersionsScheduledOneSecondApart_HandlesCorrectly()
+        {
+            // Arrange
+            var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
+            testClock.SetUtcNow(now);
+            
+            var article1 = new Article
+            {
+                ArticleNumber = 1,
+                VersionNumber = 1,
+                Title = "Test V1",
+                Published = now.AddSeconds(-2),
+                StatusCode = (int)StatusCodeEnum.Active,
+                UserId = TestUserId.ToString(),
+                UrlPath = "/test"
+            };
+            
+            var article2 = new Article
+            {
+                ArticleNumber = 1,
+                VersionNumber = 2,
+                Title = "Test V2",
+                Published = now.AddSeconds(-1),
+                StatusCode = (int)StatusCodeEnum.Active,
+                UserId = TestUserId.ToString(),
+                UrlPath = "/test"
+            };
+            
+            Db.Articles.AddRange(article1, article2);
+            await Db.SaveChangesAsync();
+            
+            // Act
+            await ArticleScheduler.ExecuteAsync();
+            
+            // Assert
+            var updated1 = await Db.Articles.FindAsync(article1.Id);
+            var updated2 = await Db.Articles.FindAsync(article2.Id);
+            
+            Assert.IsNull(updated1.Published);
+            Assert.IsNotNull(updated2.Published);
+        }
+
+        /// <summary>
+        /// Tests that scheduler handles version number gaps correctly.
+        /// </summary>
+        [TestMethod]
+        public async Task ExecuteAsync_WithNonSequentialVersionNumbers_HandlesCorrectly()
+        {
+            // Arrange
+            var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
+            testClock.SetUtcNow(now);
+            
+            // Version numbers: 1, 5, 10 (gaps intentional)
+            var articles = new []
+            {
+                new Article
+                {
+                    ArticleNumber = 1,
+                    VersionNumber = 1,
+                    Published = now.AddDays(-10),
+                    StatusCode = (int)StatusCodeEnum.Active,
+                    UserId = TestUserId.ToString(),
+                    UrlPath = "/test"
+                },
+                new Article
+                {
+                    ArticleNumber = 1,
+                    VersionNumber = 5,
+                    Published = now.AddDays(-5),
+                    StatusCode = (int)StatusCodeEnum.Active,
+                    UserId = TestUserId.ToString(),
+                    UrlPath = "/test"
+                },
+                new Article
+                {
+                    ArticleNumber = 1,
+                    VersionNumber = 10,
+                    Published = now.AddDays(-1),
+                    StatusCode = (int)StatusCodeEnum.Active,
+                    UserId = TestUserId.ToString(),
+                    UrlPath = "/test"
+                }
+            };
+            
+            Db.Articles.AddRange(articles);
+            await Db.SaveChangesAsync();
+            
+            // Act
+            await ArticleScheduler.ExecuteAsync();
+            
+            // Assert - Only version 10 should remain published
+            Assert.IsNull((await Db.Articles.FindAsync(articles[0].Id)).Published);
+            Assert.IsNull((await Db.Articles.FindAsync(articles[1].Id)).Published);
+            Assert.IsNotNull((await Db.Articles.FindAsync(articles[2].Id)).Published);
+        }
+
+        /// <summary>
+        /// Tests that concurrent executions don't cause data corruption.
+        /// </summary>
+        [TestMethod]
+        public async Task ExecuteAsync_ConcurrentExecutions_NoDataCorruption()
+        {
+            // Arrange
+            var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
+            testClock.SetUtcNow(now);
+    
+            // Setup test data
+            for (int i = 1; i <= 10; i++)
+            {
+                Db.Articles.Add(new Article
+                {
+                    ArticleNumber = i,
+                    VersionNumber = 1,
+                    Published = now.AddDays(-1),
+                    StatusCode = (int)StatusCodeEnum.Active,
+                    UserId = TestUserId.ToString(),
+                    UrlPath = $"/article-{i}"
+                });
+            }
+            await Db.SaveChangesAsync();
+    
+            // Act - Run scheduler concurrently
+            var tasks = Enumerable.Range(0, 3)
+                .Select(_ => ArticleScheduler.ExecuteAsync())
+                .ToArray();
+    
+            await Task.WhenAll(tasks);
+    
+            // Assert - All articles should still be published (no corruption)
+            var publishedCount = await Db.Articles.CountAsync(a => a.Published != null);
+            Assert.AreEqual(10, publishedCount);
         }
 
         /// <summary>

@@ -35,8 +35,8 @@ using Sky.Editor.Domain.Events;
 using Sky.Editor.Infrastructure.Time;
 using Sky.Editor.Services.Authors;
 using Sky.Editor.Services.BlogPublishing;
-using Sky.Editor.Services.BlogRenderingService;
 using Sky.Editor.Services.Catalog;
+using Sky.Editor.Services.EditorSettings;
 using Sky.Editor.Services.Html;
 using Sky.Editor.Services.Publishing;
 using Sky.Editor.Services.Redirects;
@@ -45,6 +45,10 @@ using Sky.Editor.Services.Scheduling;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
+using Sky.Editor.Features.Articles.Create;
+using Sky.Editor.Features.Articles.Save;
+using Sky.Editor.Features.Shared;
+using Cosmos.Common.Models;
 using SQLitePCL;
 using System;
 using System.Reflection;
@@ -109,6 +113,13 @@ builder.Services.AddTransient<StorageContext>();
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddHttpContextAccessor();
+
+// ---------------------------------------------------------------
+// Register Vertical Slice Architecture Feature Handlers
+// ---------------------------------------------------------------
+builder.Services.AddScoped<IMediator, Mediator>();
+builder.Services.AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>, CreateArticleHandler>();
+builder.Services.AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>, SaveArticleHandler>();
 
 // ---------------------------------------------------------------
 // Continue registering services common to both single-tenant and multi-tenant modes

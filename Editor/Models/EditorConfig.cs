@@ -7,7 +7,7 @@
 
 namespace Sky.Editor.Models
 {
-    using Sky.Editor.Data.Logic;
+    using Sky.Editor.Services.EditorSettings;
     using System.ComponentModel.DataAnnotations;
 
     /// <summary>

@@ -27,6 +27,7 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models;
     using Sky.Editor.Services.CDN;
+    using Sky.Editor.Services.EditorSettings;
     using System;
     using System.Collections.Generic;
     using System.IO;

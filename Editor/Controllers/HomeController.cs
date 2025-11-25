@@ -22,6 +22,7 @@ namespace Sky.Cms.Controllers
     using Microsoft.Net.Http.Headers;
     using Sky.Cms.Models;
     using Sky.Editor.Data.Logic;
+    using Sky.Editor.Services.EditorSettings;
     using System;
     using System.Diagnostics;
     using System.Linq;
@@ -304,15 +305,6 @@ namespace Sky.Cms.Controllers
                 EditModeOn = false
             };
             return View(model);
-        }
-
-        /// <summary>
-        /// Ensures there are settings if this is in multi-tenant mode.
-        /// </summary>
-        /// <returns>Success or not.</returns>
-        private bool EnsureSettingsExist()
-        {
-            return !string.IsNullOrWhiteSpace(options.PublisherUrl);
         }
 
         /// <summary>

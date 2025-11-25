@@ -91,28 +91,31 @@ namespace Sky.Editor.Services.Catalog
         /// <item>Optional optimistic concurrency handling.</item>
         /// </list>
         /// </remarks>
-        public async Task<CatalogEntry> UpsertAsync(Article article)
+        public async Task<CatalogEntry> UpsertAsync(Article article, System.Threading.CancellationToken cancellationToken)
         {
             var latest = await db.Articles
+                .AsNoTracking() // Prevent tracking this query result
                 .Where(a => a.ArticleNumber == article.ArticleNumber)
                 .OrderByDescending(a => a.VersionNumber)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
-            var existing = await db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == article.ArticleNumber);
+            var existing = await db.ArticleCatalog.FirstOrDefaultAsync(c => c.ArticleNumber == article.ArticleNumber, cancellationToken);
             if (existing != null)
             {
                 db.ArticleCatalog.Remove(existing);
-                await db.SaveChangesAsync();
+                await db.SaveChangesAsync(cancellationToken);
             }
 
             string authorInfo = string.Empty; // Placeholder: future enrichment via AuthorInfos.
 
-            if (string.IsNullOrWhiteSpace(article.Introduction))
+            // Use a local variable for introduction instead of modifying the tracked entity
+            string introduction = article.Introduction;
+            if (string.IsNullOrWhiteSpace(introduction))
             {
                 var intro = html.ExtractIntroduction(latest?.Content);
                 if (!string.IsNullOrWhiteSpace(intro))
                 {
-                    article.Introduction = intro;
+                    introduction = intro;
                 }
             }
 
@@ -128,11 +131,11 @@ namespace Sky.Editor.Services.Catalog
                 UrlPath = article.UrlPath,
                 TemplateId = article.TemplateId,
                 AuthorInfo = authorInfo,
-                Introduction = article.Introduction
+                Introduction = introduction // Use local variable
             };
 
             db.ArticleCatalog.Add(entry);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
             return entry;
         }
 

@@ -16,6 +16,11 @@ namespace Cosmos.DynamicConfig
         public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
+        /// Gets or sets a value indicating whether the website is allowed to perform setup tasks.
+        /// </summary>
+        public bool AllowSetup { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the editor domain name of the connection.
         /// </summary>
         [Display(Name = "Editor Domain Names")]
@@ -52,7 +57,22 @@ namespace Cosmos.DynamicConfig
         /// Gets or sets the publisher mode.
         /// </summary>
         [AllowedValues("Static", "Decoupled", "Headless", "Hybrid", "Static-dynamic", "")]
-        public string PublisherMode { get; set; } = string.Empty;
+        public string PublisherMode { get; set; } = "Static";
+
+        /// <summary>
+        /// Gets or sets the public URL for the storage account. (if a static website, this can be left blank).
+        /// </summary>
+        public string BlobPublicUrl { get; set; } = "/";
+
+        /// <summary>
+        /// Gets or sets the microsoft application ID used for application verification.
+        /// </summary>
+        public string MicrosoftAppId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the publisher requires authentication.
+        /// </summary>
+        public bool PublisherRequiresAuthentication { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the website URL.

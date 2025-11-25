@@ -76,10 +76,6 @@ namespace Sky.Editor.Boot
             catch (InvalidOperationException ex)
             {
                 logger?.LogError(ex, "Failed to resolve tenant database connection");
-                throw new InvalidOperationException(
-                    "Cannot create ApplicationDbContext: Tenant connection string resolution failed. " +
-                    "This may occur during application startup or in background jobs without HTTP context. " +
-                    "Ensure domain context is available or provide domain explicitly.", ex);
             }
 
             if (string.IsNullOrWhiteSpace(connectionString))

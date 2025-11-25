@@ -9,11 +9,13 @@ namespace Sky.Tests.DynamicConfig
 {
     using Cosmos.DynamicConfig;
     using Microsoft.AspNetCore.Http;
+    using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Sky.Tests.TestHelpers;
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
@@ -29,6 +31,7 @@ namespace Sky.Tests.DynamicConfig
         private Mock<IHttpContextAccessor> _mockHttpContextAccessor;
         private IMemoryCache _memoryCache; // Use real cache for isolation tests
         private Mock<ILogger<DynamicConfigurationProvider>> _mockLogger;
+        private DbContextOptions<DynamicConfigDbContext> _dbContextOptions;
 
         /// <summary>
         /// Initializes mocks before each test.
@@ -38,20 +41,58 @@ namespace Sky.Tests.DynamicConfig
         {
             _mockConfiguration = new Mock<IConfiguration>();
             _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-            _memoryCache = new MemoryCache(new MemoryCacheOptions()); // Real cache instance
+            _memoryCache = new MemoryCache(new MemoryCacheOptions());
             _mockLogger = new Mock<ILogger<DynamicConfigurationProvider>>();
 
-            // Setup config connection string
+            // Setup in-memory database for testing
+            _dbContextOptions = new DbContextOptionsBuilder<DynamicConfigDbContext>()
+                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+                .Options;
+
+            // Setup config connection string (won't be used with testable provider, but required for constructor)
+            var validConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==;Database=configs;";
+
             var mockConnectionSection = new Mock<IConfigurationSection>();
-            mockConnectionSection.Setup(x => x.Value)
-    .Returns("AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==;Database=configs;");
+            mockConnectionSection.Setup(x => x.Value).Returns(validConnectionString);
 
             var mockConnectionStringsSection = new Mock<IConfigurationSection>();
-            mockConnectionStringsSection.Setup(x => x["ConfigDbConnectionString"])
-                .Returns("AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=testkey;Database=configs;");
+            mockConnectionStringsSection.Setup(x => x["ConfigDbConnectionString"]).Returns(validConnectionString);
 
-            _mockConfiguration.Setup(x => x.GetSection("ConnectionStrings"))
-                .Returns(mockConnectionStringsSection.Object);
+            _mockConfiguration.Setup(x => x.GetSection("ConnectionStrings")).Returns(mockConnectionStringsSection.Object);
+
+            // Seed test data
+            SeedTestData();
+        }
+
+        private void SeedTestData()
+        {
+            using var context = new DynamicConfigDbContext(_dbContextOptions);
+            context.Database.EnsureCreated();
+            
+            context.Connections.AddRange(
+                new Connection
+                {
+                    Id = Guid.NewGuid(),
+                    DomainNames = new[] { "tenant1.com", "www.tenant1.com" },
+                    DbConn = "Server=tenant1;Database=Tenant1Db;",
+                    StorageConn = "DefaultEndpointsProtocol=https;AccountName=tenant1storage;",
+                    Customer = "Tenant 1",
+                    WebsiteUrl = "https://tenant1.com",
+                    ResourceGroup = "tenant1-rg"
+                },
+                new Connection
+                {
+                    Id = Guid.NewGuid(),
+                    DomainNames = new[] { "tenant2.com" },
+                    DbConn = "Server=tenant2;Database=Tenant2Db;",
+                    StorageConn = "DefaultEndpointsProtocol=https;AccountName=tenant2storage;",
+                    Customer = "Tenant 2",
+                    WebsiteUrl = "https://tenant2.com",
+                    ResourceGroup = "tenant2-rg"
+                }
+            );
+            
+            context.SaveChanges();
         }
 
         /// <summary>
@@ -60,6 +101,12 @@ namespace Sky.Tests.DynamicConfig
         [TestCleanup]
         public void Cleanup()
         {
+            // Clean up in-memory database
+            using (var context = new DynamicConfigDbContext(_dbContextOptions))
+            {
+                context.Database.EnsureDeleted();
+            }
+            
             _memoryCache?.Dispose();
             TenantContext.Clear();
         }
@@ -135,11 +182,7 @@ namespace Sky.Tests.DynamicConfig
         {
             // Arrange
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null);
-            var provider = new DynamicConfigurationProvider(
-                _mockConfiguration.Object,
-                _mockHttpContextAccessor.Object,
-                _memoryCache,
-                _mockLogger.Object);
+            var provider = CreateTestableProvider();
 
             // Act & Assert
             var exception = Assert.ThrowsExactly<AggregateException>(() =>
@@ -157,17 +200,19 @@ namespace Sky.Tests.DynamicConfig
         {
             // Arrange
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null);
-            var provider = new DynamicConfigurationProvider(
+            var provider = new TestableConfigurationProvider(
                 _mockConfiguration.Object,
                 _mockHttpContextAccessor.Object,
                 _memoryCache,
-                _mockLogger.Object);
+                _mockLogger.Object,
+                _dbContextOptions);  // Add the in-memory DB options
 
             // Act
             var result = provider.GetDatabaseConnectionStringAsync("tenant1.com").Result;
 
-            // Assert - Should not throw, even though it returns null (no connection in mock DB)
-            Assert.IsNull(result); // No connection found, but didn't throw
+            // Assert
+            Assert.IsNotNull(result);  // Should find the connection in seeded data
+            Assert.AreEqual("Server=tenant1;Database=Tenant1Db;", result);
         }
 
         /// <summary>
@@ -182,21 +227,25 @@ namespace Sky.Tests.DynamicConfig
             mockContext.Request.Host = new HostString("TENANT1.COM");
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockContext);
             
-            var provider = new DynamicConfigurationProvider(
+            var provider = new TestableConfigurationProvider(
                 _mockConfiguration.Object,
                 _mockHttpContextAccessor.Object,
                 _memoryCache,
-                _mockLogger.Object);
+                _mockLogger.Object,
+                _dbContextOptions);  // Pass the in-memory DB options
 
             // Act
-            var result1 = provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult();;
+            var result1 = provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult();
             
             // Change case
             mockContext.Request.Host = new HostString("tenant1.com");
-            var result2 = provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult();;
+            var result2 = provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult();
 
             // Assert - Both should resolve to same (normalized) domain
+            Assert.IsNotNull(result1);
+            Assert.IsNotNull(result2);
             Assert.AreEqual(result1, result2);
+            Assert.AreEqual("Server=tenant1;Database=Tenant1Db;", result1);
         }
 
         #endregion
@@ -212,11 +261,7 @@ namespace Sky.Tests.DynamicConfig
         {
             // Arrange
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null);
-            var provider = new DynamicConfigurationProvider(
-                _mockConfiguration.Object,
-                _mockHttpContextAccessor.Object,
-                _memoryCache,
-                _mockLogger.Object);
+            var provider = CreateTestableProvider();
 
             // Act & Assert
             var exception = Assert.ThrowsExactly<InvalidOperationException>(() => 
@@ -233,17 +278,19 @@ namespace Sky.Tests.DynamicConfig
         {
             // Arrange
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null);
-            var provider = new DynamicConfigurationProvider(
+            var provider = new TestableConfigurationProvider(  // Change this line
                 _mockConfiguration.Object,
                 _mockHttpContextAccessor.Object,
                 _memoryCache,
-                _mockLogger.Object);
+                _mockLogger.Object,
+                _dbContextOptions);  // Add this parameter
 
             // Act
             var result = provider.GetStorageConnectionStringAsync("tenant1.com").Result;
 
             // Assert
-            Assert.IsNull(result); // No connection found, but didn't throw
+            Assert.IsNotNull(result);  // Update: Should find the connection in seeded data
+            Assert.AreEqual("DefaultEndpointsProtocol=https;AccountName=tenant1storage;", result);
         }
 
         #endregion
@@ -488,11 +535,7 @@ namespace Sky.Tests.DynamicConfig
         {
             // Arrange
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
-            var provider = new DynamicConfigurationProvider(
-                _mockConfiguration.Object,
-                _mockHttpContextAccessor.Object,
-                _memoryCache,
-                _mockLogger.Object);
+            var provider = CreateTestableProvider();
 
             // Act
             var result = await provider.ValidateDomainName(null);
@@ -509,11 +552,7 @@ namespace Sky.Tests.DynamicConfig
         {
             // Arrange
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
-            var provider = new DynamicConfigurationProvider(
-                _mockConfiguration.Object,
-                _mockHttpContextAccessor.Object,
-                _memoryCache,
-                _mockLogger.Object);
+            var provider = CreateTestableProvider();
 
             // Act
             var result = await provider.ValidateDomainName(string.Empty);
@@ -537,11 +576,7 @@ namespace Sky.Tests.DynamicConfig
             mockContext.Request.Host = new HostString("TENANT1.COM");
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockContext);
             
-            var provider = new DynamicConfigurationProvider(
-                _mockConfiguration.Object,
-                _mockHttpContextAccessor.Object,
-                _memoryCache,
-                _mockLogger.Object);
+            var provider = CreateTestableProvider();
 
             // Act
             var result = provider.GetTenantDomainNameFromRequest();
@@ -561,11 +596,7 @@ namespace Sky.Tests.DynamicConfig
             mockContext.Request.Headers["x-origin-hostname"] = "TENANT1.COM";
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockContext);
 
-            var provider = new DynamicConfigurationProvider(
-                _mockConfiguration.Object,
-                _mockHttpContextAccessor.Object,
-                _memoryCache,
-                _mockLogger.Object);
+            var provider = CreateTestableProvider();
 
             // Act
             var result = provider.GetTenantDomainNameFromRequest();
@@ -582,11 +613,7 @@ namespace Sky.Tests.DynamicConfig
         {
             // Arrange
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null);
-            var provider = new DynamicConfigurationProvider(
-                _mockConfiguration.Object,
-                _mockHttpContextAccessor.Object,
-                _memoryCache,
-                _mockLogger.Object);
+            var provider = CreateTestableProvider();
 
             // Act
             var result = provider.GetTenantDomainNameFromRequest();
@@ -607,11 +634,7 @@ namespace Sky.Tests.DynamicConfig
         {
             // Arrange
             _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null);
-            var provider = new DynamicConfigurationProvider(
-                _mockConfiguration.Object,
-                _mockHttpContextAccessor.Object,
-                _memoryCache,
-                _mockLogger.Object);
+            var provider = CreateTestableProvider();
 
             // Act
             try
@@ -690,6 +713,21 @@ namespace Sky.Tests.DynamicConfig
             {
                 return ex;
             }
+        }
+
+        /// <summary>
+        /// Creates a testable configuration provider for unit tests.
+        /// Always use this method to ensure tests use the in-memory database.
+        /// </summary>
+        /// <returns>TestableConfigurationProvider instance.</returns>
+        private TestableConfigurationProvider CreateTestableProvider()
+        {
+            return new TestableConfigurationProvider(
+                _mockConfiguration.Object,
+                _mockHttpContextAccessor.Object,
+                _memoryCache,
+                _mockLogger.Object,
+                _dbContextOptions);
         }
 
         #endregion

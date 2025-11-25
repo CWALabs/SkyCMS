@@ -27,9 +27,10 @@ namespace Sky.Editor.Services.Titles
         /// Processes a title change for the supplied <paramref name="article"/>, given the previous title.
         /// </summary>
         /// <param name="article">The article entity whose title has just been modified (unsaved or saved, per calling convention).</param>
+        /// <param name="oldTitle">The previous title of the article before the change.</param>
         /// <param name="oldUrlPath">The prior URL path used to detect changes and generate redirects if required.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task HandleTitleChangeAsync(Article article, string oldUrlPath);
+        Task HandleTitleChangeAsync(Article article, string oldTitle, string oldUrlPath);
 
         /// <summary>
         /// Validates whether a proposed title is usable (not reserved and not used by a different article).

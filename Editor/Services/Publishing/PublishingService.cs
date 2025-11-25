@@ -7,6 +7,14 @@
 
 namespace Sky.Editor.Services.Publishing
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.BlobService.Models;
     using Cosmos.Cms.Common.Services.Configurations;
@@ -16,21 +24,14 @@ namespace Sky.Editor.Services.Publishing
     using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Sky.Cms.Services;
-    using Sky.Editor.Data.Logic;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.BlogPublishing;
     using Sky.Editor.Services.CDN;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Net.Http;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using Sky.Editor.Services.EditorSettings;
 
     /// <summary>
     /// Orchestrates publishing of articles and blog content.
@@ -52,7 +53,12 @@ namespace Sky.Editor.Services.Publishing
         private readonly IClock _systemClock;
         private readonly IBlogRenderingService blogRenderingService;
         private readonly IViewRenderService viewRenderService;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly SemaphoreSlim _layoutLock = new SemaphoreSlim(1, 1);
         private LayoutViewModel defaultLayout;
+
+        private Guid userId => Guid.Parse(_accessor.HttpContext.User.Claims
+            .FirstOrDefault(f => f.Type == "sub")?.Value ?? Guid.Empty.ToString());
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PublishingService"/> class.
@@ -66,6 +72,7 @@ namespace Sky.Editor.Services.Publishing
         /// <param name="systemClock">The system clock.</param>
         /// <param name="blogRenderingService">The blog stream and post rendering service.</param>
         /// <param name="viewRenderService">View rendering service.</param>
+        /// <param name="serviceProvider">Service provider for creating scoped dependencies.</param>
         public PublishingService(
             ApplicationDbContext db,
             StorageContext storage,
@@ -75,7 +82,8 @@ namespace Sky.Editor.Services.Publishing
             Authors.IAuthorInfoService authors,
             IClock systemClock,
             IBlogRenderingService blogRenderingService,
-            IViewRenderService viewRenderService)
+            IViewRenderService viewRenderService,
+            IServiceProvider serviceProvider)
         {
             _db = db;
             _storage = storage;
@@ -86,38 +94,23 @@ namespace Sky.Editor.Services.Publishing
             _systemClock = systemClock;
             this.blogRenderingService = blogRenderingService;
             this.viewRenderService = viewRenderService;
-        }
-
-        /// <summary>
-        /// Gets the default layout lazily from the database.
-        /// </summary>
-        /// <returns>The default layout view model.</returns>
-        private async Task<LayoutViewModel> GetDefaultLayoutAsync()
-        {
-            if (defaultLayout == null)
-            {
-                var layout = await _db.Layouts.FirstOrDefaultAsync(l => l.IsDefault);
-                defaultLayout = new LayoutViewModel(layout);
-            }
-            return defaultLayout;
+            _serviceProvider = serviceProvider;
         }
 
         /// <summary>
         /// Publishes (or updates) a blog stream page for the specified blog key and user.
         /// </summary>
         /// <param name="blog">The blog stream metadata and content input. The <see cref="Article.BlogKey"/> identifies the stream; the HTML is generated with <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/>.</param>
-        /// <param name="userId">The ID of the user performing the publish; stored on the resulting article for auditing and author attribution.</param>
         /// <returns>A list of CDN purge results indicating cache invalidation status per provider after publishing.</returns>
         /// <remarks>
         /// If a blog stream article already exists for the given <see cref="Article.BlogKey"/>,
-
         /// its metadata is updated and the <see cref="Article.VersionNumber"/> is incremented;
         /// otherwise a new article record is created. In both cases, content is produced by
         /// <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/> and the operation
         /// delegates to <see cref="PublishAsync(Article)"/> to create the published page, write
         /// optional static files, update the TOC, and purge the CDN.
         /// </remarks>
-        public async Task<List<CdnResult>> PublishAsync(Article blog, Guid userId)
+        public async Task<List<CdnResult>> PublishBlogStreamAsync(Article blog, CancellationToken cancellationToken = default)
         {
             var article = await _db.Articles
                 .Where(a => a.BlogKey == blog.BlogKey && a.ArticleType == (int)ArticleType.BlogStream)
@@ -127,7 +120,7 @@ namespace Sky.Editor.Services.Publishing
             if (article == null)
             {
                 var articleNumber = (await _db.Articles.AnyAsync()) ?
-                    (await _db.Articles.Select(s => s.VersionNumber).MaxAsync()) + 1 : 1;
+                    (await _db.Articles.Select(s => s.ArticleNumber).MaxAsync()) + 1 : 1;
 
                 article = new Article
                 {
@@ -170,7 +163,7 @@ namespace Sky.Editor.Services.Publishing
         }
 
         /// <inheritdoc/>
-        public async Task<List<CdnResult>> PublishAsync(Article article)
+        public async Task<List<CdnResult>> PublishAsync(Article article, CancellationToken token = default)
         {
             if (article.Published == null)
             {
@@ -290,10 +283,31 @@ namespace Sky.Editor.Services.Publishing
         {
             var pages = await _db.Pages.Where(w => ids.Contains(w.Id)).ToListAsync();
 
-            foreach (var page in pages)
+            // Pre-load the layout once before parallel processing
+            var layout = await GetDefaultLayoutAsync();
+
+            // Process pages in parallel with controlled concurrency
+            var options = new ParallelOptions
             {
-                await CreateStaticFileWithRetryAsync(page);
-            }
+                MaxDegreeOfParallelism = 4 // Adjust based on your system
+            };
+
+            await Parallel.ForEachAsync(pages, options, async (page, cancellationToken) =>
+            {
+                // Each iteration needs its own DbContext scope
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                var scopedStorage = scope.ServiceProvider.GetRequiredService<StorageContext>();
+                var scopedLogger = scope.ServiceProvider.GetRequiredService<ILogger<PublishingService>>();
+                var scopedViewRenderer = scope.ServiceProvider.GetRequiredService<IViewRenderService>(); // ADD THIS LINE
+
+                await CreateStaticFileWithRetrySafeAsync(
+                    page,
+                    layout,
+                    scopedStorage,
+                    scopedViewRenderer, // CHANGE THIS from viewRenderService
+                    scopedLogger,
+                    cancellationToken);
+            });
 
             // Write the table of contents.
             await WriteTocAsync("/");
@@ -307,14 +321,18 @@ namespace Sky.Editor.Services.Publishing
         }
 
         /// <summary>
-        /// Creates a static file with retry logic and exponential backoff.
+        /// Creates a static file with retry logic and exponential backoff (thread-safe version).
         /// </summary>
         /// <param name="page">The published page to generate a static file for.</param>
+        /// <param name="layout">Pre-loaded layout to avoid thread-safety issues.</param>
+        /// <param name="storage">Scoped storage context for this operation.</param>
+        /// <param name="viewRenderer">Scoped view renderer for this operation.</param>
+        /// <param name="logger">Scoped logger for this operation.</param>
         /// <param name="cancellationToken">Cancellation token for the operation.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         /// <remarks>
         /// <para>
-        /// Wraps <see cref="CreateStaticFile(PublishedPage)"/> with resilience logic:
+        /// Wraps <see cref="CreateStaticFileSafeAsync"/> with resilience logic:
         /// </para>
         /// <list type="bullet">
         ///   <item><description>Maximum 3 retry attempts (4 total attempts including initial)</description></item>
@@ -327,7 +345,13 @@ namespace Sky.Editor.Services.Publishing
         /// failing the entire batch operation.
         /// </para>
         /// </remarks>
-        private async Task CreateStaticFileWithRetryAsync(PublishedPage page, CancellationToken cancellationToken = default)
+        private async Task CreateStaticFileWithRetrySafeAsync(
+            PublishedPage page,
+            LayoutViewModel layout,
+            StorageContext storage,
+            IViewRenderService viewRenderer,
+            ILogger<PublishingService> logger,
+            CancellationToken cancellationToken = default)
         {
             const int maxRetries = 3;
             const int initialDelayMs = 500;
@@ -337,12 +361,11 @@ namespace Sky.Editor.Services.Publishing
             {
                 try
                 {
-                    await CreateStaticFile(page);
+                    await CreateStaticFileSafeAsync(page, layout, storage, viewRenderer);
 
-                    // Success - log if this was a retry
                     if (attempt > 0)
                     {
-                        _logger.LogInformation(
+                        logger.LogInformation(
                             "Successfully created static file for page {PageId} ({UrlPath}) after {Attempts} attempt(s)",
                             page.Id, page.UrlPath, attempt + 1);
                     }
@@ -351,22 +374,114 @@ namespace Sky.Editor.Services.Publishing
                 }
                 catch (Exception ex) when (attempt < maxRetries && IsTransientException(ex))
                 {
-                    _logger.LogWarning(ex,
+                    logger.LogWarning(ex,
                         "Transient error creating static file for page {PageId} ({UrlPath}). Attempt {Attempt} of {MaxAttempts}. Retrying in {Delay}ms...",
                         page.Id, page.UrlPath, attempt + 1, maxRetries + 1, currentDelay);
 
                     await Task.Delay(currentDelay, cancellationToken);
-                    currentDelay *= 2; // Exponential backoff
+                    currentDelay *= 2;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex,
+                    logger.LogError(ex,
                         "Failed to create static file for page {PageId} ({UrlPath}) after {Attempts} attempt(s). Skipping this page.",
                         page.Id, page.UrlPath, attempt + 1);
 
                     return; // Don't throw - allow other pages to continue
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the default layout lazily from the database with thread-safe initialization.
+        /// </summary>
+        /// <returns>The default layout view model.</returns>
+        private async Task<LayoutViewModel> GetDefaultLayoutAsync()
+        {
+            if (defaultLayout == null)
+            {
+                await _layoutLock.WaitAsync();
+                try
+                {
+                    if (defaultLayout == null) // Double-check after acquiring lock
+                    {
+                        var layout = await _db.Layouts.FirstOrDefaultAsync(l => l.IsDefault);
+                        defaultLayout = new LayoutViewModel(layout);
+                    }
+                }
+                finally
+                {
+                    _layoutLock.Release();
+                }
+            }
+
+            return defaultLayout;
+        }
+
+        /// <summary>
+        /// Creates a static file (thread-safe version with explicit dependencies).
+        /// </summary>
+        /// <param name="page">The published page to generate a static file for.</param>
+        /// <param name="layout">Pre-loaded layout to use.</param>
+        /// <param name="storage">Storage context to use for upload.</param>
+        /// <param name="viewRenderer">View renderer to use for HTML generation.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        private async Task CreateStaticFileSafeAsync(
+            PublishedPage page,
+            LayoutViewModel layout,
+            StorageContext storage,
+            IViewRenderService viewRenderer)
+        {
+            if (!_settings.StaticWebPages)
+            {
+                return;
+            }
+
+            var rel = page.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase)
+                ? "/index.html"
+                : "/" + page.UrlPath.TrimStart('/');
+
+            var model = new ArticleViewModel()
+            {
+                ArticleNumber = page.ArticleNumber,
+                Title = page.Title,
+                Content = page.Content,
+                HeadJavaScript = page.HeaderJavaScript,
+                FooterJavaScript = page.FooterJavaScript,
+                Updated = page.Updated,
+                AuthorInfo = page.AuthorInfo,
+                Published = page.Published,
+                Expires = page.Expires,
+                BannerImage = page.BannerImage,
+                UrlPath = page.UrlPath,
+                ArticleType = (ArticleType)(page.ArticleType ?? 0),
+                Category = page.Category,
+                Introduction = page.Introduction,
+                Id = page.Id,
+                EditModeOn = false,
+                PreviewMode = false,
+                ReadWriteMode = false,
+                VersionNumber = page.VersionNumber,
+                CacheDuration = 0,
+                Layout = layout // Use pre-loaded layout
+            };
+
+            var html = await viewRenderer.RenderToStringAsync("~/Views/Home/Static.cshtml", model);
+
+            var result = NUglify.Uglify.Html(html);
+            var contentToUpload = result.HasErrors ? html : result.Code;
+
+            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(contentToUpload));
+            await storage.AppendBlob(ms, new FileUploadMetaData
+            {
+                ChunkIndex = 0,
+                ContentType = "text/html",
+                FileName = Path.GetFileName(rel),
+                RelativePath = rel,
+                TotalChunks = 1,
+                TotalFileSize = ms.Length,
+                UploadUid = Guid.NewGuid().ToString()
+            });
         }
 
         /// <summary>
@@ -621,7 +736,7 @@ namespace Sky.Editor.Services.Publishing
                 ? "/index.html"
                 : "/" + page.UrlPath.TrimStart('/');
 
-            var layout = await GetDefaultLayoutAsync(); // CHANGED: Use lazy-loaded layout
+            var layout = await GetDefaultLayoutAsync();
 
             var model = new ArticleViewModel()
             {
@@ -645,13 +760,13 @@ namespace Sky.Editor.Services.Publishing
                 ReadWriteMode = false,
                 VersionNumber = page.VersionNumber,
                 CacheDuration = 0,
-                Layout = layout // CHANGED: Use lazy-loaded layout
+                Layout = layout
             };
 
-            var html = await this.viewRenderService.RenderToStringAsync("~/Views/Home/Static.cshtml", model);
+            var html = await viewRenderService.RenderToStringAsync("~/Views/Home/Static.cshtml", model);
 
             var result = NUglify.Uglify.Html(html);
-            var contentToUpload = result.HasErrors ? html : result.Code; // Use minified if no errors.
+            var contentToUpload = result.HasErrors ? html : result.Code;
 
             using var ms = new MemoryStream(Encoding.UTF8.GetBytes(contentToUpload));
             await _storage.AppendBlob(ms, new FileUploadMetaData

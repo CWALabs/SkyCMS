@@ -51,12 +51,15 @@ namespace Cosmos.DynamicConfig
         public string ErrorMesages => errorMessages.ToString();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ConnectionStringProvider"/> class.
+        /// Initializes a new instance of the <see cref="DynamicConfigurationProvider"/> class.
         /// </summary>
         /// <param name="configuration">Connection configuration.</param>
         /// <param name="httpContextAccessor">HTTP context accessor.</param>
         /// <param name="logger">Log service.</param>
         /// <param name="memoryCache">Memory cache.</param>
+        /// <remarks>
+        /// For unit tests, use <see cref="TestableConfigurationProvider"/> to avoid real database connections.
+        /// </remarks>
         public DynamicConfigurationProvider(
             IConfiguration configuration,
             IHttpContextAccessor httpContextAccessor,
@@ -187,7 +190,6 @@ namespace Cosmos.DynamicConfig
         /// <para>Returns the domain name by looking at the incomming request.  Here is the order:</para>
         /// <list type="number">
         /// <item>x-origin-hostname host header.</item>
-        /// <item>Referer request header value if requested.</item>
         /// <item>Otherwise returns the host name of the request.</item>
         /// </list>
         /// <para>Note: This should ONLY be used for multi-tenant, single editor website setup.</para>
@@ -319,13 +321,19 @@ namespace Cosmos.DynamicConfig
             return $"{CacheKeyPrefix}{NormalizeDomainName(domainName)}";
         }
 
-        private DynamicConfigDbContext GetDbContext()
+        protected virtual DynamicConfigDbContext GetDbContext()
         {
             var options = AspNetCore.Identity.FlexDb.CosmosDbOptionsBuilder.GetDbOptions<DynamicConfigDbContext>(this.connectionString);
             return new DynamicConfigDbContext(options);
         }
 
-        private async Task<Connection?> GetTenantConnectionAsync(string domainName, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Gets the tenant connection for the domain name.
+        /// </summary>
+        /// <param name="domainName"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<Connection?> GetTenantConnectionAsync(string domainName, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(domainName))
             {

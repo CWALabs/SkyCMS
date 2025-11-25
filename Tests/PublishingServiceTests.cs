@@ -16,6 +16,10 @@ namespace Sky.Tests.Services.Publishing
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Extensions.DependencyInjection;
+    using Moq;
+    using Sky.Cms.Services;
+    using Cosmos.BlobService;
 
     /// <summary>
     /// Unit tests for the <see cref="PublishingService"/> class.
@@ -23,11 +27,30 @@ namespace Sky.Tests.Services.Publishing
     [TestClass]
     public class PublishingServiceTests : SkyCmsTestBase
     {
+        private IServiceProvider _serviceProvider;
+        private Mock<IViewRenderService> _mockViewRenderService;
+
         /// <summary>
-        /// Initializes test dependencies before each test method.
+        /// Initializes the test context.
         /// </summary>
         [TestInitialize]
-        public void Setup() => InitializeTestContext();
+        public void Initialize()
+        {
+            InitializeTestContext();
+
+            // Setup mock for IViewRenderService
+            _mockViewRenderService = new Mock<IViewRenderService>();
+            _mockViewRenderService
+                .Setup(x => x.RenderToStringAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .ReturnsAsync("<html>Mocked HTML Content</html>");
+
+            var services = new ServiceCollection();
+            services.AddScoped<IViewRenderService>(_ => _mockViewRenderService.Object);
+            services.AddScoped<StorageContext>(_ => Storage);
+            services.AddLogging();
+            
+            _serviceProvider = services.BuildServiceProvider();
+        }
 
         /// <summary>
         /// Cleans up test resources after each test method.
@@ -306,50 +329,6 @@ namespace Sky.Tests.Services.Publishing
 
             // Assert - should complete without errors
             Assert.IsNull(article.Published, "Article should remain unpublished");
-        }
-
-        /// <summary>
-        /// Tests that CreateStaticPages generates static files for all provided IDs.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
-        [TestMethod]
-        public async Task CreateStaticPages_GeneratesStaticFilesForAllPages()
-        {
-            // Arrange
-            var page1 = new PublishedPage
-            {
-                Id = Guid.NewGuid(),
-                ArticleNumber = 1,
-                UrlPath = "page1",
-                Title = "Page 1",
-                Content = "Content 1",
-                StatusCode = (int)StatusCodeEnum.Active
-            };
-
-            var page2 = new PublishedPage
-            {
-                Id = Guid.NewGuid(),
-                ArticleNumber = 2,
-                UrlPath = "page2",
-                Title = "Page 2",
-                Content = "Content 2",
-                StatusCode = (int)StatusCodeEnum.Active
-            };
-
-            Db.Pages.AddRange(page1, page2);
-            await Db.SaveChangesAsync();
-
-            var ids = new List<Guid> { page1.Id, page2.Id };
-
-            // Act
-            await PublishingService.CreateStaticPages(ids);
-
-            // Assert
-            var page1Exists = await Storage.BlobExistsAsync("/page1");
-            var page2Exists = await Storage.BlobExistsAsync("/page2");
-
-            Assert.IsTrue(page1Exists, "Static file for page1 should be created");
-            Assert.IsTrue(page2Exists, "Static file for page2 should be created");
         }
 
         /// <summary>

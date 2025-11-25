@@ -22,6 +22,7 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
+    using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Templates;
     using System;

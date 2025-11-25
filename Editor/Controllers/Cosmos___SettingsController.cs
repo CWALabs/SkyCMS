@@ -13,9 +13,9 @@ namespace Sky.Editor.Controllers
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
-    using Sky.Editor.Data.Logic;
     using Sky.Editor.Models;
     using Sky.Editor.Services.CDN;
+    using Sky.Editor.Services.EditorSettings;
     using System;
     using System.Collections.Generic;
     using System.Linq;

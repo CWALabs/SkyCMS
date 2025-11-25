@@ -5,9 +5,11 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Sky.Editor.Data.Logic
+namespace Sky.Editor.Services.EditorSettings
 {
+    using Sky.Editor.Models;
     using System;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Interface for editor settings.
@@ -50,12 +52,12 @@ namespace Sky.Editor.Data.Logic
         string PublisherUrl { get; }
 
         /// <summary>
-        /// Gets a value indicating if this is a multi-tenant editor.
+        /// Gets a value indicating whether this is a multi-tenant editor.
         /// </summary>
         bool IsMultiTenantEditor { get; }
 
         /// <summary>
-        /// Gets an indication if the website uses static web page mode.
+        /// Gets a value indicating whether the website uses static web page mode.
         /// </summary>
         bool StaticWebPages { get; }
 
@@ -64,5 +66,11 @@ namespace Sky.Editor.Data.Logic
         /// </summary>
         /// <returns>Uri.</returns>
         Uri GetBlobAbsoluteUrl();
+
+        /// <summary>
+        /// Gets the editor configuration settings asynchronously.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the editor configuration.</returns>
+        Task<EditorConfig> GetEditorConfigAsync();
     }
 }

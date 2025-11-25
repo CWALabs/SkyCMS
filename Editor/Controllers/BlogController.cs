@@ -212,7 +212,7 @@ namespace Sky.Editor.Controllers
             // Handle title change.
             if (oldTitle != article.Title)
             {
-                await titleChangeService.HandleTitleChangeAsync(article, oldUrlPath);
+                await titleChangeService.HandleTitleChangeAsync(article, oldTitle, oldUrlPath);
             }
 
             if (article.Published.HasValue)
@@ -629,7 +629,7 @@ namespace Sky.Editor.Controllers
             // Handle title change.
             if (oldTitle != article.Title)
             {
-                await titleChangeService.HandleTitleChangeAsync(article, oldUrlPath);
+                await titleChangeService.HandleTitleChangeAsync(article, oldTitle, oldUrlPath);
             }
 
             if (article.Published.HasValue)

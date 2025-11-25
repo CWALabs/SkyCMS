@@ -1,4 +1,4 @@
-﻿// <copyright file="ArticleVersionPublisher.cs" company="Moonrise Software, LLC">
+﻿// <copyright file="ArticleScheduler.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -15,20 +15,13 @@ namespace Sky.Editor.Services.Scheduling
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.DynamicConfig;
-    using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
-    using Sky.Editor.Data.Logic;
     using Sky.Editor.Infrastructure.Time;
-    using Sky.Editor.Services.Catalog;
-    using Sky.Editor.Services.Html;
-    using Sky.Editor.Services.Publishing;
-    using Sky.Editor.Services.Redirects;
-    using Sky.Editor.Services.Slugs;
-    using Sky.Editor.Services.Templates;
-    using Sky.Editor.Services.Titles;
+    using Sky.Editor.Services.EditorSettings;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -38,76 +31,42 @@ namespace Sky.Editor.Services.Scheduling
     /// </remarks>
     public class ArticleScheduler : IArticleScheduler
     {
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IServiceProvider serviceProvider;
         private readonly IOptions<CosmosConfig> config;
-        private readonly IMemoryCache memoryCache;
-        private readonly StorageContext storageContext;
         private readonly ILogger<ArticleScheduler> logger;
-        private readonly IHttpContextAccessor accessor;
         private readonly IEditorSettings settings;
         private readonly IClock clock;
-        private readonly ISlugService slugService;
-        private readonly IArticleHtmlService htmlService;
-        private readonly ICatalogService catalogService;
-        private readonly IPublishingService publishingService;
-        private readonly ITitleChangeService titleChangeService;
-        private readonly IRedirectService redirectService;
-        private readonly ITemplateService templateService;
-        private readonly IDynamicConfigurationProvider? configurationProvider;
+        private readonly IDynamicConfigurationProvider configurationProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ArticleScheduler"/> class.
         /// </summary>
         /// <param name="clock">Clock abstraction for testable time.</param>
-        /// <param name="slugService">Slug service.</param>
-        /// <param name="htmlService">HTML Service.</param>
-        /// <param name="catalogService">Catalog service.</param>
-        /// <param name="publishingService">Publishing service.</param>
-        /// <param name="titleChangeService">Title change service.</param>
-        /// <param name="redirectService">Redirect service.</param>
-        /// <param name="templateService">Template service.</param>
         /// <param name="logger">Logger instance.</param>
-        /// <param name="accessor">HTTP context accessor.</param>
         /// <param name="settings">Editor settings.</param>
-        /// <param name="dbContext">Single tenant db context.</param>
         /// <param name="config">Cosmos configuration.</param>
-        /// <param name="memoryCache">Memory cache.</param>
-        /// <param name="storageContext">Storage context.</param>
-        /// <param name="configurationProvider">Configuration provider (optional - only for multi-tenant mode).</param>
+        /// <param name="serviceProvider">Service provider for creating scoped dependencies.</param>
         public ArticleScheduler(
-            ApplicationDbContext dbContext,
             IOptions<CosmosConfig> config,
-            IMemoryCache memoryCache,
-            StorageContext storageContext,
             ILogger<ArticleScheduler> logger,
-            IHttpContextAccessor accessor,
             IEditorSettings settings,
             IClock clock,
-            ISlugService slugService,
-            IArticleHtmlService htmlService,
-            ICatalogService catalogService,
-            IPublishingService publishingService,
-            ITitleChangeService titleChangeService,
-            IRedirectService redirectService,
-            ITemplateService templateService,
-            IDynamicConfigurationProvider? configurationProvider = null)
+            IServiceProvider serviceProvider)
         {
-            this._dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
-            this.storageContext = storageContext ?? throw new ArgumentNullException(nameof(storageContext));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
-            this.slugService = slugService ?? throw new ArgumentNullException(nameof(slugService));
-            this.htmlService = htmlService ?? throw new ArgumentNullException(nameof(htmlService));
-            this.catalogService = catalogService ?? throw new ArgumentNullException(nameof(catalogService));
-            this.publishingService = publishingService ?? throw new ArgumentNullException(nameof(publishingService));
-            this.titleChangeService = titleChangeService ?? throw new ArgumentNullException(nameof(titleChangeService));
-            this.redirectService = redirectService ?? throw new ArgumentNullException(nameof(redirectService));
-            this.templateService = templateService ?? throw new ArgumentNullException(nameof(templateService));
-            this.configurationProvider = configurationProvider;
+            this.serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+
+            if (settings.IsMultiTenantEditor)
+            {
+                configurationProvider = serviceProvider.GetRequiredService<IDynamicConfigurationProvider>();
+            }
+            else
+            {
+                configurationProvider = null;
+            }
         }
 
         /// <inheritdoc/>
@@ -118,61 +77,101 @@ namespace Sky.Editor.Services.Scheduling
         public async Task ExecuteAsync()
         {
             var now = clock.UtcNow;
-            logger.LogInformation("ArticleVersionPublisher: Starting scheduled execution at {ExecutionTime}", now);
+            logger.LogInformation("ArticleScheduler: Starting scheduled execution at {ExecutionTime}", now);
 
-            if (settings.IsMultiTenantEditor && configurationProvider?.IsMultiTenantConfigured == true)
+            if (!settings.IsMultiTenantEditor)
             {
-                var domainNames = await configurationProvider.GetAllDomainNamesAsync();
-                foreach (var domainName in domainNames)
+                try
                 {
-                    var connectionString = await configurationProvider.GetDatabaseConnectionStringAsync(domainName);
-                    using (var dbContext = new ApplicationDbContext(connectionString))
-                    {
-                        await Run(dbContext, domainName);
-                    }
+                    await RunForTenant(string.Empty);
                 }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "ArticleScheduler: Error processing schduler.");
+                }
+
+                return;
             }
-            else
+
+            var domainNames = await configurationProvider.GetAllDomainNamesAsync();
+            foreach (var domainName in domainNames)
             {
-                await Run(_dbContext, "local-host");
+                try
+                {
+                    await RunForTenant(domainName);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "ArticleScheduler: Error processing tenant {Domain}", domainName);
+                }
             }
         }
 
-        private async Task Run(ApplicationDbContext dbContext, string domainName = "")
+        private async Task RunForTenant(string domainName)
         {
+            // Create a new scope for each tenant to ensure proper dependency isolation
+            using var scope = serviceProvider.CreateScope();
+            var scopedServices = scope.ServiceProvider;
+            var memoryCache = scopedServices.GetRequiredService<IMemoryCache>();
+
             try
             {
-                var now = clock.UtcNow;
+                // These service need to be scoped to a particular domainName.
+                ApplicationDbContext dbContext;
+                StorageContext storageContext;
 
-                // Note: EF Core for Cosmos DB does not support grouping and counting directly in the database for
-                // this scenario, so we retrieve the article numbers first and then filter in-memory.
-                // Find all article numbers that have 2+ versions with non-null Published dates
-                var articleNumbers = await dbContext.Articles
-                    .Where(a => a.Published != null
-                                && a.Published <= now
-                                && a.StatusCode != (int)Cosmos.Common.Data.Logic.StatusCodeEnum.Deleted)
-                    .Select(a => a.ArticleNumber)
-                    .ToListAsync();
-
-                // Step 2: Filter in-memory for multiples
-                var articlesWithMultiplePublishedVersions = articleNumbers
-                    .GroupBy(n => n)
-                    .Where(g => g.Count() >= 2)
-                    .Select(g => new { ArticleNumber = g.Key, Count = g.Count() })
-                    .ToList();
-
-                foreach (var art in articlesWithMultiplePublishedVersions)
+                if (settings.IsMultiTenantEditor)
                 {
-                    await ProcessArticleVersions(now, dbContext, art.ArticleNumber);
+                    // All services must be scoped to the tenant's connection
+                    var connection = await configurationProvider.GetTenantConnectionAsync(domainName);
+                    
+                    // TODO: Create tenant-specific ApplicationDbContext using connection.PrimaryCloud or appropriate connection string
+                    dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
+                    storageContext = new StorageContext(connection.StorageConn, memoryCache);
+                }
+                else
+                {
+                    // Use the scoped services from DI
+                    dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
+                    storageContext = scopedServices.GetRequiredService<StorageContext>();
                 }
 
-                logger.LogInformation("ArticleVersionPublisher: Completed execution for domain {Domain} at {CompletionTime}", domainName, clock.UtcNow);
+                await Run(dbContext, storageContext, domainName, scopedServices);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "ArticleVersionPublisher: Error during scheduled execution for domain {Domain}", domainName);
+                logger.LogError(ex, "ArticleScheduler: Error during scheduled execution for domain {Domain}", domainName);
                 throw;
             }
+        }
+
+        private async Task Run(ApplicationDbContext dbContext, StorageContext storageContext, string domainName, IServiceProvider scopedServices)
+        {
+            var now = clock.UtcNow;
+
+            // Note: EF Core for Cosmos DB does not support grouping and counting directly in the database for
+            // this scenario, so we retrieve the article numbers first and then filter in-memory.
+            // Find all article numbers that have 2+ versions with non-null Published dates
+            var articleNumbers = await dbContext.Articles
+                .Where(a => a.Published != null
+                            && a.Published <= now
+                            && a.StatusCode != (int)Cosmos.Common.Data.Logic.StatusCodeEnum.Deleted)
+                .Select(a => a.ArticleNumber)
+                .ToListAsync();
+
+            // Step 2: Filter in-memory for multiples
+            var articlesWithMultiplePublishedVersions = articleNumbers
+                .GroupBy(n => n)
+                .Where(g => g.Count() >= 2)
+                .Select(g => new { ArticleNumber = g.Key, Count = g.Count() })
+                .ToList();
+
+            foreach (var art in articlesWithMultiplePublishedVersions)
+            {
+                await ProcessArticleVersions(now, dbContext, storageContext, art.ArticleNumber, domainName, scopedServices);
+            }
+
+            logger.LogInformation("ArticleScheduler: Completed execution for domain {Domain} at {CompletionTime}", domainName, clock.UtcNow);
         }
 
         /// <summary>
@@ -180,13 +179,21 @@ namespace Sky.Editor.Services.Scheduling
         /// </summary>
         /// <param name="now">Current UTC timestamp.</param>
         /// <param name="dbContext">The database context.</param>
-        /// <param name="articleNumber">Article number</param>
+        /// <param name="storageContext">The storage context.</param>
+        /// <param name="articleNumber">Article number.</param>
+        /// <param name="domainName">Domain name for logging.</param>
+        /// <param name="scopedServices">Scoped service provider.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        private async Task ProcessArticleVersions(DateTimeOffset now, ApplicationDbContext dbContext, int articleNumber)
+        private async Task ProcessArticleVersions(
+            DateTimeOffset now,
+            ApplicationDbContext dbContext,
+            StorageContext storageContext,
+            int articleNumber,
+            string domainName,
+            IServiceProvider scopedServices)
         {
             try
             {
-                // Get all versions with published dates for this article
                 var versions = await dbContext.Articles
                     .Where(a => a.ArticleNumber == articleNumber
                     && a.Published != null && a.Published <= now
@@ -196,30 +203,23 @@ namespace Sky.Editor.Services.Scheduling
 
                 if (versions.Count < 2)
                 {
-                    // No longer has multiple versions (race condition or concurrent delete)
-                    // TODO: Investigate potential race conditions when users manually publish/unpublish
-                    // while the scheduler is running. Consider implementing optimistic concurrency control
-                    // or row-level locking to prevent conflicts.
                     return;
                 }
 
-                // Find the most recent version that is not in the future
                 var activeVersion = versions.FirstOrDefault();
-
                 if (activeVersion == null)
                 {
-                    // All versions are scheduled for the future
                     logger.LogDebug("Article {ArticleNumber}: All versions are scheduled for future publication", articleNumber);
                     return;
                 }
 
                 logger.LogInformation(
-                    "Article {ArticleNumber}: Activating version {VersionNumber} (Published: {PublishedDate})",
+                    "Article {ArticleNumber} (Domain: {Domain}): Activating version {VersionNumber} (Published: {PublishedDate})",
                     articleNumber,
+                    domainName,
                     activeVersion.VersionNumber,
                     activeVersion.Published);
 
-                // Unpublish all older versions (those published before the active version)
                 var oldVersions = versions.Where(v =>
                     v.Published < activeVersion.Published &&
                     v.Id != activeVersion.Id).ToList();
@@ -229,35 +229,29 @@ namespace Sky.Editor.Services.Scheduling
                     oldVersion.Published = null;
                 }
 
-                // Save unpublished changes
                 if (oldVersions.Any())
                 {
                     await dbContext.SaveChangesAsync();
                 }
 
-                // Publish the active version (this will unpublish any other versions and update the published page)
-                var articleEditLogger = logger is ILogger<ArticleEditLogic> editLogger ? editLogger : LoggerFactory.Create(builder => { }).CreateLogger<ArticleEditLogic>();
-
-                // Create a new ArticleEditLogic instance for this operation
-                var articleLogic = new ArticleEditLogic(dbContext, config, memoryCache, storageContext, articleEditLogger, accessor, settings, clock, slugService, htmlService, catalogService, publishingService, titleChangeService, redirectService, templateService);
-
-                // Publish the active version
+                var factory = scopedServices.GetRequiredService<ITenantArticleLogicFactory>();
+                var articleLogic = await factory.CreateForTenantAsync(domainName);
+                
                 await articleLogic.PublishArticle(activeVersion.Id, activeVersion.Published);
 
                 logger.LogInformation(
-                    "Article {ArticleNumber}: Successfully activated version {VersionNumber}",
+                    "Article {ArticleNumber} (Domain: {Domain}): Successfully activated version {VersionNumber}",
                     articleNumber,
+                    domainName,
                     activeVersion.VersionNumber);
             }
             catch (Exception ex)
             {
                 logger.LogError(
                     ex,
-                    "Error processing article versions for ArticleNumber {ArticleNumber}",
-                    articleNumber);
-                // TODO: Implement retry mechanism for failed publications and/or
-                // notification system to alert administrators about publication failures.
-                // Consider using Hangfire's automatic retry features or a separate notification service.
+                    "Error processing article versions for ArticleNumber {ArticleNumber} (Domain: {Domain})",
+                    articleNumber,
+                    domainName);
             }
         }
     }

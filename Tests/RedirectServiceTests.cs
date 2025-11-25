@@ -43,13 +43,14 @@ namespace Sky.Tests.Services.Redirects
             mockClock = new Mock<IClock>();
             mockPublishingService = new Mock<IPublishingService>();
 
-            // Setup default mock behavior
+            // Setup default mock behavior - FIX HERE
             mockSlugService.Setup(s => s.Normalize(It.IsAny<string>(), It.IsAny<string>()))
-                .Returns<string, string>((slug, blogKey) => slug.ToLowerInvariant().Replace(" ", "-").TrimEnd('/'));
+                .Returns((string slug, string blogKey) => slug.ToLowerInvariant().Replace(" ", "-").TrimEnd('/'));
 
             mockClock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-            mockPublishingService.Setup(p => p.PublishAsync(It.IsAny<Article>()))
+            // FIX: Use explicit cancellation token parameter
+            mockPublishingService.Setup(p => p.PublishAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new List<CdnResult>()));
 
             // Create service instance
@@ -77,7 +78,7 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             Assert.IsNull(result, "Redirect from root should be silently ignored and return null");
-            mockPublishingService.Verify(p => p.PublishAsync(It.IsAny<Article>()), Times.Never);
+            mockPublishingService.Verify(p => p.PublishAsync(It.IsAny<Article>(), default), Times.Never);
         }
 
         /// <summary>
@@ -337,7 +338,7 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             mockPublishingService.Verify(
-                p => p.PublishAsync(It.Is<Article>(a => a.Id == result.Id)),
+                p => p.PublishAsync(It.Is<Article>(a => a.Id == result.Id), default),
                 Times.Once);
         }
 
@@ -485,7 +486,7 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             Assert.IsNotNull(result);
-            mockPublishingService.Verify(p => p.PublishAsync(It.IsAny<Article>()), Times.Once);
+            mockPublishingService.Verify(p => p.PublishAsync(It.IsAny<Article>(), default), Times.Once);
         }
 
         /// <summary>

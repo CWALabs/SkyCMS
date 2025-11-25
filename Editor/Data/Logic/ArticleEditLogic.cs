@@ -25,6 +25,7 @@ namespace Sky.Editor.Data.Logic
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.Catalog;
     using Sky.Editor.Services.CDN;
+    using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.Redirects;
@@ -46,7 +47,6 @@ namespace Sky.Editor.Data.Logic
     {
         private readonly StorageContext storageContext;
         private readonly ILogger<ArticleEditLogic> logger;
-        private readonly IHttpContextAccessor accessor;
         private readonly IMemoryCache localCache;
         private readonly EditorSettings settings;
 
@@ -67,7 +67,6 @@ namespace Sky.Editor.Data.Logic
         /// <param name="memoryCache">Process memory cache for transient items.</param>
         /// <param name="storageContext">Blob/file storage context for static artifacts.</param>
         /// <param name="logger">Logger for diagnostic events.</param>
-        /// <param name="accessor">HTTP context accessor (used for CDN integration and environment info).</param>
         /// <param name="settings">Editor (instance) settings.</param>
         /// <param name="clock">Clock abstraction for testable UTC timestamps.</param>
         /// <param name="slugService">Slug normalization service.</param>
@@ -83,7 +82,6 @@ namespace Sky.Editor.Data.Logic
             IMemoryCache memoryCache,
             StorageContext storageContext,
             ILogger<ArticleEditLogic> logger,
-            IHttpContextAccessor accessor,
             IEditorSettings settings,
             IClock clock,
             ISlugService slugService,
@@ -103,7 +101,6 @@ namespace Sky.Editor.Data.Logic
         {
             this.storageContext = storageContext ?? throw new ArgumentNullException(nameof(storageContext));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
             this.settings = (EditorSettings)settings ?? throw new ArgumentNullException(nameof(settings));
             this.localCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
@@ -140,14 +137,88 @@ namespace Sky.Editor.Data.Logic
         /// <returns>Article view model or null if not found.</returns>
         public async Task<ArticleViewModel> GetArticleByArticleNumber(int articleNumber, int? versionNumber)
         {
+            // Explicitly project required fields to ensure EF loads them
             IQueryable<Article> q = DbContext.Articles
+                .AsNoTracking() // Prevent tracking issues in concurrent contexts
                 .Where(a => a.ArticleNumber == articleNumber && a.StatusCode != (int)StatusCodeEnum.Deleted);
 
             var entity = versionNumber.HasValue
                 ? await q.FirstOrDefaultAsync(a => a.VersionNumber == versionNumber.Value)
                 : await q.OrderByDescending(a => a.VersionNumber).FirstOrDefaultAsync();
 
-            return entity == null ? null : await BuildArticleViewModel(entity, "en-US");
+            if (entity == null)
+            {
+                logger.LogWarning(
+                    "Article {ArticleNumber} (version: {VersionNumber}) not found",
+                    articleNumber,
+                    versionNumber?.ToString() ?? "latest");
+                return null;
+            }
+
+            // **CHECK 1**: Verify Content was loaded from database
+            if (entity.Content == null)
+            {
+                logger.LogError(
+                    "Article {ArticleNumber} version {VersionNumber} has NULL content in database (Id: {Id})",
+                    entity.ArticleNumber,
+                    entity.VersionNumber,
+                    entity.Id);
+                
+                // Try to reload explicitly
+                entity = await DbContext.Articles
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(a => a.Id == entity.Id);
+                
+                if (entity?.Content == null)
+                {
+                    logger.LogError(
+                        "Article {ArticleNumber} version {VersionNumber} still has NULL content after reload",
+                        articleNumber,
+                        versionNumber ?? entity?.VersionNumber ?? 0);
+                }
+            }
+
+            // **CHECK 2**: Warn if Content is empty (might be intentional, but worth logging)
+            if (string.IsNullOrWhiteSpace(entity.Content))
+            {
+                logger.LogWarning(
+                    "Article {ArticleNumber} version {VersionNumber} has empty/whitespace content (Id: {Id})",
+                    entity.ArticleNumber,
+                    entity.VersionNumber,
+                    entity.Id);
+            }
+
+            // **CHECK 3**: Log content retrieval for debugging
+            logger.LogDebug(
+                "Retrieved article {ArticleNumber} version {VersionNumber} with content length: {ContentLength}",
+                entity.ArticleNumber,
+                entity.VersionNumber,
+                entity.Content?.Length ?? 0);
+
+            var viewModel = await BuildArticleViewModel(entity, "en-US");
+
+            // **CHECK 4**: Verify Content survived the mapping to ViewModel
+            if (viewModel.Content == null && entity.Content != null)
+            {
+                logger.LogError(
+                    "Content was lost during BuildArticleViewModel for article {ArticleNumber} version {VersionNumber}",
+                    entity.ArticleNumber,
+                    entity.VersionNumber);
+            }
+
+            // **CHECK 5**: Validate consistency between entity and view model
+            if (entity.Content != viewModel.Content)
+            {
+                logger.LogWarning(
+                    "Content mismatch between entity and view model for article {ArticleNumber} version {VersionNumber}. " +
+                    "Entity length: {EntityLength}, ViewModel length: {ViewModelLength}",
+                    entity.ArticleNumber,
+                    entity.VersionNumber,
+                    entity.Content?.Length ?? 0,
+                    viewModel.Content?.Length ?? 0);
+            }
+
+            return viewModel;
         }
 
         /// <summary>
@@ -539,6 +610,7 @@ namespace Sky.Editor.Data.Logic
         /// <param name="model">Incoming article edit view model.</param>
         /// <param name="userId">User performing the save.</param>
         /// <returns>Update result including CDN purge info (if any).</returns>
+        [Obsolete("Use SaveArticleAsync instead."))]
         public async Task<ArticleUpdateResult> SaveArticle(ArticleViewModel model, Guid userId)
         {
             var article = await DbContext.Articles
@@ -551,6 +623,7 @@ namespace Sky.Editor.Data.Logic
             }
 
             var oldTitle = article.Title;
+            var oldUrlPath = article.UrlPath;
 
             model.Content = htmlService.EnsureEditableMarkers(model.Content);
 
@@ -593,7 +666,7 @@ namespace Sky.Editor.Data.Logic
 
             if (!oldTitle.Equals(article.Title, StringComparison.OrdinalIgnoreCase))
             {
-                await titleChangeService.HandleTitleChangeAsync(article, oldTitle);
+                await titleChangeService.HandleTitleChangeAsync(article, oldTitle, oldUrlPath);
             }
 
             await catalogService.UpsertAsync(article);

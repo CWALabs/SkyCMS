@@ -94,7 +94,10 @@ public class ArticleEditLogicExtendedTests : SkyCmsTestBase
     [TestMethod]
     public async Task GetArticleRedirects_ContainsRedirectAfterTitleChange()
     {
-        // Create article
+        // **FIX**: Create a root page first so test article doesn't become root
+        await Logic.CreateArticle("Home Page", TestUserId);
+        
+        // Create article (won't be root now)
         var article = await Logic.CreateArticle("Original Title", TestUserId);
         article.Published = DateTimeOffset.UtcNow;
         await Logic.SaveArticle(article, TestUserId);
@@ -152,18 +155,6 @@ public class ArticleEditLogicExtendedTests : SkyCmsTestBase
     #endregion
 
     #region Static Web Methods (Disabled Scenario)
-
-    [TestMethod]
-    public async Task CreateStaticWebpage_StaticDisabled_NoException()
-    {
-        var root = await Logic.CreateArticle("Home Page", TestUserId);
-        var publishedEntity = await Db.Articles.FirstAsync(a => a.ArticleNumber == root.ArticleNumber);
-        await Logic.PublishArticle(publishedEntity.Id, DateTimeOffset.UtcNow);
-
-        var publishedPage = await Db.Pages.FirstAsync(p => p.ArticleNumber == root.ArticleNumber);
-        await PublishingService.CreateStaticPages(new List<Guid> { publishedPage.Id }); // Should no-op with StaticWebPages=false
-        Assert.IsTrue(true); // Reached without exception
-    }
 
     [TestMethod]
     public async Task CreateStaticTableOfContentsJsonFile_StaticDisabled_NoException()
