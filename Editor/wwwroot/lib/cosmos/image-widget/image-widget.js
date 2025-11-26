@@ -81,24 +81,26 @@
 // CONSTANTS AND CONFIGURATION
 // ============================================================================
 
-const CCMS_IMAGE_WIDGET_CONFIG = {
-    uploadEndpoint: '/FileManager/UploadImage',
-    imageLibraryEndpoint: '/FileManager/GetImageAssets',
-    acceptedFileTypes: ['image/png', 'image/jpg', 'image/jpeg', 'image/webp', 'image/gif'],
-    maxFileSize: 26214400, // 25MB in bytes (server enforces, this is for reference)
-    defaultUploadPath: '/pub/images/',
-    articleUploadPath: '/pub/articles/',
-    trashIconHtml: '<i class="fa-solid fa-trash"></i>',
-    editIconHtml: '<i class="fa-solid fa-edit"></i>',
-    libraryIconHtml: '<i class="fa-solid fa-images"></i>',
-    replaceIconHtml: '<i class="fa-solid fa-sync"></i>',
-    placeholderImage: '/images/AddImageHere.webp',
-    zIndexOffset: 1000, // Safe z-index for overlays
-    showProgressBar: true,
-    enableImageLibrary: true,
-    enableAltTextEditor: true, // Global UI toggle; modal only opens if the widget has data-ccms-enable-alt-editor="true"
-    enableDragReplace: true
-};
+if (typeof window.CCMS_IMAGE_WIDGET_CONFIG === "undefined") {
+    window.CCMS_IMAGE_WIDGET_CONFIG = CCMS_IMAGE_WIDGET_CONFIG = {
+        uploadEndpoint: '/FileManager/UploadImage',
+        imageLibraryEndpoint: '/FileManager/GetImageAssets',
+        acceptedFileTypes: ['image/png', 'image/jpg', 'image/jpeg', 'image/webp', 'image/gif'],
+        maxFileSize: 26214400, // 25MB in bytes (server enforces, this is for reference)
+        defaultUploadPath: '/pub/images/',
+        articleUploadPath: '/pub/articles/',
+        trashIconHtml: '<i class="fa-solid fa-trash"></i>',
+        editIconHtml: '<i class="fa-solid fa-edit"></i>',
+        libraryIconHtml: '<i class="fa-solid fa-images"></i>',
+        replaceIconHtml: '<i class="fa-solid fa-sync"></i>',
+        placeholderImage: '/images/AddImageHere.webp',
+        zIndexOffset: 1000, // Safe z-index for overlays
+        showProgressBar: true,
+        enableImageLibrary: true,
+        enableAltTextEditor: true, // Global UI toggle; modal only opens if the widget has data-ccms-enable-alt-editor="true"
+        enableDragReplace: true
+    };
+}
 
 // ============================================================================
 // UTILITY FUNCTIONS

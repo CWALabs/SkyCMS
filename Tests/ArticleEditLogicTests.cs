@@ -1,4 +1,12 @@
+// <copyright file="ArticleEditLogicTests.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// for more information concerning the license and the contributors participating to this project.
+// </copyright>
+
 using Microsoft.EntityFrameworkCore;
+using Sky.Editor.Features.Articles.Save;
 
 namespace Sky.Tests.Logic;
 
@@ -8,7 +16,6 @@ public class ArticleEditLogicTests : SkyCmsTestBase
 {
     [TestInitialize]
     public void Setup() => InitializeTestContext(seedLayout: true);
-
 
     [TestCleanup]
     public void Cleanup() => Db.Dispose();
@@ -32,11 +39,26 @@ public class ArticleEditLogicTests : SkyCmsTestBase
     [TestMethod]
     public async Task SaveArticle_UpdatesTitleAndContent()
     {
+        // Arrange
         var vm = await Logic.CreateArticle("Original", TestUserId);
-        vm.Title = "Original Updated";
-        vm.Content = "<div contenteditable='true' data-ccms-ceid='x'>Updated</div>";
-        var result = await Logic.SaveArticle(vm, TestUserId);
-        Assert.IsTrue(result.ServerSideSuccess);
+
+        // MIGRATED: Use SaveArticleHandler
+        var command = new SaveArticleCommand
+        {
+            ArticleNumber = vm.ArticleNumber,
+            Title = "Original Updated",
+            Content = "<div contenteditable='true' data-ccms-ceid='x'>Updated</div>",
+            UserId = TestUserId,
+            ArticleType = vm.ArticleType
+        };
+
+        // Act
+        var result = await SaveArticleHandler.HandleAsync(command);
+
+        // Assert
+        Assert.IsTrue(result.IsSuccess);
+        Assert.IsTrue(result.Data.ServerSideSuccess);
+
         var reloaded = await Logic.GetArticleByArticleNumber(vm.ArticleNumber, null);
         Assert.AreEqual("Original Updated", reloaded.Title);
     }

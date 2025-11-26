@@ -1,92 +1,108 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Sky.Tests.Logic;
+// Add at the top of test files that use SaveArticle()
+#pragma warning disable CS0618 // Type or member is obsolete - intentionally testing legacy method
 
-[DoNotParallelize]
-[TestClass]
-public class ArticleEditLogicAdditionalTests : SkyCmsTestBase
+namespace Sky.Tests
 {
-    [TestInitialize]
-    public void Setup() => InitializeTestContext();
+    using System;
+    using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Sky.Editor.Data.Logic;
 
-    [TestCleanup]
-    public void Cleanup() => Db.Dispose();
-
-    [TestMethod]
-    public async Task UnpublishArticle_RemovesPublishedPages()
+    /// <summary>
+    /// Integration tests for legacy ArticleEditLogic.SaveArticle() method.
+    /// These tests remain for backward compatibility validation.
+    /// New tests should use SaveArticleHandler directly.
+    /// </summary>
+    [DoNotParallelize]
+    [TestClass]
+    public class ArticleEditLogicAdditionalTests : SkyCmsTestBase
     {
-        await Logic.CreateArticle("Home Page", TestUserId);
-        var art = await Logic.CreateArticle("Temp Page", TestUserId);
-        var ent = await Db.Articles.FirstAsync(a => a.ArticleNumber == art.ArticleNumber);
-        await Logic.PublishArticle(ent.Id, DateTimeOffset.UtcNow);
+        [TestInitialize]
+        public void Setup() => InitializeTestContext();
 
-        Assert.IsTrue(await Db.Pages.AnyAsync(p => p.ArticleNumber == art.ArticleNumber));
+        [TestCleanup]
+        public void Cleanup() => Db.Dispose();
 
-        await PublishingService.UnpublishAsync(ent);
+        [TestMethod]
+        public async Task UnpublishArticle_RemovesPublishedPages()
+        {
+            await Logic.CreateArticle("Home Page", TestUserId);
+            var art = await Logic.CreateArticle("Temp Page", TestUserId);
+            var ent = await Db.Articles.FirstAsync(a => a.ArticleNumber == art.ArticleNumber);
+            await Logic.PublishArticle(ent.Id, DateTimeOffset.UtcNow);
 
-        Assert.IsFalse(await Db.Pages.AnyAsync(p => p.ArticleNumber == art.ArticleNumber));
-        var versions = await Db.Articles.Where(a => a.ArticleNumber == art.ArticleNumber).ToListAsync();
-        Assert.IsTrue(versions.All(v => v.Published == null));
-    }
+            Assert.IsTrue(await Db.Pages.AnyAsync(p => p.ArticleNumber == art.ArticleNumber));
 
-    [TestMethod]
-    public async Task ValidateTitle_DifferentArticleSameTitle_ReturnsFalse()
-    {
-        await Logic.CreateArticle("Home Page", TestUserId);
-        var a1 = await Logic.CreateArticle("Duplicate Title", TestUserId);
-        var a2 = await Logic.CreateArticle("Another Page", TestUserId);
+            await PublishingService.UnpublishAsync(ent);
 
-        var valid = await TitleChangeService.ValidateTitle("Duplicate Title", a2.ArticleNumber);
-        Assert.IsFalse(valid);
-    }
+            Assert.IsFalse(await Db.Pages.AnyAsync(p => p.ArticleNumber == art.ArticleNumber));
+            var versions = await Db.Articles.Where(a => a.ArticleNumber == art.ArticleNumber).ToListAsync();
+            Assert.IsTrue(versions.All(v => v.Published == null));
+        }
 
-    [TestMethod]
-    public async Task GetLastPublishedDate_ReturnsMostRecent()
-    {
-        var root = await Logic.CreateArticle("Home Page", TestUserId); // published
-        var page = await Logic.CreateArticle("Publish Test", TestUserId);
-        var e1 = await Db.Articles.FirstAsync(a => a.ArticleNumber == page.ArticleNumber);
+        [TestMethod]
+        public async Task ValidateTitle_DifferentArticleSameTitle_ReturnsFalse()
+        {
+            await Logic.CreateArticle("Home Page", TestUserId);
+            var a1 = await Logic.CreateArticle("Duplicate Title", TestUserId);
+            var a2 = await Logic.CreateArticle("Another Page", TestUserId);
 
-        await Logic.PublishArticle(e1.Id, DateTimeOffset.UtcNow.AddMinutes(-10));
+            var valid = await TitleChangeService.ValidateTitle("Duplicate Title", a2.ArticleNumber);
+            Assert.IsFalse(valid);
+        }
 
-        // new version & publish
-        var vm = await Logic.GetArticleByArticleNumber(page.ArticleNumber, null);
-        vm.Content += " updated";
-        await Logic.SaveArticle(vm, TestUserId);
-        var latest = await Db.Articles
-            .Where(a => a.ArticleNumber == page.ArticleNumber)
-            .OrderByDescending(a => a.VersionNumber)
-            .FirstAsync();
-        var now = DateTimeOffset.UtcNow;
-        await Logic.PublishArticle(latest.Id, now);
+        [TestMethod]
+        public async Task GetLastPublishedDate_ReturnsMostRecent()
+        {
+            var root = await Logic.CreateArticle("Home Page", TestUserId); // published
+            var page = await Logic.CreateArticle("Publish Test", TestUserId);
+            var e1 = await Db.Articles.FirstAsync(a => a.ArticleNumber == page.ArticleNumber);
 
-        var last = await Logic.GetLastPublishedDate(page.ArticleNumber);
-        Assert.IsTrue(last.HasValue);
-        Assert.IsTrue((now - last.Value).Duration() < TimeSpan.FromSeconds(2));
-    }
+            await Logic.PublishArticle(e1.Id, DateTimeOffset.UtcNow.AddMinutes(-10));
 
-    [TestMethod]
-    public async Task SaveArticle_TitleChange_UpdatesChildUrls()
-    {
-        await Logic.CreateArticle("Home Page", TestUserId);
-        var parent = await Logic.CreateArticle("Parent Section", TestUserId);
-        var child = await Logic.CreateArticle("Parent Section/Child Doc", TestUserId);
-        var oldPath = parent.UrlPath;
-        var oldUrlPath = child.UrlPath;
+            // new version & publish
+            var vm = await Logic.GetArticleByArticleNumber(page.ArticleNumber, null);
+            vm.Content += " updated";
+            await Logic.SaveArticle(vm, TestUserId);
+            var latest = await Db.Articles
+                .Where(a => a.ArticleNumber == page.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstAsync();
+            var now = DateTimeOffset.UtcNow;
+            await Logic.PublishArticle(latest.Id, now);
 
-        // rename parent
-        var parentVm = await Logic.GetArticleByArticleNumber(parent.ArticleNumber, null);
-        parentVm.Title = "Parent Renamed";
-        var result = await Logic.SaveArticle(parentVm, TestUserId);
+            var last = await Logic.GetLastPublishedDate(page.ArticleNumber);
+            Assert.IsTrue(last.HasValue);
+            Assert.IsTrue((now - last.Value).Duration() < TimeSpan.FromSeconds(2));
+        }
 
-        var articleId = result.Model.Id;
+        [TestMethod]
+        public async Task SaveArticle_TitleChange_UpdatesChildUrls()
+        {
+            await Logic.CreateArticle("Home Page", TestUserId);
+            var parent = await Logic.CreateArticle("Parent Section", TestUserId);
+            var child = await Logic.CreateArticle("Parent Section/Child Doc", TestUserId);
+            var oldPath = parent.UrlPath;
+            var oldUrlPath = child.UrlPath;
 
-        var updatedParent = await Db.Articles.FirstOrDefaultAsync(a => a.Id == articleId);
+            // rename parent
+            var parentVm = await Logic.GetArticleByArticleNumber(parent.ArticleNumber, null);
+            parentVm.Title = "Parent Renamed";
+            var result = await Logic.SaveArticle(parentVm, TestUserId);
 
-        await TitleChangeService.HandleTitleChangeAsync(updatedParent, oldPath, oldUrlPath);
+            var articleId = result.Model.Id;
 
-        var childVm = await Logic.GetArticleByArticleNumber(child.ArticleNumber, null);
-        Assert.IsTrue(childVm.UrlPath.StartsWith("parent-renamed", StringComparison.OrdinalIgnoreCase),
-            "Expected child URL updated with new parent slug.");
+            var updatedParent = await Db.Articles.FirstOrDefaultAsync(a => a.Id == articleId);
+
+            await TitleChangeService.HandleTitleChangeAsync(updatedParent, oldPath, oldUrlPath);
+
+            var childVm = await Logic.GetArticleByArticleNumber(child.ArticleNumber, null);
+            Assert.IsTrue(childVm.UrlPath.StartsWith("parent-renamed", StringComparison.OrdinalIgnoreCase),
+                "Expected child URL updated with new parent slug.");
+        }
     }
 }
+
+#pragma warning restore CS0618

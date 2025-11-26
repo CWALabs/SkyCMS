@@ -27,7 +27,7 @@
 <script src="~/lib/grapesjs-plugin-forms/index.js"></script>
 
 <script src="~/lib/grapesjsui/js/toastr.min.js"></script>
-<script src="~/lib/grapesjs/grapes.min.js"></script>
+<script src="//unpkg.com/grapesjs"></script>
 <script src="~/lib/grapesjs-preset-webpage/index.js"></script>
 <script src="~/lib/grapesjs-component-countdown/index.js"></script>
 <script src="~/lib/grapesjs-plugin-export/index.js"></script>
@@ -205,7 +205,7 @@
         );
     }
 
-    async function cosmos__designerLoadAssets() {
+    async function cosmos__designerLoadAssets(editor) {
         const url = "/FileManager/GetImageAssets?path=" + cosmos__designerAssetsEndPoint + "&exclude=" + cosmos__designerAssetsExclude;
         const response = await fetch(url, {
             method: 'GET'
@@ -308,8 +308,10 @@
         return imageUrls;
     }
 
+    let editor; // Define globally as is used by methods.
+
     window.onload = () => {
-        var editor = grapesjs.init({
+        editor = grapesjs.init({
             // Indicate where to init the editor. You can also pass an HTMLElement
             container: '#gjs',
             // Get the content for the canvas directly from the element
@@ -698,7 +700,7 @@
             if (typeof checkDisplayLiveEditorButton !== "undefined") {
                checkDisplayLiveEditorButton('HtmlContent');
             }
-            cosmos__designerLoadAssets();
+            cosmos__designerLoadAssets(editor);
             console.log('Loaded ', e)
         });
 

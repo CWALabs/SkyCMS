@@ -610,7 +610,46 @@ namespace Sky.Editor.Data.Logic
         /// <param name="model">Incoming article edit view model.</param>
         /// <param name="userId">User performing the save.</param>
         /// <returns>Update result including CDN purge info (if any).</returns>
-        [Obsolete("Use SaveArticleAsync instead."))]
+        /// <remarks>
+        /// <para>
+        /// <strong>⚠️ DEPRECATED:</strong> This method is obsolete and will be removed in a future major version.
+        /// </para>
+        /// <para>
+        /// <strong>Migration Path:</strong>
+        /// </para>
+        /// <list type="bullet">
+        ///   <item>Use <see cref="SaveArticleHandler"/> via the <see cref="IMediator"/> pattern instead.</item>
+        ///   <item>Create a <see cref="SaveArticleCommand"/> with the article data.</item>
+        ///   <item>Call <c>await mediator.SendAsync(command)</c> to execute the save operation.</item>
+        /// </list>
+        /// <para>
+        /// <strong>Example Migration:</strong>
+        /// </para>
+        /// <code>
+        /// // OLD (Obsolete):
+        /// var result = await articleLogic.SaveArticle(viewModel, userId);
+        /// 
+        /// // NEW (Recommended):
+        /// var command = new SaveArticleCommand
+        /// {
+        ///     ArticleNumber = viewModel.ArticleNumber,
+        ///     Title = viewModel.Title,
+        ///     Content = viewModel.Content,
+        ///     UserId = userId
+        /// };
+        /// var result = await mediator.SendAsync(command);
+        /// </code>
+        /// <para>
+        /// <strong>Benefits of New Approach:</strong>
+        /// </para>
+        /// <list type="bullet">
+        ///   <item>Better separation of concerns with CQRS pattern</item>
+        ///   <item>Built-in validation via <see cref="SaveArticleValidator"/></item>
+        ///   <item>Easier testing with handler mocking</item>
+        ///   <item>Consistent error handling and logging</item>
+        /// </list>
+        /// </remarks>
+        [Obsolete("Use SaveArticleHandler via IMediator instead. This method will be removed in version 3.0. See remarks for migration guide.", error: false)]
         public async Task<ArticleUpdateResult> SaveArticle(ArticleViewModel model, Guid userId)
         {
             var article = await DbContext.Articles

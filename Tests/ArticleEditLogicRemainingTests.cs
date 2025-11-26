@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Sky.Cms.Models;
 using Sky.Cms.Services;
 using Sky.Editor.Domain.Events;
+using Sky.Editor.Features.Articles.Save;
 
 namespace Sky.Tests.Logic;
 
@@ -209,11 +210,24 @@ public class ArticleEditLogicRemainingTests : SkyCmsTestBase
         var vm = await Logic.GetArticleByArticleNumber(original.ArticleNumber, null);
         var oldUrl = vm.UrlPath;
 
-        vm.Title = "Renamed Title";
-        await Logic.SaveArticle(vm, TestUserId);
+        // MIGRATED: Use SaveArticleHandler
+        var command = new SaveArticleCommand
+        {
+            ArticleNumber = vm.ArticleNumber,
+            Title = "Renamed Title",
+            Content = vm.Content,
+            UserId = TestUserId,
+            ArticleType = vm.ArticleType,
+            Published = vm.Published
+        };
+
+        var result = await SaveArticleHandler.HandleAsync(command);
+        Assert.IsTrue(result.IsSuccess);
 
         var redirectStatusCode = (int)StatusCodeEnum.Redirect;
-        var redirects = await Db.Articles.Where(a => a.StatusCode == redirectStatusCode && a.UrlPath == oldUrl).ToListAsync();
+        var redirects = await Db.Articles
+            .Where(a => a.StatusCode == redirectStatusCode && a.UrlPath == oldUrl)
+            .ToListAsync();
         Assert.IsTrue(redirects.Any(), "Expected redirect article for old slug.");
 
         Assert.IsTrue(await StaticExists(oldUrl), "Expected static redirect artifact.");
