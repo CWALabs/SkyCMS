@@ -77,7 +77,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.IsTrue(result.Count > 0, "Should return at least one template");
+            Assert.IsNotEmpty(result, "Should return at least one template");
             Assert.IsTrue(result.Any(t => t.Key == "blog-stream"), "Should contain blog-stream template");
             Assert.IsTrue(result.Any(t => t.Key == "blog-post"), "Should contain blog-post template");
         }
@@ -132,7 +132,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.IsTrue(result.Count > 0, "Should return at least one Blog template");
+            Assert.IsNotEmpty(result, "Should return at least one Blog template");
             Assert.IsTrue(result.All(t => t.Category.Equals("Blog", StringComparison.OrdinalIgnoreCase)),
                 "All templates should be in Blog category");
         }
@@ -148,7 +148,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(0, result.Count, "Should return empty list for non-existent category");
+            Assert.IsEmpty(result, "Should return empty list for non-existent category");
         }
 
         /// <summary>
@@ -163,8 +163,8 @@ namespace Sky.Tests.Services.Templates
             var mixedCase = await templateService.GetTemplatesByCategoryAsync("BlOg");
 
             // Assert
-            Assert.AreEqual(lowerCase.Count, upperCase.Count, "Should return same count regardless of case");
-            Assert.AreEqual(lowerCase.Count, mixedCase.Count, "Should return same count regardless of case");
+            Assert.HasCount(lowerCase.Count, upperCase, "Should return same count regardless of case");
+            Assert.HasCount(lowerCase.Count, mixedCase, "Should return same count regardless of case");
         }
 
         #endregion
@@ -267,7 +267,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(allTemplates.Count, result.Count);
+            Assert.HasCount(allTemplates.Count, result);
         }
 
         /// <summary>
@@ -284,7 +284,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(allTemplates.Count, result.Count);
+            Assert.HasCount(allTemplates.Count, result);
         }
 
         /// <summary>
@@ -301,7 +301,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(allTemplates.Count, result.Count);
+            Assert.HasCount(allTemplates.Count, result);
         }
 
         /// <summary>
@@ -315,7 +315,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.IsTrue(result.Count > 0, "Should find templates matching 'Blog Stream'");
+            Assert.IsNotEmpty(result, "Should find templates matching 'Blog Stream'");
             Assert.IsTrue(result.Any(t => t.Name.Contains("Blog Stream", StringComparison.OrdinalIgnoreCase)));
         }
 
@@ -330,7 +330,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.IsTrue(result.Count > 0, "Should find templates with 'featured image' in description");
+            Assert.IsNotEmpty(result, "Should find templates with 'featured image' in description");
         }
 
         /// <summary>
@@ -344,7 +344,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.IsTrue(result.Count > 0, "Should find templates with 'blog' tag");
+            Assert.IsNotEmpty(result, "Should find templates with 'blog' tag");
         }
 
         /// <summary>
@@ -359,8 +359,8 @@ namespace Sky.Tests.Services.Templates
             var mixedCase = await templateService.SearchTemplatesAsync("BlOg");
 
             // Assert
-            Assert.AreEqual(lowerCase.Count, upperCase.Count, "Should return same count regardless of case");
-            Assert.AreEqual(lowerCase.Count, mixedCase.Count, "Should return same count regardless of case");
+            Assert.HasCount(lowerCase.Count, upperCase, "Should return same count regardless of case");
+            Assert.HasCount(lowerCase.Count, mixedCase, "Should return same count regardless of case");
         }
 
         /// <summary>
@@ -374,7 +374,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(0, result.Count, "Should return empty list for non-matching search term");
+            Assert.IsEmpty(result, "Should return empty list for non-matching search term");
         }
 
         #endregion
@@ -402,7 +402,7 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             var templates = await dbContext.Templates.ToListAsync();
-            Assert.IsTrue(templates.Count > 0, "Should have created at least one template");
+            Assert.IsNotEmpty(templates, "Should have created at least one template");
             Assert.IsTrue(templates.Any(t => t.Title == "Blog Stream"), "Should have created Blog Stream template");
             Assert.IsTrue(templates.Any(t => t.Title == "Blog Post"), "Should have created Blog Post template");
         }
@@ -440,12 +440,12 @@ namespace Sky.Tests.Services.Templates
 
             // Assert
             var finalCount = await dbContext.Templates.CountAsync();
-            Assert.IsTrue(finalCount >= initialCount, "Should not decrease template count");
+            Assert.IsGreaterThanOrEqualTo(initialCount, finalCount, "Should not decrease template count");
 
             var blogStreamTemplates = await dbContext.Templates
                 .Where(t => t.Title == "Blog Stream")
                 .ToListAsync();
-            Assert.AreEqual(1, blogStreamTemplates.Count, "Should not create duplicate Blog Stream template");
+            Assert.HasCount(1, blogStreamTemplates, "Should not create duplicate Blog Stream template");
         }
 
         /// <summary>

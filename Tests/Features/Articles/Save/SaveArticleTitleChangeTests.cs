@@ -9,12 +9,10 @@ namespace Sky.Tests.Features.Articles.Save
 {
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
-    using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Save;
     using System;
-    using System.Linq;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -102,10 +100,10 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsNotNull(updatedArticle);
             // Slug should be normalized to lowercase with hyphens
             Assert.AreEqual("special-chars-and-symbols", updatedArticle.UrlPath);
-            Assert.IsFalse(updatedArticle.UrlPath.Contains("?"));
-            Assert.IsFalse(updatedArticle.UrlPath.Contains("&"));
-            Assert.IsFalse(updatedArticle.UrlPath.Contains("!"));
-            Assert.IsFalse(updatedArticle.UrlPath.Contains("@"));
+            Assert.DoesNotContain("?", updatedArticle.UrlPath);
+            Assert.DoesNotContain("&", updatedArticle.UrlPath);
+            Assert.DoesNotContain("!", updatedArticle.UrlPath);
+            Assert.DoesNotContain("@", updatedArticle.UrlPath);
         }
 
         [TestMethod]
@@ -174,7 +172,7 @@ namespace Sky.Tests.Features.Articles.Save
             
             Assert.IsNotNull(updatedArticle);
             // Should not have multiple consecutive hyphens
-            Assert.IsFalse(updatedArticle.UrlPath.Contains("--"));
+            Assert.DoesNotContain("--", updatedArticle.UrlPath);
         }
 
         [TestMethod]
@@ -210,7 +208,7 @@ namespace Sky.Tests.Features.Articles.Save
             
             Assert.IsNotNull(updatedArticle);
             // Slug should be reasonable length (implementation-dependent)
-            Assert.IsTrue(updatedArticle.UrlPath.Length < 300);
+            Assert.IsLessThan(300, updatedArticle.UrlPath.Length);
         }
 
         [TestMethod]
@@ -247,8 +245,8 @@ namespace Sky.Tests.Features.Articles.Save
             // Title should be trimmed automatically
             Assert.AreEqual("Trimmed Title", updatedArticle.Title);
             // The slug should have trimmed ends
-            Assert.IsFalse(updatedArticle.UrlPath.StartsWith("-"));
-            Assert.IsFalse(updatedArticle.UrlPath.EndsWith("-"));
+            Assert.DoesNotStartWith("-", updatedArticle.UrlPath);
+            Assert.DoesNotEndWith("-", updatedArticle.UrlPath);
             Assert.AreEqual("trimmed-title", updatedArticle.UrlPath);
         }
 

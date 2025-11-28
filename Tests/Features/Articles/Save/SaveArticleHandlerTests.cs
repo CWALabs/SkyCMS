@@ -8,13 +8,10 @@
 namespace Sky.Tests.Features.Articles.Save
 {
     using Cosmos.Common.Data;
-    using Cosmos.Common.Data.Logic;
-    using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Create;
     using Sky.Editor.Features.Articles.Save;
-    using System;
     using System.Threading.Tasks;
 
     [DoNotParallelize]
@@ -125,7 +122,7 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsFalse(result.IsSuccess);
             Assert.IsNotNull(result.ErrorMessage);
-            Assert.IsTrue(result.ErrorMessage.Contains("not found"));
+            Assert.Contains("not found", result.ErrorMessage);
         }
 
         #endregion
@@ -227,7 +224,7 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             // Content should have been processed by ArticleHtmlService
-            Assert.IsTrue(result.Data!.Model!.Content.Contains("contenteditable"));
+            Assert.Contains("contenteditable", result.Data!.Model!.Content);
         }
 
         #endregion
@@ -296,7 +293,7 @@ namespace Sky.Tests.Features.Articles.Save
 
             // Assert
             Assert.IsTrue(result.IsSuccess);
-            Assert.AreEqual(0, result.Data!.CdnResults.Count);
+            Assert.IsEmpty(result.Data!.CdnResults);
         }
 
         #endregion

@@ -9,7 +9,6 @@ namespace Sky.Tests.Features.Articles.Save
 {
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
-    using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Domain.Events;
@@ -195,7 +194,7 @@ namespace Sky.Tests.Features.Articles.Save
 
             // Assert
             Assert.IsTrue(result.IsSuccess);
-            Assert.AreEqual(0, result.Data!.CdnResults.Count);
+            Assert.IsEmpty(result.Data!.CdnResults);
         }
 
         [TestMethod]
@@ -333,7 +332,7 @@ namespace Sky.Tests.Features.Articles.Save
                 .Where(a => a.ArticleNumber == rootArticle.ArticleNumber)
                 .ToListAsync();
     
-            Assert.IsTrue(allVersions.Count >= 2, "Should have at least 2 versions");
+            Assert.IsGreaterThanOrEqualTo(2, allVersions.Count, "Should have at least 2 versions");
             Assert.IsTrue(allVersions.All(v => v.UrlPath == "root"), 
         "All versions should preserve 'root' URL path");
 }

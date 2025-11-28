@@ -7,8 +7,8 @@
 
 namespace Sky.Editor.Services.BlogPublishing
 {
-    using Cosmos.Common.Data;
     using System.Threading.Tasks;
+    using Cosmos.Common.Data;
 
     /// <summary>
     /// Blog rendering service interface.

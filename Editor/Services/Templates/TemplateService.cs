@@ -7,10 +7,6 @@
 
 namespace Sky.Editor.Services.Templates
 {
-    using Cosmos.Common.Data;
-    using Microsoft.AspNetCore.Hosting;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Logging;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -18,6 +14,10 @@ namespace Sky.Editor.Services.Templates
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Cosmos.Common.Data;
+    using Microsoft.AspNetCore.Hosting;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Logging;
 
     /// <summary>
     /// Implementation of the template service.

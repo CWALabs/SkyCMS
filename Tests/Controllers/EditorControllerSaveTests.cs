@@ -9,18 +9,13 @@ namespace Sky.Tests.Controllers
 {
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
-    using Cosmos.Common.Models;
     using Cosmos.Common.Services;
-    using Cosmos.Editor.Services;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Logging.Abstractions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Cms.Controllers;
     using Sky.Cms.Models;
-    using Sky.Editor.Features.Shared;
     using Sky.Editor.Models;
     using System;
     using System.Linq;
@@ -98,7 +93,7 @@ namespace Sky.Tests.Controllers
             // Assert
             Assert.IsInstanceOfType(result, typeof(JsonResult));
             var jsonResult = (JsonResult)result;
-            
+
             // Verify article was updated
             var updatedArticle = await Logic.GetArticleByArticleNumber(article.ArticleNumber, null);
             Assert.AreEqual("Updated via EditCode", updatedArticle.Title);
@@ -127,7 +122,7 @@ namespace Sky.Tests.Controllers
             // Assert
             Assert.IsInstanceOfType(result, typeof(JsonResult));
             var jsonResult = (JsonResult)result;
-            
+
             // Verify error structure (SaveCodeResultJsonModel)
             dynamic? value = jsonResult.Value;
             Assert.IsNotNull(value);
@@ -153,13 +148,13 @@ namespace Sky.Tests.Controllers
                 .OrderByDescending(a => a.VersionNumber)
                 .FirstOrDefaultAsync();
             Assert.IsNotNull(savedArticle?.Content, "Content should be saved in database");
-            Assert.IsTrue(savedArticle.Content.Contains("Original content"), "Content should contain expected text");
+            Assert.Contains("Original content", savedArticle.Content, "Content should contain expected text");
             Console.WriteLine($"Database Article Content: '{savedArticle.Content}'");
 
             // **INVESTIGATION 2**: Verify GetArticleByArticleNumber retrieves content properly
             var retrievedArticle = await Logic.GetArticleByArticleNumber(article.ArticleNumber, null);
             Assert.IsNotNull(retrievedArticle?.Content, "Retrieved article should have content");
-            Assert.IsTrue(retrievedArticle.Content.Contains("Original content"), "Retrieved content should match saved content");
+            Assert.Contains("Original content", retrievedArticle.Content, "Retrieved content should match saved content");
             Console.WriteLine($"Retrieved Article Content: '{retrievedArticle.Content}'");
 
             var model = new HtmlEditorPostViewModel
@@ -180,37 +175,37 @@ namespace Sky.Tests.Controllers
             Assert.IsInstanceOfType(result, typeof(JsonResult), "Controller should return JsonResult");
             var jsonResult = (JsonResult)result;
             Assert.IsNotNull(jsonResult.Value, "JsonResult.Value should not be null");
-            
+
             // Serialize to JSON to inspect the actual structure
-            var json = System.Text.Json.JsonSerializer.Serialize(jsonResult.Value, new System.Text.Json.JsonSerializerOptions 
-            { 
-                WriteIndented = true 
+            var json = System.Text.Json.JsonSerializer.Serialize(jsonResult.Value, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
             });
             Console.WriteLine($"Controller Response:\n{json}");
-            
+
             // Use JsonDocument for safer property checking
             var jsonDoc = System.Text.Json.JsonDocument.Parse(json);
             var root = jsonDoc.RootElement;
-            
+
             // Check which response structure we got
             if (root.TryGetProperty("success", out var successProp))
             {
                 // This is the failure response format
                 var successValue = successProp.GetBoolean();
-                var errors = root.TryGetProperty("errors", out var errorsProp) 
-                    ? System.Text.Json.JsonSerializer.Serialize(errorsProp) 
+                var errors = root.TryGetProperty("errors", out var errorsProp)
+                    ? System.Text.Json.JsonSerializer.Serialize(errorsProp)
                     : "No errors property";
-                
+
                 Assert.Fail($"SaveArticle command failed. success={successValue}, errors={errors}");
             }
-            
+
             // Should have ServerSideSuccess for success response
-            Assert.IsTrue(root.TryGetProperty("ServerSideSuccess", out var serverSideSuccessProp), 
+            Assert.IsTrue(root.TryGetProperty("ServerSideSuccess", out var serverSideSuccessProp),
                 "Response should have ServerSideSuccess property");
             Assert.IsTrue(serverSideSuccessProp.GetBoolean(), "ServerSideSuccess should be true");
-            
+
             Assert.IsTrue(root.TryGetProperty("Model", out var modelProp), "Response should have Model property");
-            
+
             // Verify article was updated in database
             var updatedArticle = await Logic.GetArticleByArticleNumber(article.ArticleNumber, null);
             Assert.AreEqual("Updated via WYSIWYG", updatedArticle.Title);
@@ -219,8 +214,8 @@ namespace Sky.Tests.Controllers
             Assert.AreEqual("Technology", updatedArticle.Category);
             Assert.AreEqual("Test intro", updatedArticle.Introduction);
             Assert.IsNotNull(updatedArticle.Content);
-            Assert.IsTrue(updatedArticle.Content.Contains("Original content"), 
-                "Content should be preserved when EditorId is not specified");
+            Assert.Contains("Original content",
+updatedArticle.Content, "Content should be preserved when EditorId is not specified");
         }
 
         [TestMethod]
@@ -233,7 +228,7 @@ namespace Sky.Tests.Controllers
 
             var model = new HtmlEditorPostViewModel
             {
-                ArticleNumber = article.ArticleNumber,  
+                ArticleNumber = article.ArticleNumber,
                 Title = article.Title,
                 EditorId = "region1",
                 Data = CryptoJsDecryption.Encrypt("<p>Updated Region Content</p>"),
@@ -248,9 +243,9 @@ namespace Sky.Tests.Controllers
 
             // Assert
             Assert.IsInstanceOfType(result, typeof(JsonResult));
-            
+
             var updatedArticle = await Logic.GetArticleByArticleNumber(article.ArticleNumber, null);
-            Assert.IsTrue(updatedArticle.Content.Contains("Updated Region Content"));
+            Assert.Contains("Updated Region Content", updatedArticle.Content);
         }
 
         #endregion
@@ -317,19 +312,19 @@ namespace Sky.Tests.Controllers
             // Arrange
             // **FIX**: Create a root article first, so the next article is NOT the root
             await Logic.CreateArticle("Home Page", TestUserId); // This becomes the root page
-    
+
             // Now create the article we want to test - this will NOT be root
             var article = await Logic.CreateArticle("Original Title", TestUserId);
             article.Content = "<p>Content</p>";
             await Logic.SaveArticle(article, TestUserId);
-            
+
             // Publish the article with a past date to enable redirect creation
             var pastDate = DateTimeOffset.UtcNow.AddMinutes(-5);
             await Logic.PublishArticle(article.Id, pastDate);
 
             // Reload the article after publishing to get the updated Published date
             article = await Logic.GetArticleByArticleNumber(article.ArticleNumber, null);
-            
+
             // Verify article is published
             Assert.IsNotNull(article.Published, "Article should have a Published date");
             Assert.IsTrue(article.Published <= DateTimeOffset.UtcNow, "Published date should be in the past");
@@ -337,7 +332,7 @@ namespace Sky.Tests.Controllers
             // **KEY**: Save the original URL before changing the title
             var originalUrlPath = article.UrlPath;
             Console.WriteLine($"Original UrlPath: '{originalUrlPath}'");
-            
+
             // Verify this is NOT the root page
             Assert.AreNotEqual("root", originalUrlPath, "Test article should not be the root page");
 
@@ -356,12 +351,12 @@ namespace Sky.Tests.Controllers
 
             // Assert
             Assert.IsInstanceOfType(result, typeof(JsonResult));
-            
+
             // Verify the controller returned success
             var jsonResult = (JsonResult)result;
             var json = System.Text.Json.JsonSerializer.Serialize(jsonResult.Value);
             Console.WriteLine($"Controller Response: {json}");
-            
+
             // Debug: Check all articles
             var allArticles = await Db.Articles.ToListAsync();
             Console.WriteLine($"Total articles in DB: {allArticles.Count}");
@@ -369,48 +364,48 @@ namespace Sky.Tests.Controllers
             {
                 Console.WriteLine($"  Article {a.ArticleNumber}: Title='{a.Title}', UrlPath='{a.UrlPath}', StatusCode={a.StatusCode}, Published={a.Published}");
             }
-            
+
             // Verify redirect was created
             // Redirects are Article entities with StatusCode = Redirect
             var redirectArticles = await Db.Articles
                 .Where(a => a.StatusCode == (int)StatusCodeEnum.Redirect)
                 .ToListAsync();
-            
+
             Console.WriteLine($"Redirect articles found: {redirectArticles.Count}");
             foreach (var r in redirectArticles)
             {
                 Console.WriteLine($"  Redirect: From '{r.UrlPath}' to (content): '{r.Content}'");
                 Console.WriteLine($"  Redirect HeaderJavaScript: '{r.HeaderJavaScript}'");
             }
-            
-            Assert.AreEqual(1, redirectArticles.Count, "Expected 1 redirect article to be created");
-            
+
+            Assert.HasCount(1, redirectArticles, "Expected 1 redirect article to be created");
+
             var redirect = redirectArticles.First();
             Assert.AreEqual(originalUrlPath, redirect.UrlPath, "Redirect should be from the original URL");
-            
+
             // Verify the article was updated with new title and new URL
             var updatedArticle = await Logic.GetArticleByArticleNumber(article.ArticleNumber, null);
             Assert.AreEqual("Completely Different New Title", updatedArticle.Title);
-            
+
             // Verify the URL changed
             Assert.AreNotEqual(originalUrlPath, updatedArticle.UrlPath, "URL path should have changed");
-            
+
             // **FIX**: The redirect Content field contains HTML, not just the URL
             // We need to verify the Content contains a link to the new URL
             var expectedNewUrl = updatedArticle.UrlPath;
-            Assert.IsTrue(redirect.Content.Contains(expectedNewUrl), 
-                $"Redirect content should contain the new URL path '{expectedNewUrl}'");
-            
+            Assert.Contains(expectedNewUrl,
+redirect.Content, $"Redirect content should contain the new URL path '{expectedNewUrl}'");
+
             // Also verify the HeaderJavaScript contains the redirect logic
             Assert.IsNotNull(redirect.HeaderJavaScript, "Redirect should have HeaderJavaScript");
-            Assert.IsTrue(redirect.HeaderJavaScript.Contains($"window.location.href = '{expectedNewUrl}';"),
-                "Redirect JavaScript should set window.location to the new URL");
-            
+            Assert.Contains($"window.location.href = '{expectedNewUrl}';",
+redirect.HeaderJavaScript, "Redirect JavaScript should set window.location to the new URL");
+
             // Verify the redirect Content contains expected HTML structure
-            Assert.IsTrue(redirect.Content.Contains("<h1>Redirecting to"), 
-                "Redirect content should have redirect heading");
-            Assert.IsTrue(redirect.Content.Contains($"<a href=\"/{expectedNewUrl}\">here</a>"),
-                "Redirect content should have clickable link to new URL");
+            Assert.Contains("<h1>Redirecting to",
+redirect.Content, "Redirect content should have redirect heading");
+            Assert.Contains($"<a href=\"/{expectedNewUrl}\">here</a>",
+redirect.Content, "Redirect content should have clickable link to new URL");
         }
 
         #endregion
@@ -435,9 +430,9 @@ namespace Sky.Tests.Controllers
             {
                 var handlerType = typeof(Sky.Editor.Features.Shared.ICommandHandler<,>)
                     .MakeGenericType(
-                        command.GetType(), 
+                        command.GetType(),
                         typeof(Sky.Editor.Features.Shared.CommandResult<Sky.Editor.Features.Articles.Save.ArticleUpdateResult>));
-                
+
                 var handler = Services.GetService(handlerType);
                 Assert.IsNotNull(handler, $"Handler not registered: {handlerType.Name}");
             }

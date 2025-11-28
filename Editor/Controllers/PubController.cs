@@ -11,6 +11,8 @@ namespace Sky.Editor.Controllers
     using Cosmos.Common.Data;
     using Cosmos.Publisher.Controllers;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Extensions.Caching.Memory;
+    using Microsoft.Extensions.Logging;
     using Sky.Editor.Services.EditorSettings;
 
     /// <summary>
@@ -25,8 +27,15 @@ namespace Sky.Editor.Controllers
         /// <param name="dbContext">Database context.</param>
         /// <param name="storageContext">Storage context.</param>
         /// <param name="options">Editor settings.</param>
-        public PubController(ApplicationDbContext dbContext, StorageContext storageContext, IEditorSettings options)
-            : base(dbContext, storageContext, options.CosmosRequiresAuthentication)
+        /// <param name="logger">Logger.</param>
+        /// <param name="memoryCache">Memory cache.</param>
+        public PubController(
+            ApplicationDbContext dbContext, 
+            StorageContext storageContext, 
+            IEditorSettings options,
+            ILogger<PubController> logger,
+            IMemoryCache memoryCache)
+            : base(dbContext, storageContext, options.CosmosRequiresAuthentication, logger, memoryCache)
         {
         }
     }

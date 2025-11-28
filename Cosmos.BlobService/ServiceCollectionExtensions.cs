@@ -7,6 +7,8 @@
 
 namespace Cosmos.BlobService
 {
+    using System;
+    using System.Linq;
     using Azure.Identity;
     using Azure.Storage.Blobs;
     using Microsoft.AspNetCore.Builder;
@@ -16,8 +18,6 @@ namespace Cosmos.BlobService
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Options;
-    using System;
-    using System.Linq;
 
     /// <summary>
     /// Adds the Cosmos Storage Context to the Services Collection.

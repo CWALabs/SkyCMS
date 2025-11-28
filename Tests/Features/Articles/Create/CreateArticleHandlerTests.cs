@@ -8,16 +8,10 @@
 namespace Sky.Tests.Features.Articles.Create
 {
     using Cosmos.Common.Data;
-    using Cosmos.Common.Data.Logic;
-    using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Create;
-    using Sky.Editor.Features.Shared;
-    using Sky.Editor.Infrastructure.Time;
     using System;
-    using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>

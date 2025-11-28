@@ -53,8 +53,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains(article.Title), "Result should contain the article title.");
-            Assert.IsTrue(result.Contains(article.Introduction), "Result should contain the article introduction.");
+            Assert.Contains(article.Title, result, "Result should contain the article title.");
+            Assert.Contains(article.Introduction, result, "Result should contain the article introduction.");
         }
 
         /// <summary>
@@ -75,8 +75,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains(article.BannerImage), "Result should contain banner image src.");
-            Assert.IsFalse(result.Contains("display:none"), "Banner should not be hidden when image exists.");
+            Assert.Contains(article.BannerImage, result, "Result should contain banner image src.");
+            Assert.DoesNotContain("display:none", result, "Banner should not be hidden when image exists.");
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains("display:none"), "Banner should be hidden when no image.");
+            Assert.Contains("display:none", result, "Banner should be hidden when no image.");
         }
 
         /// <summary>
@@ -121,8 +121,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains("Entry 1"), "Result should contain first entry title.");
-            Assert.IsTrue(result.Contains("Entry 2"), "Result should contain second entry title.");
+            Assert.Contains("Entry 1", result, "Result should contain first entry title.");
+            Assert.Contains("Entry 2", result, "Result should contain second entry title.");
         }
 
         /// <summary>
@@ -153,12 +153,12 @@ namespace Sky.Tests.Services.BlogPublishing
             // Most recent 10 should be present (Entry 1 through Entry 10)
             for (int i = 1; i <= 10; i++)
             {
-                Assert.IsTrue(result.Contains($"Entry {i}"), $"Result should contain Entry {i}.");
+                Assert.Contains($"Entry {i}", result, $"Result should contain Entry {i}.");
             }
 
             // Older entries should not be present
-            Assert.IsFalse(result.Contains("Entry 11"), "Result should not contain Entry 11.");
-            Assert.IsFalse(result.Contains("Entry 15"), "Result should not contain Entry 15.");
+            Assert.DoesNotContain("Entry 11", result, "Result should not contain Entry 11.");
+            Assert.DoesNotContain("Entry 15", result, "Result should not contain Entry 15.");
         }
 
         /// <summary>
@@ -182,8 +182,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains("Active Entry"), "Result should contain active entry.");
-            Assert.IsFalse(result.Contains("Deleted Entry"), "Result should not contain deleted entry.");
+            Assert.Contains("Active Entry", result, "Result should contain active entry.");
+            Assert.DoesNotContain("Deleted Entry", result, "Result should not contain deleted entry.");
         }
 
         /// <summary>
@@ -207,8 +207,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains("Regular Entry"), "Result should contain regular entry.");
-            Assert.IsFalse(result.Contains("Redirect Entry"), "Result should not contain redirect entry.");
+            Assert.Contains("Regular Entry", result, "Result should contain regular entry.");
+            Assert.DoesNotContain("Redirect Entry", result, "Result should not contain redirect entry.");
         }
 
         /// <summary>
@@ -232,8 +232,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains("Past Entry"), "Result should contain past entry.");
-            Assert.IsFalse(result.Contains("Future Entry"), "Result should not contain future entry.");
+            Assert.Contains("Past Entry", result, "Result should contain past entry.");
+            Assert.DoesNotContain("Future Entry", result, "Result should not contain future entry.");
         }
 
         /// <summary>
@@ -264,8 +264,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Note: The service modifies the entry in-memory but does NOT save to database
             // So we verify the returned HTML contains the extracted text, not the database record
-            Assert.IsTrue(result.Contains("This is the first paragraph."),
-                "Result should contain the extracted introduction text.");
+            Assert.Contains("This is the first paragraph.",
+result, "Result should contain the extracted introduction text.");
         }
 
         /// <summary>
@@ -288,8 +288,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains("Blog A Entry"), "Result should contain blog A entry.");
-            Assert.IsFalse(result.Contains("Blog B Entry"), "Result should not contain blog B entry.");
+            Assert.Contains("Blog A Entry", result, "Result should contain blog A entry.");
+            Assert.DoesNotContain("Blog B Entry", result, "Result should not contain blog B entry.");
         }
 
         /// <summary>
@@ -309,8 +309,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains(article.Title), "Result should contain the article title.");
-            Assert.IsTrue(result.Contains("blog-items"), "Result should contain the blog-items container.");
+            Assert.Contains(article.Title, result, "Result should contain the article title.");
+            Assert.Contains("blog-items", result, "Result should contain the blog-items container.");
         }
 
         #endregion
@@ -332,8 +332,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains(article.Title), "Result should contain the article title.");
-            Assert.IsTrue(result.Contains(article.Content), "Result should contain the article content.");
+            Assert.Contains(article.Title, result, "Result should contain the article title.");
+            Assert.Contains(article.Content, result, "Result should contain the article content.");
         }
 
         /// <summary>
@@ -352,9 +352,9 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains(article.BannerImage), "Result should contain banner image src.");
-            Assert.IsTrue(result.Contains("<img"), "Result should contain img tag.");
-            Assert.IsTrue(result.Contains("ccms-img-widget-img"), "Image should have correct class.");
+            Assert.Contains(article.BannerImage, result, "Result should contain banner image src.");
+            Assert.Contains("<img", result, "Result should contain img tag.");
+            Assert.Contains("ccms-img-widget-img", result, "Image should have correct class.");
         }
 
         /// <summary>
@@ -373,8 +373,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains("ccms-blog-title-image"), "Result should contain image div.");
-            Assert.IsFalse(result.Contains("<img"), "Result should not contain img tag when no banner.");
+            Assert.Contains("ccms-blog-title-image", result, "Result should contain image div.");
+            Assert.DoesNotContain("<img", result, "Result should not contain img tag when no banner.");
         }
 
         /// <summary>
@@ -393,8 +393,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains("My Amazing Blog Post"), "Result should contain the title.");
-            Assert.IsTrue(result.Contains("ccms-blog-item-title"), "Result should contain title element.");
+            Assert.Contains("My Amazing Blog Post", result, "Result should contain the title.");
+            Assert.Contains("ccms-blog-item-title", result, "Result should contain title element.");
         }
 
         /// <summary>
@@ -413,8 +413,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains(article.Content), "Result should contain the article content.");
-            Assert.IsTrue(result.Contains("ccms-blog-item-content"), "Result should contain content element.");
+            Assert.Contains(article.Content, result, "Result should contain the article content.");
+            Assert.Contains("ccms-blog-item-content", result, "Result should contain content element.");
         }
 
         /// <summary>
@@ -434,8 +434,8 @@ namespace Sky.Tests.Services.BlogPublishing
 
             // Assert
             Assert.IsNotNull(result, "Result should not be null.");
-            Assert.IsTrue(result.Contains(article.Title), "Result should preserve title with special chars.");
-            Assert.IsTrue(result.Contains(article.Content), "Result should preserve content with special chars.");
+            Assert.Contains(article.Title, result, "Result should preserve title with special chars.");
+            Assert.Contains(article.Content, result, "Result should preserve content with special chars.");
         }
 
         #endregion

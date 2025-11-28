@@ -1,9 +1,9 @@
 namespace Sky.Editor.Features.Articles.Create
 {
+    using System;
     using Cosmos.Common.Data;
     using Cosmos.Common.Models;
     using Sky.Editor.Features.Shared;
-    using System;
 
     /// <summary>
     /// Command to create a new article.

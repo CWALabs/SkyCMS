@@ -8,7 +8,6 @@
 namespace Sky.Tests.Features.Articles.Create
 {
     using Cosmos.Common.Data;
-    using Cosmos.Common.Models;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Create;
     using System;
@@ -271,7 +270,7 @@ namespace Sky.Tests.Features.Articles.Create
             var errors = validator.Validate(command);
 
             // Assert
-            Assert.AreEqual(3, errors.Count);
+            Assert.HasCount(3, errors);
             Assert.IsTrue(errors.ContainsKey(nameof(command.Title)));
             Assert.IsTrue(errors.ContainsKey(nameof(command.UserId)));
             Assert.IsTrue(errors.ContainsKey(nameof(command.BlogKey)));
@@ -294,7 +293,7 @@ namespace Sky.Tests.Features.Articles.Create
             var errors = validator.Validate(command);
 
             // Assert
-            Assert.AreEqual(0, errors.Count);
+            Assert.IsEmpty(errors);
         }
 
         #endregion

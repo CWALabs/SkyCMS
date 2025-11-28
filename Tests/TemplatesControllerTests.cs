@@ -127,7 +127,7 @@ namespace Sky.Tests.Controllers
             await Db.SaveChangesAsync();
 
             // Act
-            var result = await _controller.UpdateAll(template.Id);
+            var result = await _controller.Publish(template.Id);
 
             // Assert
             Assert.IsInstanceOfType(result, typeof(RedirectToActionResult));
@@ -142,8 +142,8 @@ namespace Sky.Tests.Controllers
                 .OrderByDescending(a => a.VersionNumber)
                 .FirstAsync();
 
-            Assert.IsTrue(updatedArticle1.Content.Contains("User Content 1"), "Article 1 should preserve user content");
-            Assert.IsTrue(updatedArticle2.Content.Contains("User Content 2"), "Article 2 should preserve user content");
+            Assert.Contains("User Content 1", updatedArticle1.Content, "Article 1 should preserve user content");
+            Assert.Contains("User Content 2", updatedArticle2.Content, "Article 2 should preserve user content");
             Assert.AreEqual(1, updatedArticle1.VersionNumber, "Article 1 should have version reset to 1");
             Assert.AreEqual(1, updatedArticle2.VersionNumber, "Article 2 should have version reset to 1");
         }
@@ -166,7 +166,7 @@ namespace Sky.Tests.Controllers
                 .CountAsync();
 
             // Act
-            var result = await _controller.UpdateAll(nonExistentTemplateId);
+            var result = await _controller.Publish(nonExistentTemplateId);
 
             // Assert
             Assert.IsInstanceOfType(result, typeof(RedirectToActionResult));
@@ -197,7 +197,7 @@ namespace Sky.Tests.Controllers
             await Db.SaveChangesAsync();
 
             // Act
-            var result = await _controller.UpdateAll(template.Id);
+            var result = await _controller.Publish(template.Id);
 
             // Assert
             Assert.IsInstanceOfType(result, typeof(RedirectToActionResult));
@@ -249,8 +249,8 @@ namespace Sky.Tests.Controllers
                 .OrderByDescending(a => a.VersionNumber)
                 .FirstAsync();
 
-            Assert.IsTrue(updatedArticle.Content.Contains("data-ccms-ceid='region2'"), "Should add new region");
-            Assert.IsTrue(updatedArticle.Content.Contains("Brand New Region"), "Should include new region content");
+            Assert.Contains("data-ccms-ceid='region2'", updatedArticle.Content, "Should add new region");
+            Assert.Contains("Brand New Region", updatedArticle.Content, "Should include new region content");
         }
 
         /// <summary>
@@ -325,8 +325,8 @@ namespace Sky.Tests.Controllers
                 .OrderByDescending(a => a.VersionNumber)
                 .FirstAsync();
 
-            Assert.IsTrue(updatedArticle.Content.Contains("User's Important Content"),
-                "Should preserve user content in matching editable region");
+            Assert.Contains("User's Important Content",
+updatedArticle.Content, "Should preserve user content in matching editable region");
         }
 
         /// <summary>
@@ -406,7 +406,7 @@ namespace Sky.Tests.Controllers
             await Db.SaveChangesAsync();
 
             // Act - No exception should be thrown
-            var result = await _controller.UpdateAll(template.Id);
+            var result = await _controller.Publish(template.Id);
 
             // Assert
             Assert.IsInstanceOfType(result, typeof(RedirectToActionResult));

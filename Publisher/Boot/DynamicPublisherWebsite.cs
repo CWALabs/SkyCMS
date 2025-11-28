@@ -4,6 +4,8 @@
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
+using System.Text.RegularExpressions;
+using System.Threading.RateLimiting;
 using AspNetCore.Identity.FlexDb.Extensions;
 using Azure.Identity;
 using Cosmos.BlobService;
@@ -19,8 +21,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Azure.Cosmos.Fluent;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Serialization;
-using System.Text.RegularExpressions;
-using System.Threading.RateLimiting;
 
 namespace Cosmos.Publisher.Boot
 {

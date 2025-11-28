@@ -8,11 +8,9 @@
 namespace Sky.Tests.Features.Articles.Save
 {
     using Cosmos.Common.Data;
-    using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Save;
-    using System;
     using System.Linq;
     using System.Threading.Tasks;
 
@@ -98,13 +96,13 @@ namespace Sky.Tests.Features.Articles.Save
 
             // Assert
             Assert.IsTrue(result.IsSuccess);
-            Assert.IsTrue(result.Data!.Model!.Content.Length > 100000);
+            Assert.IsGreaterThan(100000, result.Data!.Model!.Content.Length);
             
             // Verify content was persisted correctly
             var savedArticle = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             Assert.IsNotNull(savedArticle);
-            Assert.IsTrue(savedArticle.Content.Length > 100000);
+            Assert.IsGreaterThan(100000, savedArticle.Content.Length);
         }
 
         [TestMethod]
@@ -133,10 +131,10 @@ namespace Sky.Tests.Features.Articles.Save
             var saved = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             Assert.IsNotNull(saved);
-            Assert.IsTrue(saved.Content.Contains("émojis"));
-            Assert.IsTrue(saved.Content.Contains("🎉"));
-            Assert.IsTrue(saved.Content.Contains("spëcial"));
-            Assert.IsTrue(saved.Content.Contains("çhars"));
+            Assert.Contains("émojis", saved.Content);
+            Assert.Contains("🎉", saved.Content);
+            Assert.Contains("spëcial", saved.Content);
+            Assert.Contains("çhars", saved.Content);
         }
 
         [TestMethod]
@@ -225,7 +223,7 @@ namespace Sky.Tests.Features.Articles.Save
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             Assert.IsNotNull(saved);
             // Content should be preserved (sanitization happens elsewhere if needed)
-            Assert.IsTrue(saved.Content.Contains("script"));
+            Assert.Contains("script", saved.Content);
         }
 
         [TestMethod]
@@ -254,9 +252,9 @@ namespace Sky.Tests.Features.Articles.Save
             var saved = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             Assert.IsNotNull(saved);
-            Assert.IsTrue(saved.Content.Contains("你好世界"));
-            Assert.IsTrue(saved.Content.Contains("مرحبا بالعالم"));
-            Assert.IsTrue(saved.Content.Contains("Привет мир"));
+            Assert.Contains("你好世界", saved.Content);
+            Assert.Contains("مرحبا بالعالم", saved.Content);
+            Assert.Contains("Привет мир", saved.Content);
         }
 
         [TestMethod]
@@ -295,8 +293,8 @@ namespace Sky.Tests.Features.Articles.Save
             var saved = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             Assert.IsNotNull(saved);
-            Assert.IsTrue(saved.Content.Contains("container"));
-            Assert.IsTrue(saved.Content.Contains("col-md-6"));
+            Assert.Contains("container", saved.Content);
+            Assert.Contains("col-md-6", saved.Content);
         }
     }
 }

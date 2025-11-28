@@ -5,12 +5,19 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using System;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using System.Threading.RateLimiting;
+using System.Threading.Tasks;
+using System.Web;
 using AspNetCore.Identity.FlexDb.Extensions;
 using Azure.Identity;
 using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
 using Cosmos.Common;
 using Cosmos.Common.Data;
+using Cosmos.Common.Models;
 using Cosmos.Common.Services.Configurations;
 using Cosmos.DynamicConfig;
 using Cosmos.EmailServices;
@@ -32,10 +39,14 @@ using Sky.Cms.Services;
 using Sky.Editor.Boot;
 using Sky.Editor.Data.Logic;
 using Sky.Editor.Domain.Events;
+using Sky.Editor.Features.Articles.Create;
+using Sky.Editor.Features.Articles.Save;
+using Sky.Editor.Features.Shared;
 using Sky.Editor.Infrastructure.Time;
 using Sky.Editor.Services.Authors;
 using Sky.Editor.Services.BlogPublishing;
 using Sky.Editor.Services.Catalog;
+using Sky.Editor.Services.CDN;
 using Sky.Editor.Services.EditorSettings;
 using Sky.Editor.Services.Html;
 using Sky.Editor.Services.Publishing;
@@ -45,17 +56,6 @@ using Sky.Editor.Services.Scheduling;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
-using Sky.Editor.Features.Articles.Create;
-using Sky.Editor.Features.Articles.Save;
-using Sky.Editor.Features.Shared;
-using Cosmos.Common.Models;
-using SQLitePCL;
-using System;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using System.Threading.RateLimiting;
-using System.Threading.Tasks;
-using System.Web;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -95,6 +95,7 @@ else
 
 // Register transient services - common to both single-tenant and multi-tenant modes
 // Transient services are created each time they are requested.
+builder.Services.AddTransient<ICdnServiceFactory, CdnServiceFactory>();
 builder.Services.AddTransient<ITemplateService, TemplateService>();
 builder.Services.AddTransient<IArticleHtmlService, ArticleHtmlService>();
 builder.Services.AddTransient<IAuthorInfoService, AuthorInfoService>();

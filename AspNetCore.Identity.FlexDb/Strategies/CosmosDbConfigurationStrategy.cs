@@ -8,7 +8,6 @@
 namespace AspNetCore.Identity.FlexDb.Strategies
 {
     using Azure.Identity;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Diagnostics;
     using System;

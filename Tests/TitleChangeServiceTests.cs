@@ -68,8 +68,8 @@ namespace Sky.Tests.Services.Titles
             var result = TitleChangeService.BuildArticleUrl(article);
 
             // Assert
-            Assert.IsTrue(result.Contains("my-blog"));
-            Assert.IsTrue(result.Contains("my-blog-post"));
+            Assert.Contains("my-blog", result);
+            Assert.Contains("my-blog-post", result);
         }
 
         /// <summary>
@@ -317,12 +317,12 @@ namespace Sky.Tests.Services.Titles
             var updatedPost1 = await Db.Articles.FirstOrDefaultAsync(a => a.ArticleNumber == 2);
             Assert.IsNotNull(updatedPost1);
             Assert.AreEqual("new-blog-title", updatedPost1.BlogKey);
-            Assert.IsTrue(updatedPost1.UrlPath.StartsWith("new-blog-title/"));
+            Assert.StartsWith("new-blog-title/", updatedPost1.UrlPath);
 
             var updatedPost2 = await Db.Articles.FirstOrDefaultAsync(a => a.ArticleNumber == 3);
             Assert.IsNotNull(updatedPost2);
             Assert.AreEqual("new-blog-title", updatedPost2.BlogKey);
-            Assert.IsTrue(updatedPost2.UrlPath.StartsWith("new-blog-title/"));
+            Assert.StartsWith("new-blog-title/", updatedPost2.UrlPath);
 
             // Verify event was dispatched
             var titleChangedEvent = EventDispatcher.Last<TitleChangedEvent>();

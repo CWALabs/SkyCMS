@@ -8,15 +8,11 @@
 namespace Sky.Editor.Services.Scheduling
 {
     using System;
-    using System.IO;
     using System.Linq;
-    using System.Reflection;
     using AspNetCore.Identity.FlexDb;
     using AspNetCore.Identity.FlexDb.Strategies;
     using Hangfire;
-    using Hangfire.Dashboard.Themes;
     using Hangfire.MySql;
-    using Hangfire.Storage.SQLite;
     using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;

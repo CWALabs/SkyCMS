@@ -7,14 +7,14 @@
 
 namespace Cosmos.Common.Services
 {
+    using System;
+    using System.IO;
+    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.BlobService.Models;
     using Microsoft.AspNetCore.StaticFiles;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
-    using System;
-    using System.IO;
-    using System.Threading.Tasks;
 
     /// <summary>
     ///  Backup and restore service for files upon application startup and shutdown.

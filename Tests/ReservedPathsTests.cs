@@ -38,7 +38,7 @@ public class ReservedPathsTests : SkyCmsTestBase
 
         // Assert
         Assert.IsNotNull(paths);
-        Assert.IsTrue(paths.Count > 0);
+        Assert.IsNotEmpty(paths);
     }
 
     #endregion
@@ -230,7 +230,7 @@ public class ReservedPathsTests : SkyCmsTestBase
         // Assert
         var paths = await _reservedPaths.GetReservedPaths();
         var matches = paths.Where(p => p.Path.ToLower() == "my-path").ToList();
-        Assert.AreEqual(1, matches.Count, "Should only have one entry");
+        Assert.HasCount(1, matches, "Should only have one entry");
         Assert.AreEqual("Updated via uppercase", matches[0].Notes);
     }
 

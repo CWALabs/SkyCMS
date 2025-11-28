@@ -7,6 +7,13 @@
 
 namespace Sky.Cms.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
     using Cosmos.BlobService;
     using Cosmos.BlobService.Models;
     using Cosmos.Common.Data;
@@ -16,6 +23,7 @@ namespace Sky.Cms.Controllers
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.ModelBinding;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
     using MimeTypes;
@@ -28,13 +36,6 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Models;
     using Sky.Editor.Services.CDN;
     using Sky.Editor.Services.EditorSettings;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
 
     /// <summary>
     /// File manager controller.
@@ -1013,17 +1014,28 @@ namespace Sky.Cms.Controllers
                 return BadRequest(ModelState);
             }
 
-            var blob = await storageContext.GetFileAsync(path);
-
-            if (!blob.IsDirectory)
+            // Check if blob exists before attempting to get metadata
+            if (!await storageContext.BlobExistsAsync(path))
             {
-                using var stream = await storageContext.GetStreamAsync(path);
-                using var memStream = new MemoryStream();
-                stream.CopyTo(memStream);
-                return File(memStream.ToArray(), "application/octet-stream", fileDownloadName: blob.Name);
+                return NotFound();
             }
 
-            return NotFound();
+            var blob = await storageContext.GetFileAsync(path);
+
+            if (blob == null)
+            {
+                return NotFound();
+            }
+
+            if (blob.IsDirectory)
+            {
+                return NotFound();
+            }
+
+            using var stream = await storageContext.GetStreamAsync(path);
+            using var memStream = new MemoryStream();
+            await stream.CopyToAsync(memStream);
+            return File(memStream.ToArray(), "application/octet-stream", fileDownloadName: blob.Name);
         }
 
         /// <summary>
@@ -1728,6 +1740,20 @@ namespace Sky.Cms.Controllers
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Returns model state errors as serialization.
+        /// </summary>
+        /// <param name="modelState">Model state.</param>
+        /// <returns>Errors.</returns>
+        private string SerializeErrors(ModelStateDictionary modelState)
+        {
+            var errors = modelState.Values
+                .Where(w => w.ValidationState == ModelValidationState.Invalid).Select(s => s.Errors)
+                .ToList();
+
+            return Newtonsoft.Json.JsonConvert.SerializeObject(errors);
         }
 
         /// <summary>

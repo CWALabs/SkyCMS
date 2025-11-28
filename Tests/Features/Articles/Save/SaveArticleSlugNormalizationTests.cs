@@ -8,11 +8,9 @@
 namespace Sky.Tests.Features.Articles.Save
 {
     using Cosmos.Common.Data;
-    using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Save;
-    using System;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -50,8 +48,8 @@ namespace Sky.Tests.Features.Articles.Save
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             
             // Emojis should be stripped/converted to hyphens
-            Assert.IsFalse(savedArticle!.UrlPath.Contains("🚀"));
-            Assert.IsFalse(savedArticle.UrlPath.Contains("🎉"));
+            Assert.DoesNotContain("🚀", savedArticle!.UrlPath);
+            Assert.DoesNotContain("🎉", savedArticle.UrlPath);
             Assert.AreEqual("my-article-with-emojis", savedArticle.UrlPath);
         }
 
@@ -135,7 +133,7 @@ namespace Sky.Tests.Features.Articles.Save
             var savedArticle = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             
-            Assert.IsTrue(savedArticle!.UrlPath.Contains("2024"));
+            Assert.Contains("2024", savedArticle!.UrlPath);
             Assert.AreEqual("2024-annual-report", savedArticle.UrlPath);
         }
 
@@ -163,7 +161,7 @@ namespace Sky.Tests.Features.Articles.Save
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             
             // Should not have multiple consecutive hyphens
-            Assert.IsFalse(savedArticle!.UrlPath.Contains("--"));
+            Assert.DoesNotContain("--", savedArticle!.UrlPath);
         }
 
         [TestMethod]
@@ -190,8 +188,8 @@ namespace Sky.Tests.Features.Articles.Save
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             
             // Punctuation should be removed or normalized
-            Assert.IsFalse(savedArticle!.UrlPath.Contains("?"));
-            Assert.IsFalse(savedArticle.UrlPath.Contains("!"));
+            Assert.DoesNotContain("?", savedArticle!.UrlPath);
+            Assert.DoesNotContain("!", savedArticle.UrlPath);
         }
 
         [TestMethod]
@@ -245,7 +243,7 @@ namespace Sky.Tests.Features.Articles.Save
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             
             // Ampersand should be normalized
-            Assert.IsFalse(savedArticle!.UrlPath.Contains("&"));
+            Assert.DoesNotContain("&", savedArticle!.UrlPath);
         }
 
         [TestMethod]

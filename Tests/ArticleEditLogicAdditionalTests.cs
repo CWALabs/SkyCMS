@@ -8,7 +8,6 @@ namespace Sky.Tests
     using System;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Sky.Editor.Data.Logic;
 
     /// <summary>
     /// Integration tests for legacy ArticleEditLogic.SaveArticle() method.

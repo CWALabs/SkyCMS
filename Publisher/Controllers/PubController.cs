@@ -9,6 +9,7 @@ using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
 using Cosmos.Common.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Cosmos.Publisher.Controllers
@@ -25,8 +26,15 @@ namespace Cosmos.Publisher.Controllers
         /// <param name="options">Cosmos options.</param>
         /// <param name="dbContext">Database context.</param>
         /// <param name="storageContext">Storage context.</param>
-        public PubController(IOptions<CosmosConfig> options, ApplicationDbContext dbContext, StorageContext storageContext)
-            : base(dbContext, storageContext, options.Value.SiteSettings.CosmosRequiresAuthentication)
+        /// <param name="logger">Logger instance.</param>
+        /// <param name="memoryCache">Memory cache.</param>
+        public PubController(
+            IOptions<CosmosConfig> options, 
+            ApplicationDbContext dbContext, 
+            StorageContext storageContext,
+            ILogger<PubController> logger,
+            IMemoryCache memoryCache)
+            : base(dbContext, storageContext, options.Value.SiteSettings.CosmosRequiresAuthentication, logger, memoryCache)
         {
         }
     }

@@ -1,7 +1,7 @@
 namespace Sky.Editor.Services.Scheduling
 {
-    using Sky.Editor.Data.Logic;
     using System.Threading.Tasks;
+    using Sky.Editor.Data.Logic;
 
     public interface ITenantArticleLogicFactory
     {

@@ -8,7 +8,6 @@
 namespace Sky.Tests.Features.Articles.Save
 {
     using Cosmos.Common.Data;
-    using Cosmos.Common.Models;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Save;
     using System;
@@ -43,7 +42,7 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsFalse(result.IsSuccess);
             Assert.IsNotNull(result.ErrorMessage);
-            Assert.IsTrue(result.ErrorMessage.Contains("not found"));
+            Assert.Contains("not found", result.ErrorMessage);
         }
 
         [TestMethod]
@@ -234,7 +233,7 @@ namespace Sky.Tests.Features.Articles.Save
 
             // Assert
             Assert.IsFalse(result.IsSuccess);
-            Assert.IsTrue(result.Errors.Count >= 3); // At least ArticleNumber, Title, Content
+            Assert.IsGreaterThanOrEqualTo(3, result.Errors.Count); // At least ArticleNumber, Title, Content
         }
     }
 }

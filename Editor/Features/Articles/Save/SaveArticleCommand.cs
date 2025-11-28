@@ -7,10 +7,9 @@
 
 namespace Sky.Editor.Features.Articles.Save
 {
-    using Cosmos.Common.Data;
-    using Cosmos.Common.Models;
-    using Sky.Editor.Features.Shared;
     using System;
+    using Cosmos.Common.Data;
+    using Sky.Editor.Features.Shared;
 
     /// <summary>
     /// Command to save (update) an existing article.

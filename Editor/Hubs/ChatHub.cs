@@ -7,6 +7,12 @@
 
 namespace Sky.Cms.Hubs
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Authorization;
@@ -15,12 +21,6 @@ namespace Sky.Cms.Hubs
     using Newtonsoft.Json;
     using Sky.Cms.Models;
     using Sky.Editor.Data.Logic;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Chat hub.

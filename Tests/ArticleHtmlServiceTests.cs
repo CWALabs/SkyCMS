@@ -48,8 +48,8 @@ namespace Sky.Tests.Services.Html
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.IsTrue(result.Contains("contenteditable='true'"));
-            Assert.IsTrue(result.Contains("data-ccms-ceid="));
+            Assert.Contains("contenteditable='true'", result);
+            Assert.Contains("data-ccms-ceid=", result);
         }
 
         /// <summary>
@@ -63,8 +63,8 @@ namespace Sky.Tests.Services.Html
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.IsTrue(result.Contains("contenteditable='true'"));
-            Assert.IsTrue(result.Contains("data-ccms-ceid="));
+            Assert.Contains("contenteditable='true'", result);
+            Assert.Contains("data-ccms-ceid=", result);
         }
 
         /// <summary>
@@ -80,9 +80,9 @@ namespace Sky.Tests.Services.Html
             var result = articleHtmlService.EnsureEditableMarkers(html);
 
             // Assert
-            Assert.IsTrue(result.Contains("data-ccms-ceid="));
-            Assert.IsTrue(result.Contains("data-ccms-index="));
-            Assert.IsTrue(result.Contains("Test Content"));
+            Assert.Contains("data-ccms-ceid=", result);
+            Assert.Contains("data-ccms-index=", result);
+            Assert.Contains("Test Content", result);
         }
 
         /// <summary>
@@ -98,10 +98,10 @@ namespace Sky.Tests.Services.Html
             var result = articleHtmlService.EnsureEditableMarkers(html);
 
             // Assert
-            Assert.IsTrue(result.Contains("contenteditable=\"true\""));
-            Assert.IsTrue(result.Contains("data-ccms-ceid="));
+            Assert.Contains("contenteditable=\"true\"", result);
+            Assert.Contains("data-ccms-ceid=", result);
             // ✅ Removed data-ccms-index check - not added for wrapped content
-            Assert.IsTrue(result.Contains("<p>Regular paragraph</p>"));
+            Assert.Contains("<p>Regular paragraph</p>", result);
         }
 
         /// <summary>
@@ -117,8 +117,8 @@ namespace Sky.Tests.Services.Html
             var result = articleHtmlService.EnsureEditableMarkers(html);
 
             // Assert
-            Assert.IsTrue(result.Contains("data-ccms-index=\"0\""));
-            Assert.IsTrue(result.Contains("data-ccms-index=\"1\""));
+            Assert.Contains("data-ccms-index=\"0\"", result);
+            Assert.Contains("data-ccms-index=\"1\"", result);
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace Sky.Tests.Services.Html
             var result = articleHtmlService.EnsureEditableMarkers(html);
 
             // Assert
-            Assert.IsTrue(result.Contains(existingId));
+            Assert.Contains(existingId, result);
         }
 
         #endregion
@@ -184,8 +184,8 @@ namespace Sky.Tests.Services.Html
             var result = articleHtmlService.EnsureAngularBase(header, "/blog");
 
             // Assert
-            Assert.IsTrue(result.Contains("<base"));
-            Assert.IsTrue(result.Contains("href=\"/blog/\""));
+            Assert.Contains("<base", result);
+            Assert.Contains("href=\"/blog/\"", result);
         }
 
         /// <summary>
@@ -201,7 +201,7 @@ namespace Sky.Tests.Services.Html
             var result = articleHtmlService.EnsureAngularBase(header, string.Empty);
 
             // Assert
-            Assert.IsTrue(result.Contains("href=\"/\""));
+            Assert.Contains("href=\"/\"", result);
         }
 
         #endregion

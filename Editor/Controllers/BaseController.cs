@@ -7,20 +7,17 @@
 
 namespace Sky.Cms.Controllers
 {
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using System.Web;
     using Cosmos.Common.Data;
     using Cosmos.Common.Models;
     using HtmlAgilityPack;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.Mvc;
-    using Microsoft.AspNetCore.Mvc.ModelBinding;
     using Microsoft.AspNetCore.Mvc.Rendering;
     using Microsoft.EntityFrameworkCore;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
 
     /// <summary>
     /// Base controller.
@@ -92,70 +89,6 @@ namespace Sky.Cms.Controllers
                 Value = s.Id.ToString(),
                 Text = s.LayoutName
             }).ToListAsync();
-        }
-
-        /// <summary>
-        /// Strips Byte Order Marks.
-        /// </summary>
-        /// <param name="data">HTML data.</param>
-        /// <returns>Un-BOMed html.</returns>
-        internal string StripBOM(string data)
-        {
-            // See: https://danielwertheim.se/utf-8-bom-adventures-in-c/
-            if (string.IsNullOrEmpty(data) || string.IsNullOrWhiteSpace(data))
-            {
-                return data;
-            }
-
-            // Get rid of Zero Length strings
-            var rows = data.Split("\r\n");
-            var builder = new StringBuilder();
-            foreach (var row in rows)
-            {
-                if (!row.Trim().Equals(string.Empty))
-                {
-                    builder.AppendLine(row);
-                }
-            }
-
-            data = builder.ToString();
-
-            // Search for and eliminate BOM
-            var filtered = new string(data.ToArray().Where(c => c != '\uFEFF' && c != '\u00a0').ToArray());
-
-            using var memStream = new MemoryStream();
-            using var writer = new StreamWriter(memStream, new UTF8Encoding(false));
-            writer.Write(filtered);
-            writer.Flush();
-
-            var clean = Encoding.UTF8.GetString(memStream.ToArray());
-
-            return clean;
-        }
-
-        /// <summary>
-        /// Returns model state errors as serialization.
-        /// </summary>
-        /// <param name="modelState">Model state.</param>
-        /// <returns>Errors.</returns>
-        internal string SerializeErrors(ModelStateDictionary modelState)
-        {
-            var errors = modelState.Values
-                .Where(w => w.ValidationState == ModelValidationState.Invalid).Select(s => s.Errors)
-                .ToList();
-
-            return Newtonsoft.Json.JsonConvert.SerializeObject(errors);
-        }
-
-        /// <summary>
-        /// Gets the user Email address of the currently logged in user.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        protected async Task<string> GetUserEmail()
-        {
-            // Get the user's ID for logging.
-            var user = await baseUserManager.GetUserAsync(User);
-            return user.Email;
         }
 
         /// <summary>

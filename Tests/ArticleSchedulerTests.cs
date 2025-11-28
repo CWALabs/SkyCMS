@@ -8,12 +8,10 @@
 namespace Sky.Tests.Services.Scheduling
 {
     using System;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
-    using Cosmos.DynamicConfig;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
@@ -786,7 +784,7 @@ namespace Sky.Tests.Services.Scheduling
             var publishedPage = await Db.Pages.FirstOrDefaultAsync(p => p.ArticleNumber == 1);
             Assert.IsNotNull(publishedPage, "Published page should be created");
             Assert.AreEqual(2, publishedPage.VersionNumber, "Published page should be version 2");
-            Assert.IsTrue(publishedPage.Content.Contains("Version 2 Content"), "Published page should contain correct content");
+            Assert.Contains("Version 2 Content", publishedPage.Content, "Published page should contain correct content");
         }
 
         /// <summary>

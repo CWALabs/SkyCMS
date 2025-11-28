@@ -7,6 +7,10 @@
 
 namespace Sky.Cms.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
@@ -25,10 +29,6 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Templates;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Templates controller.
@@ -700,7 +700,7 @@ namespace Sky.Cms.Controllers
         /// </summary>
         /// <param name="id">Template ID.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task<IActionResult> UpdateAll(Guid id)
+        public async Task<IActionResult> Publish(Guid id)
         {
             if (!ModelState.IsValid)
             {
@@ -712,7 +712,12 @@ namespace Sky.Cms.Controllers
             return RedirectToAction("Pages", routeValues: new { id });
         }
 
-        private async Task UpdateAllPages(Guid id)
+        /// <summary>
+        /// Updates all the pages that use this template.
+        /// </summary>
+        /// <param name="id">Template ID.</param>
+        /// <returns>Task.</returns>
+        public async Task UpdateAllPages(Guid id)
         {
             var pages = await dbContext.ArticleCatalog.Where(w => w.TemplateId == id).ToListAsync();
             var template = await dbContext.Templates.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id);

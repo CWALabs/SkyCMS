@@ -8,11 +8,9 @@
 namespace Sky.Tests.Features.Articles.Save
 {
     using Cosmos.Common.Data;
-    using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Save;
-    using System;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -48,7 +46,7 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
-            Assert.IsTrue(savedArticle!.HeaderJavaScript.Contains("console.log"));
+            Assert.Contains("console.log", savedArticle!.HeaderJavaScript);
         }
 
         [TestMethod]
@@ -74,7 +72,7 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
-            Assert.IsTrue(savedArticle!.FooterJavaScript.Contains("console.log"));
+            Assert.Contains("console.log", savedArticle!.FooterJavaScript);
         }
 
         [TestMethod]
@@ -101,8 +99,8 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
-            Assert.IsTrue(savedArticle!.HeaderJavaScript.Contains("headVar"));
-            Assert.IsTrue(savedArticle.FooterJavaScript.Contains("console.log"));
+            Assert.Contains("headVar", savedArticle!.HeaderJavaScript);
+            Assert.Contains("console.log", savedArticle.FooterJavaScript);
         }
 
         [TestMethod]
@@ -132,7 +130,7 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
-            Assert.IsTrue(savedArticle!.HeaderJavaScript.Length > 10000);
+            Assert.IsGreaterThan(10000, savedArticle!.HeaderJavaScript.Length);
         }
 
         [TestMethod]
@@ -216,7 +214,7 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
-            Assert.IsTrue(savedArticle!.HeaderJavaScript.Contains("value's & test"));
+            Assert.Contains("value's & test", savedArticle!.HeaderJavaScript);
         }
     }
 }

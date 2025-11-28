@@ -16,16 +16,11 @@ namespace Sky.Tests.Controllers
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Sky.Editor.Controllers;
-    using Sky.Editor.Data.Logic;
     using Sky.Editor.Features.Articles.Save;
     using Sky.Editor.Features.Shared;
     using Sky.Editor.Models.Blogs;
     using Sky.Editor.Services.BlogPublishing;
     using Sky.Editor.Services.CDN;
-    using Sky.Editor.Services.Slugs;
-    using Sky.Editor.Services.Templates;
-    using Sky.Editor.Services.Titles;
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Security.Claims;

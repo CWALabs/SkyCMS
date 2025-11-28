@@ -7,8 +7,8 @@
 
 namespace Sky.Cms.Models
 {
-    using Cosmos.Common.Data;
     using System;
+    using Cosmos.Common.Data;
 
     /// <summary>
     /// HTML editor SignalR model.

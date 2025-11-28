@@ -181,6 +181,13 @@ namespace Cosmos.BlobService
             path = path.TrimStart('/');
 
             var driver = this.GetPrimaryDriver();
+
+            // Check if blob exists first to avoid exceptions
+            if (!await driver.BlobExistsAsync(path))
+            {
+                return null;
+            }
+
             var metadata = await driver.GetFileMetadataAsync(path);
 
             if (metadata == null)

@@ -8,7 +8,6 @@
 namespace Sky.Tests.Features.Articles.Save
 {
     using Cosmos.Common.Data;
-    using Cosmos.Common.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Save;
@@ -59,7 +58,7 @@ namespace Sky.Tests.Features.Articles.Save
 
             // Assert - At least one should succeed
             var successCount = results.Count(r => r.IsSuccess);
-            Assert.IsTrue(successCount >= 1, "At least one save should succeed");
+            Assert.IsGreaterThanOrEqualTo(1, successCount, "At least one save should succeed");
 
             // Verify final state is consistent
             var finalArticle = await Db.Articles
@@ -174,7 +173,7 @@ namespace Sky.Tests.Features.Articles.Save
 
             // Assert - At least one should succeed
             var successCount = results.Count(r => r.IsSuccess);
-            Assert.IsTrue(successCount >= 1);
+            Assert.IsGreaterThanOrEqualTo(1, successCount);
 
             // Verify database is in consistent state
             var dbArticle = await Db.Articles

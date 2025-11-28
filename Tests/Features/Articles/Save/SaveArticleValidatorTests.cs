@@ -7,11 +7,9 @@
 
 namespace Sky.Tests.Features.Articles.Save
 {
-    using Cosmos.Common.Models;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Save;
     using System;
-    using System.Linq;
 
     [TestClass]
     public class SaveArticleValidatorTests
@@ -40,7 +38,7 @@ namespace Sky.Tests.Features.Articles.Save
             var errors = validator.Validate(command);
 
             // Assert
-            Assert.AreEqual(0, errors.Count);
+            Assert.IsEmpty(errors);
         }
 
         [TestMethod]

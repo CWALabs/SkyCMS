@@ -188,7 +188,7 @@ namespace Sky.Tests.DynamicConfig
             var exception = Assert.ThrowsExactly<AggregateException>(() =>
                 provider.GetDatabaseConnectionStringAsync().Result);
             
-            Assert.IsTrue(exception.Message.Contains("HttpContext unavailable and no domain provided"));
+            Assert.Contains("HttpContext unavailable and no domain provided", exception.Message);
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace Sky.Tests.DynamicConfig
             var exception = Assert.ThrowsExactly<InvalidOperationException>(() => 
                 provider.GetDatabaseConnectionStringAsync().GetAwaiter().GetResult());
             
-            Assert.IsTrue(exception.Message.Contains("HttpContext unavailable and no domain provided"));
+            Assert.Contains("HttpContext unavailable and no domain provided", exception.Message);
         }
 
         /// <summary>

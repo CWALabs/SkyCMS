@@ -7,6 +7,13 @@
 
 namespace Sky.Cms.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
     using Cosmos.BlobService;
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Cms.Data.Logic;
@@ -29,12 +36,6 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
 
     /// <summary>
     /// Layouts controller.
@@ -1138,6 +1139,47 @@ namespace Sky.Cms.Controllers
             model.Head = DecryptContent(StripBOM(model.Head));
             model.HtmlHeader = DecryptContent(StripBOM(model.HtmlHeader));
             model.FooterHtmlContent = DecryptContent(StripBOM(model.FooterHtmlContent));
+        }
+
+
+
+        /// <summary>
+        /// Strips Byte Order Marks.
+        /// </summary>
+        /// <param name="data">HTML data.</param>
+        /// <returns>Un-BOMed html.</returns>
+        private string StripBOM(string data)
+        {
+            // See: https://danielwertheim.se/utf-8-bom-adventures-in-c/
+            if (string.IsNullOrEmpty(data) || string.IsNullOrWhiteSpace(data))
+            {
+                return data;
+            }
+
+            // Get rid of Zero Length strings
+            var rows = data.Split("\r\n");
+            var builder = new StringBuilder();
+            foreach (var row in rows)
+            {
+                if (!row.Trim().Equals(string.Empty))
+                {
+                    builder.AppendLine(row);
+                }
+            }
+
+            data = builder.ToString();
+
+            // Search for and eliminate BOM
+            var filtered = new string(data.ToArray().Where(c => c != '\uFEFF' && c != '\u00a0').ToArray());
+
+            using var memStream = new MemoryStream();
+            using var writer = new StreamWriter(memStream, new UTF8Encoding(false));
+            writer.Write(filtered);
+            writer.Flush();
+
+            var clean = Encoding.UTF8.GetString(memStream.ToArray());
+
+            return clean;
         }
 
         /// <summary>

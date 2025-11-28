@@ -7,8 +7,8 @@
 
 namespace Sky.Cms.Models
 {
-    using Cosmos.EmailServices;
     using System.ComponentModel.DataAnnotations;
+    using Cosmos.EmailServices;
 
     /// <summary>
     /// User created view model.

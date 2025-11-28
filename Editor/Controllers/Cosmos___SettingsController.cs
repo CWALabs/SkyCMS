@@ -7,6 +7,10 @@
 
 namespace Sky.Editor.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
@@ -16,10 +20,6 @@ namespace Sky.Editor.Controllers
     using Sky.Editor.Models;
     using Sky.Editor.Services.CDN;
     using Sky.Editor.Services.EditorSettings;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// The settings controller.
@@ -36,6 +36,7 @@ namespace Sky.Editor.Controllers
         private readonly ApplicationDbContext dbContext;
         private readonly ILogger<Cosmos___SettingsController> logger;
         private readonly IEditorSettings settings;
+        private readonly ICdnServiceFactory cdnServiceFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Cosmos___SettingsController"/> class.
@@ -43,24 +44,27 @@ namespace Sky.Editor.Controllers
         /// <param name="dbContext">Sets the database context.</param>
         /// <param name="logger">Log service.</param>
         /// <param name="settings">Editor settings.</param>
+        /// <param name="cdnServiceFactory">CDN service factory.</param>
         public Cosmos___SettingsController(
             ApplicationDbContext dbContext,
             ILogger<Cosmos___SettingsController> logger,
-            IEditorSettings settings)
+            IEditorSettings settings,
+            ICdnServiceFactory cdnServiceFactory)
         {
-            this.dbContext = dbContext;
-            this.logger = logger;
-            this.settings = settings;
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            this.cdnServiceFactory = cdnServiceFactory ?? throw new ArgumentNullException(nameof(cdnServiceFactory));
         }
 
         /// <summary>
         /// Gets the index page.
         /// </summary>
         /// <returns>IActionResult.</returns>
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var model = new EditorConfig((EditorSettings)settings);
-            model.IsMultiTenantEditor = false; // This is set by environment variables and cannot be changed.
+            var config = await settings.GetEditorConfigAsync();
+            var model = new EditorConfig(settings);
             return View(model);
         }
 
@@ -73,31 +77,20 @@ namespace Sky.Editor.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(EditorConfig model)
         {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
             // Check if mode is static website, and if so, set the blob URL.
             if (model.StaticWebPages)
             {
                 model.BlobPublicUrl = "/";
             }
 
-            var allSettings = await dbContext.Settings.ToListAsync();
-            var settings = allSettings.FirstOrDefault(f => f.Group == EDITORSETGROUPNAME);
-            if (settings == null)
-            {
-                settings = new Setting
-                {
-                    Group = EDITORSETGROUPNAME,
-                    Name = "EditorSettings",
-                    Value = Newtonsoft.Json.JsonConvert.SerializeObject(model),
-                    Description = "Settings used by the Cosmos Editor",
-                };
-                dbContext.Settings.Add(settings);
-            }
-            else
-            {
-                settings.Value = Newtonsoft.Json.JsonConvert.SerializeObject(model);
-            }
+            var setting = await GetOrCreateEditorSettingAsync();
+            setting.Value = JsonConvert.SerializeObject(model);
 
-            // Save the changes to the database.
             await dbContext.SaveChangesAsync();
 
             return View(model);
@@ -109,30 +102,8 @@ namespace Sky.Editor.Controllers
         /// <returns>IActionResult.</returns>
         public async Task<IActionResult> CDN()
         {
-            var model = new CdnViewModel();
+            var model = await LoadCdnViewModelAsync();
             ViewData["Operation"] = null;
-
-            var settings = await dbContext.Settings.Where(f => f.Group == CdnService.CDNGROUPNAME).ToListAsync();
-            foreach (var setting in settings)
-            {
-                var cdnSetting = JsonConvert.DeserializeObject<CdnSetting>(setting.Value);
-
-                switch (cdnSetting.CdnProvider)
-                {
-                    case CdnProviderEnum.AzureCDN:
-                    case CdnProviderEnum.AzureFrontdoor:
-                        model.AzureCdn = JsonConvert.DeserializeObject<AzureCdnConfig>(cdnSetting.Value);
-                        break;
-                    case CdnProviderEnum.Cloudflare:
-                        model.Cloudflare = JsonConvert.DeserializeObject<CloudflareCdnConfig>(cdnSetting.Value);
-                        break;
-                    case CdnProviderEnum.Sucuri:
-                        model.Sucuri = JsonConvert.DeserializeObject<SucuriCdnConfig>(cdnSetting.Value);
-                        break;
-                    default:
-                        break;
-                }
-            }
 
             return View(model);
         }
@@ -151,63 +122,15 @@ namespace Sky.Editor.Controllers
                 return View(model);
             }
 
-            // Clear out the old settings
-            var settings = await dbContext.Settings.Where(f => f.Group == CdnService.CDNGROUPNAME).ToListAsync();
-            dbContext.Settings.RemoveRange(settings);
-            await dbContext.SaveChangesAsync();
+            await ClearCdnSettingsAsync();
 
-            if (!string.IsNullOrEmpty(model.AzureCdn.ProfileName))
-            {
-                var setting = new Setting
-                {
-                    Group = CdnService.CDNGROUPNAME,
-                    Name = CdnProviderEnum.AzureCDN.ToString(),
-                    Value = JsonConvert.SerializeObject(new CdnSetting
-                    {
-                        CdnProvider = model.AzureCdn.IsFrontDoor ? CdnProviderEnum.AzureFrontdoor : CdnProviderEnum.AzureCDN,
-                        Value = JsonConvert.SerializeObject(model.AzureCdn),
-                    }),
-                    Description = "Azure CDN or Front Door configuration.",
-                };
-
-                dbContext.Settings.Add(setting);
-            }
-
-            if (!string.IsNullOrEmpty(model.Cloudflare.ApiToken))
-            {
-                var setting = new Setting
-                {
-                    Group = CdnService.CDNGROUPNAME,
-                    Name = CdnProviderEnum.Cloudflare.ToString(),
-                    Value = JsonConvert.SerializeObject(new CdnSetting
-                    {
-                        CdnProvider = CdnProviderEnum.Cloudflare,
-                        Value = JsonConvert.SerializeObject(model.Cloudflare),
-                    }),
-                    Description = "Cloudflare CDN configuration.",
-                };
-                dbContext.Settings.Add(setting);
-            }
-
-            if (!string.IsNullOrEmpty(model.Sucuri.ApiKey))
-            {
-                var setting = new Setting
-                {
-                    Group = CdnService.CDNGROUPNAME,
-                    Name = CdnProviderEnum.Sucuri.ToString(),
-                    Value = JsonConvert.SerializeObject(new CdnSetting
-                    {
-                        CdnProvider = CdnProviderEnum.Sucuri,
-                        Value = JsonConvert.SerializeObject(model.Sucuri),
-                    }),
-                    Description = "Sucuri CDN configuration.",
-                };
-                dbContext.Settings.Add(setting);
-            }
+            await AddCdnSettingIfValidAsync(model.AzureCdn);
+            await AddCdnSettingIfValidAsync(model.Cloudflare);
+            await AddCdnSettingIfValidAsync(model.Sucuri);
 
             await dbContext.SaveChangesAsync();
 
-            var operation = await TestConnection();
+            var operation = await TestConnectionAsync();
             ViewData["TestResult"] = operation;
 
             return View(model);
@@ -219,30 +142,166 @@ namespace Sky.Editor.Controllers
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         public async Task<IActionResult> Remove()
         {
-            var cdnConfiguration = await dbContext.Settings.Where(f => f.Group == CdnService.CDNGROUPNAME).ToListAsync();
-
-            if (cdnConfiguration.Any())
-            {
-                dbContext.Settings.RemoveRange(cdnConfiguration);
-                await dbContext.SaveChangesAsync();
-            }
+            await ClearCdnSettingsAsync();
+            await dbContext.SaveChangesAsync();
 
             return RedirectToAction("Index");
         }
 
-        private async Task<List<CdnResult>> TestConnection()
+        private async Task<Setting> GetOrCreateEditorSettingAsync()
         {
-            var cdnService = CdnService.GetCdnService(dbContext, logger, HttpContext);
+            var setting = await dbContext.Settings
+                .FirstOrDefaultAsync(f => f.Group == EDITORSETGROUPNAME);
 
+            if (setting == null)
+            {
+                setting = new Setting
+                {
+                    Group = EDITORSETGROUPNAME,
+                    Name = "EditorSettings",
+                    Value = string.Empty,
+                    Description = "Settings used by the Cosmos Editor",
+                };
+                dbContext.Settings.Add(setting);
+            }
+
+            return setting;
+        }
+
+        private async Task<CdnViewModel> LoadCdnViewModelAsync()
+        {
+            var model = new CdnViewModel();
+            var settings = await dbContext.Settings
+                .Where(f => f.Group == CdnService.CDNGROUPNAME)
+                .ToListAsync();
+
+            foreach (var setting in settings)
+            {
+                try
+                {
+                    var cdnSetting = JsonConvert.DeserializeObject<CdnSetting>(setting.Value);
+                    if (cdnSetting == null)
+                    {
+                        continue;
+                    }
+
+                    switch (cdnSetting.CdnProvider)
+                    {
+                        case CdnProviderEnum.AzureCDN:
+                        case CdnProviderEnum.AzureFrontdoor:
+                            model.AzureCdn = JsonConvert.DeserializeObject<AzureCdnConfig>(cdnSetting.Value) ?? new AzureCdnConfig();
+                            break;
+                        case CdnProviderEnum.Cloudflare:
+                            model.Cloudflare = JsonConvert.DeserializeObject<CloudflareCdnConfig>(cdnSetting.Value) ?? new CloudflareCdnConfig();
+                            break;
+                        case CdnProviderEnum.Sucuri:
+                            model.Sucuri = JsonConvert.DeserializeObject<SucuriCdnConfig>(cdnSetting.Value) ?? new SucuriCdnConfig();
+                            break;
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    logger.LogWarning(ex, "Failed to deserialize CDN setting with ID: {SettingId}", setting.Id);
+                }
+            }
+
+            return model;
+        }
+
+        private async Task ClearCdnSettingsAsync()
+        {
+            var cdnSettings = await dbContext.Settings
+                .Where(f => f.Group == CdnService.CDNGROUPNAME)
+                .ToListAsync();
+
+            if (cdnSettings.Any())
+            {
+                dbContext.Settings.RemoveRange(cdnSettings);
+            }
+        }
+
+        private async Task AddCdnSettingIfValidAsync(AzureCdnConfig config)
+        {
+            if (string.IsNullOrEmpty(config?.ProfileName))
+            {
+                return;
+            }
+
+            var setting = CreateCdnSetting(
+                config.IsFrontDoor ? CdnProviderEnum.AzureFrontdoor : CdnProviderEnum.AzureCDN,
+                config,
+                "Azure CDN or Front Door configuration.");
+
+            dbContext.Settings.Add(setting);
+            await Task.CompletedTask;
+        }
+
+        private async Task AddCdnSettingIfValidAsync(CloudflareCdnConfig config)
+        {
+            if (string.IsNullOrEmpty(config?.ApiToken))
+            {
+                return;
+            }
+
+            var setting = CreateCdnSetting(
+                CdnProviderEnum.Cloudflare,
+                config,
+                "Cloudflare CDN configuration.");
+
+            dbContext.Settings.Add(setting);
+            await Task.CompletedTask;
+        }
+
+        private async Task AddCdnSettingIfValidAsync(SucuriCdnConfig config)
+        {
+            if (string.IsNullOrEmpty(config?.ApiKey))
+            {
+                return;
+            }
+
+            var setting = CreateCdnSetting(
+                CdnProviderEnum.Sucuri,
+                config,
+                "Sucuri CDN configuration.");
+
+            dbContext.Settings.Add(setting);
+            await Task.CompletedTask;
+        }
+
+        private Setting CreateCdnSetting<T>(CdnProviderEnum provider, T config, string description)
+        {
+            return new Setting
+            {
+                Group = CdnService.CDNGROUPNAME,
+                Name = provider.ToString(),
+                Value = JsonConvert.SerializeObject(new CdnSetting
+                {
+                    CdnProvider = provider,
+                    Value = JsonConvert.SerializeObject(config),
+                }),
+                Description = description,
+            };
+        }
+
+        private async Task<List<CdnResult>> TestConnectionAsync()
+        {
             try
             {
+                var cdnService = cdnServiceFactory.CreateCdnService(dbContext, logger, HttpContext);
                 var result = await cdnService.PurgeCdn(new List<string> { "/" });
                 return result;
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error testing CDN connection.");
-                return new List<CdnResult> { new CdnResult { IsSuccessStatusCode = false, Message = ex.Message } };
+                return new List<CdnResult> 
+                { 
+                    new CdnResult 
+                    { 
+                        IsSuccessStatusCode = false, 
+                        Message = ex.Message 
+                    } 
+                };
             }
         }
     }

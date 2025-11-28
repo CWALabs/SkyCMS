@@ -1,5 +1,9 @@
 namespace Sky.Editor.Features.Articles.Create
 {
+    using System;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
@@ -12,10 +16,6 @@ namespace Sky.Editor.Features.Articles.Create
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
-    using System;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Handles the creation of new articles.
