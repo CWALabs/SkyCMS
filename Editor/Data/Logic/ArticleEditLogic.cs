@@ -47,7 +47,7 @@ namespace Sky.Editor.Data.Logic
         private readonly StorageContext storageContext;
         private readonly ILogger<ArticleEditLogic> logger;
         private readonly IMemoryCache localCache;
-        private readonly EditorSettings settings;
+        private readonly IEditorSettings settings;
 
         // Service dependencies
         private readonly IClock clock;
@@ -100,7 +100,7 @@ namespace Sky.Editor.Data.Logic
         {
             this.storageContext = storageContext ?? throw new ArgumentNullException(nameof(storageContext));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.settings = (EditorSettings)settings ?? throw new ArgumentNullException(nameof(settings));
+            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             this.localCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
             this.slugService = slugService ?? throw new ArgumentNullException(nameof(slugService));

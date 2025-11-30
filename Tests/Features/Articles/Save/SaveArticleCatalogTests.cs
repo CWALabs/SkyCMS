@@ -21,7 +21,7 @@ namespace Sky.Tests.Features.Articles.Save
     public class SaveArticleCatalogTests : SkyCmsTestBase
     {
         [TestInitialize]
-        public void Setup() => InitializeTestContext();
+        public new void Setup() => InitializeTestContext();
 
         [TestMethod]
         public async Task SaveArticle_UpdatesCatalogTitle()

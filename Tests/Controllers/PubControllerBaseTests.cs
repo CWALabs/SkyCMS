@@ -1,4 +1,4 @@
-﻿// <copyright file="PubControllerBaseTests.cs" company="Moonrise Software, LLC">
+// <copyright file="PubControllerBaseTests.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -38,7 +38,7 @@ namespace Sky.Tests.Controllers
         private IMemoryCache memoryCacheMock;
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext(seedLayout: true);
 
@@ -233,7 +233,7 @@ namespace Sky.Tests.Controllers
             var articleEntity = await Db.Articles.FirstAsync(a => a.ArticleNumber == article.ArticleNumber);
             await Logic.PublishArticle(articleEntity.Id, DateTimeOffset.UtcNow);
 
-            // ✅ ALTERNATIVE FIX: Delete and recreate the catalog entry with permissions
+            // ? ALTERNATIVE FIX: Delete and recreate the catalog entry with permissions
             var oldCatalogEntry = await Db.ArticleCatalog
                 .FirstOrDefaultAsync(c => c.ArticleNumber == article.ArticleNumber);
             

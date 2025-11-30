@@ -1,4 +1,4 @@
-﻿// <copyright file="TemplateServiceTests.cs" company="Moonrise Software, LLC">
+// <copyright file="TemplateServiceTests.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -35,7 +35,7 @@ namespace Sky.Tests.Services.Templates
         /// Initializes the test environment before each test.
         /// </summary>
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             // Setup mock IWebHostEnvironment
             mockEnvironment = new Mock<IWebHostEnvironment>();

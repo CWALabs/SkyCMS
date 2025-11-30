@@ -21,7 +21,7 @@ namespace Sky.Tests.Features.Shared
     public class MediatorTests : SkyCmsTestBase
     {
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext();
         }

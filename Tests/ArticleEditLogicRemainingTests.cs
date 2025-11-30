@@ -1,4 +1,4 @@
-﻿using Cosmos.Common.Data.Logic;
+using Cosmos.Common.Data.Logic;
 using Microsoft.EntityFrameworkCore;
 using Sky.Cms.Models;
 using Sky.Cms.Services;
@@ -13,7 +13,7 @@ public class ArticleEditLogicRemainingTests : SkyCmsTestBase
 {
 
     [TestInitialize]
-    public void Setup() => InitializeTestContext();
+    public new void Setup() => InitializeTestContext();
 
     [TestCleanup]
     public void Cleanup() => this.Db.Dispose();

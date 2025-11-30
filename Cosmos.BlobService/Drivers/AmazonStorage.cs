@@ -286,13 +286,13 @@ namespace Cosmos.BlobService.Drivers
         }
 
         /// <summary>
-        ///     Gets a list of blobs by path.
+        ///     Gets a list of blobs by path. Is recursive.
         /// </summary>
         /// <param name="path">Path to get blob names from.</param>
         /// <returns>Returns the names as a <see cref="string"/> list.</returns>
         public async Task<List<string>> GetBlobNamesByPath(string path)
         {
-            var s3Result = await GetObjectsAsync(path, false);
+            var s3Result = await GetObjectsAsync(path, true);
             return s3Result.Blobs.Select(s => s.Key).ToList();
         }
 

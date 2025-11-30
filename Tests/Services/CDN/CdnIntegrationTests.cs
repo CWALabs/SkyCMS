@@ -1,4 +1,4 @@
-﻿// <copyright file="CdnIntegrationTests.cs" company="Moonrise Software, LLC">
+// <copyright file="CdnIntegrationTests.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -31,7 +31,7 @@ namespace Sky.Tests.Services.CDN
         private Mock<ILogger> _mockLogger;
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             // Load configuration from user secrets and appsettings
             _configuration = new ConfigurationBuilder()
@@ -806,9 +806,9 @@ namespace Sky.Tests.Services.CDN
 
             // Assert & Report
             Console.WriteLine("Configured CDN Providers:");
-            Console.WriteLine($"  Azure CDN: {(hasAzure ? "✓ Configured" : "✗ Not Configured")}");
-            Console.WriteLine($"  Cloudflare: {(hasCloudflare ? "✓ Configured" : "✗ Not Configured")}");
-            Console.WriteLine($"  Sucuri: {(hasSucuri ? "✓ Configured" : "✗ Not Configured")}");
+            Console.WriteLine($"  Azure CDN: {(hasAzure ? "? Configured" : "? Not Configured")}");
+            Console.WriteLine($"  Cloudflare: {(hasCloudflare ? "? Configured" : "? Not Configured")}");
+            Console.WriteLine($"  Sucuri: {(hasSucuri ? "? Configured" : "? Not Configured")}");
             
             var configuredCount = (hasAzure ? 1 : 0) + (hasCloudflare ? 1 : 0) + (hasSucuri ? 1 : 0);
             Console.WriteLine($"\nTotal Configured: {configuredCount}/3");

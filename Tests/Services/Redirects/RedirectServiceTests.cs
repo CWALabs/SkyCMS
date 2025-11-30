@@ -7,6 +7,11 @@
 
 namespace Sky.Tests.Services.Redirects
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.EntityFrameworkCore;
@@ -17,9 +22,6 @@ namespace Sky.Tests.Services.Redirects
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.Redirects;
     using Sky.Editor.Services.Slugs;
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Unit tests for the <see cref="RedirectService"/> class.
@@ -34,7 +36,7 @@ namespace Sky.Tests.Services.Redirects
         private Mock<IPublishingService> mockPublishingService;
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext();
 
@@ -43,15 +45,14 @@ namespace Sky.Tests.Services.Redirects
             mockClock = new Mock<IClock>();
             mockPublishingService = new Mock<IPublishingService>();
 
-            // Setup default mock behavior - FIX HERE
+            // Setup default mock behavior
             mockSlugService.Setup(s => s.Normalize(It.IsAny<string>(), It.IsAny<string>()))
-                .Returns((string slug, string blogKey) => slug.ToLowerInvariant().Replace(" ", "-").TrimEnd('/'));
+                .Returns((string slug, string blogKey) => slug?.ToLowerInvariant().Replace(" ", "-").TrimEnd('/') ?? string.Empty);
 
             mockClock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-            // FIX: Use explicit cancellation token parameter
             mockPublishingService.Setup(p => p.PublishAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<CdnResult>()));
+                .ReturnsAsync(new List<CdnResult>());
 
             // Create service instance
             redirectService = new RedirectService(
@@ -63,9 +64,6 @@ namespace Sky.Tests.Services.Redirects
 
         #region CreateOrUpdateRedirectAsync Tests
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync returns null when fromSlug is "root".
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_RootSlug_ReturnsNull()
         {
@@ -78,12 +76,9 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             Assert.IsNull(result, "Redirect from root should be silently ignored and return null");
-            mockPublishingService.Verify(p => p.PublishAsync(It.IsAny<Article>(), default), Times.Never);
+            mockPublishingService.Verify(p => p.PublishAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync normalizes slugs using ISlugService.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidSlugs_NormalizesSlugs()
         {
@@ -103,9 +98,6 @@ namespace Sky.Tests.Services.Redirects
             mockSlugService.Verify(s => s.Normalize("New Page", It.IsAny<string>()), Times.Once);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync creates article with Redirect status code.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_CreatesRedirectArticle()
         {
@@ -123,9 +115,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(fromSlug, result.Title);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync generates correct redirect JavaScript.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_GeneratesRedirectJavaScript()
         {
@@ -138,17 +127,14 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             Assert.IsNotNull(result.HeaderJavaScript);
-            Assert.Contains("<script type=\"text/javascript\">", result.HeaderJavaScript);
-            Assert.Contains($"window.location.href = '{System.Net.WebUtility.HtmlEncode(toSlug)}';", result.HeaderJavaScript);
-            Assert.Contains("</script>", result.HeaderJavaScript);
-            Assert.Contains("<noscript>", result.HeaderJavaScript);
-            Assert.Contains($"<meta http-equiv=\"refresh\" content=\"0; url='{System.Net.WebUtility.HtmlEncode(toSlug)}'\" />", result.HeaderJavaScript);
-            Assert.Contains("</noscript>", result.HeaderJavaScript);
+            Assert.IsTrue(result.HeaderJavaScript.Contains("<script type=\"text/javascript\">"));
+            Assert.IsTrue(result.HeaderJavaScript.Contains($"window.location.href = '{System.Net.WebUtility.HtmlEncode(toSlug)}';"));
+            Assert.IsTrue(result.HeaderJavaScript.Contains("</script>"));
+            Assert.IsTrue(result.HeaderJavaScript.Contains("<noscript>"));
+            Assert.IsTrue(result.HeaderJavaScript.Contains($"<meta http-equiv=\"refresh\" content=\"0; url='{System.Net.WebUtility.HtmlEncode(toSlug)}'\" />"));
+            Assert.IsTrue(result.HeaderJavaScript.Contains("</noscript>"));
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync generates correct redirect page body.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_GeneratesRedirectPageBody()
         {
@@ -161,14 +147,11 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             Assert.IsNotNull(result.Content);
-            Assert.Contains($"<h1>Redirecting to {System.Net.WebUtility.HtmlEncode(toSlug)}</h1>", result.Content);
-            Assert.Contains($"<a href=\"/{System.Net.WebUtility.HtmlEncode(toSlug)}\">here</a>", result.Content);
-            Assert.Contains("Redirect generated by SkyCMS.", result.Content);
+            Assert.IsTrue(result.Content.Contains($"<h1>Redirecting to {System.Net.WebUtility.HtmlEncode(toSlug)}</h1>"));
+            Assert.IsTrue(result.Content.Contains($"<a href=\"/{System.Net.WebUtility.HtmlEncode(toSlug)}\">here</a>"));
+            Assert.IsTrue(result.Content.Contains("Redirect generated by SkyCMS."));
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync assigns correct article number.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_EmptyDatabase_AssignsArticleNumber2()
         {
@@ -183,9 +166,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(2, result.ArticleNumber);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync increments article number correctly.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ExistingArticles_IncrementsArticleNumber()
         {
@@ -212,9 +192,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(7, result.ArticleNumber); // Max (5) + 1 + 1
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync sets published and updated timestamps from IClock.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SetsTimestampsFromClock()
         {
@@ -233,9 +210,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(fixedTime, result.Updated);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync sets version number to 1.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SetsVersionNumberTo1()
         {
@@ -250,9 +224,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(1, result.VersionNumber);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync sets user ID correctly.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SetsUserId()
         {
@@ -268,9 +239,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(userId.ToString(), result.UserId);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync sets banner image to empty string.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SetsBannerImageToEmpty()
         {
@@ -285,9 +253,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(string.Empty, result.BannerImage);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync saves article to database.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SavesArticleToDatabase()
         {
@@ -305,9 +270,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(fromSlug, savedArticle.UrlPath);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync creates article number entry.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_CreatesArticleNumberEntry()
         {
@@ -323,9 +285,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.IsNotNull(articleNumber);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync publishes redirect article.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_PublishesArticle()
         {
@@ -338,13 +297,10 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             mockPublishingService.Verify(
-                p => p.PublishAsync(It.Is<Article>(a => a.Id == result.Id), default),
+                p => p.PublishAsync(It.Is<Article>(a => a.Id == result.Id), It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync trims trailing slashes from fromSlug.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_FromSlugWithTrailingSlash_TrimsSlash()
         {
@@ -362,9 +318,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual("old-page", result.UrlPath);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync HTML-encodes special characters in toSlug.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ToSlugWithSpecialChars_HtmlEncodes()
         {
@@ -377,13 +330,10 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             var encodedSlug = System.Net.WebUtility.HtmlEncode(toSlug);
-            Assert.Contains(encodedSlug, result.HeaderJavaScript);
-            Assert.Contains(encodedSlug, result.Content);
+            Assert.IsTrue(result.HeaderJavaScript.Contains(encodedSlug));
+            Assert.IsTrue(result.Content.Contains(encodedSlug));
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync handles multiple redirects.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_MultipleRedirects_CreatesMultipleArticles()
         {
@@ -404,16 +354,13 @@ namespace Sky.Tests.Services.Redirects
             }
 
             // Assert
-            Assert.HasCount(3, results);
+            Assert.AreEqual(3, results.Count);
             var savedArticles = await Db.Articles
                 .Where(a => a.StatusCode == (int)StatusCodeEnum.Redirect)
                 .ToListAsync();
-            Assert.HasCount(3, savedArticles);
+            Assert.AreEqual(3, savedArticles.Count);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync handles empty database correctly.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_EmptyArticlesTable_HandlesGracefully()
         {
@@ -437,11 +384,8 @@ namespace Sky.Tests.Services.Redirects
 
         #region Edge Cases and Error Handling
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync handles null userId.
-        /// </summary>
         [TestMethod]
-        public async Task CreateOrUpdateRedirectAsync_NullUserId_SetsEmptyGuidAsString()
+        public async Task CreateOrUpdateRedirectAsync_EmptyGuidUserId_SetsEmptyGuidAsString()
         {
             // Arrange
             var fromSlug = "old-page";
@@ -454,9 +398,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.AreEqual(Guid.Empty.ToString(), result.UserId);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync handles case-insensitive "root" slug.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_RootSlugUpperCase_ReturnsNull()
         {
@@ -471,9 +412,6 @@ namespace Sky.Tests.Services.Redirects
             Assert.IsNull(result);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync handles very long slugs.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_VeryLongSlugs_CreatesRedirect()
         {
@@ -486,12 +424,9 @@ namespace Sky.Tests.Services.Redirects
 
             // Assert
             Assert.IsNotNull(result);
-            mockPublishingService.Verify(p => p.PublishAsync(It.IsAny<Article>(), default), Times.Once);
+            mockPublishingService.Verify(p => p.PublishAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        /// <summary>
-        /// Tests that CreateOrUpdateRedirectAsync handles concurrent requests.
-        /// </summary>
         [TestMethod]
         public async Task CreateOrUpdateRedirectAsync_ConcurrentRequests_HandlesGracefully()
         {
@@ -509,7 +444,7 @@ namespace Sky.Tests.Services.Redirects
             var results = await Task.WhenAll(tasks);
 
             // Assert
-            Assert.HasCount(5, results);
+            Assert.AreEqual(5, results.Length);
             Assert.IsTrue(results.All(r => r != null));
             var uniqueArticleNumbers = results.Select(r => r.ArticleNumber).Distinct().Count();
             Assert.AreEqual(5, uniqueArticleNumbers, "All redirects should have unique article numbers");

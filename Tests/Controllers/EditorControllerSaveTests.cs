@@ -32,7 +32,7 @@ namespace Sky.Tests.Controllers
         private EditorController controller = null!;
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             base.Setup();
 

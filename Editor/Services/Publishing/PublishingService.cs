@@ -101,13 +101,14 @@ namespace Sky.Editor.Services.Publishing
         /// Publishes (or updates) a blog stream page for the specified blog key and user.
         /// </summary>
         /// <param name="blog">The blog stream metadata and content input. The <see cref="Article.BlogKey"/> identifies the stream; the HTML is generated with <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/>.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>A list of CDN purge results indicating cache invalidation status per provider after publishing.</returns>
         /// <remarks>
         /// If a blog stream article already exists for the given <see cref="Article.BlogKey"/>,
         /// its metadata is updated and the <see cref="Article.VersionNumber"/> is incremented;
         /// otherwise a new article record is created. In both cases, content is produced by
         /// <see cref="IBlogRenderingService.GenerateBlogStreamHtml(Article)"/> and the operation
-        /// delegates to <see cref="PublishAsync(Article)"/> to create the published page, write
+        /// delegates to <see cref="PublishAsync(Article, CancellationToken)"/> to create the published page, write
         /// optional static files, update the TOC, and purge the CDN.
         /// </remarks>
         public async Task<List<CdnResult>> PublishBlogStreamAsync(Article blog, CancellationToken cancellationToken = default)

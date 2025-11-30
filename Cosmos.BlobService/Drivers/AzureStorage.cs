@@ -223,7 +223,7 @@ namespace Cosmos.BlobService.Drivers
         }
 
         /// <summary>
-        ///     Gets a list of blobs by path.
+        ///     Gets a list of blobs by path. Is recursive.
         /// </summary>
         /// <param name="path">Path to get blob names from.</param>
         /// <returns>Returns the names as a <see cref="string"/> list.</returns>

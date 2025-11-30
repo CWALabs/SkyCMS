@@ -1,4 +1,4 @@
-﻿// <copyright file="FileManagerControllerTests.cs" company="Moonrise Software, LLC">
+// <copyright file="FileManagerControllerTests.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -46,7 +46,7 @@ namespace Sky.Tests.Controllers
         private Mock<IViewRenderService> mockViewRenderService;
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext(seedLayout: true);
 

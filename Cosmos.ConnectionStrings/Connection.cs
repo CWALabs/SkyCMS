@@ -6,6 +6,7 @@
 // </copyright>
 
 using System.ComponentModel.DataAnnotations;
+using Cosmos.DynamicConfig.Validation;
 
 namespace Cosmos.DynamicConfig
 {
@@ -77,7 +78,7 @@ namespace Cosmos.DynamicConfig
         /// <summary>
         /// Gets or sets the website URL.
         /// </summary>
-        [Url]
+        [HttpUrl]
         [Required(AllowEmptyStrings = false)]
         [Display(Name = "Website URL")]
         public string WebsiteUrl { get; set; } = null!;

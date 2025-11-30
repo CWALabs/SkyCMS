@@ -1,4 +1,4 @@
-﻿// <copyright file="ArticleHtmlServiceTests.cs" company="Moonrise Software, LLC">
+// <copyright file="ArticleHtmlServiceTests.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -26,7 +26,7 @@ namespace Sky.Tests.Services.Html
         /// Initialize test context before each test.
         /// </summary>
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext(seedLayout: false);
             articleHtmlService = new ArticleHtmlService();
@@ -38,7 +38,7 @@ namespace Sky.Tests.Services.Html
         /// Tests that null input returns a default editable div.
         /// </summary>
         [TestMethod]
-        public void EnsureEditableMarkers_WhitespaceOnly_ReturnsDefaultEditableDiv()  // ✅ New test
+        public void EnsureEditableMarkers_WhitespaceOnly_ReturnsDefaultEditableDiv()  // ? New test
         {
             // Arrange
             var html = "   \t\n   ";
@@ -100,7 +100,7 @@ namespace Sky.Tests.Services.Html
             // Assert
             Assert.Contains("contenteditable=\"true\"", result);
             Assert.Contains("data-ccms-ceid=", result);
-            // ✅ Removed data-ccms-index check - not added for wrapped content
+            // ? Removed data-ccms-index check - not added for wrapped content
             Assert.Contains("<p>Regular paragraph</p>", result);
         }
 
@@ -320,7 +320,7 @@ namespace Sky.Tests.Services.Html
         #region ExtractIntroduction Tests
 
         [TestMethod]
-        public void ExtractIntroduction_HtmlEntities_DecodesEntities()  // ✅ New test
+        public void ExtractIntroduction_HtmlEntities_DecodesEntities()  // ? New test
         {
             // Arrange
             var html = "<p>This &amp; that &lt;tag&gt;</p>";

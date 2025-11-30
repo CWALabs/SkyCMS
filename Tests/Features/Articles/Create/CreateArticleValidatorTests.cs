@@ -1,4 +1,4 @@
-﻿// <copyright file="CreateArticleValidatorTests.cs" company="Moonrise Software, LLC">
+// <copyright file="CreateArticleValidatorTests.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -22,7 +22,7 @@ namespace Sky.Tests.Features.Articles.Create
         private CreateArticleValidator validator = null!;
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             validator = new CreateArticleValidator();
         }
@@ -323,7 +323,7 @@ namespace Sky.Tests.Features.Articles.Create
             // Arrange
             var command = new CreateArticleCommand
             {
-                Title = "文章标题 - Article Title - Заголовок",
+                Title = "???? - Article Title - ?????????",
                 UserId = Guid.NewGuid()
             };
 

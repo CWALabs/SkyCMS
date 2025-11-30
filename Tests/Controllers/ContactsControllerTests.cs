@@ -247,7 +247,7 @@ namespace Sky.Tests.Controllers
             var json = JsonSerializer.Serialize(jsonResult.Value);
             var response = JsonSerializer.Deserialize<ContactsListResponse>(json);
             Assert.IsNotNull(response);
-            Assert.AreEqual(0, response.data.Count);
+            Assert.IsEmpty(response.data); // FIX: Remove .Count.ToList()
         }
 
         /// <summary>
@@ -562,7 +562,7 @@ namespace Sky.Tests.Controllers
             var remainingSettings = await Db.Settings
                 .Where(s => s.Group == "MailChimp")
                 .ToListAsync();
-            Assert.AreEqual(0, remainingSettings.Count);
+            Assert.IsEmpty(remainingSettings); // FIX: Remove .Count.ToList()
         }
 
         /// <summary>
@@ -1390,8 +1390,8 @@ namespace Sky.Tests.Controllers
                 .Where(s => s.Group != "MailChimp")
                 .ToListAsync();
 
-            Assert.AreEqual(0, remainingMailChimp.Count);
-            Assert.AreEqual(2, otherSettings.Count);
+            Assert.IsEmpty(remainingMailChimp); // FIX: Remove .Count.ToList()
+            Assert.HasCount(2, otherSettings);
         }
 
         /// <summary>

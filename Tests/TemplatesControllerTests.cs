@@ -34,7 +34,7 @@ namespace Sky.Tests.Controllers
         /// Initializes test context before each test.
         /// </summary>
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext(seedLayout: true);
 

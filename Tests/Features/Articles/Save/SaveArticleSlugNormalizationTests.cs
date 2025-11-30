@@ -1,4 +1,4 @@
-ï»¿// <copyright file="SaveArticleSlugNormalizationTests.cs" company="Moonrise Software, LLC">
+// <copyright file="SaveArticleSlugNormalizationTests.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -21,7 +21,7 @@ namespace Sky.Tests.Features.Articles.Save
     public class SaveArticleSlugNormalizationTests : SkyCmsTestBase
     {
         [TestInitialize]
-        public void Setup() => InitializeTestContext();
+        public new void Setup() => InitializeTestContext();
 
         [TestMethod]
         public async Task SaveArticle_TitleWithEmojis_CreatesValidSlug()
@@ -33,7 +33,7 @@ namespace Sky.Tests.Features.Articles.Save
             var command = new SaveArticleCommand
             {
                 ArticleNumber = article.ArticleNumber,
-                Title = "My Article ðŸš€ With Emojis ðŸŽ‰",
+                Title = "My Article ?? With Emojis ??",
                 Content = "<p>Content</p>",
                 UserId = TestUserId,
                 ArticleType = ArticleType.General
@@ -48,8 +48,8 @@ namespace Sky.Tests.Features.Articles.Save
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
             
             // Emojis should be stripped/converted to hyphens
-            Assert.DoesNotContain("ðŸš€", savedArticle!.UrlPath);
-            Assert.DoesNotContain("ðŸŽ‰", savedArticle.UrlPath);
+            Assert.DoesNotContain("??", savedArticle!.UrlPath);
+            Assert.DoesNotContain("??", savedArticle.UrlPath);
             Assert.AreEqual("my-article-with-emojis", savedArticle.UrlPath);
         }
 
@@ -63,7 +63,7 @@ namespace Sky.Tests.Features.Articles.Save
             var command = new SaveArticleCommand
             {
                 ArticleNumber = article.ArticleNumber,
-                Title = "CafÃ© RÃ©sumÃ© NaÃ¯ve",
+                Title = "Café Résumé Naïve",
                 Content = "<p>Content</p>",
                 UserId = TestUserId,
                 ArticleType = ArticleType.General
@@ -254,7 +254,7 @@ namespace Sky.Tests.Features.Articles.Save
         [DataRow("Email: user@domain.com", "email-user-domain-com")]
         [DataRow("50% Off", "50-off")]
         [DataRow("Parent/Child", "parent/child")] // Slash preserved
-        [DataRow("cafÃ© rÃ©sumÃ©", "cafe-resume")]
+        [DataRow("café résumé", "cafe-resume")]
         [DataRow("Hello   World", "hello-world")] // Multiple spaces
         [DataRow("  Trimmed  ", "trimmed")] // Leading/trailing
         public async Task SaveArticle_VariousSpecialCharacters_NormalizesCorrectly(string title, string expectedSlug)

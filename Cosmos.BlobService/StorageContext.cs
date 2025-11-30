@@ -114,7 +114,7 @@ namespace Cosmos.BlobService
         {
             // Ensure leading slash is removed.
             var driver = GetPrimaryDriver();
-            await driver.DeleteFolderAsync(path);
+            await driver.DeleteFolderAsync(path.TrimStart('/'));
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace Cosmos.BlobService
             var driver = this.GetPrimaryDriver();
             path = path.TrimStart('/');
             var blobNames = await driver.GetBlobNamesByPath(path);
-            return blobNames;
+            return blobNames.Where(w => !w.EndsWith("folder.stubxx")).ToList();
         }
 
         /// <summary>

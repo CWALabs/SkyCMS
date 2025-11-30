@@ -9,6 +9,7 @@ namespace Sky.Tests.Services.CDN
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Http;
@@ -31,7 +32,7 @@ namespace Sky.Tests.Services.CDN
         private Mock<HttpContext> _mockHttpContext;
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -205,15 +206,14 @@ namespace Sky.Tests.Services.CDN
         public async Task PurgeCdn_WithNoSettings_ReturnsEmptyResults()
         {
             // Arrange
-            var settings = new List<CdnSetting>();
-            var service = new CdnService(settings, _mockLogger.Object, _mockHttpContext.Object);
+            var service = CdnService.GetCdnService(_dbContext, _mockLogger.Object, _mockHttpContext.Object);
 
             // Act
-            var results = await service.PurgeCdn(new List<string> { "/test" });
+            var results = await service.PurgeCdn(new List<string> { "https://example.com/test" });
 
             // Assert
             Assert.IsNotNull(results);
-            Assert.AreEqual(0, results.Count);
+            Assert.IsFalse(results.Any());
         }
 
         [TestMethod]
@@ -251,15 +251,28 @@ namespace Sky.Tests.Services.CDN
         public async Task PurgeCdn_NoParameters_CallsWithEmptyUrls()
         {
             // Arrange
-            var settings = new List<CdnSetting>();
-            var service = new CdnService(settings, _mockLogger.Object, _mockHttpContext.Object);
+            var service = CdnService.GetCdnService(_dbContext, _mockLogger.Object, _mockHttpContext.Object);
 
             // Act
             var results = await service.PurgeCdn();
 
             // Assert
             Assert.IsNotNull(results);
-            Assert.AreEqual(0, results.Count);
+            Assert.IsFalse(results.Any());
+        }
+
+        [TestMethod]
+        public async Task PurgeCdn_EmptyUrlList_HandlesGracefully()
+        {
+            // Arrange
+            var service = CdnService.GetCdnService(_dbContext, _mockLogger.Object, _mockHttpContext.Object);
+
+            // Act
+            var results = await service.PurgeCdn(new List<string>());
+
+            // Assert
+            Assert.IsNotNull(results);
+            Assert.IsFalse(results.Any());
         }
 
         #endregion
@@ -443,21 +456,6 @@ namespace Sky.Tests.Services.CDN
             // Assert
             Assert.IsTrue(service.IsConfigured());
             Assert.IsTrue(service.IsConfigured(CdnProviderEnum.Cloudflare));
-        }
-
-        [TestMethod]
-        public async Task PurgeCdn_EmptyUrlList_HandlesGracefully()
-        {
-            // Arrange
-            var settings = new List<CdnSetting>();
-            var service = new CdnService(settings, _mockLogger.Object, _mockHttpContext.Object);
-
-            // Act
-            var results = await service.PurgeCdn(new List<string>());
-
-            // Assert
-            Assert.IsNotNull(results);
-            Assert.AreEqual(0, results.Count);
         }
 
         #endregion

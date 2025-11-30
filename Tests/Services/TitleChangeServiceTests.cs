@@ -6,7 +6,7 @@ namespace Sky.Tests.Services
     public class TitleChangeServiceTests : SkyCmsTestBase
     {
         [TestInitialize]
-        public void Setup() => InitializeTestContext();
+        public new void Setup() => InitializeTestContext();
 
         [TestMethod]
         public async Task HandleTitleChangeAsync_RootPage_PreservesRootUrlPath()

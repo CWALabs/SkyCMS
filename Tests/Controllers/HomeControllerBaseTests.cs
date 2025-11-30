@@ -36,7 +36,7 @@ namespace Sky.Tests.Controllers
         private Mock<IEmailSender> emailSenderMock = null!;
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext(seedLayout: true);
 

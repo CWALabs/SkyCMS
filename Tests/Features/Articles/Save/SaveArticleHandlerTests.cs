@@ -19,7 +19,7 @@ namespace Sky.Tests.Features.Articles.Save
     public class SaveArticleHandlerTests : SkyCmsTestBase
     {
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext();
         }

@@ -15,14 +15,14 @@ namespace Sky.Editor.Data
     /// <summary>
     /// Utilities for the ApplicationDbContext class.
     /// </summary>
-    internal static class ApplicationDbContextUtilities
+    public static class ApplicationDbContextUtilities
     {
         /// <summary>
         /// Get an ApplicationDbContext from a connection.
         /// </summary>
         /// <param name="connection">Website connection.</param>
         /// <returns>ApplicationDbContext.</returns>
-        internal static ApplicationDbContext GetApplicationDbContext(Connection connection)
+        public static ApplicationDbContext GetApplicationDbContext(Connection connection)
         {
             return new ApplicationDbContext(connection.DbConn);
         }
@@ -33,18 +33,24 @@ namespace Sky.Editor.Data
         /// <param name="domainName">Domain name.</param>
         /// <param name="services">Services provider.</param>
         /// <returns>ApplicationDbContext</returns>
-        internal static ApplicationDbContext GetDbContextForDomain(string domainName, IServiceProvider services)
+        public static ApplicationDbContext GetDbContextForDomain(string domainName, IServiceProvider services)
         {
-            if (string.IsNullOrEmpty(domainName))
+            if (string.IsNullOrWhiteSpace(domainName))
             {
                 throw new ArgumentException("Domain name cannot be null or empty.", nameof(domainName));
             }
 
-            var provider = services.GetRequiredService<IDynamicConfigurationProvider>();
+            // Normalize domain name to lowercase for consistent lookup
+            domainName = domainName.Trim().ToLowerInvariant();
 
-            if (provider == null)
+            IDynamicConfigurationProvider provider;
+            try
             {
-                throw new InvalidOperationException("Dynamic configuration provider is not registered.");
+                provider = services.GetRequiredService<IDynamicConfigurationProvider>();
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new InvalidOperationException("Dynamic configuration provider is not registered.", ex);
             }
 
             if (!provider.IsMultiTenantConfigured)

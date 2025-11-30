@@ -1,4 +1,4 @@
-﻿using Cosmos.BlobService;
+using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
 using Cosmos.Common.Data;
 using Cosmos.DynamicConfig;
@@ -45,7 +45,7 @@ namespace Sky.Tests
 {
     /// <summary>
     /// Base fixture for tests targeting <see cref="ArticleEditLogic"/>.
-    /// Sets up an isolated in‑memory EF Core context and supporting services.
+    /// Sets up an isolated in-memory EF Core context and supporting services.
     /// Provides a capture dispatcher to assert domain event publishing.
     /// </summary>
     public abstract class SkyCmsTestBase : IAsyncDisposable
@@ -386,7 +386,7 @@ namespace Sky.Tests
         }
 
         [TestInitialize]
-        public void Setup()
+        public new void Setup()
         {
             InitializeTestContext();
 
