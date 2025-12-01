@@ -59,7 +59,7 @@ namespace Sky.Tests.Services.CDN
         }
 
         [TestMethod]
-        public void Constructor_WithInvalidJson_ThrowsException()
+        public void Constructor_WithInvalidJson_ThrowsArgumentException()
         {
             // Arrange
             var setting = new CdnSetting
@@ -69,10 +69,15 @@ namespace Sky.Tests.Services.CDN
             };
 
             // Act & Assert
-            Assert.ThrowsExactly<JsonException>(() =>
+            var exception = Assert.ThrowsExactly<ArgumentException>(() =>
             {
                 var driver = new CloudflareCdnDriver(setting, mockLogger.Object);
             });
+            
+            // Verify the exception message contains useful information
+            Assert.IsTrue(exception.Message.Contains("Invalid JSON in CDN setting"));
+            Assert.IsNotNull(exception.InnerException);
+            Assert.IsInstanceOfType(exception.InnerException, typeof(Newtonsoft.Json.JsonReaderException));
         }
 
         [TestMethod]
@@ -226,12 +231,13 @@ namespace Sky.Tests.Services.CDN
 
             var driver = new CloudflareCdnDriver(setting, mockLogger.Object);
 
-            // Act & Assert
-            // Will fail without actual Cloudflare credentials, but tests method signature
-            await Assert.ThrowsExactlyAsync<Exception>(async () =>
-            {
-                await driver.PurgeCdn(null);
-            });
+            // Act
+            var result = await driver.PurgeCdn(null);
+
+            // Assert
+            // Method should complete and return a result (even if API call fails)
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(List<CdnResult>));
         }
 
         [TestMethod]
@@ -252,11 +258,14 @@ namespace Sky.Tests.Services.CDN
 
             var driver = new CloudflareCdnDriver(setting, mockLogger.Object);
 
-            // Act & Assert
-            await Assert.ThrowsExactlyAsync<Exception>(async () =>
-            {
-                await driver.PurgeCdn(new List<string>());
-            });
+            // Act
+            var result = await driver.PurgeCdn(new List<string>());
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+            // With invalid credentials, IsSuccessStatusCode will be false
+            Assert.IsFalse(result[0].IsSuccessStatusCode);
         }
 
         [TestMethod]
@@ -277,11 +286,12 @@ namespace Sky.Tests.Services.CDN
 
             var driver = new CloudflareCdnDriver(setting, mockLogger.Object);
 
-            // Act & Assert
-            await Assert.ThrowsExactlyAsync<Exception>(async () =>
-            {
-                await driver.PurgeCdn(new List<string> { "/" });
-            });
+            // Act
+            var result = await driver.PurgeCdn(new List<string> { "/" });
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
         }
 
         [TestMethod]
@@ -302,11 +312,12 @@ namespace Sky.Tests.Services.CDN
 
             var driver = new CloudflareCdnDriver(setting, mockLogger.Object);
 
-            // Act & Assert
-            await Assert.ThrowsExactlyAsync<Exception>(async () =>
-            {
-                await driver.PurgeCdn(new List<string> { "root" });
-            });
+            // Act
+            var result = await driver.PurgeCdn(new List<string> { "root" });
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
         }
 
         [TestMethod]
@@ -327,11 +338,12 @@ namespace Sky.Tests.Services.CDN
 
             var driver = new CloudflareCdnDriver(setting, mockLogger.Object);
 
-            // Act & Assert
-            await Assert.ThrowsExactlyAsync<Exception>(async () =>
-            {
-                await driver.PurgeCdn();
-            });
+            // Act
+            var result = await driver.PurgeCdn();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
         }
 
         #endregion
@@ -424,7 +436,7 @@ namespace Sky.Tests.Services.CDN
         #region Additional Tests
 
         [TestMethod]
-        public async Task PurgeAsync_EmptyApiToken_ThrowsException()
+        public async Task PurgeAsync_EmptyApiToken_ReturnsUnsuccessfulResult()
         {
             // Arrange
             var invalidConfig = new CloudflareCdnConfig
@@ -441,10 +453,14 @@ namespace Sky.Tests.Services.CDN
 
             var driver = new CloudflareCdnDriver(setting, mockLogger.Object);
 
-            // Act & Assert
-            // This will throw when API call is attempted with empty credentials
-            await Assert.ThrowsExactlyAsync<Exception>(async () =>
-                await driver.PurgeCdn(new List<string> { "https://example.com/test" }));
+            // Act
+            var result = await driver.PurgeCdn(new List<string> { "https://example.com/test" });
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+            // API call should fail with invalid credentials
+            Assert.IsFalse(result[0].IsSuccessStatusCode);
         }
 
         #endregion

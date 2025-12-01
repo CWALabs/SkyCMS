@@ -180,7 +180,7 @@ namespace Sky.Editor.Services.Titles
             // If this is a blog stream, cascade changes to all associated blog posts
             if (article.ArticleType == (int)ArticleType.BlogStream)
             {
-                await HandleBlogStreamEntriesAsync(article, oldSlug, newSlug, changedUrls);
+                await HandleBlogStreamEntriesAsync(article, oldSlug, newSlug, oldTitle, changedUrls);  // ✅ Pass oldTitle
             }
             else if (article.ArticleType == (int)ArticleType.General)
             {
@@ -256,6 +256,7 @@ namespace Sky.Editor.Services.Titles
         /// <param name="blogStreamArticle">The blog stream article whose title has changed. Must be of type <see cref="ArticleType.BlogStream"/>.</param>
         /// <param name="oldBlogKey">The previous normalized slug of the blog stream, derived from the old title.</param>
         /// <param name="newBlogKey">The new normalized slug of the blog stream, derived from the new title.</param>
+        /// <param name="oldTitle">The previous title of the blog stream before the change.</param>
         /// <param name="changedUrls">The dictionary tracking URL changes for redirect creation.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         /// <remarks>
@@ -290,6 +291,7 @@ namespace Sky.Editor.Services.Titles
             Article blogStreamArticle,
             string oldBlogKey,
             string newBlogKey,
+            string oldTitle,  // ✅ ADD: New parameter for the actual old title
             Dictionary<string, string> changedUrls)
         {
             // Find all blog posts associated with the old blog key
@@ -341,10 +343,10 @@ namespace Sky.Editor.Services.Titles
 
             await db.SaveChangesAsync();
 
-            // Notify subscribers of the blog stream title change
+            // ✅ FIX: Use the actual old title, not the old slug
             await dispatcher.DispatchAsync(new TitleChangedEvent(
                 blogStreamArticle.ArticleNumber,
-                oldBlogKey,
+                oldTitle,  // ✅ Changed from oldBlogKey to oldTitle
                 blogStreamArticle.Title));
         }
 

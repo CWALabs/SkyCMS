@@ -3,6 +3,7 @@
 namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
 {
     [TestClass()]
+    [DoNotParallelize]
     public class CosmosUserStoreClaimsTests : CosmosIdentityTestsBase
     {
         /// <summary>

@@ -86,39 +86,39 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.ResourceManager" Version="1.13.2" />
-		<PackageReference Include="Azure.ResourceManager.Cdn" Version="1.5.0" />
-		<PackageReference Include="Cosmos.EmailServices" Version="9.0.1" />
-		<PackageReference Include="CsvHelper" Version="33.1.0" />
-		<PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
-		<PackageReference Include="Hangfire.AzureCosmosDB" Version="2.0.8" />
-		<PackageReference Include="Hangfire.InMemory" Version="1.0.0" />
-		<PackageReference Include="Hangfire.MySqlStorage" Version="2.0.3" />
-		<PackageReference Include="Hangfire.SqlServer" Version="1.8.22" />
-		<PackageReference Include="Hangfire.Storage.SQLite" Version="0.4.2" />
-		<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.10" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="9.0.10" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.10" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10">
+		<PackageReference Include="Azure.ResourceManager" />
+		<PackageReference Include="Azure.ResourceManager.Cdn" />
+		<PackageReference Include="Cosmos.EmailServices" />
+		<PackageReference Include="CsvHelper" />
+		<PackageReference Include="Hangfire.AspNetCore" />
+		<PackageReference Include="Hangfire.AzureCosmosDB" />
+		<PackageReference Include="Hangfire.InMemory" />
+		<PackageReference Include="Hangfire.MySqlStorage" />
+		<PackageReference Include="Hangfire.SqlServer" />
+		<PackageReference Include="Hangfire.Storage.SQLite" />
+		<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		  <TreatAsUsed>true</TreatAsUsed>
 		</PackageReference>
 		
-		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-		<PackageReference Include="NUglify" Version="1.21.17" />
-		<PackageReference Include="PasswordGenerator" Version="2.1.0" />
-		<PackageReference Include="RestSharp" Version="112.1.0" />
-		<PackageReference Include="rodriGS750.Hangfire.Dashboard.Themes.Dark" Version="1.2.2" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-		<PackageReference Include="MimeTypeMapOfficial" Version="1.0.17" />
-		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
+		<PackageReference Include="NUglify" />
+		<PackageReference Include="PasswordGenerator" />
+		<PackageReference Include="RestSharp" />
+		<PackageReference Include="rodriGS750.Hangfire.Dashboard.Themes.Dark" />
+		<PackageReference Include="SixLabors.ImageSharp" />
+		<PackageReference Include="MimeTypeMapOfficial" />
+		<PackageReference Include="StyleCop.Analyzers">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="System.Drawing.Common" Version="9.0.10" />
-		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
+		<PackageReference Include="System.Drawing.Common" />
+		<PackageReference Include="System.Private.Uri" />
 	</ItemGroup>
 
 	<ItemGroup>

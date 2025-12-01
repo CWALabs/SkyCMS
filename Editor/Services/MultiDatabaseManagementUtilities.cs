@@ -22,7 +22,7 @@ namespace Cosmos.Editor.Services
     /// <summary>
     /// Utility class for querying and updating multiple Cosmos DB databases based on the configured connections.
     /// </summary>
-    public class MultiDatabaseManagementUtilities
+    public class MultiDatabaseManagementUtilities : IMultiDatabaseManagementUtilities
     {
         private readonly string connectionString;
         private readonly bool isMultiTenant;

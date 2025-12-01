@@ -188,11 +188,13 @@ namespace Sky.Tests.Services.Titles
 
             // Assert
             Assert.AreEqual("root", article.UrlPath, "Root page URL should remain 'root'");
+            
+            // Verify the overload WITHOUT CancellationToken is called
             mockDispatcher.Verify(
                 d => d.DispatchAsync(It.Is<TitleChangedEvent>(e =>
                     e.ArticleNumber == article.ArticleNumber &&
                     e.OldTitle == "Old Home Title" &&
-                    e.NewTitle == "New Home Title"), It.IsAny<CancellationToken>()),
+                    e.NewTitle == "New Home Title")),
                 Times.Once);
         }
 
@@ -705,12 +707,12 @@ namespace Sky.Tests.Services.Titles
             // Act
             await titleChangeService.HandleTitleChangeAsync(article, "Old Title", "old-title");
 
-            // Assert
+            // Assert - Verify the overload WITHOUT CancellationToken is called
             mockDispatcher.Verify(
                 d => d.DispatchAsync(It.Is<TitleChangedEvent>(e =>
                     e.ArticleNumber == 1 &&
                     e.OldTitle == "Old Title" &&
-                    e.NewTitle == "New Title"), It.IsAny<CancellationToken>()),
+                    e.NewTitle == "New Title")),
                 Times.Once);
         }
 

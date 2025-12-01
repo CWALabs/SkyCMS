@@ -1,5 +1,7 @@
 # Cosmos.DynamicConfig - Multi-Tenant Dynamic Configuration Provider
 
+> **📁 Note:** This project is located in the `Cosmos.ConnectionStrings/` folder but the project file is `Cosmos.DynamicConfig.csproj`. Both names refer to the same package - the namespace and assembly name is `Cosmos.DynamicConfig`.
+
 ## Overview
 
 Cosmos.DynamicConfig is a configuration management system for multi-tenant applications. It provides dynamic, domain-based configuration and connection string resolution so a single application instance can serve multiple tenants with different database and storage settings based on the incoming request's domain name.
@@ -442,3 +444,17 @@ This project is part of the SkyCMS ecosystem. For contribution guidelines and mo
     - `ValidateDomainName` returns false if the domain is not configured. Add the domain to a `Connection` entity in the configuration database.
 - Stale configuration
     - Results are cached for 10 seconds. Wait for cache expiry or adjust code to refresh if you just updated tenant settings.
+
+## See Also
+
+### Related Documentation
+- [Editor Documentation](../Editor/README.md) - Content management interface using dynamic configuration
+- [Publisher Documentation](../Publisher/README.md) - Public website using multi-tenant support
+- [Database Configuration Guide](../Docs/DatabaseConfig.md) - Database provider setup instructions
+- [Storage Configuration Guide](../Docs/StorageConfig.md) - Storage provider setup instructions
+- [Azure Installation Guide](../Docs/AzureInstall.md) - Azure deployment and configuration
+
+### Configuration Files
+- [appsettings.json](../launchSettings.json) - Application configuration examples
+- [docker-compose.yml](../docker-compose.yml) - Docker container configuration
+

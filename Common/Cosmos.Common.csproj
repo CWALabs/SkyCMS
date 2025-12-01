@@ -91,17 +91,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Monitor.Query" Version="1.7.1" />
-		<PackageReference Include="MailChimp.Net.V3" Version="5.8.2" />
-		<PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="9.0.10" />
-		<PackageReference Include="Otp.NET" Version="1.4.0">
+		<PackageReference Include="Azure.Monitor.Query" />
+		<PackageReference Include="MailChimp.Net.V3" />
+		<PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+		<PackageReference Include="Otp.NET">
 		  <TreatAsUsed>true</TreatAsUsed>
 		</PackageReference>
-		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+		<PackageReference Include="StyleCop.Analyzers">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="X.Web.Sitemap" Version="2.11.3" />
+		<PackageReference Include="X.Web.Sitemap" />
 	</ItemGroup>
 
 	<ItemGroup>

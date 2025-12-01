@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
 {
     [TestClass()]
+    [DoNotParallelize]
     public class CosmosUserStoreTests : CosmosIdentityTestsBase
     {
         private static string phoneNumber = "0000000000";
@@ -51,8 +52,9 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
                 var r = await GetMockRandomUserAsync(userStore);
             }
 
-            // Arrange - setup the new user
-            var user = new IdentityUser(TestUtilities.IDENUSER1EMAIL) { Email = TestUtilities.IDENUSER1EMAIL };
+            // Arrange - setup the new user with UNIQUE email
+            var uniqueEmail = $"test_{Guid.NewGuid():N}@testdomain.com";
+            var user = new IdentityUser(uniqueEmail) { Email = uniqueEmail };
             user.NormalizedUserName = user.UserName.ToUpper();
             user.NormalizedEmail = user.Email.ToUpper();
             user.Id = Guid.NewGuid().ToString(); // Use unique ID per test run
@@ -62,15 +64,23 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
 
             // Assert - User should have been created
             Assert.IsNotNull(result, $"Failed for provider: {provider.DisplayName}");
+            
+            // IMPROVED: Show actual error messages if creation fails
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                Assert.Fail($"Failed for provider: {provider.DisplayName}. Errors: {errors}");
+            }
+            
             Assert.IsTrue(result.Succeeded, $"Failed for provider: {provider.DisplayName}");
 
             var user2 = await userStore.FindByIdAsync(user.Id);
 
             Assert.IsNotNull(user2, $"Failed for provider: {provider.DisplayName}");
-            Assert.AreEqual(user2.UserName, TestUtilities.IDENUSER1EMAIL, $"Failed for provider: {provider.DisplayName}");
-            Assert.AreEqual(user2.Email, TestUtilities.IDENUSER1EMAIL, $"Failed for provider: {provider.DisplayName}");
-            Assert.AreEqual(user2.NormalizedUserName, TestUtilities.IDENUSER1EMAIL.ToUpper(), $"Failed for provider: {provider.DisplayName}");
-            Assert.AreEqual(user2.NormalizedEmail, TestUtilities.IDENUSER1EMAIL.ToUpper(), $"Failed for provider: {provider.DisplayName}");
+            Assert.AreEqual(user2.UserName, uniqueEmail, $"Failed for provider: {provider.DisplayName}");
+            Assert.AreEqual(user2.Email, uniqueEmail, $"Failed for provider: {provider.DisplayName}");
+            Assert.AreEqual(user2.NormalizedUserName, uniqueEmail.ToUpper(), $"Failed for provider: {provider.DisplayName}");
+            Assert.AreEqual(user2.NormalizedEmail, uniqueEmail.ToUpper(), $"Failed for provider: {provider.DisplayName}");
         }
 
         [TestMethod()]
@@ -688,17 +698,17 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
             using var roleStore = _testUtilities.GetRoleStore(provider.ConnectionString, provider.DatabaseName);
             var user = await GetMockRandomUserAsync(userStore);
             var role = await GetMockRandomRoleAsync(roleStore);
-            var users = await userStore.GetUsersInRoleAsync(role.Name);
-            Assert.AreEqual(0, users.Count); // Should be no users
+            var users = await userStore.GetUsersInRoleAsync(role.NormalizedName); // Use NormalizedName
+            Assert.AreEqual(0, users.Count, $"Failed for provider: {provider.DisplayName}"); // Should be no users
 
-            // Act
-            await userStore.AddToRoleAsync(user, role.Name);
+            // Act - FIXED: Use role.NormalizedName instead of role.Name
+            await userStore.AddToRoleAsync(user, role.NormalizedName);
 
             // Assert
-            Assert.IsTrue(await userStore.IsInRoleAsync(user, role.Name));
-            users = await userStore.GetUsersInRoleAsync(role.Name);
-            Assert.AreEqual(1, users.Count); // Should be one user
-            Assert.IsTrue(users.Any(u => u.Id == user.Id));
+            Assert.IsTrue(await userStore.IsInRoleAsync(user, role.NormalizedName), $"Failed for provider: {provider.DisplayName}"); // Use NormalizedName
+            users = await userStore.GetUsersInRoleAsync(role.NormalizedName); // Use NormalizedName
+            Assert.AreEqual(1, users.Count, $"Failed for provider: {provider.DisplayName}"); // Should be one user
+            Assert.IsTrue(users.Any(u => u.Id == user.Id), $"Failed for provider: {provider.DisplayName}");
         }
 
         [TestMethod()]
@@ -712,19 +722,19 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
             using var roleStore = _testUtilities.GetRoleStore(provider.ConnectionString, provider.DatabaseName);
             var user = await GetMockRandomUserAsync(userStore);
             var role = await GetMockRandomRoleAsync(roleStore);
-            var users = await userStore.GetUsersInRoleAsync(role.Name);
+            var users = await userStore.GetUsersInRoleAsync(role.NormalizedName);
             Assert.AreEqual(0, users.Count); // Should be no users
-            await userStore.AddToRoleAsync(user, role.Name);
-            Assert.IsTrue(await userStore.IsInRoleAsync(user, role.Name));
-            users = await userStore.GetUsersInRoleAsync(role.Name);
+            await userStore.AddToRoleAsync(user, role.NormalizedName);
+            Assert.IsTrue(await userStore.IsInRoleAsync(user, role.NormalizedName));
+            users = await userStore.GetUsersInRoleAsync(role.NormalizedName);
             Assert.AreEqual(1, users.Count); // Should be one user
             Assert.IsTrue(users.Any(u => u.Id == user.Id));
 
             // Act
-            await userStore.RemoveFromRoleAsync(user, role.Name);
+            await userStore.RemoveFromRoleAsync(user, role.NormalizedName);
 
             // Assert
-            users = await userStore.GetUsersInRoleAsync(role.Name);
+            users = await userStore.GetUsersInRoleAsync(role.NormalizedName);
             Assert.AreEqual(0, users.Count); // Should be no users
 
         }
@@ -741,25 +751,28 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
             var user = await GetMockRandomUserAsync(userStore);
             var role1 = await GetMockRandomRoleAsync(roleStore);
             var role2 = await GetMockRandomRoleAsync(roleStore);
-            var users1 = await userStore.GetUsersInRoleAsync(role1.Name);
-            Assert.AreEqual(0, users1.Count); // Should be no users
-            var users2 = await userStore.GetUsersInRoleAsync(role1.Name);
-            Assert.AreEqual(0, users2.Count); // Should be no users
+            
+            // FIX: Use NormalizedName for lookups
+            var users1 = await userStore.GetUsersInRoleAsync(role1.NormalizedName);
+            Assert.AreEqual(0, users1.Count, $"Failed for provider: {provider.DisplayName}"); // Should be no users
+            var users2 = await userStore.GetUsersInRoleAsync(role2.NormalizedName);
+            Assert.AreEqual(0, users2.Count, $"Failed for provider: {provider.DisplayName}"); // Should be no users
 
-            await userStore.AddToRoleAsync(user, role1.Name);
-            await userStore.AddToRoleAsync(user, role2.Name);
+            // FIX: Use NormalizedName instead of Name
+            await userStore.AddToRoleAsync(user, role1.NormalizedName);
+            await userStore.AddToRoleAsync(user, role2.NormalizedName);
 
-            Assert.IsTrue(await userStore.IsInRoleAsync(user, role1.Name));
-            Assert.IsTrue(await userStore.IsInRoleAsync(user, role2.Name));
+            // FIX: Use NormalizedName for checks
+            Assert.IsTrue(await userStore.IsInRoleAsync(user, role1.NormalizedName), $"Failed for provider: {provider.DisplayName}");
+            Assert.IsTrue(await userStore.IsInRoleAsync(user, role2.NormalizedName), $"Failed for provider: {provider.DisplayName}");
 
             // Act
             var roles = await userStore.GetRolesAsync(user);
 
             // Assert
-            Assert.AreEqual(2, roles.Count); // Should be two
-            Assert.IsTrue(roles.Contains(role1.Name));
-            Assert.IsTrue(roles.Contains(role2.Name));
-
+            Assert.AreEqual(2, roles.Count, $"Failed for provider: {provider.DisplayName}"); // Should be two
+            Assert.IsTrue(roles.Contains(role1.Name), $"Failed for provider: {provider.DisplayName}");
+            Assert.IsTrue(roles.Contains(role2.Name), $"Failed for provider: {provider.DisplayName}");
         }
 
         [TestMethod()]
@@ -773,12 +786,12 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
             using var roleStore = _testUtilities.GetRoleStore(provider.ConnectionString, provider.DatabaseName);
             var user = await GetMockRandomUserAsync(userStore);
             var role = await GetMockRandomRoleAsync(roleStore);
-            var users = await userStore.GetUsersInRoleAsync(role.Name);
+            var users = await userStore.GetUsersInRoleAsync(role.NormalizedName);
             Assert.AreEqual(0, users.Count); // Should be no users
-            await userStore.AddToRoleAsync(user, role.Name);
+            await userStore.AddToRoleAsync(user, role.NormalizedName);
 
             // Act
-            var result = await userStore.IsInRoleAsync(user, role.Name);
+            var result = await userStore.IsInRoleAsync(user, role.NormalizedName);
 
             // Assert
             Assert.IsTrue(result);
@@ -796,11 +809,11 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
             var user1 = await GetMockRandomUserAsync(userStore);
             var user2 = await GetMockRandomUserAsync(userStore);
             var role = await GetMockRandomRoleAsync(roleStore);
-            await userStore.AddToRoleAsync(user1, role.Name);
-            await userStore.AddToRoleAsync(user2, role.Name);
+            await userStore.AddToRoleAsync(user1, role.NormalizedName);
+            await userStore.AddToRoleAsync(user2, role.NormalizedName);
 
             // Act
-            var result = await userStore.GetUsersInRoleAsync(role.Name);
+            var result = await userStore.GetUsersInRoleAsync(role.NormalizedName);
 
             // Assert
             Assert.IsTrue(result.Count == 2);

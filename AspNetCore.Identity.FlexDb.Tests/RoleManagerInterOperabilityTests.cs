@@ -4,6 +4,7 @@ using System.Security.Claims;
 namespace AspNetCore.Identity.CosmosDb.Tests.Net9
 {
     [TestClass()]
+    [DoNotParallelize]
     public class RoleManagerInterOperabilityTests : CosmosIdentityTestsBase
     {
         /// <summary>

@@ -1,4 +1,4 @@
-using Cosmos.BlobService;
+﻿using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
 using Cosmos.Common.Data;
 using Cosmos.DynamicConfig;
@@ -40,6 +40,7 @@ using Sky.Cms.Controllers;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace Sky.Tests
 {
@@ -155,8 +156,8 @@ namespace Sky.Tests
 
             var initialConfig = new Dictionary<string, string>
             {
-                ["ConnectionStrings:ApplicationDbContextConnection"] = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}.db")};Password=strong-password;",
-                ["ConnectionStrings:ConfigDbConnectionString"] = $"Data Source={Path.Combine(Path.GetTempPath(), $"cosmos-test-m-{Guid.NewGuid()}.db")};Password=strong-password;",
+                ["ConnectionStrings:ApplicationDbContextConnection"] = $"Data Source={Path.GetTempPath()}/cosmos-test-{Guid.NewGuid()}.db;Password=strong-password;",
+                ["ConnectionStrings:ConfigDbConnectionString"] = $"Data Source={Path.GetTempPath()}/cosmos-test-m-{Guid.NewGuid()}.db;Password=strong-password;",
             };
 
             // Lightweight configuration (all in-memory).
@@ -246,18 +247,72 @@ namespace Sky.Tests
                 Clock,
                 new NullLogger<SaveArticleHandler>());
 
-            // SETUP IDENTITY MANAGERS (UserManager and RoleManager)
+            // 🔧 FIX: SETUP IDENTITY MANAGERS WITH TOKEN PROVIDERS AND PASSWORD POLICY
             var userStore = new UserStore<IdentityUser>(Db);
+
+            // ✅ Configure Identity options with strong password policy
+            var identityOptions = Options.Create(new IdentityOptions
+            {
+                Password = new PasswordOptions
+                {
+                    RequireDigit = true,                // Require at least one digit (0-9)
+                    RequireLowercase = true,            // Require at least one lowercase letter (a-z)
+                    RequireUppercase = true,            // Require at least one uppercase letter (A-Z)
+                    RequireNonAlphanumeric = true,      // Require at least one special character (!@#$%^&*)
+                    RequiredLength = 8,                 // Minimum 8 characters
+                    RequiredUniqueChars = 1            // Minimum 1 unique character
+                },
+                Lockout = new LockoutOptions
+                {
+                    AllowedForNewUsers = true,
+                    DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5),
+                    MaxFailedAccessAttempts = 5
+                },
+                SignIn = new SignInOptions
+                {
+                    RequireConfirmedEmail = true,
+                    RequireConfirmedAccount = false
+                },
+                User = new UserOptions
+                {
+                    RequireUniqueEmail = true
+                }
+            });
+
+            // Create token provider options
+            var dataProtectionProviderOptions = Options.Create(new DataProtectionTokenProviderOptions
+            {
+                TokenLifespan = TimeSpan.FromHours(24)
+            });
+
+            // Create the token providers
+            var tokenProviders = new List<IUserTwoFactorTokenProvider<IdentityUser>>
+            {
+                new DataProtectorTokenProvider<IdentityUser>(
+                    new EphemeralDataProtectionProvider(new NullLoggerFactory()),
+                    Options.Create(new DataProtectionTokenProviderOptions()),
+                    new NullLogger<DataProtectorTokenProvider<IdentityUser>>())
+            };
+
+            // ✅ Create password validators that enforce the policy
+            var passwordValidators = new List<IPasswordValidator<IdentityUser>>
+            {
+                new PasswordValidator<IdentityUser>()
+            };
+
             UserManager = new UserManager<IdentityUser>(
                 userStore,
-                Options.Create(new IdentityOptions()),
+                identityOptions,                        // ✅ Use configured options instead of empty Options.Create()
                 new PasswordHasher<IdentityUser>(),
                 Array.Empty<IUserValidator<IdentityUser>>(),
-                Array.Empty<IPasswordValidator<IdentityUser>>(),
+                passwordValidators,                     // ✅ Use password validators instead of empty array
                 new UpperInvariantLookupNormalizer(),
                 new IdentityErrorDescriber(),
                 null!,
                 new NullLogger<UserManager<IdentityUser>>());
+
+            // ✅ Register the default token provider
+            UserManager.RegisterTokenProvider("Default", tokenProviders[0]);
 
             var roleStore = new RoleStore<IdentityRole>(Db);
             RoleManager = new RoleManager<IdentityRole>(

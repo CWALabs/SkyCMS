@@ -2,7 +2,7 @@
 
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![NuGet](https://img.shields.io/nuget/v/AspNetCore.Identity.CosmosDb.svg)](https://www.nuget.org/packages/AspNetCore.Identity.CosmosDb/)
+[![NuGet](https://img.shields.io/nuget/v/AspNetCore.Identity.FlexDb.svg)](https://www.nuget.org/packages/AspNetCore.Identity.FlexDb/)
 
 A flexible, multi-database implementation of ASP.NET Core Identity that **automatically selects the appropriate database provider** based on your connection string. Supports Azure Cosmos DB, SQL Server, and MySQL with seamless switching between providers.
 
@@ -125,7 +125,7 @@ AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database p
 Install the NuGet package:
 
 ```bash
-dotnet add package AspNetCore.Identity.CosmosDb
+dotnet add package AspNetCore.Identity.FlexDb
 ```
 
 ### Basic Configuration (Minimal hosting, .NET 9)
@@ -468,9 +468,9 @@ public class MultiTenantDbContext : CosmosIdentityDbContext<IdentityUser, Identi
 
 ## 📦 NuGet Package Information
 
-- **Package ID**: `AspNetCore.Identity.CosmosDb`
+- **Package ID**: `AspNetCore.Identity.FlexDb`
 - **Target Framework**: .NET 9.0
-- **Repository**: [GitHub](https://github.com/CosmosSoftware/AspNetCore.Identity.FlexDb)
+- **Repository**: [GitHub](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
 - **License**: MIT License
 - **Dependencies**:
   - Microsoft.AspNetCore.Identity.EntityFrameworkCore
@@ -550,9 +550,9 @@ This project is licensed under the MIT License. See the license file for details
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/CosmosSoftware/AspNetCore.Identity.FlexDb/issues)
-- **Documentation**: [Project Wiki](https://github.com/CosmosSoftware/AspNetCore.Identity.FlexDb/wiki)
-- **NuGet**: [Package Page](https://www.nuget.org/packages/AspNetCore.Identity.CosmosDb/)
+- **Issues**: [GitHub Issues](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues)
+- **Documentation**: [SkyCMS Documentation](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/tree/main/Docs)
+- **NuGet**: [Package Page](https://www.nuget.org/packages/AspNetCore.Identity.FlexDb/)
 
 ---
 

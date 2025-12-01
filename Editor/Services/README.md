@@ -91,7 +91,7 @@ Image resize utility for calculating new image dimensions while maintaining aspe
 
 ### IStartupTaskService
 
-**Namespace:** `Cosmos.Editor.Services`
+**Namespace:** `Sky.Editor.Services`
 
 Service interface for running startup tasks asynchronously.
 
@@ -100,7 +100,7 @@ Service interface for running startup tasks asynchronously.
 
 ### MultiDatabaseManagementUtilities
 
-**Namespace:** `Cosmos.Editor.Services`
+**Namespace:** `Sky.Editor.Services`
 
 Utility class for querying and updating multiple Cosmos DB databases based on configured connections. Supports multi-tenant configurations.
 
@@ -120,7 +120,7 @@ Utility class for querying and updating multiple Cosmos DB databases based on co
 
 ### SetupNewAdministrator
 
-**Namespace:** `Cosmos.Editor.Services`
+**Namespace:** `Sky.Editor.Services`
 
 Static class for creating and managing administrator roles and initial administrator setup.
 
@@ -135,7 +135,7 @@ Static class for creating and managing administrator roles and initial administr
 
 ### StartupTaskService
 
-**Namespace:** `Cosmos.Editor.Services`
+**Namespace:** `Sky.Editor.Services`
 
 Service implementation for running startup tasks asynchronously, including file uploads to Azure Blob Storage.
 

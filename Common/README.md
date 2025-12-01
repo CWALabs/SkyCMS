@@ -1,5 +1,7 @@
 ﻿# Cosmos.Common - SkyCMS Core Library
 
+> **📦 Package Info:** This is the `Cosmos.Common` package with namespace `Cosmos.Common.*`. It provides shared functionality for both Sky.Editor and Cosmos.Publisher applications.
+
 ## Overview
 
 Cosmos.Common is the foundational library for the SkyCMS content management system, providing core functionality, data models, services, and base controllers that are shared across both the Editor and Publisher applications. This package contains essential components for content management, authentication, data access, and utility functions.
@@ -198,7 +200,7 @@ public class HomeController : HomeControllerBase
 #### Publisher Controller Example
 
 ```csharp
-using Cosmos.Publisher.Controllers;
+using Cosmos.Common;
 using Cosmos.Common.Data;
 
 public class FileController : PubControllerBase

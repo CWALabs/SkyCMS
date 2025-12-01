@@ -39,10 +39,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AWSSDK.S3" Version="4.0.11.1" />
-		<PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.1" />
-		<PackageReference Include="Azure.Storage.Files.Shares" Version="12.24.0" />
-		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+		<PackageReference Include="AWSSDK.S3" />
+		<PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" />
+		<PackageReference Include="Azure.Storage.Files.Shares" />
+		<PackageReference Include="StyleCop.Analyzers">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>

@@ -22,17 +22,18 @@ namespace Cosmos.Editor.Services
     public class StartupTaskService : IStartupTaskService
     {
         private readonly IWebHostEnvironment webHost;
-        private readonly MultiDatabaseManagementUtilities managementUtilities;
+        private readonly IMultiDatabaseManagementUtilities managementUtilities;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StartupTaskService"/> class.
         /// </summary>
         /// <param name="webHost">Web host environment.</param>
         /// <param name="managementUtilities">Database management utilities.</param>
-        public StartupTaskService(IWebHostEnvironment webHost, MultiDatabaseManagementUtilities managementUtilities)
+        /// <exception cref="ArgumentNullException">Thrown when webHost or managementUtilities is null.</exception>
+        public StartupTaskService(IWebHostEnvironment webHost, IMultiDatabaseManagementUtilities managementUtilities)
         {
-            this.webHost = webHost;
-            this.managementUtilities = managementUtilities;
+            this.webHost = webHost ?? throw new ArgumentNullException(nameof(webHost));
+            this.managementUtilities = managementUtilities ?? throw new ArgumentNullException(nameof(managementUtilities));
         }
 
         /// <summary>
@@ -90,8 +91,21 @@ namespace Cosmos.Editor.Services
         /// <param name="blobName">Full blob name (including path).</param>
         /// <param name="memoryStream">Memory stream.</param>
         /// <returns>A Task.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when storageConnection is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when storageConnection is empty or whitespace.</exception>
         private async Task UploadFile(string storageConnection, string blobName, MemoryStream memoryStream)
         {
+            // Validate parameters
+            if (storageConnection == null)
+            {
+                throw new ArgumentNullException(nameof(storageConnection));
+            }
+
+            if (string.IsNullOrWhiteSpace(storageConnection))
+            {
+                throw new ArgumentException("Storage connection string cannot be empty or whitespace.", nameof(storageConnection));
+            }
+
             memoryStream.Position = 0; // Reset the memory stream position to the beginning.
             var blobServiceClient = new BlobServiceClient(storageConnection);
             var blob = blobServiceClient.GetBlobContainerClient("$web").GetBlockBlobClient(blobName);

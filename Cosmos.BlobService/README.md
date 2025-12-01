@@ -1,7 +1,7 @@
 README.md
 # Cosmos.BlobService - Sky CMS Azure Storage Provider
 
-**Version:** 9.0.16.5  
+**Version:** 9.2.0.2  
 **License:** MIT  
 **Repository:** [https://github.com/MoonriseSoftwareCalifornia/Cosmos.BlobService](https://github.com/MoonriseSoftwareCalifornia/Cosmos.BlobService)
 
@@ -351,6 +351,25 @@ The service provides a unified approach to cloud storage with several benefits:
 
 ## Project Structure
 
+## See Also
+
+### Related Documentation
+- [Storage Configuration Guide](../Docs/StorageConfig.md) - Detailed storage provider setup instructions
+- [Azure Installation Guide](../Docs/AzureInstall.md) - Azure deployment and configuration
+- [Editor Documentation](../Editor/README.md) - Content management interface using Blob Service
+- [Publisher Documentation](../Publisher/README.md) - Public website using Blob Service
+- [Common Library](../Common/README.md) - Shared utilities and models
+- [Dynamic Configuration](../Cosmos.ConnectionStrings/README.md) - Multi-tenant configuration provider
+
+### Configuration Files
+- [appsettings.json](../launchSettings.json) - Application configuration examples
+- [docker-compose.yml](../docker-compose.yml) - Docker container configuration
+
+### External Resources
+- [Azure Blob Storage Documentation](https://docs.microsoft.com/azure/storage/blobs/)
+- [Amazon S3 Documentation](https://docs.aws.amazon.com/s3/)
+- [Cloudflare R2 Documentation](https://developers.cloudflare.com/r2/)
+
 ## Contributing
 
 This project is part of the Sky CMS ecosystem. For contribution guidelines and more information, visit:
@@ -363,7 +382,7 @@ Licensed under the MIT License. See the LICENSE file for details.
 
 ## Copyright
 
-Copyright © Moonrise Software LLC. All rights reserved.
+Copyright © 2025 Moonrise Software LLC. All rights reserved.
 
 ## Support
 

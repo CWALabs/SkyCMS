@@ -136,5 +136,16 @@ SkyCMS can programmatically enable Azure Storage static website hosting. This re
    - Starts with `DefaultEndpointsProtocol=` → Azure Blob Storage
    - Contains `Bucket=` → Amazon S3
 - Ensure the connection key is `ConnectionStrings:StorageConnectionString` (or `AzureBlobStorageConnectionString` as fallback).
-- For Azure managed identity, grant the app identity “Storage Blob Data Contributor” (or finer-grained roles) on the target account.
-- For S3, verify region matches the bucket’s region and keys are valid.
+- For Azure managed identity, grant the app identity "Storage Blob Data Contributor" (or finer-grained roles) on the target account.
+- For S3, verify region matches the bucket's region and keys are valid.
+
+---
+
+## See Also
+
+- **[Database Configuration](./DatabaseConfig.md)** - Configure your database provider
+- **[AWS S3 Access Keys](./AWS-S3-AccessKeys.md)** - Step-by-step S3 setup guide
+- **[Cloudflare R2 Access Keys](./Cloudflare-R2-AccessKeys.md)** - Step-by-step R2 setup guide
+- **[Cloudflare Edge Hosting](./CloudflareEdgeHosting.md)** - Origin-less hosting with R2
+- **[Azure Installation](./AzureInstall.md)** - Deploy SkyCMS to Azure
+- **[Main Documentation Hub](./README.md)** - Browse all documentation

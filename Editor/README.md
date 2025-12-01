@@ -216,4 +216,63 @@ And add the config database connection:
 
 Provider inferred by connection string pattern. Public URL must match actual CDN/edge origin for correct asset resolution in editor previews.
 
+## Troubleshooting
+
+### Common Issues
+
+**Database Connection Failures**
+- Verify `ApplicationDbContextConnection` is set correctly
+- For Cosmos DB: Check account endpoint and key
+- For SQL Server: Verify server name and credentials
+- For MySQL: Ensure port 3306 is accessible
+
+**Storage Configuration Problems**
+- Confirm `StorageConnectionString` format matches your provider
+- Azure: Verify storage account name and key
+- S3: Check bucket name, region, and access keys
+- R2: Validate Account ID and API token
+
+**Multi-Tenant Setup Issues**
+- Ensure `ConfigDbConnectionString` is configured
+- Verify `IDynamicConfigurationProvider` is registered
+- Check that `DomainMiddleware` is added to pipeline
+- Confirm tenant domains are configured in config database
+
+**File Upload Errors**
+- Check storage container/bucket exists
+- Verify storage permissions (read/write/delete)
+- For Azure managed identity: Assign "Storage Blob Data Contributor" role
+- For S3: Ensure IAM policy allows required actions
+
+**Authentication Problems**
+- Verify external OAuth provider credentials (Google/Microsoft)
+- Check redirect URIs match your application URL
+- Ensure Identity database tables are created (run migrations)
+
+### Getting Help
+
+- Review [Storage Configuration](../Docs/StorageConfig.md) for detailed setup
+- Check [Database Configuration](../Docs/DatabaseConfig.md) for provider-specific guidance
+- Search [GitHub Issues](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues)
+
+---
+
+## See Also
+
+**Configuration Guides:**
+- [Storage Configuration](../Docs/StorageConfig.md) - Azure Blob, S3, R2 setup
+- [Database Configuration](../Docs/DatabaseConfig.md) - Cosmos DB, SQL Server, MySQL setup
+- [Dynamic Configuration](../Cosmos.ConnectionStrings/README.md) - Multi-tenant configuration
+
+**Related Components:**
+- [Publisher Application](../Publisher/README.md) - Public-facing website component
+- [Cosmos.Common](../Common/README.md) - Shared core library
+- [Cosmos.BlobService](../Cosmos.BlobService/README.md) - Storage abstraction layer
+- [AspNetCore.Identity.FlexDb](../AspNetCore.Identity.FlexDb/README.md) - Multi-database identity
+
+**Documentation:**
+- [Main Documentation Hub](../Docs/README.md) - Browse all documentation
+- [Editor Services Documentation](./Services/README.md) - Service layer reference
+- [Page Scheduling Guide](../Docs/Editors/PageScheduling.md) - Automated publishing
+
 

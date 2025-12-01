@@ -343,7 +343,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0. See the [LICENSE.md](../Docs/License.md) file for details.
+This project is licensed under the GNU General Public License v2.0-or-later (GPL-2.0-or-later). See the [LICENSE-GPL](../LICENSE-GPL) and [LICENSE-MIT](../LICENSE-MIT) files for details. For complete third-party attribution, see [NOTICE.md](../NOTICE.md).
 
 ## Support
 
@@ -354,4 +354,24 @@ This project is licensed under the GNU General Public License v3.0. See the [LIC
 
 ---
 
-**Copyright (c) 2024 Moonrise Software, LLC. All rights reserved.**
+## See Also
+
+**Configuration Guides:**
+- [Storage Configuration](../Docs/StorageConfig.md) - Configure cloud storage providers
+- [Database Configuration](../Docs/DatabaseConfig.md) - Set up database connections
+- [Cloudflare Edge Hosting](../Docs/CloudflareEdgeHosting.md) - Origin-less static hosting
+
+**Related Components:**
+- [Editor Application](../Editor/README.md) - Content management interface
+- [Cosmos.Common](../Common/README.md) - Shared core library
+- [Cosmos.BlobService](../Cosmos.BlobService/README.md) - Storage abstraction
+- [Dynamic Configuration](../Cosmos.ConnectionStrings/README.md) - Multi-tenant support
+
+**Documentation:**
+- [Main Documentation Hub](../Docs/README.md) - Complete documentation index
+- [Azure Installation](../Docs/AzureInstall.md) - Deploy to Azure
+- [Quick Start Guide](../Docs/QuickStart.md) - Get started quickly
+
+---
+
+**Copyright (c) 2025 Moonrise Software, LLC. All rights reserved.**

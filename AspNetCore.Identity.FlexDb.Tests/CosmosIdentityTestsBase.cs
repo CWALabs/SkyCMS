@@ -1,5 +1,6 @@
 ﻿using AspNetCore.Identity.FlexDb.Stores;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,8 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
     {
         protected static TestUtilities _testUtilities;
         protected static Random _random;
+        private static readonly Dictionary<string, bool> _initializedProviders = new Dictionary<string, bool>();
+        private static readonly object _initLock = new object();
 
         protected static void InitializeClass(string connectionString, string databaseName, bool backwardCompatibility = false)
         {
@@ -21,25 +24,319 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             _testUtilities = new TestUtilities();
             _random = new Random();
 
-            // Arrange class - remove prior data
-            using var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility);
+            // Create a unique key for this provider configuration
+            var providerKey = $"{connectionString}_{databaseName}";
+
+            lock (_initLock)
+            {
+                // Only initialize once per provider configuration
+                if (_initializedProviders.ContainsKey(providerKey))
+                {
+                    return;
+                }
+
+                try
+                {
+                    // Different strategies for different providers
+                    // Check provider type first before creating context
+                    var isCosmosDb = connectionString.Contains("AccountEndpoint=", StringComparison.OrdinalIgnoreCase);
+                    var isSqlite = connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) 
+                                   && !connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);
+                    var isSqlServer = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) 
+                                      && (connectionString.Contains("User ID=", StringComparison.OrdinalIgnoreCase) 
+                                          || connectionString.Contains("Integrated Security=", StringComparison.OrdinalIgnoreCase));
+                    var isMySql = connectionString.Contains("uid=", StringComparison.OrdinalIgnoreCase) 
+                                  || connectionString.Contains("user id=", StringComparison.OrdinalIgnoreCase);
+
+                    if (isCosmosDb)
+                    {
+                        // Cosmos DB - ensure created
+                        using var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility);
+                        var createTask = dbContext.Database.EnsureCreatedAsync();
+                        createTask.Wait();
+
+                        if (createTask.IsFaulted)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cosmos DB creation failed: {createTask.Exception?.GetBaseException().Message}",
+                                createTask.Exception);
+                        }
+                        
+                        // Cosmos DB doesn't have traditional tables, skip verification
+                    }
+                    else if (isSqlite)
+                    {
+                        // SQLite - always recreate for clean state
+                        // Use a fresh context for each operation to avoid disposal issues
+                        
+                        // Step 1: Delete existing database
+                        using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
+                        {
+                            dbContext.Database.CloseConnection();
+                            var deleted = dbContext.Database.EnsureDeleted();
+                        }
+                        
+                        // Small delay to ensure file system has released the file
+                        System.Threading.Thread.Sleep(100);
+                        
+                        // Step 2: Create fresh database with a new context
+                        using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
+                        {
+                            // Verify the model is configured correctly BEFORE attempting to create
+                            VerifyDatabaseSchema(dbContext);
+                            
+                            var created = dbContext.Database.EnsureCreated();
+
+                            if (!created)
+                            {
+                                throw new InvalidOperationException("SQLite database creation returned false");
+                            }
+                        }
+                        
+                        // Give SQLite a moment to finalize the schema
+                        System.Threading.Thread.Sleep(100);
+                        
+                        // Step 3: Verify tables with yet another fresh context
+                        using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
+                        {
+                            VerifyTablesExist(dbContext, retryCount: 3);
+                        }
+                    }
+                    else if (isSqlServer || isMySql)
+                    {
+                        // SQL Server / MySQL - use migrations if available, otherwise ensure created
+                        using var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility);
+                        
+                        try
+                        {
+                            // Try to apply migrations first
+                            var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
+                            if (pendingMigrations.Any())
+                            {
+                                // Set longer timeout for migrations
+                                dbContext.Database.SetCommandTimeout(180); // 3 minutes
+                                dbContext.Database.Migrate();
+                            }
+                            else
+                            {
+                                // No migrations, use EnsureCreated (but be aware this creates schema without migration history)
+                                dbContext.Database.SetCommandTimeout(60); // 1 minute
+                                var created = dbContext.Database.EnsureCreated();
+                                
+                                // Verify tables exist
+                                VerifyTablesExist(dbContext, retryCount: 2);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // If migrations fail or timeout, try EnsureCreated as fallback
+                            if (ex.Message.Contains("Timeout") || ex.Message.Contains("timeout"))
+                            {
+                                // For timeout issues, the database might already exist
+                                // Just verify tables exist
+                                try
+                                {
+                                    VerifyTablesExist(dbContext, retryCount: 1);
+                                }
+                                catch
+                                {
+                                    // If verification fails, try to create with longer timeout
+                                    dbContext.Database.SetCommandTimeout(300); // 5 minutes
+                                    dbContext.Database.EnsureCreated();
+                                    VerifyTablesExist(dbContext, retryCount: 1);
+                                }
+                            }
+                            else
+                            {
+                                throw;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Unknown provider - use default behavior
+                        using var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility);
+                        var createTask = dbContext.Database.EnsureCreatedAsync();
+                        createTask.Wait();
+
+                        if (createTask.IsFaulted)
+                        {
+                            throw new InvalidOperationException(
+                                $"Database creation failed: {createTask.Exception?.GetBaseException().Message}",
+                                createTask.Exception);
+                        }
+                    }
+
+                    // Mark this provider as initialized
+                    _initializedProviders[providerKey] = true;
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Database initialization failed: {ex.Message}",
+                        ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies the database schema is properly configured
+        /// </summary>
+        private static void VerifyDatabaseSchema(DbContext dbContext)
+        {
             try
             {
-                var task = dbContext.Database.EnsureCreatedAsync();
-                task.Wait();
-
-                //dbContext.UserRoles.RemoveRange(dbContext.UserRoles.ToListAsync().Result);
-                //dbContext.Roles.RemoveRange(dbContext.Roles.ToListAsync().Result);
-                //dbContext.RoleClaims.RemoveRange(dbContext.RoleClaims.ToListAsync().Result);
-                //dbContext.UserClaims.RemoveRange(dbContext.UserClaims.ToListAsync().Result);
-                //dbContext.UserLogins.RemoveRange(dbContext.UserLogins.ToListAsync().Result);
-                //dbContext.Users.RemoveRange(dbContext.Users.ToListAsync().Result);
+                // Get the model from the context
+                var model = dbContext.Model;
+                
+                // Check if Identity entities are registered
+                var userEntityType = model.FindEntityType(typeof(IdentityUser));
+                var roleEntityType = model.FindEntityType(typeof(IdentityRole));
+                
+                if (userEntityType == null)
+                {
+                    throw new InvalidOperationException(
+                        "IdentityUser entity is not registered in the model. " +
+                        "This suggests the DbContext configuration is incorrect.");
+                }
+                
+                if (roleEntityType == null)
+                {
+                    throw new InvalidOperationException(
+                        "IdentityRole entity is not registered in the model. " +
+                        "This suggests the DbContext configuration is incorrect.");
+                }
+                
+                // Get table names to verify they're set
+                var userTableName = userEntityType.GetTableName();
+                var roleTableName = roleEntityType.GetTableName();
+                
+                if (string.IsNullOrEmpty(userTableName))
+                {
+                    throw new InvalidOperationException("IdentityUser table name is not configured");
+                }
+                
+                if (string.IsNullOrEmpty(roleTableName))
+                {
+                    throw new InvalidOperationException("IdentityRole table name is not configured");
+                }
             }
             catch (Exception ex)
             {
-                var trap = ex.Message; //Trap
+                throw new InvalidOperationException(
+                    $"Database schema verification failed: {ex.Message}. " +
+                    "This may indicate the DbContext is not properly inheriting from IdentityDbContext " +
+                    "or OnModelCreating is not calling base.OnModelCreating() for relational databases.",
+                    ex);
             }
-            var result = dbContext.SaveChanges();
+        }
+
+        /// <summary>
+        /// Verifies that critical Identity tables exist in the database
+        /// </summary>
+        private static void VerifyTablesExist(DbContext dbContext, int retryCount = 1)
+        {
+            Exception lastException = null;
+            
+            for (int attempt = 0; attempt < retryCount; attempt++)
+            {
+                try
+                {
+                    var connection = dbContext.Database.GetDbConnection();
+                    var wasOpen = connection.State == System.Data.ConnectionState.Open;
+                    
+                    if (!wasOpen)
+                    {
+                        connection.Open();
+                    }
+
+                    try
+                    {
+                        using var command = connection.CreateCommand();
+                        
+                        // Check for AspNetRoles table (critical for the failing tests)
+                        if (dbContext.Database.IsSqlite())
+                        {
+                            command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='AspNetRoles'";
+                        }
+                        else if (dbContext.Database.IsSqlServer())
+                        {
+                            command.CommandText = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'AspNetRoles'";
+                        }
+                        else if (dbContext.Database.IsMySql())
+                        {
+                            command.CommandText = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'AspNetRoles' AND TABLE_SCHEMA = DATABASE()";
+                        }
+                        else
+                        {
+                            return; // Skip verification for other providers
+                        }
+
+                        var result = command.ExecuteScalar();
+                        
+                        if (result == null)
+                        {
+                            // List all tables for diagnostic purposes
+                            string allTablesQuery;
+                            if (dbContext.Database.IsSqlite())
+                            {
+                                allTablesQuery = "SELECT name FROM sqlite_master WHERE type='table'";
+                            }
+                            else if (dbContext.Database.IsSqlServer())
+                            {
+                                allTablesQuery = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES";
+                            }
+                            else if (dbContext.Database.IsMySql())
+                            {
+                                allTablesQuery = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()";
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException("AspNetRoles table was not created during database initialization");
+                            }
+                            
+                            command.CommandText = allTablesQuery;
+                            var tables = new List<string>();
+                            using (var reader = command.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    tables.Add(reader.GetString(0));
+                                }
+                            }
+                            
+                            var tableList = tables.Any() ? string.Join(", ", tables) : "No tables found";
+                            throw new InvalidOperationException(
+                                $"AspNetRoles table was not created during database initialization. " +
+                                $"Tables that exist: {tableList}. " +
+                                $"This indicates EnsureCreated() ran but didn't create Identity tables.");
+                        }
+                        
+                        // Success - table exists
+                        return;
+                    }
+                    finally
+                    {
+                        if (!wasOpen)
+                        {
+                            connection.Close();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    
+                    // If this isn't the last attempt, wait and retry
+                    if (attempt < retryCount - 1)
+                    {
+                        System.Threading.Thread.Sleep(200); // Wait 200ms before retry
+                    }
+                }
+            }
+            
+            // If we get here, all retries failed
+            throw lastException ?? new InvalidOperationException("Table verification failed after all retries");
         }
 
         /// <summary>
@@ -68,14 +365,26 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
         protected async Task<IdentityRole> GetMockRandomRoleAsync(
             CosmosRoleStore<IdentityUser, IdentityRole, string> roleStore, bool saveToDatabase = true)
         {
-            var role = new IdentityRole(GetNextRandomNumber(1, 9999).ToString());
+            // Use GUID to ensure uniqueness across all test runs
+            var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
+            var roleName = $"TestRole_{uniqueId}_{GetNextRandomNumber(1000, 9999)}";
+            
+            var role = new IdentityRole(roleName);
             role.NormalizedName = role.Name.ToUpper();
 
             if (roleStore != null && saveToDatabase)
             {
                 var result = await roleStore.CreateAsync(role);
+                
+                // Improved error reporting
+                if (!result.Succeeded)
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    Assert.Fail($"Failed to create role: {errors}");
+                }
+                
+                Assert.IsTrue(result.Succeeded, $"Failed to create role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 role = await roleStore.FindByIdAsync(role.Id);
-                Assert.IsTrue(result.Succeeded); //Confirm success
             }
 
             return role;
@@ -88,8 +397,15 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
         protected async Task<IdentityUser> GetMockRandomUserAsync(
             CosmosUserStore<IdentityUser, IdentityRole, string> userStore, bool saveToDatabase = true)
         {
-            var randomEmail = $"{GetNextRandomNumber(1000, 9999)}@{GetNextRandomNumber(10000, 99999)}.com";
-            var user = new IdentityUser(randomEmail) { Email = randomEmail, Id = Guid.NewGuid().ToString() };
+            // Use GUID to ensure uniqueness across all test runs
+            var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
+            var randomEmail = $"test{uniqueId}_{GetNextRandomNumber(1000, 9999)}@test{GetNextRandomNumber(10000, 99999)}.com";
+            
+            var user = new IdentityUser(randomEmail) 
+            { 
+                Email = randomEmail, 
+                Id = Guid.NewGuid().ToString() 
+            };
 
             user.NormalizedUserName = user.UserName.ToUpper();
             user.NormalizedEmail = user.Email.ToUpper();
@@ -97,7 +413,15 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             if (userStore != null && saveToDatabase)
             {
                 var result = await userStore.CreateAsync(user);
-                Assert.IsTrue(result.Succeeded); //Confirm success
+                
+                // Improved error reporting
+                if (!result.Succeeded)
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    Assert.Fail($"Failed to create user: {errors}");
+                }
+                
+                Assert.IsTrue(result.Succeeded, $"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 user = await userStore.FindByNameAsync(user.UserName.ToUpper());
             }
 
@@ -186,6 +510,17 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             lookupNormalizer.Setup(i => i.NormalizeName(It.IsAny<string>())).Returns(normalizerFunc);
             lookupNormalizer.Setup(i => i.NormalizeEmail(It.IsAny<string>())).Returns(normalizerFunc);
             return lookupNormalizer.Object;
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            // Clear the initialization cache to force database recreation on next test
+            // This ensures test isolation
+            lock (_initLock)
+            {
+                _initializedProviders.Clear();
+            }
         }
     }
 }

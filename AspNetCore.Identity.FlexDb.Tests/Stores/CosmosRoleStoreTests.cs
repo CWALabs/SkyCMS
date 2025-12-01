@@ -5,6 +5,7 @@ using System.Security.Claims;
 namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
 {
     [TestClass()]
+    [DoNotParallelize]
     public class CosmosRoleStoreTests : CosmosIdentityTestsBase
     {
         /// <summary>

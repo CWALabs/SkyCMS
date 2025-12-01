@@ -116,13 +116,16 @@ namespace AspNetCore.Identity.FlexDb.Stores
 
             try
             {
-                var roles = await GetRolesAsync(user);
+                var roles = await GetRolesAsync(user); // Returns role names
                 var claims = await GetClaimsAsync(user);
                 var logins = await GetLoginsAsync(user);
 
+                // FIX: Normalize role names before calling RemoveFromRoleAsync
                 foreach (var role in roles)
                 {
-                    await RemoveFromRoleAsync(user, role, cancellationToken);
+                    // RemoveFromRoleAsync expects NormalizedName, so normalize it
+                    var normalizedRoleName = role.ToUpper(); // ASP.NET Identity normalizes to uppercase
+                    await RemoveFromRoleAsync(user, normalizedRoleName, cancellationToken);
                 }
 
                 if (claims.Any())
@@ -130,7 +133,17 @@ namespace AspNetCore.Identity.FlexDb.Stores
 
                 foreach (var login in logins)
                 {
-                    await RemoveLoginAsync(user, login.ProviderDisplayName, login.ProviderKey, cancellationToken);
+                    await RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey, cancellationToken);
+                }
+
+                // Get all UserRoles directly instead of using RemoveFromRoleAsync
+                var userRoles = await _repo.Table<IdentityUserRole<TKey>>()
+                    .Where(ur => ur.UserId.Equals(user.Id))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var userRole in userRoles)
+                {
+                    _repo.Delete(userRole);
                 }
 
                 _repo.Delete(user);

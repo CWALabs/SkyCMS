@@ -55,8 +55,14 @@ namespace Sky.Editor.Services.CDN
         /// </summary>
         /// <param name="purgeUrls">List of URLs to purge.</param>
         /// <returns>CDN purge results</returns>
+        /// <exception cref="ArgumentNullException">Thrown when purgeUrls is null.</exception>
         public async Task<List<CdnResult>> PurgeCdn(List<string> purgeUrls)
         {
+            if (purgeUrls == null)
+            {
+                throw new ArgumentNullException(nameof(purgeUrls));
+            }
+
             var results = new List<CdnResult>();
             ArmClient client = new ArmClient(new DefaultAzureCredential());
 

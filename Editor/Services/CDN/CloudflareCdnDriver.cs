@@ -29,9 +29,33 @@ namespace Sky.Editor.Services.CDN
         /// </summary>
         /// <param name="setting">CDN setting.</param>
         /// <param name="logger">Log service.</param>
+        /// <exception cref="ArgumentNullException">Thrown when setting is null.</exception>
+        /// <exception cref="JsonException">Thrown when setting.Value contains invalid JSON.</exception>
         public CloudflareCdnDriver(CdnSetting setting, ILogger logger)
         {
-            config = JsonConvert.DeserializeObject<CloudflareCdnConfig>(setting.Value);
+            if (setting == null)
+            {
+                throw new ArgumentNullException(nameof(setting));
+            }
+
+            if (string.IsNullOrWhiteSpace(setting.Value))
+            {
+                throw new ArgumentException("CDN setting value cannot be null or empty.", nameof(setting));
+            }
+
+            try
+            {
+                config = JsonConvert.DeserializeObject<CloudflareCdnConfig>(setting.Value);
+                
+                if (config == null)
+                {
+                    throw new ArgumentException("Failed to deserialize CDN configuration.", nameof(setting));
+                }
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException($"Invalid JSON in CDN setting: {ex.Message}", nameof(setting), ex);
+            }
         }
 
         /// <summary>

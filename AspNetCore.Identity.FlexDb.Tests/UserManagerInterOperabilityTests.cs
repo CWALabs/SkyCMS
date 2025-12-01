@@ -7,6 +7,7 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
     /// Tests the <see cref="UserManager{TUser}"/> when hooked up to Cosmos user and role stores.
     /// </summary>
     [TestClass]
+    [DoNotParallelize]
     public class UserManagerInterOperabilityTests : CosmosIdentityTestsBase
     {
         /// <summary>

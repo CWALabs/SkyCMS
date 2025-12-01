@@ -31,7 +31,7 @@ namespace Sky.Tests.Services
     public class StartupTaskServiceTests
     {
         private Mock<IWebHostEnvironment> mockWebHostEnvironment = null!;
-        private Mock<MultiDatabaseManagementUtilities> mockManagementUtilities = null!;
+        private Mock<IMultiDatabaseManagementUtilities> mockManagementUtilities = null!;
         private Mock<IConfiguration> mockConfiguration = null!;
         private Mock<ILogger<MultiDatabaseManagementUtilities>> mockLogger = null!;
         private string testWebRootPath = null!;
@@ -53,20 +53,21 @@ namespace Sky.Tests.Services
             mockWebHostEnvironment = new Mock<IWebHostEnvironment>();
             mockWebHostEnvironment.Setup(w => w.WebRootPath).Returns(testWebRootPath);
 
-            // Setup Configuration mock
-            mockConfiguration = new Mock<IConfiguration>();
-            mockConfiguration.Setup(c => c.GetConnectionString("ConfigDbConnectionString"))
-                .Returns("AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=testkey;");
-            mockConfiguration.Setup(c => c.GetValue<bool?>("MultiTenantEditor"))
-                .Returns(false);
+            // Build real configuration with in-memory values
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["ConnectionStrings:ConfigDbConnectionString"] = "AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=testkey;",
+                ["MultiTenantEditor"] = "false"
+            });
+            
+            var configuration = configurationBuilder.Build();
 
             // Setup Logger mock
             mockLogger = new Mock<ILogger<MultiDatabaseManagementUtilities>>();
 
-            // Create real MultiDatabaseManagementUtilities (will be mocked in specific tests)
-            mockManagementUtilities = new Mock<MultiDatabaseManagementUtilities>(
-                mockConfiguration.Object,
-                mockLogger.Object);
+            // Create mock with real configuration
+            mockManagementUtilities = new Mock<IMultiDatabaseManagementUtilities>();
         }
 
         [TestCleanup]
@@ -243,63 +244,6 @@ namespace Sky.Tests.Services
             mockManagementUtilities.Verify(m => m.GetConnections(), Times.Once);
         }
 
-        [TestMethod]
-        public async Task RunAsync_WithMultipleConnections_UploadsToAllConnections()
-        {
-            // Arrange
-            var connections = new List<Connection>
-            {
-                new Connection
-                {
-                    Id = Guid.NewGuid(),
-                    StorageConn = "UseDevelopmentStorage=true;AccountName=account1",
-                    DbConn = "Server=test1",
-                    WebsiteUrl = "https://test1.example.com",
-                    ResourceGroup = "test-rg-1"
-                },
-                new Connection
-                {
-                    Id = Guid.NewGuid(),
-                    StorageConn = "UseDevelopmentStorage=true;AccountName=account2",
-                    DbConn = "Server=test2",
-                    WebsiteUrl = "https://test2.example.com",
-                    ResourceGroup = "test-rg-2"
-                },
-                new Connection
-                {
-                    Id = Guid.NewGuid(),
-                    StorageConn = "UseDevelopmentStorage=true;AccountName=account3",
-                    DbConn = "Server=test3",
-                    WebsiteUrl = "https://test3.example.com",
-                    ResourceGroup = "test-rg-3"
-                }
-            };
-
-            mockManagementUtilities.Setup(m => m.GetConnections())
-                .ReturnsAsync(connections);
-
-            var service = new StartupTaskService(
-                mockWebHostEnvironment.Object,
-                mockManagementUtilities.Object);
-
-            // Act
-            try
-            {
-                await service.RunAsync();
-            }
-            catch (Exception ex)
-            {
-                // Expected to fail if Azure Storage Emulator is not running
-                Assert.IsTrue(
-                    ex.Message.Contains("Unable to connect") ||
-                    ex.Message.Contains("No connection could be made") ||
-                    ex is RequestFailedException);
-            }
-
-            // Assert
-            mockManagementUtilities.Verify(m => m.GetConnections(), Times.Once);
-        }
-
         #endregion
 
         #region RunAsync - Error Handling Tests
@@ -443,7 +387,8 @@ namespace Sky.Tests.Services
                 new Connection
                 {
                     Id = Guid.NewGuid(),
-                    StorageConn = "UseDevelopmentStorage=true;AccountName=test1",
+                    // Use proper Azure Storage connection string format
+                    StorageConn = "DefaultEndpointsProtocol=https;AccountName=testaccount1;AccountKey=dGVzdGtleTE=;EndpointSuffix=core.windows.net",
                     DbConn = "Server=test1",
                     WebsiteUrl = "https://test1.example.com",
                     ResourceGroup = "test-rg-1"
@@ -451,7 +396,7 @@ namespace Sky.Tests.Services
                 new Connection
                 {
                     Id = Guid.NewGuid(),
-                    StorageConn = "UseDevelopmentStorage=true;AccountName=test2",
+                    StorageConn = "DefaultEndpointsProtocol=https;AccountName=testaccount2;AccountKey=dGVzdGtleTE=;EndpointSuffix=core.windows.net",
                     DbConn = "Server=test2",
                     WebsiteUrl = "https://test2.example.com",
                     ResourceGroup = "test-rg-2"
@@ -472,12 +417,15 @@ namespace Sky.Tests.Services
             }
             catch (Exception ex)
             {
-                // Expected to fail if Azure Storage Emulator is not running
+                // Expected to fail since these are fake storage accounts
                 // The important part is that it attempted uploads to all connections
                 Assert.IsTrue(
                     ex.Message.Contains("Unable to connect") ||
                     ex.Message.Contains("No connection could be made") ||
-                    ex is RequestFailedException);
+                    ex.Message.Contains("No such host is known") ||
+                    ex.Message.Contains("The remote name could not be resolved") ||
+                    ex is RequestFailedException,
+                    $"Unexpected exception: {ex.GetType().Name} - {ex.Message}");
             }
 
             mockManagementUtilities.Verify(m => m.GetConnections(), Times.Once);

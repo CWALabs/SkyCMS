@@ -6,6 +6,7 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Containers
     /// Containers are only a feature of Cosmos DB.
     /// </summary>
     [TestClass()]
+    [DoNotParallelize]
     public class ContainerUtilitiesTests
     {
 
