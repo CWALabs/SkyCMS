@@ -122,6 +122,238 @@ SkyCMS can programmatically enable Azure Storage static website hosting. This re
 
 ---
 
+## Google Cloud Storage
+
+### Overview
+
+Google Cloud Storage (GCS) is supported through the S3-compatible API. SkyCMS automatically detects GCS configuration and uses the appropriate driver.
+
+### Configuration
+
+**appsettings.json:**
+```json
+{
+  "ConnectionStrings": {
+    "StorageConnectionString": "Bucket=your-bucket-name;Region=us-central1;AccessKey=your-access-key;SecretKey=your-secret-key;ServiceUrl=https://storage.googleapis.com"
+  },
+  "CosmosStorageConfig": {
+    "CdnConfig": {
+      "AzureCdnConfig": {
+        "PublicUrl": "https://storage.googleapis.com/your-bucket-name"
+      }
+    }
+  }
+}
+```
+
+### Setup Steps
+
+1. **Create a GCS bucket:**
+   ```bash
+   gsutil mb -l us-central1 gs://your-bucket-name
+   ```
+
+2. **Enable S3 Interoperability:**
+   - Go to Google Cloud Console → Cloud Storage → Settings → Interoperability
+   - Click "Create a key for a service account"
+   - Note the Access Key and Secret
+
+3. **Set bucket permissions:**
+   ```bash
+   gsutil iam ch serviceAccount:your-service-account@project.iam.gserviceaccount.com:objectAdmin gs://your-bucket-name
+   ```
+
+4. **Enable public access (if needed):**
+   ```bash
+   gsutil iam ch allUsers:objectViewer gs://your-bucket-name
+   ```
+
+### Supported Features
+
+- ✅ Upload, download, delete operations
+- ✅ Chunked multipart uploads
+- ✅ Metadata management
+- ✅ S3-compatible API
+- ⚠️ Static website hosting (requires additional CDN setup)
+- ❌ Native GCS API features (use S3 compatibility mode)
+
+### Important Notes
+
+- **Service URL**: Must include `ServiceUrl=https://storage.googleapis.com` for proper routing
+- **Region**: Specify the bucket region in the connection string
+- **Public Access**: Configure Cloud CDN or load balancer for public website serving
+- **Costs**: Review GCS pricing for storage class, operations, and egress
+
+---
+
+## Static Website Hosting
+
+### Overview
+
+SkyCMS supports static website hosting configurations for serving published content directly from cloud storage, enabling cost-effective, scalable hosting without application servers.
+
+### Azure Blob Storage Static Websites
+
+**Automatic Enablement:**
+
+SkyCMS can programmatically enable Azure static website hosting:
+
+```csharp
+// Automatically enables static website feature
+storageContext.EnableStaticWebsite();
+```
+
+**Manual Configuration:**
+
+1. **Azure Portal:**
+   - Navigate to Storage Account → Static website
+   - Enable: **Enabled**
+   - Index document: `index.html`
+   - Error document: `404.html`
+
+2. **Azure CLI:**
+   ```bash
+   az storage blob service-properties update \
+     --account-name yourstorageaccount \
+     --static-website \
+     --404-document 404.html \
+     --index-document index.html
+   ```
+
+**CORS Configuration:**
+
+SkyCMS automatically configures CORS when enabling static websites:
+
+```csharp
+CorsRules = new CorsRule[]
+{
+    new CorsRule
+    {
+        AllowedOrigins = { "*" },
+        AllowedMethods = { "GET", "HEAD", "OPTIONS" },
+        AllowedHeaders = { "*" },
+        MaxAgeInSeconds = 3600
+    }
+};
+```
+
+**Primary Web Endpoint:**
+
+Azure provides a dedicated endpoint for static websites:
+```
+https://yourstorageaccount.z13.web.core.windows.net/
+```
+
+Use this endpoint as the `PublicUrl` in your configuration.
+
+### Cloudflare R2 Static Websites
+
+**R2 Custom Domains:**
+
+Cloudflare R2 supports static website hosting through custom domains:
+
+1. **Enable public access:**
+   ```bash
+   wrangler r2 bucket update your-bucket --public-access true
+   ```
+
+2. **Configure custom domain:**
+   - Navigate to R2 → your bucket → Settings → Custom Domain
+   - Add your domain: `www.example.com`
+   - Configure DNS: CNAME to R2 endpoint
+
+3. **Set default index:**
+   - Use Cloudflare Workers or Pages for index document routing
+   - Configure 404 handling via Workers
+
+**Workers Integration:**
+
+```javascript
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    let path = url.pathname;
+    
+    // Default to index.html for directory paths
+    if (path.endsWith('/')) path += 'index.html';
+    
+    const object = await env.YOUR_BUCKET.get(path);
+    
+    if (!object) {
+      // Return 404.html for missing files
+      const notFound = await env.YOUR_BUCKET.get('404.html');
+      return new Response(notFound?.body, { status: 404 });
+    }
+    
+    return new Response(object.body, {
+      headers: { 'Content-Type': object.httpMetadata.contentType }
+    });
+  }
+};
+```
+
+### Amazon S3 Static Websites
+
+**Bucket Configuration:**
+
+1. **Enable static website hosting:**
+   ```bash
+   aws s3 website s3://your-bucket-name/ \
+     --index-document index.html \
+     --error-document 404.html
+   ```
+
+2. **Set bucket policy for public access:**
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Sid": "PublicReadGetObject",
+       "Effect": "Allow",
+       "Principal": "*",
+       "Action": "s3:GetObject",
+       "Resource": "arn:aws:s3:::your-bucket-name/*"
+     }]
+   }
+   ```
+
+3. **Website endpoint:**
+   ```
+   http://your-bucket-name.s3-website-us-east-1.amazonaws.com
+   ```
+
+**CloudFront Integration:**
+
+For HTTPS and global CDN:
+
+```bash
+aws cloudfront create-distribution \
+  --origin-domain-name your-bucket-name.s3.amazonaws.com \
+  --default-root-object index.html
+```
+
+### Limitations and Considerations
+
+**Azure Managed Identity Restriction:**
+> ⚠️ When using managed identity (`AccountKey=AccessToken`), the SDK cannot programmatically enable static website hosting due to API limitations. Use a key-based connection temporarily to enable it, or enable manually via Azure Portal.
+
+**Performance:**
+- **Static hosting** eliminates application server overhead (faster, cheaper)
+- **Origin pull** (Publisher + CDN) provides dynamic content flexibility
+- **Hybrid approach**: Static assets from storage, dynamic content from Publisher
+
+**SEO Considerations:**
+- Ensure proper `robots.txt` and `sitemap.xml` in storage root
+- Configure custom 404 pages with appropriate HTTP status codes
+- Use CDN for SSL termination and custom domains
+
+**Cost Optimization:**
+- **Storage class**: Use hot/cool tiers based on access patterns
+- **Egress**: CDN reduces storage egress costs significantly
+- **Operations**: Static hosting has minimal GET operation costs
+
+---
+
 ## Security and secrets
 
 - Do not commit secrets to source control.

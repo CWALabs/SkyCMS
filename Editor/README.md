@@ -216,6 +216,117 @@ And add the config database connection:
 
 Provider inferred by connection string pattern. Public URL must match actual CDN/edge origin for correct asset resolution in editor previews.
 
+## CDN Integration
+
+SkyCMS Editor supports Content Delivery Network (CDN) integration to automatically purge cached content after publishing changes, ensuring visitors see updated content immediately.
+
+### Supported CDN Providers
+
+- **Azure CDN** - Microsoft's global CDN service
+- **Cloudflare** - Global CDN with edge computing capabilities
+- **Sucuri** - Security-focused CDN with WAF protection
+
+### Configuration
+
+CDN settings are stored in the application database and configured through the Editor settings interface:
+
+1. Navigate to **Settings → CDN Configuration**
+2. Select your CDN provider
+3. Enter provider-specific credentials:
+
+**Sucuri Configuration:**
+```json
+{
+  "CdnProvider": "Sucuri",
+  "Value": "{\"ApiKey\":\"your-api-key\",\"ApiSecret\":\"your-api-secret\"}"
+}
+```
+
+**Cloudflare Configuration:**
+```json
+{
+  "CdnProvider": "Cloudflare",
+  "Value": "{\"ZoneId\":\"your-zone-id\",\"ApiToken\":\"your-api-token\"}"
+}
+```
+
+**Azure CDN Configuration:**
+```json
+{
+  "CdnProvider": "AzureCDN",
+  "Value": "{\"ProfileName\":\"your-profile\",\"EndpointName\":\"your-endpoint\",\"ResourceGroup\":\"your-rg\",\"SubscriptionId\":\"your-sub-id\"}"
+}
+```
+
+### Automatic Purge Workflows
+
+CDN purging is automatically triggered when:
+
+- **Publishing pages** - Purges the specific page URL
+- **Updating redirects** - Purges affected URL paths
+- **Changing templates** - Purges all pages using the template
+- **Modifying layouts** - Purges all pages using the layout
+
+### URL Count Limits and Behaviors
+
+**Sucuri CDN:**
+- **1-20 URLs**: Purges each URL individually
+- **0 URLs, >20 URLs, or root path `/`**: Triggers full cache purge
+- **Rate Limits**: Subject to Sucuri API rate limits (failures are logged)
+
+**Cloudflare:**
+- **Up to 30 files per request**: Batches URLs efficiently
+- **Wildcards supported**: Can purge patterns like `/blog/*`
+- **Enterprise plans**: Support for tag-based and hostname purging
+
+**Azure CDN:**
+- Purges specific paths or entire endpoint
+- Propagation time: 2-10 minutes depending on CDN tier
+
+### Error Handling
+
+CDN purge failures are logged but do not block publishing operations:
+
+- **Network failures**: Retried once, then logged as warning
+- **Authentication errors**: Logged with provider details for troubleshooting
+- **Rate limit exceeded**: Logged with retry guidance
+- **Invalid configuration**: Logged with configuration validation details
+
+Check application logs for CDN operation results:
+
+```powershell
+# View CDN logs in Azure App Service
+az webapp log tail --name your-app-name --resource-group your-rg --filter "CDN"
+```
+
+### Health Checks
+
+Editor includes health check endpoints for monitoring:
+
+**Endpoint:** `GET /health`
+
+**Response Format:**
+```json
+{
+  "status": "Healthy",
+  "checks": {
+    "database": "Healthy",
+    "storage": "Healthy",
+    "cdn": "Healthy"
+  },
+  "duration": "00:00:00.1234567"
+}
+```
+
+**Register in Program.cs:**
+```csharp
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>()
+    .AddCheck("storage", () => /* storage connectivity check */);
+
+app.MapHealthChecks("/health");
+```
+
 ## Troubleshooting
 
 ### Common Issues

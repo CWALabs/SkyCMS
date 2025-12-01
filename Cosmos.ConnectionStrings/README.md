@@ -218,6 +218,196 @@ var dbForFoo = _configProvider.GetDatabaseConnectionString("www.foo.com");
 var storageForFoo = _configProvider.GetStorageConnectionString("www.foo.com");
 ```
 
+### Explicit Domain Configuration Access
+
+For scenarios where HTTP context is unavailable (background jobs, console apps, unit tests), explicitly pass the domain parameter:
+
+**Background Service Example:**
+
+```csharp
+public class TenantBackgroundService : BackgroundService
+{
+    private readonly IDynamicConfigurationProvider _configProvider;
+    private readonly ILogger<TenantBackgroundService> _logger;
+    
+    public TenantBackgroundService(
+        IDynamicConfigurationProvider configProvider,
+        ILogger<TenantBackgroundService> logger)
+    {
+        _configProvider = configProvider;
+        _logger = logger;
+    }
+    
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var tenantDomains = new[] { "tenant1.example.com", "tenant2.example.com" };
+        
+        foreach (var domain in tenantDomains)
+        {
+            // Pass domain explicitly - no HTTP context needed
+            var dbConnection = _configProvider.GetDatabaseConnectionString(domain);
+            var storageConnection = _configProvider.GetStorageConnectionString(domain);
+            
+            _logger.LogInformation("Processing tenant: {Domain}", domain);
+            
+            // Process tenant data...
+            await ProcessTenantDataAsync(domain, dbConnection, storageConnection);
+        }
+    }
+}
+```
+
+**Console Application Example:**
+
+```csharp
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        var services = new ServiceCollection();
+        
+        // Configure services without HTTP context
+        services.AddDbContext<DynamicConfigDbContext>(options =>
+            options.UseCosmos(configConnectionString, "ConfigDb"));
+        
+        services.AddMemoryCache();
+        services.AddSingleton<IDynamicConfigurationProvider, DynamicConfigurationProvider>();
+        
+        var provider = services.BuildServiceProvider();
+        var configProvider = provider.GetRequiredService<IDynamicConfigurationProvider>();
+        
+        // Explicitly specify domain
+        var domain = "client.example.com";
+        var dbConn = configProvider.GetDatabaseConnectionString(domain);
+        
+        Console.WriteLine($"Database connection for {domain}: {dbConn}");
+    }
+}
+```
+
+**Unit Test Example:**
+
+```csharp
+[TestMethod]
+public void GetDatabaseConnectionString_WithExplicitDomain_ReturnsCorrectConnection()
+{
+    // Arrange
+    var mockCache = new MemoryCache(new MemoryCacheOptions());
+    var configProvider = new DynamicConfigurationProvider(
+        configuration: mockConfig,
+        httpContextAccessor: null,  // No HTTP context
+        memoryCache: mockCache,
+        logger: mockLogger);
+    
+    // Act - Pass domain explicitly
+    var result = configProvider.GetDatabaseConnectionString("test.example.com");
+    
+    // Assert
+    Assert.IsNotNull(result);
+    Assert.IsTrue(result.Contains("Database=TestDb"));
+}
+```
+
+**API Methods Supporting Explicit Domain:**
+
+```csharp
+// All methods accept optional domain parameter
+string GetDatabaseConnectionString(string? domain = null);
+string GetStorageConnectionString(string? domain = null);
+string GetConfigurationValue(string key, string? domain = null);
+Task<bool> ValidateDomainName(string domain);
+Task<Connection?> GetConnectionByDomainAsync(string domain);
+```
+
+**When to Use Explicit Domain:**
+
+- ✅ Background services / hosted services
+- ✅ Console applications
+- ✅ Unit tests
+- ✅ Scheduled jobs (Hangfire, Quartz)
+- ✅ Azure Functions (when not triggered by HTTP)
+- ❌ Regular HTTP requests (use middleware - automatic)
+
+### Metrics Collection
+
+The Metrics entity tracks resource consumption per tenant for billing, monitoring, and capacity planning.
+
+**Recording Metrics:**
+
+```csharp
+public class MetricsService
+{
+    private readonly DynamicConfigDbContext _dbContext;
+    
+    public async Task RecordTenantMetricsAsync(
+        Guid connectionId,
+        double blobStorageBytes,
+        double blobTransactions,
+        double databaseRUs)
+    {
+        var metric = new Metric
+        {
+            Id = Guid.NewGuid(),
+            ConnectionId = connectionId,
+            TimeStamp = DateTimeOffset.UtcNow,
+            BlobStorageBytes = blobStorageBytes,
+            BlobStorageTransactions = blobTransactions,
+            DatabaseRequestUnits = databaseRUs
+        };
+        
+        _dbContext.Metrics.Add(metric);
+        await _dbContext.SaveChangesAsync();
+    }
+}
+```
+
+**Querying Metrics:**
+
+```csharp
+public async Task<double> GetMonthlyStorageUsageAsync(Guid connectionId)
+{
+    var startOfMonth = new DateTimeOffset(
+        DateTime.UtcNow.Year,
+        DateTime.UtcNow.Month,
+        1, 0, 0, 0, TimeSpan.Zero);
+    
+    var totalBytes = await _dbContext.Metrics
+        .Where(m => m.ConnectionId == connectionId && m.TimeStamp >= startOfMonth)
+        .SumAsync(m => m.BlobStorageBytes ?? 0);
+    
+    return totalBytes;
+}
+```
+
+**Automated Metrics Collection:**
+
+```csharp
+public class MetricsCollectorService : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // Collect metrics for all tenants every hour
+            await CollectAllTenantMetricsAsync();
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+        }
+    }
+    
+    private async Task CollectAllTenantMetricsAsync()
+    {
+        var connections = await _dbContext.Connections.ToListAsync();
+        
+        foreach (var connection in connections)
+        {
+            // Query Azure/AWS APIs for actual usage
+            var metrics = await FetchTenantResourceMetricsAsync(connection);
+            await RecordTenantMetricsAsync(connection.Id, metrics);
+        }
+    }
+}
+```
+
 ### Domain-Specific Configuration
 
 ```csharp

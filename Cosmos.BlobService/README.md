@@ -273,6 +273,136 @@ var fileInfo = await _storageContext.GetFileAsync("path/to/file.jpg");
 Console.WriteLine($"Size: {fileInfo.Size}, Modified: {fileInfo.Modified}");
 ```
 
+### Metadata Operations
+
+BlobService provides rich metadata management capabilities for tracking file properties, custom tags, and image dimensions.
+
+**Upsert Metadata:**
+```csharp
+using Cosmos.BlobService.Models;
+
+public async Task UpdateFileMetadataAsync(string filePath)
+{
+    var metadata = new BlobMetadataItem
+    {
+        Name = "Author",
+        Value = "John Doe"
+    };
+    
+    await _storageContext.UpsertMetadataAsync(filePath, metadata);
+}
+```
+
+**Retrieve Metadata:**
+```csharp
+public async Task<FileMetadata> GetFileDetailsAsync(string filePath)
+{
+    var metadata = await _storageContext.GetFileMetadataAsync(filePath);
+    
+    Console.WriteLine($"Content Type: {metadata.ContentType}");
+    Console.WriteLine($"Size: {metadata.Size} bytes");
+    Console.WriteLine($"ETag: {metadata.ETag}");
+    Console.WriteLine($"Last Modified: {metadata.LastModified}");
+    
+    // Image-specific properties (if available)
+    if (metadata.Width.HasValue && metadata.Height.HasValue)
+    {
+        Console.WriteLine($"Dimensions: {metadata.Width}x{metadata.Height}");
+    }
+    
+    // Custom metadata
+    foreach (var item in metadata.Metadata)
+    {
+        Console.WriteLine($"{item.Key}: {item.Value}");
+    }
+    
+    return metadata;
+}
+```
+
+**Delete Metadata:**
+```csharp
+public async Task RemoveCustomMetadataAsync(string filePath, string metadataKey)
+{
+    await _storageContext.DeleteMetadataAsync(filePath, metadataKey);
+}
+```
+
+**Image Properties Detection:**
+```csharp
+public async Task<(int? width, int? height)> GetImageDimensionsAsync(string imagePath)
+{
+    var fileInfo = await _storageContext.GetFileAsync(imagePath);
+    return (fileInfo.Width, fileInfo.Height);
+}
+```
+
+**Batch Metadata Operations:**
+```csharp
+public async Task TagMultipleFilesAsync(List<string> filePaths, string category)
+{
+    var metadata = new BlobMetadataItem
+    {
+        Name = "Category",
+        Value = category
+    };
+    
+    foreach (var path in filePaths)
+    {
+        await _storageContext.UpsertMetadataAsync(path, metadata);
+    }
+}
+```
+
+### Provider Configuration Reference
+
+| Provider | Connection String Pattern | Required Parameters | Optional Parameters |
+|----------|---------------------------|---------------------|---------------------|
+| **Azure Blob Storage** | `DefaultEndpointsProtocol=https;...` | AccountName, AccountKey (or AccessToken) | EndpointSuffix, BlobEndpoint |
+| **Amazon S3** | `Bucket=...;Region=...;AccessKey=...` | Bucket, Region, AccessKey, SecretKey | ServiceUrl (for S3-compatible) |
+| **Cloudflare R2** | `AccountId=...;Bucket=...;AccessKey=...` | AccountId, Bucket, AccessKey, SecretKey | - |
+| **Google Cloud Storage** | `Bucket=...;Region=...;ServiceUrl=https://storage.googleapis.com` | Bucket, Region, AccessKey, SecretKey, ServiceUrl | - |
+| **Azure Files Share** | `DefaultEndpointsProtocol=https;...;FileEndpoint=...` | AccountName, AccountKey, FileEndpoint | ShareName |
+
+**Detection Logic:**
+
+The service automatically selects the appropriate driver based on connection string analysis:
+
+```csharp
+// Azure Blob Storage detection
+if (connectionString.StartsWith("DefaultEndpointsProtocol="))
+    return new AzureStorage(config);
+
+// Cloudflare R2 detection
+if (connectionString.Contains("AccountId="))
+    return new AmazonStorage(config); // Uses S3-compatible API
+
+// Amazon S3 / Google Cloud Storage detection
+if (connectionString.Contains("Bucket="))
+    return new AmazonStorage(config);
+
+// Azure Files Share detection
+if (connectionString.Contains("FileEndpoint="))
+    return new AzureFileStorage(config);
+```
+
+**Configuration Examples:**
+
+```json
+{
+  "ConnectionStrings": {
+    "StorageConnectionString": "[provider-specific-string]"
+  },
+  "CosmosStorageConfig": {
+    "CdnConfig": {
+      "AzureCdnConfig": {
+        "PublicUrl": "https://cdn.example.com"
+      }
+    }
+  }
+}
+```
+
 ### StorageContext Methods
 
 | Method | Description | Returns |

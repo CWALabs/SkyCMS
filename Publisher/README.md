@@ -331,6 +331,91 @@ dotnet publish -c Release -o ./publish
 - Configure **logging levels** for troubleshooting
 - Use **Azure Application Insights** for production debugging
 
+## CDN Integration
+
+The Publisher application works seamlessly with CDN providers to deliver cached content globally while supporting automatic cache invalidation triggered by the Editor.
+
+### How It Works
+
+1. **Editor publishes content** → Triggers CDN purge via configured provider API
+2. **CDN receives purge request** → Invalidates cached copies at edge locations
+3. **Next visitor request** → CDN fetches fresh content from Publisher origin
+4. **Subsequent requests** → Served from CDN edge cache (fast delivery)
+
+### Supported CDN Providers
+
+- **Azure CDN** - Integrated with Azure Front Door and CDN profiles
+- **Cloudflare** - Full integration with zones and purge APIs
+- **Sucuri** - WAF-integrated CDN with security features
+- **Generic CDN** - Works with any CDN supporting origin pull
+
+### Configuration Requirements
+
+Publisher must be accessible as CDN origin:
+
+**Azure CDN:**
+```json
+{
+  "CdnConfig": {
+    "OriginUrl": "https://your-publisher.azurewebsites.net",
+    "EnableCaching": true,
+    "CacheDuration": "1.00:00:00"
+  }
+}
+```
+
+**Cloudflare:**
+- Point DNS to Cloudflare nameservers
+- Configure SSL/TLS mode (Full or Full Strict recommended)
+- Set cache level: Standard or Aggressive
+- Configure page rules for dynamic content exclusions
+
+**Publisher Response Headers:**
+```csharp
+// In Program.cs - Configure caching headers
+app.Use(async (context, next) =>
+{
+    if (!context.Request.Path.StartsWithSegments("/api"))
+    {
+        context.Response.Headers.CacheControl = "public, max-age=3600";
+        context.Response.Headers.Vary = "Accept-Encoding";
+    }
+    await next();
+});
+```
+
+### Cache Control Strategy
+
+**Static Assets** (CSS, JS, images):
+- Cache-Control: `public, max-age=31536000, immutable`
+- Versioning: Use query strings or path versioning (`/css/style.v123.css`)
+
+**HTML Pages:**
+- Cache-Control: `public, max-age=3600` (1 hour)
+- Purged automatically on publish via Editor
+
+**Dynamic Content** (search, forms):
+- Cache-Control: `no-cache` or `private`
+- Excluded from CDN caching
+
+### Health Checks
+
+**Endpoint:** `GET /health`
+
+**Response:**
+```json
+{
+  "status": "Healthy",
+  "checks": {
+    "database": "Healthy",
+    "storage": "Healthy"
+  },
+  "totalDuration": "00:00:00.0523"
+}
+```
+
+Use for CDN origin health monitoring and load balancer probes.
+
 ## Contributing
 
 Contributions are welcome! Please follow these guidelines:

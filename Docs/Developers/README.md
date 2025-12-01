@@ -124,6 +124,209 @@ To add a new storage provider to Cosmos.BlobService:
 - Use streaming for large file operations
 - Consider CDN integration for static assets
 
+## Metrics and Monitoring
+
+### Built-in Metrics Classes
+
+SkyCMS provides comprehensive metrics collection for monitoring resource usage, performance, and costs.
+
+#### CosmosDBMetrics
+
+Tracks Cosmos DB consumption and performance.
+
+**Usage:**
+```csharp
+using Cosmos.Common.Metrics;
+
+public class CosmosMetricsService
+{
+    public async Task<CosmosDBMetrics> GetDatabaseMetricsAsync(string accountName)
+    {
+        var metrics = new CosmosDBMetrics
+        {
+            AccountName = accountName,
+            DatabaseName = "SkyCMSDb",
+            RequestUnits = 450.5,
+            DataUsageBytes = 1024 * 1024 * 500, // 500 MB
+            IndexUsageBytes = 1024 * 1024 * 50,  // 50 MB
+            DocumentCount = 10000,
+            CollectionCount = 5,
+            TimeStamp = DateTimeOffset.UtcNow
+        };
+        
+        return metrics;
+    }
+}
+```
+
+#### StorageAccountMetrics
+
+Monitors blob storage consumption, bandwidth, and operations.
+
+**Usage:**
+```csharp
+using Cosmos.Common.Metrics;
+
+public class StorageMetricsService
+{
+    public async Task<StorageAccountMetrics> GetStorageMetricsAsync(string accountName)
+    {
+        var metrics = new StorageAccountMetrics
+        {
+            AccountName = accountName,
+            BlobStorageBytes = 1024L * 1024 * 1024 * 10, // 10 GB
+            EgressBytes = 1024L * 1024 * 500,            // 500 MB
+            IngressBytes = 1024L * 1024 * 200,           // 200 MB
+            Transactions = 150000,
+            TimeStamp = DateTimeOffset.UtcNow
+        };
+        
+        return metrics;
+    }
+}
+```
+
+#### FrontDoorProfileMetrics
+
+Tracks Azure Front Door CDN metrics.
+
+**Usage:**
+```csharp
+using Cosmos.Common.Metrics;
+
+public class CdnMetricsService
+{
+    public async Task<FrontDoorProfileMetrics> GetCdnMetricsAsync()
+    {
+        var metrics = new FrontDoorProfileMetrics
+        {
+            ProfileName = "SkyCMS-FrontDoor",
+            RequestCount = 1000000,
+            RequestBytes = 1024L * 1024 * 1024 * 50,  // 50 GB
+            ResponseBytes = 1024L * 1024 * 1024 * 100, // 100 GB
+            CacheHitRatio = 0.85, // 85% cache hit rate
+            TimeStamp = DateTimeOffset.UtcNow
+        };
+        
+        return metrics;
+    }
+}
+```
+
+### Exporting Metrics to Azure Application Insights
+
+**Setup:**
+```csharp
+// In Program.cs
+builder.Services.AddApplicationInsightsTelemetry();
+
+// Custom metrics tracking
+public class MetricsExporter
+{
+    private readonly TelemetryClient _telemetryClient;
+    
+    public void TrackCosmosMetrics(CosmosDBMetrics metrics)
+    {
+        _telemetryClient.TrackMetric("CosmosDB.RequestUnits", metrics.RequestUnits);
+        _telemetryClient.TrackMetric("CosmosDB.DataUsage", metrics.DataUsageBytes);
+        _telemetryClient.TrackMetric("CosmosDB.DocumentCount", metrics.DocumentCount);
+    }
+    
+    public void TrackStorageMetrics(StorageAccountMetrics metrics)
+    {
+        _telemetryClient.TrackMetric("Storage.TotalBytes", metrics.BlobStorageBytes);
+        _telemetryClient.TrackMetric("Storage.Egress", metrics.EgressBytes);
+        _telemetryClient.TrackMetric("Storage.Transactions", metrics.Transactions);
+    }
+}
+```
+
+### Grafana Dashboard Integration
+
+**Sample Prometheus Exporter:**
+```csharp
+using Prometheus;
+
+public class MetricsExporter
+{
+    private static readonly Gauge CosmosRUs = Metrics.CreateGauge(
+        "skycms_cosmos_request_units",
+        "Cosmos DB Request Units consumed",
+        new GaugeConfiguration { LabelNames = new[] { "database", "account" } });
+    
+    private static readonly Gauge StorageBytes = Metrics.CreateGauge(
+        "skycms_storage_bytes",
+        "Total storage bytes used",
+        new GaugeConfiguration { LabelNames = new[] { "account" } });
+    
+    public void UpdateMetrics(CosmosDBMetrics cosmosMetrics, StorageAccountMetrics storageMetrics)
+    {
+        CosmosRUs.WithLabels(cosmosMetrics.DatabaseName, cosmosMetrics.AccountName)
+            .Set(cosmosMetrics.RequestUnits);
+        
+        StorageBytes.WithLabels(storageMetrics.AccountName)
+            .Set(storageMetrics.BlobStorageBytes);
+    }
+}
+
+// Expose metrics endpoint
+app.MapMetrics(); // Exposes /metrics endpoint for Prometheus
+```
+
+**Grafana Query Examples:**
+```promql
+# Average Cosmos DB RU consumption over 5 minutes
+rate(skycms_cosmos_request_units[5m])
+
+# Total storage growth rate
+deriv(skycms_storage_bytes[1h])
+
+# CDN cache hit ratio
+sum(skycms_cdn_cache_hits) / sum(skycms_cdn_total_requests)
+```
+
+### Recommended Dashboards
+
+**Application Performance:**
+- Request duration (p50, p95, p99)
+- Error rate by endpoint
+- Database query performance
+- Cache hit ratios
+
+**Resource Consumption:**
+- Cosmos DB RU/s usage and throttling
+- Storage account capacity and growth
+- CDN bandwidth and cache efficiency
+- Application memory and CPU
+
+**Business Metrics:**
+- Active tenants
+- Content publish rate
+- User sessions
+- Page views by tenant
+
+### Automated Alerts
+
+**Azure Monitor Alert Example:**
+```json
+{
+  "name": "High Cosmos DB RU Usage",
+  "condition": {
+    "metric": "CosmosDB.RequestUnits",
+    "operator": "GreaterThan",
+    "threshold": 1000,
+    "timeAggregation": "Average",
+    "windowSize": "PT5M"
+  },
+  "actions": [
+    {
+      "actionGroupId": "/subscriptions/.../actionGroups/OnCall",
+      "severity": "2"
+    }
+  ]
+}
+```
+
 ## Related Documentation
 
 - **Project READMEs**: Each project has detailed documentation in its folder

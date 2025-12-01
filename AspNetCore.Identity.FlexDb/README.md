@@ -99,6 +99,297 @@ AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database p
 | **Connection String** | `Server=server;Initial Catalog=database;User ID=user;Password=password;` |
 | **Use Cases** | Enterprise apps, complex reporting, existing SQL Server infrastructure |
 
+### Provider Strategy Selection
+
+FlexDb uses a sophisticated detection system to automatically select the appropriate database provider based on connection string patterns.
+
+**Detection Algorithm:**
+
+```csharp
+public class ProviderDetection
+{
+    public static IDatabaseConfigurationStrategy DetectProvider(string connectionString)
+    {
+        // Priority 10: Cosmos DB (highest priority)
+        if (connectionString.Contains("AccountEndpoint=", StringComparison.OrdinalIgnoreCase))
+        {
+            return new CosmosDbConfigurationStrategy();
+        }
+        
+        // Priority 20: SQL Server
+        if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) ||
+            connectionString.Contains("User ID=", StringComparison.OrdinalIgnoreCase))
+        {
+            return new SqlServerConfigurationStrategy();
+        }
+        
+        // Priority 30: MySQL
+        if (connectionString.Contains("server=", StringComparison.OrdinalIgnoreCase) &&
+            connectionString.Contains("database=", StringComparison.OrdinalIgnoreCase))
+        {
+            return new MySqlConfigurationStrategy();
+        }
+        
+        // Priority 40: SQLite (lowest priority)
+        if (connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) &&
+            connectionString.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+        {
+            return new SqliteConfigurationStrategy();
+        }
+        
+        throw new NotSupportedException($"Unable to detect database provider from connection string");
+    }
+}
+```
+
+**Strategy Interface:**
+
+```csharp
+public interface IDatabaseConfigurationStrategy
+{
+    int Priority { get; }  // Lower number = higher priority
+    string ProviderName { get; }
+    
+    bool CanHandle(string connectionString);
+    void ConfigureDbContext(DbContextOptionsBuilder options, string connectionString);
+    void ConfigureModel(ModelBuilder modelBuilder);
+}
+```
+
+**Custom Strategy Example:**
+
+```csharp
+using AspNetCore.Identity.FlexDb.Strategies;
+
+public class PostgreSqlConfigurationStrategy : IDatabaseConfigurationStrategy
+{
+    public int Priority => 25; // Between SQL Server and MySQL
+    public string ProviderName => "PostgreSQL";
+    
+    public bool CanHandle(string connectionString)
+    {
+        return connectionString.Contains("Host=") &&
+               connectionString.Contains("Username=");
+    }
+    
+    public void ConfigureDbContext(DbContextOptionsBuilder options, string connectionString)
+    {
+        options.UseNpgsql(connectionString, npgsqlOptions =>
+        {
+            npgsqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorCodesToAdd: null);
+        });
+    }
+    
+    public void ConfigureModel(ModelBuilder modelBuilder)
+    {
+        // PostgreSQL-specific model configuration
+        modelBuilder.HasDefaultSchema("identity");
+    }
+}
+
+// Register custom strategy
+services.AddCosmosIdentity<IdentityUser, IdentityRole, string>(
+    connectionString,
+    customStrategies: new[] { new PostgreSqlConfigurationStrategy() });
+```
+
+**Override Detection:**
+
+```csharp
+// Force a specific provider
+services.AddDbContext<CosmosIdentityDbContext<IdentityUser, IdentityRole, string>>(
+    options =>
+    {
+        // Bypass detection, use SQL Server directly
+        options.UseSqlServer(connectionString);
+    });
+```
+
+**Strategy Selection Logging:**
+
+```csharp
+public class LoggingStrategySelector
+{
+    private readonly ILogger _logger;
+    
+    public IDatabaseConfigurationStrategy SelectStrategy(
+        string connectionString,
+        IEnumerable<IDatabaseConfigurationStrategy> strategies)
+    {
+        var selected = strategies
+            .Where(s => s.CanHandle(connectionString))
+            .OrderBy(s => s.Priority)
+            .FirstOrDefault();
+        
+        if (selected == null)
+        {
+            _logger.LogError("No strategy found for connection string pattern");
+            throw new InvalidOperationException("Unable to determine database provider");
+        }
+        
+        _logger.LogInformation(
+            "Selected {Provider} strategy (Priority: {Priority})",
+            selected.ProviderName,
+            selected.Priority);
+        
+        return selected;
+    }
+}
+```
+
+### Privacy and Retry Policies
+
+**Personal Data Encryption:**
+
+FlexDb includes `PersonalDataConverter` to automatically encrypt sensitive user information.
+
+```csharp
+using AspNetCore.Identity.FlexDb;
+using Microsoft.AspNetCore.Identity;
+
+public class ApplicationUser : IdentityUser
+{
+    [PersonalData]
+    [ProtectedPersonalData]  // Automatically encrypted
+    public string? PhoneNumber { get; set; }
+    
+    [PersonalData]
+    [ProtectedPersonalData]
+    public string? SocialSecurityNumber { get; set; }
+}
+
+// Configuration
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(@"./keys"))
+            .SetApplicationName("SkyCMS");
+        
+        services.AddIdentity<ApplicationUser, IdentityRole>()
+            .AddEntityFrameworkStores<CosmosIdentityDbContext<ApplicationUser, IdentityRole, string>>()
+            .AddDefaultTokenProviders()
+            .AddPersonalDataProtection<PersonalDataConverter, PersonalDataProtectionKeyProvider>();
+    }
+}
+```
+
+**How PersonalDataConverter Works:**
+
+```csharp
+public class PersonalDataConverter : IPersonalDataConverter
+{
+    private readonly IDataProtector _protector;
+    
+    public string? Protect(string? data)
+    {
+        if (string.IsNullOrEmpty(data))
+            return data;
+        
+        return _protector.Protect(data);
+    }
+    
+    public string? Unprotect(string? data)
+    {
+        if (string.IsNullOrEmpty(data))
+            return data;
+        
+        return _protector.Unprotect(data);
+    }
+}
+```
+
+**Retry Policies:**
+
+FlexDb includes built-in retry logic for transient failures.
+
+```csharp
+using AspNetCore.Identity.FlexDb;
+
+public class RetryConfiguration
+{
+    public static async Task<T> ExecuteWithRetryAsync<T>(
+        Func<Task<T>> operation,
+        int maxRetries = 3,
+        int delayMilliseconds = 100)
+    {
+        return await Retry.ExecuteAsync(
+            operation,
+            maxRetries,
+            delayMilliseconds,
+            onRetry: (ex, attempt) =>
+            {
+                Console.WriteLine($"Retry {attempt} after error: {ex.Message}");
+            });
+    }
+}
+
+// Usage in repository
+public async Task<IdentityUser?> FindByIdAsync(string userId)
+{
+    return await RetryConfiguration.ExecuteWithRetryAsync(async () =>
+    {
+        return await _dbContext.Users.FindAsync(userId);
+    });
+}
+```
+
+**Cosmos DB Retry Policy:**
+
+```csharp
+services.AddDbContext<CosmosIdentityDbContext<IdentityUser, IdentityRole, string>>(
+    options => options.UseCosmos(
+        connectionString,
+        databaseName,
+        cosmosOptions =>
+        {
+            cosmosOptions.MaxRetryCount(3);
+            cosmosOptions.MaxRetryWaitTimeOnRateLimitedRequests(TimeSpan.FromSeconds(30));
+        }));
+```
+
+**SQL Server Retry Policy:**
+
+```csharp
+services.AddDbContext<CosmosIdentityDbContext<IdentityUser, IdentityRole, string>>(
+    options => options.UseSqlServer(
+        connectionString,
+        sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: new[] { 4060, 40197, 40501, 40613, 49918 });
+        }));
+```
+
+**GDPR Compliance - Data Export:**
+
+```csharp
+public async Task<Dictionary<string, string>> ExportPersonalDataAsync(string userId)
+{
+    var user = await _userManager.FindByIdAsync(userId);
+    if (user == null)
+        return new Dictionary<string, string>();
+    
+    var personalData = new Dictionary<string, string>();
+    var personalDataProps = typeof(IdentityUser).GetProperties()
+        .Where(prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)));
+    
+    foreach (var prop in personalDataProps)
+    {
+        var value = prop.GetValue(user)?.ToString() ?? "null";
+        personalData.Add(prop.Name, value);
+    }
+    
+    return personalData;
+}
+```
+
 **Optimizations:**
 - Connection pooling
 - Optimized indexes on email and username

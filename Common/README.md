@@ -478,6 +478,476 @@ Built-in health check endpoints:
 - System status monitoring
 - Performance metrics collection
 
+## Email Providers
+
+SkyCMS Common supports multiple email service providers for transactional emails, newsletters, and notifications.
+
+### SendGrid Configuration
+
+**appsettings.json:**
+```json
+{
+  "SendGridConfig": {
+    "ApiKey": "SG.your-api-key",
+    "SenderEmail": "noreply@example.com",
+    "SenderName": "SkyCMS"
+  }
+}
+```
+
+**Usage:**
+```csharp
+using Cosmos.Cms.Common.Services.Configurations;
+using SendGrid;
+using SendGrid.Helpers.Mail;
+
+public class EmailService
+{
+    private readonly SendGridConfig _config;
+    
+    public EmailService(IOptions<SendGridConfig> config)
+    {
+        _config = config.Value;
+    }
+    
+    public async Task SendEmailAsync(string toEmail, string subject, string htmlContent)
+    {
+        var client = new SendGridClient(_config.ApiKey);
+        var from = new EmailAddress(_config.SenderEmail, _config.SenderName);
+        var to = new EmailAddress(toEmail);
+        var msg = MailHelper.CreateSingleEmail(from, to, subject, null, htmlContent);
+        
+        var response = await client.SendEmailAsync(msg);
+    }
+}
+```
+
+### MailChimp Configuration
+
+**appsettings.json:**
+```json
+{
+  "MailChimpConfig": {
+    "ApiKey": "your-mailchimp-api-key",
+    "DataCenter": "us1",
+    "ListId": "your-list-id"
+  }
+}
+```
+
+**Usage:**
+```csharp
+using Cosmos.Common.Services.Configurations;
+using MailChimp.Net;
+using MailChimp.Net.Interfaces;
+
+public class NewsletterService
+{
+    private readonly MailChimpConfig _config;
+    private readonly IMailChimpManager _mailChimpManager;
+    
+    public NewsletterService(IOptions<MailChimpConfig> config)
+    {
+        _config = config.Value;
+        _mailChimpManager = new MailChimpManager(_config.ApiKey);
+    }
+    
+    public async Task SubscribeToNewsletterAsync(string email, string firstName, string lastName)
+    {
+        var member = new Member
+        {
+            EmailAddress = email,
+            StatusIfNew = Status.Subscribed,
+            MergeFields = new Dictionary<string, object>
+            {
+                { "FNAME", firstName },
+                { "LNAME", lastName }
+            }
+        };
+        
+        await _mailChimpManager.Members.AddOrUpdateAsync(
+            _config.ListId,
+            member);
+    }
+}
+```
+
+**Environment Variables (Recommended for Production):**
+```bash
+SENDGRID__APIKEY=your-sendgrid-key
+MAILCHIMP__APIKEY=your-mailchimp-key
+MAILCHIMP__LISTID=your-list-id
+```
+
+## Proxy and Routing Configuration
+
+### ProxyConfig
+
+Configures reverse proxy behavior for routing requests to backend services.
+
+**appsettings.json:**
+```json
+{
+  "ProxyConfig": {
+    "EnableProxy": true,
+    "ProxyUrl": "https://backend-service.example.com",
+    "ProxyTimeout": "00:00:30",
+    "BypassPaths": ["/health", "/metrics"]
+  }
+}
+```
+
+**Usage:**
+```csharp
+using Cosmos.Cms.Common.Services.Configurations;
+
+public class ProxyMiddleware
+{
+    private readonly ProxyConfig _config;
+    private readonly HttpClient _httpClient;
+    
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (!_config.EnableProxy || _config.BypassPaths.Contains(context.Request.Path))
+        {
+            await _next(context);
+            return;
+        }
+        
+        var targetUri = new Uri(_config.ProxyUrl + context.Request.Path + context.Request.QueryString);
+        var proxyRequest = new HttpRequestMessage(new HttpMethod(context.Request.Method), targetUri);
+        
+        var response = await _httpClient.SendAsync(proxyRequest);
+        context.Response.StatusCode = (int)response.StatusCode;
+        await response.Content.CopyToAsync(context.Response.Body);
+    }
+}
+```
+
+### SimpleProxyConfigs
+
+Lightweight proxy configurations for content delivery and API gateway scenarios.
+
+**appsettings.json:**
+```json
+{
+  "SimpleProxyConfigs": {
+    "Routes": [
+      {
+        "Path": "/api/*",
+        "Target": "https://api.example.com",
+        "StripPrefix": false
+      },
+      {
+        "Path": "/media/*",
+        "Target": "https://cdn.example.com",
+        "StripPrefix": true
+      }
+    ]
+  }
+}
+```
+
+### EditorUrl Configuration
+
+Configures the Editor application URL for cross-application communication.
+
+**appsettings.json:**
+```json
+{
+  "EditorUrl": "https://editor.example.com"
+}
+```
+
+**Usage:**
+```csharp
+public class PublisherService
+{
+    private readonly string _editorUrl;
+    
+    public PublisherService(IConfiguration configuration)
+    {
+        _editorUrl = configuration["EditorUrl"];
+    }
+    
+    public async Task<string> FetchContentFromEditorAsync(string contentId)
+    {
+        using var client = new HttpClient();
+        var response = await client.GetAsync($"{_editorUrl}/api/content/{contentId}");
+        return await response.Content.ReadAsStringAsync();
+    }
+}
+```
+
+## Security Utilities
+
+### OneTimeTokenProvider
+
+Generates time-limited, single-use tokens for secure operations (password reset, email verification).
+
+**Usage:**
+```csharp
+using Cosmos.Common.Services;
+using Microsoft.AspNetCore.Identity;
+
+public class AccountService
+{
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly OneTimeTokenProvider<IdentityUser> _tokenProvider;
+    
+    public async Task<string> GeneratePasswordResetTokenAsync(IdentityUser user)
+    {
+        // Token valid for 1 hour by default
+        var token = await _tokenProvider.GenerateAsync(
+            "PasswordReset",
+            _userManager,
+            user);
+        
+        return token;
+    }
+    
+    public async Task<bool> ValidatePasswordResetTokenAsync(
+        IdentityUser user,
+        string token)
+    {
+        var isValid = await _tokenProvider.ValidateAsync(
+            "PasswordReset",
+            token,
+            _userManager,
+            user);
+        
+        return isValid;
+    }
+}
+```
+
+### CryptoJsDecryption
+
+Decrypts data encrypted with CryptoJS (JavaScript library), enabling secure client-server communication.
+
+**Usage:**
+```csharp
+using Cosmos.Common.Services;
+
+public class SecureDataService
+{
+    public string DecryptClientData(string encryptedData, string passphrase)
+    {
+        // Decrypt data sent from JavaScript CryptoJS.AES.encrypt()
+        var decrypted = CryptoJsDecryption.Decrypt(encryptedData, passphrase);
+        return decrypted;
+    }
+}
+```
+
+**JavaScript (Client Side):**
+```javascript
+import CryptoJS from 'crypto-js';
+
+const passphrase = 'your-secret-key';
+const data = { userId: 123, email: 'user@example.com' };
+const encrypted = CryptoJS.AES.encrypt(
+    JSON.stringify(data),
+    passphrase
+).toString();
+
+// Send encrypted to server
+await fetch('/api/secure-data', {
+    method: 'POST',
+    body: JSON.stringify({ data: encrypted })
+});
+```
+
+### Validation Attributes
+
+**DateTimeUtcKindAttribute:**
+
+Ensures DateTime values are in UTC.
+
+```csharp
+using Cosmos.Common.Models;
+
+public class EventModel
+{
+    [DateTimeUtcKind(ErrorMessage = "Event time must be in UTC")]
+    public DateTime EventTime { get; set; }
+}
+```
+
+**RedirectUrlAttribute:**
+
+Validates redirect URLs to prevent open redirect vulnerabilities.
+
+```csharp
+using Cosmos.Common.Models;
+
+public class LoginViewModel
+{
+    [RedirectUrl(ErrorMessage = "Invalid redirect URL")]
+    public string ReturnUrl { get; set; }
+}
+```
+
+## Caching
+
+### CosmosMemoryCache
+
+Enhanced memory caching with automatic expiration and statistics.
+
+**Configuration:**
+```csharp
+using Cosmos.Cms.Common.Services;
+
+// In Program.cs
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<CosmosMemoryCache>();
+```
+
+**Usage:**
+```csharp
+public class ContentService
+{
+    private readonly CosmosMemoryCache _cache;
+    
+    public async Task<Article> GetArticleAsync(int id)
+    {
+        var cacheKey = $"article_{id}";
+        
+        if (_cache.TryGetValue(cacheKey, out Article cached))
+        {
+            return cached;
+        }
+        
+        var article = await _dbContext.Articles.FindAsync(id);
+        
+        // Cache for 10 minutes
+        _cache.Set(cacheKey, article, TimeSpan.FromMinutes(10));
+        
+        return article;
+    }
+}
+```
+
+### Caching Strategies
+
+**Templates Caching:**
+- Duration: 1 hour
+- Invalidation: On template update/delete
+- Key pattern: `template_{id}`
+
+**Configuration Values:**
+- Duration: 10 seconds (DynamicConfigurationProvider)
+- Invalidation: Time-based expiration
+- Key pattern: `config_{domain}_{key}`
+
+**Article Listings:**
+- Duration: 5 minutes
+- Invalidation: On article publish/unpublish
+- Key pattern: `articles_list_{page}_{pageSize}`
+
+**Navigation Menus:**
+- Duration: 30 minutes
+- Invalidation: On menu structure change
+- Key pattern: `menu_{location}`
+
+**Cache Invalidation Example:**
+```csharp
+public async Task UpdateArticleAsync(Article article)
+{
+    await _dbContext.SaveChangesAsync();
+    
+    // Invalidate related caches
+    _cache.Remove($"article_{article.Id}");
+    _cache.Remove("articles_list");
+    _cache.Remove("menu_main");
+}
+```
+
+**Memory Pressure Management:**
+```csharp
+// Configure cache size limits
+builder.Services.AddMemoryCache(options =>
+{
+    options.SizeLimit = 1024; // 1024 items max
+    options.CompactionPercentage = 0.25; // Remove 25% when limit reached
+});
+```
+
+## Power BI Integration
+
+SkyCMS supports embedding Power BI reports and dashboards for analytics and reporting.
+
+### PowerBiTokenRequest
+
+**Configuration:**
+```json
+{
+  "PowerBi": {
+    "ClientId": "your-azure-ad-app-id",
+    "ClientSecret": "your-client-secret",
+    "TenantId": "your-tenant-id",
+    "WorkspaceId": "your-workspace-id"
+  }
+}
+```
+
+**Usage:**
+```csharp
+using Cosmos.Common.Models;
+using Microsoft.PowerBI.Api;
+using Microsoft.PowerBI.Api.Models;
+
+public class PowerBiService
+{
+    public async Task<string> GetEmbedTokenAsync(string reportId)
+    {
+        var tokenRequest = new PowerBiTokenRequest
+        {
+            ReportId = reportId,
+            AccessLevel = "View",
+            AllowEdit = false
+        };
+        
+        // Authenticate with Azure AD
+        var authToken = await GetAzureAdTokenAsync();
+        
+        // Get Power BI embed token
+        using var client = new PowerBIClient(new Uri("https://api.powerbi.com"), 
+            new TokenCredentials(authToken));
+        
+        var embedToken = await client.Reports.GenerateTokenAsync(
+            new Guid(tokenRequest.ReportId),
+            new GenerateTokenRequest(accessLevel: "View"));
+        
+        return embedToken.Token;
+    }
+}
+```
+
+**Embed in Razor View:**
+```html
+<div id="powerbi-report" style="height:600px;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/powerbi-client@2.x/dist/powerbi.min.js"></script>
+<script>
+    const embedConfig = {
+        type: 'report',
+        tokenType: models.TokenType.Embed,
+        accessToken: '@Model.EmbedToken',
+        embedUrl: 'https://app.powerbi.com/reportEmbed',
+        id: '@Model.ReportId',
+        settings: {
+            panes: {
+                filters: { expanded: false, visible: false }
+            }
+        }
+    };
+    
+    const reportContainer = document.getElementById('powerbi-report');
+    const report = powerbi.embed(reportContainer, embedConfig);
+</script>
+```
+
 ## License
 
 Licensed under the MIT License. See the LICENSE file for details.
