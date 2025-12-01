@@ -14,7 +14,7 @@
 
 **A light-weight, high-performance, multi-cloud content management system built for edge delivery and static site generation.**
 
-Deploy anywhere: AWS, Azure, Cloudflare, Google — or any cloud that supports Docker containers, one of our supported databases (MySQL, MS SQL or Cosmos DB), and either S3‑compatible object storage or Azure Storage.
+Deploy anywhere: AWS, Azure, Cloudflare, Google — or any cloud that supports Docker containers, one of our supported databases (MySQL, MS SQL, SQLite, or Cosmos DB), and either S3‑compatible object storage or Azure Storage.
 
 Content tools are intuitive and rich, making them developer-friendly and non-technical user-friendly, perfect for web professionals working together with content creators.
 
@@ -292,7 +292,7 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 
 - **Backend**: ASP.NET Core 9.0+ (C#)
 - **Frontend**: JavaScript (70% of codebase), HTML5, CSS3, SCSS
-- **Database**: Azure Cosmos DB (NoSQL), MS SQL, MySQL
+- **Database**: Azure Cosmos DB (NoSQL), MS SQL, MySQL, SQLite
 - **Storage**: Azure Blob Storage, Amazon S3, Cloudflare R2 (S3-compatible)
 - **Hosting**: Linux Docker containers
 - **Authentication**: ASP.NET Core Identity, Google and Microsoft
@@ -302,6 +302,7 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 - **Database Options**
   - Azure Cosmos DB: Multi-user, globally distributed NoSQL database
   - MS SQL, MySQL: Relational databases
+  - SQLite: File-based database for development and small deployments
 - **Cloud Storage Options**
   - Azure Storage: File share and BLOB storage
   - Amazon S3 (and compatible): BLOB storage
@@ -353,7 +354,7 @@ Each component has detailed documentation explaining its purpose, configuration,
 ### Shared Libraries
 
 - **[Common Library](./Common/README.md)** - Core shared functionality
-  - Multi-database support (Cosmos DB, SQL Server, MySQL)
+  - Multi-database support (Cosmos DB, SQL Server, MySQL, SQLite)
   - Base controllers and data models
   - Authentication utilities and services
   - Article management and content processing
@@ -420,7 +421,7 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/Moonrise
 #### Configuration
 
 - **[Storage Configuration](./Docs/StorageConfig.md)** - Azure Blob, AWS S3, Cloudflare R2 setup
-- **[Database Configuration](./Docs/DatabaseConfig.md)** - Cosmos DB, SQL Server, MySQL setup
+- **[Database Configuration](./Docs/DatabaseConfig.md)** - Cosmos DB, SQL Server, MySQL, SQLite setup
 - **[Cloudflare Edge Hosting](./Docs/CloudflareEdgeHosting.md)** - Origin-less hosting with R2 + Rules
 
 #### Content Management Guides

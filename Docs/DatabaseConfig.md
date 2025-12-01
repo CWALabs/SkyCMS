@@ -1,6 +1,6 @@
 # Database Configuration
 
-SkyCMS supports Azure Cosmos DB, MS SQL (including Azure SQL), and MySQL to store users, settings, page edits, and other CMS data. Sky automatically selects the correct EF Core provider based on the connection string configured under the key:
+SkyCMS supports Azure Cosmos DB, MS SQL (including Azure SQL), MySQL, and SQLite to store users, settings, page edits, and other CMS data. Sky automatically selects the correct EF Core provider based on the connection string configured under the key:
 
 `ConnectionStrings:ApplicationDbContextConnection`
 
@@ -20,9 +20,11 @@ Jump to:
   - [Azure Cosmos DB](#azure-cosmos-db)
   - [MS SQL (and Azure SQL)](#ms-sql-and-azure-sql)
   - [MySQL](#mysql)
+  - [SQLite](#sqlite)
   - [Which database should I use?](#which-database-should-i-use)
   - [Security and secrets](#security-and-secrets)
   - [Troubleshooting](#troubleshooting)
+  - [See Also](#see-also)
 
 ---
 
@@ -87,6 +89,32 @@ Typical format (default port 3306):
 
 ---
 
+## SQLite
+
+SQLite is ideal for development, testing, or small single-instance deployments:
+
+```json
+{
+    "ConnectionStrings": {
+        "ApplicationDbContextConnection": "Data Source=skycms.db"
+    }
+}
+```
+
+With custom path:
+
+```json
+{
+    "ConnectionStrings": {
+        "ApplicationDbContextConnection": "Data Source=/app/data/skycms.db"
+    }
+}
+```
+
+> Note: SQLite is a file-based database. For production deployments with multiple instances, use a centralized database (SQL Server, MySQL, or Cosmos DB).
+
+---
+
 ## Which database should I use?
 
 Use what your team already knows when possible. Quick guidance:
@@ -95,6 +123,7 @@ Use what your team already knows when possible. Quick guidance:
 |-------------------|---------------------------------------------|----------------------------------------------------------|----------------|
 | MS SQL / Azure SQL| Teams, enterprise features, ecosystem tools | Familiar SQL, backups, point-in-time restore, tooling    | Requires managed instance/server; licensing/costs vary |
 | MySQL             | LAMP stacks, cross-platform hosting         | Ubiquitous, cost-effective, broad hosting support        | Feature set differs from SQL Server; ensure provider parity |
+| SQLite            | Development, testing, small single-instance | Zero configuration, serverless, file-based, portable     | Not suitable for multi-instance production deployments |
 | Azure Cosmos DB   | Global scale, low-latency, elastic workloads| Serverless scale, global distribution, NoSQL flexibility | Different query model; cost control and partitioning strategy |
 
 ---
@@ -111,6 +140,7 @@ Use what your team already knows when possible. Quick guidance:
 
 - Provider detection is based on the connection string:
     - Contains `AccountEndpoint` → Cosmos DB
+    - Contains `Data Source=` with `.db` file → SQLite
     - Contains `Server=` or `Data Source=` → SQL Server
     - Contains `server=` (lowercase) → MySQL
 - Ensure the connection key is `ConnectionStrings:ApplicationDbContextConnection`.
