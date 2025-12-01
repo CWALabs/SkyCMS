@@ -227,8 +227,8 @@
       },
       "AWSSDK.Core": {
         "type": "Transitive",
-        "resolved": "4.0.3",
-        "contentHash": "haZXE5wMsr1MISFmeMC6wbHjFjQ5f+g84W8EIcqvV/Su5ET6N8BOJxtFPvm3EnHElRuaaTgMwTEn2G9JZ4wBpw=="
+        "resolved": "4.0.3.3",
+        "contentHash": "YQv10JuxnciWh0QwnkarSbge4gXQV1qTURf5jkBjNUH/3jYS9QrbxopA4TK1qdjfOfP37tqiJkLSrRRNqX81aw=="
       },
       "Azure.Communication.Email": {
         "type": "Transitive",
@@ -2174,19 +2174,19 @@
       "cosmos.blobservice": {
         "type": "Project",
         "dependencies": {
-          "AWSSDK.S3": "[4.0.11.1, 5.0.0)",
+          "AWSSDK.S3": "[4.0.13.1, )",
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.1, 2.0.0)",
           "Azure.Storage.Files.Shares": "[12.24.0, 13.0.0)",
-          "Cosmos.DynamicConfig": "[9.2.0.2, )"
+          "Cosmos.DynamicConfig": "[9.2.1, )"
         }
       },
       "cosmos.common": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.0.2, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.1, )",
           "Azure.Monitor.Query": "[1.7.1, 2.0.0)",
-          "Cosmos.BlobService": "[9.2.0.2, )",
-          "Cosmos.DynamicConfig": "[9.2.0.2, )",
+          "Cosmos.BlobService": "[9.2.1, )",
+          "Cosmos.DynamicConfig": "[9.2.1, )",
           "MailChimp.Net.V3": "[5.8.2, 6.0.0)",
           "Microsoft.AspNetCore.DataProtection.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Otp.NET": "[1.4.0, 2.0.0)",
@@ -2196,18 +2196,18 @@
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.0.2, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.1, )",
           "Microsoft.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.10, 10.0.0)"
         }
       },
       "AWSSDK.S3": {
         "type": "CentralTransitive",
-        "requested": "[4.0.11.1, 5.0.0)",
-        "resolved": "4.0.11.1",
-        "contentHash": "VJF0IYSJBc6u4ODm3ijByLnyyZdHVNtxt9tvtEeLPelp4XtRbZt9+Gqd/tbMtV2WWOBQ2CKIgWjmI3RXjQCUCw==",
+        "requested": "[4.0.13.1, )",
+        "resolved": "4.0.13.1",
+        "contentHash": "+YDlfV80LsY9Q/+G31SepQW+XqLYIyqlpfkhHtHMAsB18T1dRtIGaiPtqkdYSPxBJpVQ+FaxwZ45bIwLneKrxA==",
         "dependencies": {
-          "AWSSDK.Core": "[4.0.3, 5.0.0)"
+          "AWSSDK.Core": "[4.0.3.3, 5.0.0)"
         }
       },
       "Azure.Extensions.AspNetCore.DataProtection.Blobs": {
