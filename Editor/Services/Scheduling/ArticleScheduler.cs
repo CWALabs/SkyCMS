@@ -15,6 +15,8 @@ namespace Sky.Editor.Services.Scheduling
     using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.DynamicConfig;
+    using Cosmos.EmailServices;
+    using Microsoft.AspNetCore.Identity;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.DependencyInjection;
@@ -70,10 +72,6 @@ namespace Sky.Editor.Services.Scheduling
         }
 
         /// <inheritdoc/>
-        /// <remarks>
-        /// TODO: Implement notification system to alert content creators when their scheduled
-        /// publications go live. Consider email notifications, in-app notifications, or webhook integrations.
-        /// </remarks>
         public async Task ExecuteAsync()
         {
             var now = clock.UtcNow;
@@ -124,7 +122,7 @@ namespace Sky.Editor.Services.Scheduling
                 {
                     // All services must be scoped to the tenant's connection
                     var connection = await configurationProvider.GetTenantConnectionAsync(domainName);
-                    
+
                     // TODO: Create tenant-specific ApplicationDbContext using connection.PrimaryCloud or appropriate connection string
                     dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
                     storageContext = new StorageContext(connection.StorageConn, memoryCache);
@@ -236,8 +234,11 @@ namespace Sky.Editor.Services.Scheduling
 
                 var factory = scopedServices.GetRequiredService<ITenantArticleLogicFactory>();
                 var articleLogic = await factory.CreateForTenantAsync(domainName);
-                
+
                 await articleLogic.PublishArticle(activeVersion.Id, activeVersion.Published);
+
+                // Send email notification to the author
+                await SendPublicationNotificationAsync(activeVersion, domainName, scopedServices, dbContext);
 
                 logger.LogInformation(
                     "Article {ArticleNumber} (Domain: {Domain}): Successfully activated version {VersionNumber}",
@@ -252,6 +253,101 @@ namespace Sky.Editor.Services.Scheduling
                     "Error processing article versions for ArticleNumber {ArticleNumber} (Domain: {Domain})",
                     articleNumber,
                     domainName);
+            }
+        }
+
+        /// <summary>
+        /// Sends an email notification to the article author when their scheduled post goes live.
+        /// </summary>
+        /// <param name="article">The published article.</param>
+        /// <param name="domainName">The domain name or site identifier.</param>
+        /// <param name="scopedServices">Scoped service provider for resolving dependencies.</param>
+        /// <param name="dbContext">Database context for user lookup.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        private async Task SendPublicationNotificationAsync(
+            Article article,
+            string domainName,
+            IServiceProvider scopedServices,
+            ApplicationDbContext dbContext)
+        {
+            try
+            {
+                var emailSender = scopedServices.GetService<ICosmosEmailSender>();
+                if (emailSender == null)
+                {
+                    logger.LogWarning("Email sender service not available. Skipping notification for article {ArticleNumber}", article.ArticleNumber);
+                    return;
+                }
+
+                var userManager = scopedServices.GetService<UserManager<IdentityUser>>();
+                if (userManager == null)
+                {
+                    logger.LogWarning("UserManager not available. Skipping notification for article {ArticleNumber}", article.ArticleNumber);
+                    return;
+                }
+
+                // Get the author's email address
+                var author = await userManager.FindByIdAsync(article.UserId);
+                if (author == null || string.IsNullOrWhiteSpace(author.Email))
+                {
+                    logger.LogWarning("Author not found or has no email for article {ArticleNumber}", article.ArticleNumber);
+                    return;
+                }
+
+                // Get the website name from the home page or use domain name as fallback
+                var homePage = await dbContext.Pages
+                    .Select(s => new { s.Title, s.UrlPath })
+                    .FirstOrDefaultAsync(f => f.UrlPath == "root");
+                var websiteName = homePage?.Title ?? domainName ?? "your website";
+
+                // Construct the article URL
+                var articleUrl = string.IsNullOrWhiteSpace(domainName)
+                    ? $"/{article.UrlPath}"
+                    : $"https://{domainName}/{article.UrlPath}";
+
+                // Build the email content
+                var subject = $"Your scheduled article \"{article.Title}\" is now published";
+                var htmlMessage = $@"
+<html>
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+    <h2 style='color: #2c3e50;'>Your Scheduled Article is Now Live!</h2>
+    <p>Hello,</p>
+    <p>Your scheduled article has been successfully published on <strong>{websiteName}</strong>.</p>
+    
+    <div style='background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;'>
+        <h3 style='margin-top: 0; color: #007bff;'>{article.Title}</h3>
+        <p><strong>Article Number:</strong> {article.ArticleNumber}</p>
+        <p><strong>Version:</strong> {article.VersionNumber}</p>
+        <p><strong>Published:</strong> {article.Published:F}</p>
+        <p><strong>URL Path:</strong> {article.UrlPath}</p>
+    </div>
+    
+    <p>You can view your published article here:</p>
+    <p><a href='{articleUrl}' style='display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>View Article</a></p>
+    
+    <hr style='margin: 30px 0; border: none; border-top: 1px solid #ddd;' />
+    <p style='font-size: 12px; color: #666;'>
+        This is an automated notification from {websiteName}.<br/>
+        Publication Date: {article.Published:F} UTC
+    </p>
+</body>
+</html>";
+
+                await emailSender.SendEmailAsync(author.Email, subject, htmlMessage);
+
+                logger.LogInformation(
+                    "Sent publication notification to {Email} for article {ArticleNumber} (Title: {Title})",
+                    author.Email,
+                    article.ArticleNumber,
+                    article.Title);
+            }
+            catch (Exception ex)
+            {
+                // Don't throw - email failure shouldn't stop the publication process
+                logger.LogError(
+                    ex,
+                    "Failed to send publication notification for article {ArticleNumber}",
+                    article.ArticleNumber);
             }
         }
     }

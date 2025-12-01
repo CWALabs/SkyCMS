@@ -4,6 +4,8 @@
 
 SkyCMS includes a powerful page scheduling system that allows content creators to schedule web pages for automatic publication at future dates and times. This feature is perfect for planning content releases, coordinating marketing campaigns, or managing time-sensitive information.
 
+When a scheduled article is published, the system automatically sends an email notification to the author, keeping them informed about their content going live.
+
 ## For Content Creators
 
 ### How to Schedule a Page
@@ -29,6 +31,20 @@ SkyCMS includes a powerful page scheduling system that allows content creators t
    - Times are displayed in your local timezone and automatically converted to UTC for storage
    - Click confirm to schedule the publication
 
+### Email Notifications
+
+When your scheduled article is published, you'll receive an email notification containing:
+
+- **Article Details**: Title, article number, version number, and publication timestamp
+- **Direct Link**: A clickable link to view your published article
+- **Publication Status**: Confirmation that the article is now live on the website
+
+**Important Notes:**
+- Email notifications are sent only to the article author (the user who created or last edited the article)
+- The email is sent after successful publication
+- If you don't receive an email, check your spam/junk folder or contact your administrator
+- Only authors with a valid email address on their account will receive notifications
+
 ### Important Notes
 
 - **Future Dates Only**: When scheduling, you can only select dates and times in the future
@@ -53,6 +69,7 @@ When your scheduled time arrives:
 3. The scheduled version is automatically published
 4. Any previously published versions are unpublished
 5. The new content becomes live on your website
+6. An email notification is sent to the article author
 
 ### Best Practices
 
@@ -60,6 +77,7 @@ When your scheduled time arrives:
 - **Verify Timezones**: Double-check that your scheduled time matches your intended timezone
 - **Use Staging**: Test your content thoroughly before scheduling
 - **Monitor Publications**: Check the dashboard after your scheduled time to confirm successful publication
+- **Check Your Email**: Look for the publication confirmation email to verify your article went live
 - **Avoid Conflicts**: Don't schedule multiple versions of the same page at similar times
 
 ### Troubleshooting
@@ -68,6 +86,11 @@ When your scheduled time arrives:
 - Check the Hangfire dashboard for any errors
 - Verify that the scheduled time was in the future when you set it
 - Contact your administrator if the issue persists
+
+**I didn't receive a notification email**
+- Verify your user account has a valid email address
+- Check your spam/junk email folder
+- Contact your administrator to verify the email service is configured correctly
 
 **I need to cancel a scheduled publication**
 - Currently, you'll need to manually unpublish the scheduled version or set the publish date to null
@@ -83,7 +106,7 @@ When your scheduled time arrives:
 
 ### Technical Overview
 
-The SkyCMS page scheduling system uses **Hangfire** as the background job processing framework to automatically publish web pages based on their scheduled publication dates.
+The SkyCMS page scheduling system uses **Hangfire** as the background job processing framework to automatically publish web pages based on their scheduled publication dates. The system also includes an integrated email notification feature that alerts authors when their scheduled content goes live.
 
 ### Architecture
 
@@ -93,6 +116,7 @@ The SkyCMS page scheduling system uses **Hangfire** as the background job proces
    - Location: `Editor/Services/Scheduling/ArticleScheduler.cs`
    - Interface: `IArticleScheduler`
    - Implements the core scheduling logic
+   - Handles email notifications to authors upon successful publication
 
 2. **Hangfire Integration**
    - Location: `Editor/Services/Scheduling/HangFireExtensions.cs`
@@ -103,7 +127,12 @@ The SkyCMS page scheduling system uses **Hangfire** as the background job proces
    - Location: `Editor/Services/Scheduling/HangfireAuthorizationFilter.cs`
    - Restricts dashboard access to authenticated Administrators and Editors
 
-4. **Configuration**
+4. **Email Service Integration**
+   - Uses `ICosmosEmailSender` for sending notifications
+   - Gracefully handles email service failures without blocking publication
+   - Sends HTML-formatted emails with article details and direct links
+
+5. **Configuration**
    - Location: `Editor/Program.cs`
    - Sets up recurring job execution
 
@@ -131,6 +160,7 @@ The SkyCMS page scheduling system uses **Hangfire** as the background job proces
      - Selects the most recent non-future version
      - Unpublishes older versions (sets `Published = null`)
      - Publishes the active version via `ArticleEditLogic.PublishArticle()`
+     - Sends an email notification to the author using `ICosmosEmailSender`
 
 4. **Multi-Tenant Support**
    - When `IsMultiTenantEditor` is true, the scheduler:

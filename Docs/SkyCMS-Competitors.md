@@ -158,6 +158,7 @@ The findings in this document are drawn from:
 10. **Backup Concerns** - Local-only data storage risky without proper backups
 11. **No API** - Can't use headless/API-driven scenarios
 12. **Scaling Challenges** - Difficult to manage large sites with hundreds of pages
+13. **No Content Scheduling** - Cannot schedule pages to publish at future dates/times
 
 **User Impact:**
 
@@ -186,6 +187,7 @@ The recurring pain points that SkyCMS addresses:
 | **Limited Maintenance** | Netlify/Decap, Forestry | Active development and support |
 | **Framework Lock-in** | TinaCMS, Stackbit | Framework-agnostic approach |
 | **Platform Discontinuation Risk** | Forestry, Netlify CMS | Open-source with self-hosting option |
+| **No Native Content Scheduling** | All | Built-in page/content scheduling |
 
 ---
 
@@ -239,6 +241,13 @@ SkyCMS was designed to address these widespread complaints:
 - Open-source with self-hosting option
 - No platform discontinuation risk
 
+### **8. Enable Content Scheduling**
+
+- Native page scheduling without external automation
+- Set publish and unpublish dates/times
+- No CI/CD scripts or cron jobs required
+- User-friendly scheduling interface for content editors
+
 ---
 
 ## Competitive Advantage Matrix
@@ -255,12 +264,13 @@ SkyCMS was designed to address these widespread complaints:
 | **Vendor Lock-in** | High (proprietary) | Low (open-source) |
 | **Platform Stability** | Mixed (discontinuations) | Active development |
 | **Learning Curve** | High (multiple tools) | Low (integrated) |
+| **Content Scheduling** | Manual/requires custom scripts | Native built-in |
 
 ---
 
 ## Key Takeaway
 
-SkyCMS's competitive advantage stems from **eliminating the complexity** that plagues existing solutions while **maintaining the performance benefits** they promise. By integrating version control, rendering, and deployment into a single platform, SkyCMS delivers on the JAMstack vision without the JAMstack pain.
+SkyCMS's competitive advantage stems from **eliminating the complexity** that plagues existing solutions while **maintaining the performance benefits** they promise. By integrating version control, rendering, deployment, and content scheduling into a single platform, SkyCMS delivers on the JAMstack vision without the JAMstack pain—while adding enterprise CMS features like native scheduling that competitors lack or require complex workarounds to achieve.
 
 ---
 
@@ -303,6 +313,6 @@ This analysis was compiled through:
 - Direct examination of competitor documentation and pricing pages
 - Consultation with web developers who have used these platforms
 
-**Last Updated:** November 18, 2025  
-**Version:** 2.0 (Added citations and references)  
+**Last Updated:** December 1, 2025  
+**Version:** 2.1 (Added content scheduling competitive analysis)  
 **Maintained By:** SkyCMS Product Team
