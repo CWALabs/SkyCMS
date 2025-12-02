@@ -365,9 +365,10 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
         protected async Task<IdentityRole> GetMockRandomRoleAsync(
             CosmosRoleStore<IdentityUser, IdentityRole, string> roleStore, bool saveToDatabase = true)
         {
-            // Use GUID to ensure uniqueness across all test runs
-            var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
-            var roleName = $"TestRole_{uniqueId}_{GetNextRandomNumber(1000, 9999)}";
+            // Use full GUID to ensure absolute uniqueness across all test runs and providers
+            // Format: TestRole_a1b2c3d4e5f6 (shorter, fully unique)
+            var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 12); // 12 hex chars = 2^48 combinations
+            var roleName = $"TestRole_{uniqueId}";
             
             var role = new IdentityRole(roleName);
             role.NormalizedName = role.Name.ToUpper();
@@ -376,15 +377,35 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             {
                 var result = await roleStore.CreateAsync(role);
                 
+                // If creation fails due to duplicate (extremely unlikely but possible), retry once with new GUID
+                if (!result.Succeeded && result.Errors.Any(e => 
+                    e.Code == "DuplicateRoleName" || 
+                    e.Description.Contains("duplicate", StringComparison.OrdinalIgnoreCase)))
+                {
+                    // Retry with new GUID
+                    uniqueId = Guid.NewGuid().ToString("N");
+                    roleName = $"TestRole_{uniqueId}";
+                    role = new IdentityRole(roleName);
+                    role.NormalizedName = role.Name.ToUpper();
+                    result = await roleStore.CreateAsync(role);
+                }
+                
                 // Improved error reporting
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    Assert.Fail($"Failed to create role: {errors}");
+                    var errors = string.Join(", ", result.Errors.Select(e => $"[{e.Code}] {e.Description}"));
+                    Assert.Fail($"Failed to create role '{roleName}': {errors}");
                 }
                 
                 Assert.IsTrue(result.Succeeded, $"Failed to create role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                
+                // Verify role was actually created and can be retrieved
                 role = await roleStore.FindByIdAsync(role.Id);
+                
+                if (role == null)
+                {
+                    Assert.Fail($"Role was created successfully but could not be retrieved by ID.");
+                }
             }
 
             return role;

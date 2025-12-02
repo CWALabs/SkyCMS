@@ -1158,7 +1158,7 @@
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.0.2, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.1, )",
           "Microsoft.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.10, 10.0.0)"
         }

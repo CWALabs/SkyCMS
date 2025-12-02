@@ -41,7 +41,8 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
         /// <returns></returns>
         private async Task<IdentityRole> GetMockRandomRoleAsync(string connectionString, string databaseName)
         {
-            var role = new IdentityRole($"HUB{GetNextRandomNumber(1000, 9999)}");
+            // Use GUID to ensure uniqueness instead of random numbers
+            var role = new IdentityRole($"HUB{Guid.NewGuid():N}");
             role.NormalizedName = role.Name.ToUpper();
             using var roleStore = _testUtilities.GetRoleStore(connectionString, databaseName);
             var result = await roleStore.CreateAsync(role);

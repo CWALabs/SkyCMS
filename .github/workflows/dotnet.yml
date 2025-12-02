@@ -22,6 +22,19 @@ jobs:
         CosmosAllowSetup: ${{ secrets.COSMOSALLOWSETUP }}
         CosmosStaticWebPages: ${{ secrets.COSMOSSTATICWEBPAGES }}
         ConnectionStrings__StorageConnectionString: ${{ secrets.STORAGECONNECTIONSTRING }}
+        ConnectionStrings__AzureBlobStorageConnectionString: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
+        ConnectionStrings__AmazonS3ConnectionString: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
+        ConnectionStrings__CloudflareR2ConnectionString: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
+        ConnectionStrings__CosmosDB: ${{ secrets.CONNECTIONSTRINGS__COSMOSDB }}
+        ConnectionStrings__SqlServer: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
+        ConnectionStrings__MySQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
+        ConnectionStrings__SQLite: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
+        TestSettings__UseCloudDatabases: ${{ secrets.TESTSETTINGS__USECLOUDDATABASES }}
+        TestSettings__SkipSlowTests: ${{ secrets.TESTSETTINGS__SKIPSLOWTESTS }}
+        TestSettings__CleanupAfterTests: ${{ secrets.TESTSETTINGS__CLEANUPAFTERTESTS }}
+        CdnIntegrationTests__Cloudflare__ApiToken: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
+        CdnIntegrationTests__Cloudflare__ZoneId: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
+        CdnIntegrationTests__Cloudflare__TestDomain: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
 
     steps:
     - uses: actions/checkout@v4
