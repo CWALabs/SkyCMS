@@ -55,11 +55,12 @@ namespace Sky.Tests.Services
 
             // Build real configuration with in-memory values
             var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
-            {
-                ["ConnectionStrings:ConfigDbConnectionString"] = "AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=testkey;",
-                ["MultiTenantEditor"] = "false"
-            });
+            configurationBuilder.AddInMemoryCollection(
+                new Dictionary<string, string>()
+                {
+                    ["ConnectionStrings:ConfigDbConnectionString"] = "AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=testkey;",
+                    ["MultiTenantEditor"] = "false"
+                });
             
             var configuration = configurationBuilder.Build();
 

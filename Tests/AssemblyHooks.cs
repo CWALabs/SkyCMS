@@ -14,6 +14,7 @@ namespace Sky.Tests
             // One-time setup for all tests in this assembly.
             // Example: configure environment, logging, seed static data, etc.
             // Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+            EnvironmentValidator.ValidateEnvironmentVariables(context);
 
             // Lightweight configuration (all in-memory).
             var configuration = new ConfigurationBuilder()

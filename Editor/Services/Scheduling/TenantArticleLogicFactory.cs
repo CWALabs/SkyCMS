@@ -1,3 +1,10 @@
+// <copyright file="TenantArticleLogicFactory.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// for more information concerning the license and the contributors participating to this project.
+// </copyright>
+
 namespace Sky.Editor.Services.Scheduling
 {
     using System;
@@ -26,12 +33,21 @@ namespace Sky.Editor.Services.Scheduling
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
 
+    /// <summary>
+    /// Tenant article logic factory.
+    /// </summary>
     public class TenantArticleLogicFactory : ITenantArticleLogicFactory
     {
         private readonly IServiceProvider serviceProvider;
         private readonly IEditorSettings settings;
         private readonly IDynamicConfigurationProvider configurationProvider;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TenantArticleLogicFactory"/> class.
+        /// </summary>
+        /// <param name="serviceProvider">Service provider.</param>
+        /// <param name="settings">Editor settings.</param>
+        /// <param name="configurationProvider">Dynamic configuration provider.</param>
         public TenantArticleLogicFactory(
             IServiceProvider serviceProvider,
             IEditorSettings settings,
@@ -42,6 +58,7 @@ namespace Sky.Editor.Services.Scheduling
             this.configurationProvider = configurationProvider;
         }
 
+        /// <inheritdoc/>
         public async Task<ArticleEditLogic> CreateForTenantAsync(string domainName)
         {
             var scopedServices = serviceProvider;
