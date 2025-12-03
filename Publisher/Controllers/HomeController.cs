@@ -32,7 +32,7 @@ namespace Cosmos.Cms.Publisher.Controllers
         private readonly IConfiguration configuration;
         private readonly ILogger<HomeController> logger;
         private readonly ArticleLogic articleLogic;
-        private readonly IOptions<CosmosConfig> options;
+        private readonly IOptions<SiteSettings> options;
         private readonly ApplicationDbContext dbContext;
         private readonly MsGraphService graphService;
 
@@ -52,7 +52,7 @@ namespace Cosmos.Cms.Publisher.Controllers
             IConfiguration configuration,
             ILogger<HomeController> logger,
             ArticleLogic articleLogic,
-            IOptions<CosmosConfig> options,
+            IOptions<SiteSettings> options,
             ApplicationDbContext dbContext,
             StorageContext storageContext,
             IEmailSender emailSender)
@@ -81,7 +81,7 @@ namespace Cosmos.Cms.Publisher.Controllers
         [ActionName("Index")]
         public async Task<IActionResult> CCMS___Head()
         {
-            if (!options.Value.SiteSettings.CosmosRequiresAuthentication)
+            if (!options.Value.CosmosRequiresAuthentication)
             {
                 var article = await articleLogic.GetPublishedPageHeaderByUrl(HttpContext.Request.Path);
 
@@ -133,7 +133,7 @@ namespace Cosmos.Cms.Publisher.Controllers
                     return View("__NotFound");
                 }
 
-                if (options.Value.SiteSettings.CosmosRequiresAuthentication)
+                if (options.Value.CosmosRequiresAuthentication)
                 {
                     if (!User.Identity.IsAuthenticated)
                     {

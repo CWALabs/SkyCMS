@@ -74,7 +74,7 @@ namespace Sky.Tests
         /// Validates configuration before ANY test class runs.
         /// This uses [AssemblyInitialize] so it runs once per test assembly.
         /// </summary>
-        public static void ValidateEnvironmentVariables(TestContext context)
+        public static bool ValidateEnvironmentVariables(TestContext context)
         {
             var configuration = GetConfiguration();
             var missing = new List<string>();
@@ -143,6 +143,7 @@ namespace Sky.Tests
 
                 context.WriteLine(errorMessage);
                 Assert.Fail(errorMessage);
+                return false;
             }
 
             // Log success
@@ -150,6 +151,7 @@ namespace Sky.Tests
             
             // Log configured providers
             LogConfiguredProviders(configuration, context);
+            return true;
         }
 
         private static IConfigurationRoot GetConfiguration()

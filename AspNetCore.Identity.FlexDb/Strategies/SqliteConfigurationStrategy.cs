@@ -9,6 +9,7 @@ namespace AspNetCore.Identity.FlexDb.Strategies
 {
     using Microsoft.EntityFrameworkCore;
     using System;
+    using System.Linq;
 
     /// <summary>
     /// Configuration strategy for SQLite.
@@ -42,6 +43,13 @@ namespace AspNetCore.Identity.FlexDb.Strategies
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentNullException(nameof(connectionString));
+            }
+
+            if (connectionString.Contains("Password=", StringComparison.InvariantCultureIgnoreCase))
+            {
+                var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                var password = parts.FirstOrDefault(p => p.StartsWith("Password=", StringComparison.InvariantCultureIgnoreCase))?.Split("=")[1];
+
             }
 
             optionsBuilder.UseSqlite(connectionString);

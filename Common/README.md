@@ -652,13 +652,6 @@ Lightweight proxy configurations for content delivery and API gateway scenarios.
 
 Configures the Editor application URL for cross-application communication.
 
-**appsettings.json:**
-```json
-{
-  "EditorUrl": "https://editor.example.com"
-}
-```
-
 **Usage:**
 ```csharp
 public class PublisherService

@@ -94,7 +94,7 @@ namespace Sky.Tests.Services.Scheduling
             services.AddSingleton<ITenantArticleLogicFactory>(TenantArticleLogicFactory);
             services.AddSingleton<UserManager<IdentityUser>>(UserManager);
             services.AddSingleton<RoleManager<IdentityRole>>(RoleManager);
-            services.AddSingleton(Options.Create(new CosmosConfig()));
+            services.AddSingleton(Options.Create(new SiteSettings()));
             
             // Add the mock email sender - THIS IS THE KEY ADDITION
             services.AddScoped<ICosmosEmailSender>(_ => mockEmailSender.Object);
@@ -104,7 +104,6 @@ namespace Sky.Tests.Services.Scheduling
             
             // Rebuild ArticleScheduler with the new service provider
             ArticleScheduler = new ArticleScheduler(
-                Options.Create(new CosmosConfig()),
                 new NullLogger<ArticleScheduler>(),
                 EditorSettings,
                 Clock,

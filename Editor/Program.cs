@@ -70,14 +70,25 @@ var defaultAzureCredential = new DefaultAzureCredential(); // Create one instanc
 builder.Services.AddSingleton(defaultAzureCredential);
 builder.Services.AddApplicationInsightsTelemetry();
 
-// Application Insights telemetry
-// Add Cosmos Options
-// Get the boot variables loaded, and
-// do some validation to make sure Cosmos can boot up
-// based on the values given.
-var cosmosStartup = new CosmosStartup(builder.Configuration);
-var options = cosmosStartup.Build();
-builder.Services.AddSingleton(options);
+// Register SiteSettings directly from configuration
+builder.Services.Configure<SiteSettings>(settings =>
+{
+    settings.MultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+    settings.AllowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
+    settings.CosmosRequiresAuthentication = builder.Configuration.GetValue<bool?>("CosmosRequiresAuthentication") ?? false;
+    settings.AllowLocalAccounts = builder.Configuration.GetValue<bool?>("AllowLocalAccounts") ?? true;
+    settings.AllowedFileTypes = ".js,.css,.htm,.html,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json";
+    settings.MultiTenantRedirectUrl = builder.Configuration.GetValue<string>("MultiTenantRedirectUrl") ?? string.Empty;
+    settings.MicrosoftAppId = builder.Configuration.GetValue<string>("MicrosoftAppId") ?? string.Empty;
+});
+
+// If you need MicrosoftAppId separately for some services:
+var microsoftAuth = builder.Configuration.GetSection("MicrosoftOAuth").Get<AzureAD>()
+                    ?? builder.Configuration.GetSection("AzureAD").Get<AzureAD>();
+if (microsoftAuth != null)
+{
+    builder.Services.AddSingleton(microsoftAuth);
+}
 
 // ---------------------------------------------------------------
 // Build the app based on single-tenant or multi-tenant mode
@@ -90,7 +101,7 @@ if (isMultiTenantEditor)
 else
 {
     System.Console.WriteLine($"Starting Cosmos CMS Editor in Single-Tenant Mode (v.{versionNumber}).");
-    SingleTenant.Configure(builder, options);
+    SingleTenant.Configure(builder);
 }
 
 // Register transient services - common to both single-tenant and multi-tenant modes

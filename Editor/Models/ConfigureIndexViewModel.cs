@@ -5,147 +5,96 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-namespace Sky.Cms.Models
+namespace Sky.Editor.Models
 {
     using System.ComponentModel.DataAnnotations;
     using Cosmos.Cms.Common.Services.Configurations;
 
     /// <summary>
-    ///     Configuration index view model.
+    /// Configuration view model for setup wizard.
     /// </summary>
-    public class ConfigureIndexViewModel : CosmosConfig
+    public class ConfigureIndexViewModel
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfigureIndexViewModel"/> class.
         /// </summary>
         public ConfigureIndexViewModel()
         {
+            SiteSettings = new SiteSettings();
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ConfigureIndexViewModel"/> class.
+        /// Gets or sets site-wide settings.
         /// </summary>
-        /// <param name="secretName">Secret name.</param>
-        public ConfigureIndexViewModel(string secretName)
-        {
-            SecretName = secretName;
-        }
+        public SiteSettings SiteSettings { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ConfigureIndexViewModel"/> class.
+        /// Gets or sets microsoft application ID.
         /// </summary>
-        /// <param name="config">Cosmos configuration.</param>
-        public ConfigureIndexViewModel(CosmosConfig config)
-        {
-            if (config != null)
-            {
-                Init(config);
-            }
-        }
+        public string MicrosoftAppId { get; set; } = string.Empty;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ConfigureIndexViewModel"/> class.
+        /// Gets or sets default Microsoft Client ID.
         /// </summary>
-        /// <param name="secretName">Secret name.</param>
-        /// <param name="config">Cosmos configuration.</param>
-        public ConfigureIndexViewModel(string secretName, CosmosConfig config)
-        {
-            SecretName = secretName;
-            if (config != null)
-            {
-                Init(config);
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets default Microsoft client ID (comes from boot time environment variables).
-        /// </summary>
+        [Display(Name = "Default Microsoft Client ID")]
         public string DefaultMicrosoftClientId { get; set; }
 
         /// <summary>
-        /// Gets or sets default Microsoft secret (comes from boot time environment variables).
+        /// Gets or sets default Microsoft Secret.
         /// </summary>
+        [Display(Name = "Default Microsoft Secret")]
         public string DefaultMicrosoftSecret { get; set; }
 
         /// <summary>
-        ///     Gets or sets this is the object used to load and deserialize a json object.
+        /// Gets or sets import JSON.
         /// </summary>
         [Display(Name = "Import JSON")]
         public string ImportJson { get; set; }
 
         /// <summary>
-        ///     Gets or sets aWS storage connections in JSON format.
+        /// Gets or sets AWS S3 connections JSON.
         /// </summary>
         public string AwsS3ConnectionsJson { get; set; }
 
         /// <summary>
-        ///     Gets or sets azure storage connections in JSON format.
+        /// Gets or sets Azure Blob connections JSON.
         /// </summary>
         public string AzureBlobConnectionsJson { get; set; }
 
         /// <summary>
-        ///     Gets or sets blob connection information in JSON format.
+        /// Gets or sets blob connections JSON.
         /// </summary>
         public string BlobConnectionsJson { get; set; }
 
         /// <summary>
-        ///     Gets or sets google storage connections in JSON format.
+        /// Gets or sets Google Blob connections JSON.
         /// </summary>
         public string GoogleBlobConnectionsJson { get; set; }
 
         /// <summary>
-        ///     Gets or sets redis connections in JSON format.
+        /// Gets or sets Redis connections JSON.
         /// </summary>
         public string RedisConnectionsJson { get; set; }
 
         /// <summary>
-        ///     Gets or sets database connection information in JSON format.
+        /// Gets or sets SQL connections JSON.
         /// </summary>
         public string SqlConnectionsJson { get; set; }
 
         /// <summary>
-        ///     Gets or sets list of editor URLs in JSON format.
+        /// Gets or sets editor URLs JSON.
         /// </summary>
         public string EditorUrlsJson { get; set; }
 
         /// <summary>
-        ///     Gets or sets a value indicating whether connection test success or not.
+        /// Gets or sets a value indicating whether test was successful.
         /// </summary>
         public bool TestSuccess { get; set; }
 
         /// <summary>
-        /// Gets a value indicating whether can save to secrets if secrets manager is configured.
+        /// Gets a value indicating whether secrets can be saved.
         /// </summary>
         public bool CanSaveSecrets { get; private set; }
 
-        /// <summary>
-        ///     Gets the Cosmos Config.
-        /// </summary>
-        /// <returns>Returns a Cosmos <see cref="CosmosConfig"/>.</returns>
-        public CosmosConfig GetConfig()
-        {
-            return new()
-            {
-                SendGridConfig = SendGridConfig,
-                SiteSettings = SiteSettings,
-                StorageConfig = StorageConfig
-            };
-        }
-
-        /// <summary>
-        ///     Initializes the model.
-        /// </summary>
-        /// <param name="config">Cosmos configuration.</param>
-        private void Init(CosmosConfig config)
-        {
-            SiteSettings = config.SiteSettings;
-            ImportJson = string.Empty;
-            SendGridConfig = config.SendGridConfig;
-            StorageConfig = config.StorageConfig;
-            SecretName = config.SecretName;
-            EditorUrls = config.EditorUrls;
-            CanSaveSecrets = config.SiteSettings.AllowConfigEdit;
-            SecretName = config.SecretName;
-        }
     }
 }

@@ -152,7 +152,6 @@ namespace Sky.Tests
             }
 
             Cache = new MemoryCache(new MemoryCacheOptions());
-            var cfg = Options.Create(new CosmosConfig());
 
             var initialConfig = new Dictionary<string, string>
             {
@@ -212,7 +211,7 @@ namespace Sky.Tests
             TemplateService = new TemplateService(webHostEnvironment, new LoggerFactory().CreateLogger<TemplateService>(), Db);
             TemplateService.EnsureDefaultTemplatesExistAsync().Wait();
 
-            Logic = new ArticleEditLogic(Db, cfg, Cache, Storage, new NullLogger<ArticleEditLogic>(), EditorSettings, Clock, SlugService, ArticleHtmlService, CatalogService, PublishingService, TitleChangeService, RedirectService, TemplateService);
+            Logic = new ArticleEditLogic(Db, Cache, Storage, new NullLogger<ArticleEditLogic>(), EditorSettings, Clock, SlugService, ArticleHtmlService, CatalogService, PublishingService, TitleChangeService, RedirectService, TemplateService);
 
             DynamicConfigurationProvider = new DynamicConfigurationProvider(
                 configuration,
@@ -358,7 +357,7 @@ namespace Sky.Tests
                 .AddSingleton<ITitleChangeService>(TitleChangeService)
                 .AddSingleton<ITemplateService>(TemplateService)
                 .AddSingleton<ITenantArticleLogicFactory>(TenantArticleLogicFactory)
-                .AddSingleton(Options.Create(new CosmosConfig()))
+                .AddSingleton(new SiteSettings())
                 .AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>>(sp => CreateArticleHandler)
                 .AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>>(sp => SaveArticleHandler)
                 .AddScoped<IMediator, Mediator>()
@@ -370,7 +369,6 @@ namespace Sky.Tests
             Mediator = Services.GetRequiredService<IMediator>();
 
             ArticleScheduler = new ArticleScheduler(
-                cfg,
                 new NullLogger<ArticleScheduler>(),
                 EditorSettings,
                 Clock,

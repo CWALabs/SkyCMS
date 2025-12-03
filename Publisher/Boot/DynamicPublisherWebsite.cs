@@ -226,16 +226,12 @@ namespace Cosmos.Publisher.Boot
             // END
             builder.Services.AddResponseCaching();
 
-            // Get the boot variables loaded, and
-            // do some validation to make sure Cosmos can boot up
-            // based on the values given.
-            var cosmosStartup = new CosmosStartup(builder.Configuration);
-
-            // Add Cosmos Options
-            var option = cosmosStartup.Build();
-
-            builder.Services.AddSingleton(option);
-            builder.Services.AddTransient<ArticleLogic>();
+            // Register SiteSettings for Publisher
+            builder.Services.Configure<SiteSettings>(settings =>
+            {
+                settings.CosmosRequiresAuthentication = builder.Configuration.GetValue<bool?>("CosmosRequiresAuthentication") ?? false;
+                settings.AllowLocalAccounts = builder.Configuration.GetValue<bool?>("AllowLocalAccounts") ?? true;
+            });
 
             builder.Services.AddControllersWithViews();
 

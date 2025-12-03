@@ -151,7 +151,7 @@ namespace Sky.Tests.Services
             services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions()));
             services.AddSingleton(_mockEditorSettings.Object);
             services.AddSingleton(_mockConfigProvider.Object);
-            services.AddSingleton(Options.Create(new CosmosConfig()));
+            services.AddSingleton(new SiteSettings());
 
             // Register ApplicationDbContext for single-tenant mode
             services.AddDbContext<ApplicationDbContext>(options =>

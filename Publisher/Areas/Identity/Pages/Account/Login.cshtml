@@ -1,7 +1,7 @@
 ﻿@page
 @using Cosmos.Cms.Common.Services.Configurations
 @using Microsoft.Extensions.Options
-@inject IOptions<CosmosConfig> options
+@inject IOptions<SiteSettings> options
 @model LoginModel
 @{
     ViewData["Title"] = "Log in";
@@ -49,7 +49,7 @@
                             </div>
                         </form>
                     </section>
-                    @if (options.Value.SiteSettings.AllowLocalAccounts)
+                    @if (options.Value.AllowLocalAccounts)
                     {
                         <div>
                             @if (Model.ExternalLogins?.Count > 0)

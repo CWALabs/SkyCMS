@@ -29,12 +29,12 @@ namespace Cosmos.Publisher.Controllers
         /// <param name="logger">Logger instance.</param>
         /// <param name="memoryCache">Memory cache.</param>
         public PubController(
-            IOptions<CosmosConfig> options, 
+            IOptions<SiteSettings> options, 
             ApplicationDbContext dbContext, 
             StorageContext storageContext,
             ILogger<PubController> logger,
             IMemoryCache memoryCache)
-            : base(dbContext, storageContext, options.Value.SiteSettings.CosmosRequiresAuthentication, logger, memoryCache)
+            : base(dbContext, storageContext, options.Value.CosmosRequiresAuthentication, logger, memoryCache)
         {
         }
     }

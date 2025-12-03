@@ -20,7 +20,7 @@ namespace Sky.Editor.Boot
     using Microsoft.Extensions.Logging;
 
     /// <summary>
-    ///  Creates a multi-tenant web application.
+    /// Creates a multi-tenant web application.
     /// </summary>
     internal class MultiTenant
     {
@@ -34,7 +34,9 @@ namespace Sky.Editor.Boot
             // These services are used to determine the connection string at runtime.
             builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             builder.Services.AddSingleton<IDynamicConfigurationProvider, DynamicConfigurationProvider>();
-            builder.Services.AddSingleton<MultiDatabaseManagementUtilities>();
+            
+            // ✅ FIX: Register interface mapping for IMultiDatabaseManagementUtilities
+            builder.Services.AddSingleton<IMultiDatabaseManagementUtilities, MultiDatabaseManagementUtilities>();
 
             // Note that this is transient, meaning for each request this is regenerated.
             // Multi-tenant support is enabled because each request may have a different domain name and connection

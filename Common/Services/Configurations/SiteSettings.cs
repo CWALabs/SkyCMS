@@ -23,57 +23,37 @@ namespace Cosmos.Cms.Common.Services.Configurations
         public string AllowedFileTypes { get; set; } = ".js,.css,.htm,.html,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json";
 
         /// <summary>
-        ///     Gets or sets for training purposes, allows a full reset of site to factory settings.
-        /// </summary>
-        [Display(Name = "Allow reset")]
-        public bool? AllowReset { get; set; } = false;
-
-        /// <summary>
         ///     Gets or sets a value indicating whether allows a website to go into setup mode. For use only on fresh sites.
         /// </summary>
         [Display(Name = "Allow setup")]
         public bool AllowSetup { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets a value indicating whether allows the advanced configuration editor to be available to Administrators.
-        /// </summary>
-        public bool AllowConfigEdit { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether allows local accounts (default = true).
+        ///     Gets or sets a value indicating whether allows local accounts (default = true).
         /// </summary>
         /// <remarks>
         /// If disabled then assumes the use of Microsoft, Google or other supported OAuth provider.
         /// </remarks>
-        public bool AllowLocalAccounts { get; set; } = false;
+        public bool AllowLocalAccounts { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating what kind of architecture is being used.
-        /// </summary>
-        /// <remarks>Valid values are: Static, Decoupled, Api, Hybrid.</remarks>
-        public string CosmosArchitecture { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether publisher requires authentication.
+        ///     Gets or sets a value indicating whether publisher requires authentication.
         /// </summary>
         public bool CosmosRequiresAuthentication { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets a value indicating whether the editor supports multiple websites.
+        ///     Gets or sets a value indicating whether the editor supports multiple websites.
         /// </summary>
         public bool MultiTenantEditor { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets x-Frame-Options.
+        /// Gets or sets a value indicating where users are redirected when accessing the main site in a multi-tenant setup.
         /// </summary>
-        /// <remarks>
-        /// <para>The X-Frame-Options HTTP response header can be used to indicate whether or not a
-        /// browser should be allowed to render a page in a frame, iframe, embed or object.
-        /// Sites can use this to avoid click-jacking attacks, by ensuring that their content
-        /// is not embedded into other sites.</para>
-        /// <para>See: <see href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options"/>.</para>
-        /// </remarks>
-        [Display(Name = "X-Frame-Options")]
-        public string XFrameOptions { get; set; } = string.Empty;
+        public string MultiTenantRedirectUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the Microsoft Application Id for OAuth authentication.
+        /// </summary>
+        public string MicrosoftAppId { get; set; }
     }
 }

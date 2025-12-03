@@ -7,7 +7,6 @@
 
 namespace Sky.Editor.Boot
 {
-    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Services;
     using Microsoft.AspNetCore.Builder;
@@ -15,19 +14,17 @@ namespace Sky.Editor.Boot
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Options;
 
     /// <summary>
-    /// Boots up the multi-tenant editor.
+    /// Boots up the single-tenant editor.
     /// </summary>
     internal static class SingleTenant
     {
         /// <summary>
-        /// Builds up the multi-tenant editor.
+        /// Configures the single-tenant editor.
         /// </summary>
         /// <param name="builder">Web application builder.</param>
-        /// <param name="options">Cosmos configuration options.</param>
-        internal static void Configure(WebApplicationBuilder builder, IOptions<CosmosConfig> options)
+        internal static void Configure(WebApplicationBuilder builder)
         {
             // Database connection string
             var connectionString = builder.Configuration.GetConnectionString("ApplicationDbContextConnection");
@@ -44,13 +41,14 @@ namespace Sky.Editor.Boot
                 restoreService.DownloadAsync(connectionString).Wait();
             }
 
+            // Read AllowSetup directly from configuration
             // If this is set, the Cosmos identity provider will:
             // 1. Create the database if it does not already exist.
             // 2. Create the required containers if they do not already exist.
-            // IMPORTANT: Remove this variable if after first run. It will improve startup performance.
-            // If the following is set, it will create the Cosmos database and
-            //  required containers.
-            if (options.Value.SiteSettings.AllowSetup)
+            // IMPORTANT: Remove this variable after first run. It will improve startup performance.
+            var allowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
+            
+            if (allowSetup)
             {
                 using var context = new ApplicationDbContext(connectionString);
 
@@ -62,11 +60,12 @@ namespace Sky.Editor.Boot
                 }
                 else
                 {
-                    //context.Database.MigrateAsync().Wait();
+                    // For relational databases, you can optionally run migrations:
+                    // context.Database.MigrateAsync().Wait();
                 }
             }
 
-            // Add the DB context using this approach instead of AddDbContext.
+            // Add the DB context using FlexDb auto-configuration
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {
                 AspNetCore.Identity.FlexDb.CosmosDbOptionsBuilder.ConfigureDbOptions(options, connectionString);

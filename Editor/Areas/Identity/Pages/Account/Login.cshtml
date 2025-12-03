@@ -2,7 +2,7 @@
 @using Cosmos.Cms.Common.Services.Configurations
 @using Cosmos.DynamicConfig
 @using Microsoft.Extensions.Options
-@inject IOptions<CosmosConfig> options
+@inject IOptions<SiteSettings> options
 @model LoginModel
 @{
     ViewData["Title"] = "Log in";
@@ -72,7 +72,7 @@
                                     Do you need an account? <a asp-page="./Register" class="btn btn-sm btn-dark" asp-route-returnUrl="@Model.ReturnUrl">Create Account</a>
                                 </p>
                             </section>
-                            @if (options.Value.SiteSettings.AllowLocalAccounts)
+                            @if (options.Value.AllowLocalAccounts)
                             {
                                 <section>
                                     <form id="account" method="post" asp-antiforgery="true">

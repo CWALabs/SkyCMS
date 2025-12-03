@@ -17,7 +17,6 @@ namespace Sky.Editor.Services.Publishing
     using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.BlobService.Models;
-    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
@@ -557,7 +556,6 @@ namespace Sky.Editor.Services.Publishing
 
             var toc = await new ArticleLogic(
                 _db,
-                Microsoft.Extensions.Options.Options.Create(new CosmosConfig()),
                 new MemoryCache(new MemoryCacheOptions()),
                 _settings.PublisherUrl,
                 _settings.BlobPublicUrl,

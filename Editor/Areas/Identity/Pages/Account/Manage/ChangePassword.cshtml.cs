@@ -23,7 +23,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account.Manage
         private readonly ILogger<ChangePasswordModel> logger;
         private readonly SignInManager<IdentityUser> signInManager;
         private readonly UserManager<IdentityUser> userManager;
-        private readonly MultiDatabaseManagementUtilities multiDatabaseManagement;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ChangePasswordModel"/> class.
@@ -32,17 +31,14 @@ namespace Sky.Cms.Areas.Identity.Pages.Account.Manage
         /// <param name="userManager">User manager.</param>
         /// <param name="signInManager">Sign-in manager.</param>
         /// <param name="logger">System logger.</param>
-        /// <param name="multiDatabaseManagement">Multi-database manager (multi-tenant only).</param>
         public ChangePasswordModel(
             UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager,
-            ILogger<ChangePasswordModel> logger,
-            MultiDatabaseManagementUtilities multiDatabaseManagement)
+            ILogger<ChangePasswordModel> logger)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.logger = logger;
-            this.multiDatabaseManagement = multiDatabaseManagement;
         }
 
         /// <summary>

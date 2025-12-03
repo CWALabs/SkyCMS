@@ -71,7 +71,6 @@ namespace Cosmos.Common.Data.Logic
         /// <param name="isEditor">Flag indicating editor mode (affects view model flags/output).</param>
         public ArticleLogic(
             ApplicationDbContext dbContext,
-            IOptions<CosmosConfig> config,
             IMemoryCache memoryCache,
             string publisherUrl,
             string blobPublicUrl,
@@ -79,7 +78,6 @@ namespace Cosmos.Common.Data.Logic
         {
             this.memoryCache = memoryCache;
             DbContext = dbContext;
-            CosmosOptions = config;
             this.isEditor = isEditor;
             this.publisherUrl = publisherUrl;
             this.blobPublicUrl = blobPublicUrl;
@@ -96,11 +94,6 @@ namespace Cosmos.Common.Data.Logic
         protected ApplicationDbContext DbContext { get; }
 
         /// <summary>
-        /// Gets configuration options (site-level).
-        /// </summary>
-        protected IOptions<CosmosConfig> CosmosOptions { get; }
-
-        /// <summary>
         /// Health probe: returns true when publisher logic layer is available.
         /// </summary>
         public static bool GetPublisherHealth() => true;
@@ -108,6 +101,7 @@ namespace Cosmos.Common.Data.Logic
         /// <summary>
         /// Deserialize a UTF-32 encoded JSON payload into a <typeparamref name="T"/> instance.
         /// </summary>
+        /// <param name="bytes">UTF-32 encoded JSON byte array.</param>
         public static T Deserialize<T>(byte[] bytes)
         {
             var data = Encoding.UTF32.GetString(bytes);

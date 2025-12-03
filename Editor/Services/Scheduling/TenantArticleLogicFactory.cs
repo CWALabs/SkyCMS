@@ -136,7 +136,6 @@ namespace Sky.Editor.Services.Scheduling
 
             return new ArticleEditLogic(
                 dbContext,
-                scopedServices.GetRequiredService<IOptions<CosmosConfig>>(),
                 memoryCache,
                 storageContext,
                 scopedServices.GetRequiredService<ILogger<ArticleEditLogic>>(),
@@ -157,7 +156,6 @@ namespace Sky.Editor.Services.Scheduling
         {
             return new ArticleEditLogic(
                 scopedServices.GetRequiredService<ApplicationDbContext>(),
-                scopedServices.GetRequiredService<IOptions<CosmosConfig>>(),
                 memoryCache,
                 scopedServices.GetRequiredService<StorageContext>(),
                 scopedServices.GetRequiredService<ILogger<ArticleEditLogic>>(),

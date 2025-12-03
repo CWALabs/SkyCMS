@@ -34,7 +34,6 @@ namespace Sky.Editor.Services.Scheduling
     public class ArticleScheduler : IArticleScheduler
     {
         private readonly IServiceProvider serviceProvider;
-        private readonly IOptions<CosmosConfig> config;
         private readonly ILogger<ArticleScheduler> logger;
         private readonly IEditorSettings settings;
         private readonly IClock clock;
@@ -46,16 +45,13 @@ namespace Sky.Editor.Services.Scheduling
         /// <param name="clock">Clock abstraction for testable time.</param>
         /// <param name="logger">Logger instance.</param>
         /// <param name="settings">Editor settings.</param>
-        /// <param name="config">Cosmos configuration.</param>
         /// <param name="serviceProvider">Service provider for creating scoped dependencies.</param>
         public ArticleScheduler(
-            IOptions<CosmosConfig> config,
             ILogger<ArticleScheduler> logger,
             IEditorSettings settings,
             IClock clock,
             IServiceProvider serviceProvider)
         {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));

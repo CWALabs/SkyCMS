@@ -62,7 +62,6 @@ namespace Sky.Editor.Data.Logic
         /// Initializes a new instance of the <see cref="ArticleEditLogic"/> class.
         /// </summary>
         /// <param name="dbContext">Application database context.</param>
-        /// <param name="config">Cosmos configuration options.</param>
         /// <param name="memoryCache">Process memory cache for transient items.</param>
         /// <param name="storageContext">Blob/file storage context for static artifacts.</param>
         /// <param name="logger">Logger for diagnostic events.</param>
@@ -77,7 +76,6 @@ namespace Sky.Editor.Data.Logic
         /// <param name="templateService">Template service for managing article templates.</param>
         public ArticleEditLogic(
             ApplicationDbContext dbContext,
-            IOptions<CosmosConfig> config,
             IMemoryCache memoryCache,
             StorageContext storageContext,
             ILogger<ArticleEditLogic> logger,
@@ -92,7 +90,6 @@ namespace Sky.Editor.Data.Logic
             ITemplateService templateService)
             : base(
                 dbContext,
-                config,
                 memoryCache,
                 settings.PublisherUrl,
                 settings.BlobPublicUrl,

@@ -2,7 +2,7 @@
 @using Cosmos.Cms.Common.Services.Configurations
 @using Microsoft.Extensions.Options
 @using Cosmos.DynamicConfig
-@inject IOptions<CosmosConfig> options
+@inject IOptions<SiteSettings> options
 @model Sky.Cms.Areas.Identity.Pages.Account.RegisterModel
 @{
     ViewData["Title"] = "Create Account";
@@ -38,7 +38,7 @@
                         </div>
                     </section>
                     <hr />
-                    @if (options.Value.SiteSettings.AllowLocalAccounts)
+                    @if (options.Value.AllowLocalAccounts)
                     {
                         <div>
                             <form class="frmReg" asp-route-returnUrl="@Model.ReturnUrl" method="post">

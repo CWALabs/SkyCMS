@@ -52,6 +52,9 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                                   GetConfigurationInstructions();
 
                 Assert.Fail(errorMessage);
+                throw new InvalidOperationException(
+                        "Environment validation failed. Required environment variables are missing or invalid. " +
+                        "Check test output for details. All tests will be skipped.");
             }
 
             // Log success

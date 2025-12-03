@@ -38,8 +38,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         private readonly ILogger<LoginModel> logger;
         private readonly IOptions<SiteSettings> options;
         private readonly IServiceProvider services;
-        private readonly bool isMultiTenant;
-        private readonly string _multiTenantRedirectUrl;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LoginModel"/> class.
@@ -60,8 +58,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
             this.logger = logger;
             this.options = options;
             this.services = services;
-            this.isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
-            this._multiTenantRedirectUrl = configuration.GetValue<string>("MultiTenantRedirectUrl") ?? "https://sky-cms.com";
         }
 
         /// <summary>
@@ -121,9 +117,9 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task<IActionResult> OnGetAsync(string returnUrl = "", string website = "")
         {
-            if (isMultiTenant && !IsDbContextConfigured())
+            if (options.Value.MultiTenantEditor && !IsDbContextConfigured())
             {
-                return Redirect(_multiTenantRedirectUrl);
+                return Redirect(options.Value.MultiTenantRedirectUrl);
             }
 
             // Get a clean return URL.
