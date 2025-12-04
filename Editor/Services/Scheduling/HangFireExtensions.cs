@@ -7,16 +7,19 @@
 
 namespace Sky.Editor.Services.Scheduling
 {
-    using System;
-    using System.Linq;
     using AspNetCore.Identity.FlexDb;
     using AspNetCore.Identity.FlexDb.Strategies;
+    using CsvHelper;
     using Hangfire;
     using Hangfire.MySql;
+    using Hangfire.Storage.SQLite;
     using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using SQLitePCL;
+    using System;
+    using System.Linq;
 
     /// <summary>
     ///  HangFire extensions for service collection.
@@ -61,6 +64,11 @@ namespace Sky.Editor.Services.Scheduling
                     .OfType<MySqlConfigurationStrategy>()
                     .Any(strategy => strategy.CanHandle(connectionString));
 
+                var isSqlite = CosmosDbOptionsBuilder
+                    .GetDefaultStrategies()
+                    .OfType<SqliteConfigurationStrategy>()
+                    .Any(strategy => strategy.CanHandle(connectionString));
+
                 if (isCosmosDb)
                 {
                     // Parse Cosmos DB connection details from connection string.
@@ -90,6 +98,13 @@ namespace Sky.Editor.Services.Scheduling
                     {
                         hangfireConfig.UseStorage(
                             new MySqlStorage(connectionString + "Allow User Variables=true;", new MySqlStorageOptions()));
+                    });
+                }
+                else if (isSqlite)
+                {
+                    services.AddHangfire(hangfireConfig =>
+                    {
+                        hangfireConfig.UseInMemoryStorage(); // SQLite with password is not supported directly by Hangfire.SQLite
                     });
                 }
                 else

@@ -69,11 +69,54 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                         // SQLite - always recreate for clean state
                         // Use a fresh context for each operation to avoid disposal issues
                         
-                        // Step 1: Delete existing database
-                        using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
+                        // Step 1: Delete existing database file directly (handles both encrypted and unencrypted)
+                        // Extract the Data Source path from connection string
+                        var dataSourceMatch = System.Text.RegularExpressions.Regex.Match(
+                            connectionString, 
+                            @"Data Source\s*=\s*([^;]+)", 
+                            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        
+                        if (dataSourceMatch.Success)
                         {
-                            dbContext.Database.CloseConnection();
-                            var deleted = dbContext.Database.EnsureDeleted();
+                            var dbPath = dataSourceMatch.Groups[1].Value.Trim();
+                            
+                            // Skip file deletion for in-memory databases
+                            if (!dbPath.Equals(":memory:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Try to delete the file directly first
+                                if (System.IO.File.Exists(dbPath))
+                                {
+                                    try
+                                    {
+                                        System.IO.File.Delete(dbPath);
+                    
+                                        // Also delete any associated files (-wal, -shm, etc.)
+                                        var directory = System.IO.Path.GetDirectoryName(dbPath);
+                                        var fileName = System.IO.Path.GetFileName(dbPath);
+                    
+                                        if (!string.IsNullOrEmpty(directory))
+                                        {
+                                            var associatedFiles = System.IO.Directory.GetFiles(directory, $"{fileName}*");
+                                            foreach (var file in associatedFiles)
+                                            {
+                                                if (file != dbPath) // Already deleted
+                                                {
+                                                    try { System.IO.File.Delete(file); } catch { /* Ignore */ }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (System.IO.IOException)
+                                    {
+                                        // If file is locked, try EnsureDeleted instead
+                                        using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
+                                        {
+                                            dbContext.Database.CloseConnection();
+                                            var deleted = dbContext.Database.EnsureDeleted();
+                                        }
+                                    }
+                                }
+                            }
                         }
                         
                         // Small delay to ensure file system has released the file
@@ -84,7 +127,7 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                         {
                             // Verify the model is configured correctly BEFORE attempting to create
                             VerifyDatabaseSchema(dbContext);
-                            
+        
                             var created = dbContext.Database.EnsureCreated();
 
                             if (!created)
@@ -540,6 +583,7 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             // This ensures test isolation
             lock (_initLock)
             {
+                
                 _initializedProviders.Clear();
             }
         }

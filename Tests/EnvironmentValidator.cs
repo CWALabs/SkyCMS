@@ -142,7 +142,7 @@ namespace Sky.Tests
                                   GetConfigurationInstructions();
 
                 context.WriteLine(errorMessage);
-                Assert.Fail(errorMessage);
+                Assert.Inconclusive(errorMessage);
                 return false;
             }
 

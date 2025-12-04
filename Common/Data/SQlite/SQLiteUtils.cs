@@ -64,6 +64,7 @@ namespace Cosmos.Common.Data.SQlite
                         .HasConversion(new DateTimeOffsetToUtcDateTimeTicksConverter());
                 }
             }
+
         }
     }
 }

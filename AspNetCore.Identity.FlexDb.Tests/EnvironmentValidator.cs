@@ -51,10 +51,8 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                 var errorMessage = $"❌ Missing required configuration values:\n  - {string.Join("\n  - ", missing)}\n\n" +
                                   GetConfigurationInstructions();
 
-                Assert.Fail(errorMessage);
-                throw new InvalidOperationException(
-                        "Environment validation failed. Required environment variables are missing or invalid. " +
-                        "Check test output for details. All tests will be skipped.");
+                Assert.Inconclusive(errorMessage);
+                return;
             }
 
             // Log success

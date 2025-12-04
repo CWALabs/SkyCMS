@@ -51,18 +51,7 @@ namespace Sky.Editor.Boot
             if (allowSetup)
             {
                 using var context = new ApplicationDbContext(connectionString);
-
-                if (context.Database.IsCosmos())
-                {
-                    // EnsureCreated is necessary for Cosmos DB to create the database and containers.
-                    // It does not support migrations.
-                    context.Database.EnsureCreatedAsync().Wait();
-                }
-                else
-                {
-                    // For relational databases, you can optionally run migrations:
-                    // context.Database.MigrateAsync().Wait();
-                }
+                context.Database.EnsureCreatedAsync().Wait();
             }
 
             // Add the DB context using FlexDb auto-configuration

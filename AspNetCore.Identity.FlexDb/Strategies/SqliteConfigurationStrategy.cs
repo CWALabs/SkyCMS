@@ -8,6 +8,7 @@
 namespace AspNetCore.Identity.FlexDb.Strategies
 {
     using Microsoft.EntityFrameworkCore;
+    using SQLitePCL;
     using System;
     using System.Linq;
 
@@ -47,12 +48,18 @@ namespace AspNetCore.Identity.FlexDb.Strategies
 
             if (connectionString.Contains("Password=", StringComparison.InvariantCultureIgnoreCase))
             {
-                var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                var password = parts.FirstOrDefault(p => p.StartsWith("Password=", StringComparison.InvariantCultureIgnoreCase))?.Split("=")[1];
+                // Initialize SQLite encryption support.
+                Batteries_V2.Init();
 
+                optionsBuilder.UseSqlite(connectionString, options =>
+                {
+                    options.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                });
             }
-
-            optionsBuilder.UseSqlite(connectionString);
+            else
+            {
+                optionsBuilder.UseSqlite(connectionString);
+            }
         }
     }
 }

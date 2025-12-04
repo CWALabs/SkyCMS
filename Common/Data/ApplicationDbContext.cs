@@ -276,6 +276,8 @@ namespace Cosmos.Common.Data
             if (this.Database.IsSqlite())
             {
                 SQLiteUtils.OnModelCreating(modelBuilder);
+                base.OnModelCreating(modelBuilder);
+                return;
             }
 
             if (this.Database.IsCosmos())
