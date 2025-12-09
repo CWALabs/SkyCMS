@@ -45,4 +45,4 @@ jobs:
     - name: Build
       run: dotnet build SkyCMS.sln --no-restore
     - name: Test
-      run: dotnet test SkyCMS.sln --no-build --verbosity normal
+      run: dotnet test SkyCMS.sln --no-build --verbosity detailed
