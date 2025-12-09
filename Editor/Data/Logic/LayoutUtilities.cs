@@ -115,7 +115,6 @@ namespace Cosmos.Cms.Data.Logic
             }
         }
 
-
         /// <summary>
         /// Gets a specified layout.
         /// </summary>

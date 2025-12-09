@@ -133,8 +133,8 @@ foreach ($key in $secrets.Keys) {
         continue
     }
     
-    # Convert key to uppercase with underscores (GitHub Actions convention)
-    $secretName = $key.Replace("__", "_").ToUpper()
+    # Convert key to uppercase - KEEP double underscores for ASP.NET Core config
+    $secretName = $key.ToUpper()
     
     Write-Host "Setting secret: $secretName" -NoNewline
     

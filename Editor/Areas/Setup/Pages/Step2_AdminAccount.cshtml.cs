@@ -45,7 +45,6 @@ namespace Sky.Editor.Areas.Setup.Pages
             this.emailSender = (ICosmosEmailSender)emailSender;
         }
 
-
         private SignInManager<IdentityUser> SignInManager
         {
             get

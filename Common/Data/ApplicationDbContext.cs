@@ -21,7 +21,7 @@ namespace Cosmos.Common.Data
     /// <summary>
     /// Database Context for Sky CMS.
     /// Includes identity, content (articles, pages, templates, layouts),
-    /// operational metadata (metrics, logs) and now multi-blog support via <see cref="Blogs"/>.
+    /// operational metadata (metrics, logs) and now multi-blog support via <see cref="BlobService"/>.
     /// </summary>
     public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, IdentityRole, string>, IDataProtectionKeyContext
     {
@@ -169,6 +169,10 @@ namespace Cosmos.Common.Data
         /// <summary>
         /// Ensure database exists and returns status (Cosmos DB specific path).
         /// </summary>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="setup">Whether to set up the database if it doesn't exist.</param>
+        /// <param name="databaseName">The name of the database.</param>
+        /// <returns>Returns the database status.</returns>
         public static DbStatus EnsureDatabaseExists(ApplicationDbContext dbContext, bool setup, string databaseName)
         {
             var cosmosClient = dbContext.Database.GetCosmosClient();
@@ -226,34 +230,16 @@ namespace Cosmos.Common.Data
         /// <summary>
         /// Returns true if the context can connect to the configured database.
         /// </summary>
+        /// <returns>True if configured.</returns>
         public async Task<bool> IsConfigured()
         {
             return await this.Database.CanConnectAsync();
         }
 
         /// <summary>
-        /// Determine if a Cosmos DB database exists.
-        /// </summary>
-        private static async Task<bool> DoesCosmosDatabaseExist(CosmosClient client, string databaseId)
-        {
-            QueryDefinition query = new QueryDefinition(
-                "select * from c where c.id = @databaseId")
-                    .WithParameter("@databaseId", databaseId);
-
-            FeedIterator<dynamic> resultSet = client.GetDatabaseQueryIterator<dynamic>(query);
-
-            while (resultSet.HasMoreResults)
-            {
-                FeedResponse<dynamic> response = await resultSet.ReadNextAsync();
-                return response.Count > 0;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Configure provider-specific options (e.g., suppress Cosmos sync warnings).
         /// </summary>
+        /// <param name="optionsBuilder">The options builder.</param>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             var isCosmosDb = optionsBuilder.IsConfigured &&
@@ -364,7 +350,6 @@ namespace Cosmos.Common.Data
                     .ToContainer("DataProtection")
                     .HasPartitionKey(k => k.Id)
                     .HasKey(k => k.Id);
-
             }
             else
             {
@@ -387,6 +372,26 @@ namespace Cosmos.Common.Data
             }
 
             base.OnModelCreating(modelBuilder);
+        }
+
+        /// <summary>
+        /// Determine if a Cosmos DB database exists.
+        /// </summary>
+        private static async Task<bool> DoesCosmosDatabaseExist(CosmosClient client, string databaseId)
+        {
+            QueryDefinition query = new QueryDefinition(
+                "select * from c where c.id = @databaseId")
+                    .WithParameter("@databaseId", databaseId);
+
+            FeedIterator<dynamic> resultSet = client.GetDatabaseQueryIterator<dynamic>(query);
+
+            while (resultSet.HasMoreResults)
+            {
+                FeedResponse<dynamic> response = await resultSet.ReadNextAsync();
+                return response.Count > 0;
+            }
+
+            return false;
         }
     }
 }

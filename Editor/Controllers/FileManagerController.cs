@@ -1670,7 +1670,6 @@ namespace Sky.Cms.Controllers
             }
         }
 
-
         private long DivideByAndRoundUp(long number, long divideBy)
         {
             return (long)Math.Ceiling((float)number / (float)divideBy);

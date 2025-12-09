@@ -32,6 +32,17 @@ namespace Sky.Editor.Features.Articles.Create
         private readonly ILogger<CreateArticleHandler> logger;
         private readonly CreateArticleValidator validator;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CreateArticleHandler"/> class.
+        /// </summary>
+        /// <param name="dbContext">Database context.</param>
+        /// <param name="htmlService">HTML service.</param>
+        /// <param name="catalogService">Catalog service.</param>
+        /// <param name="publishingService">Publishing service.</param>
+        /// <param name="titleChangeService">Title change service.</param>
+        /// <param name="templateService">Template service.</param>
+        /// <param name="clock">Clock service.</param>
+        /// <param name="logger">Logger service.</param>
         public CreateArticleHandler(
             ApplicationDbContext dbContext,
             IArticleHtmlService htmlService,

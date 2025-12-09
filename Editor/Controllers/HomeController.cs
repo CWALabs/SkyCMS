@@ -142,7 +142,6 @@ namespace Sky.Cms.Controllers
                 return NotFound(ModelState);
             }
 
-
             var data = await dbContext.Articles.OrderByDescending(o => o.VersionNumber)
                 .Where(a => a.ArticleNumber == article.ArticleNumber).Select(s => new ArticleEditMenuItem
                 {

@@ -68,6 +68,7 @@ namespace Sky.Editor.Services.Catalog
         /// The article instance whose data should be reflected in the catalog.
         /// Must contain at minimum a valid <see cref="Article.ArticleNumber"/> and identifying metadata fields.
         /// </param>
+        /// <param name="cancellationToken">Cancellation token for async operation.</param>
         /// <returns>
         /// The newly created <see cref="CatalogEntry"/> representing the latest catalog view for the article number.
         /// </returns>

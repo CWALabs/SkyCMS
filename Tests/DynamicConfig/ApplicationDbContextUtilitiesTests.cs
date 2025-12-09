@@ -34,7 +34,7 @@ namespace Sky.Tests.Data
         private DbContextOptions<DynamicConfigDbContext> _configDbOptions;
 
         [TestInitialize]
-        public new void Setup()
+        public void Setup()
         {
             // Setup in-memory configuration database
             _configDbOptions = new DbContextOptionsBuilder<DynamicConfigDbContext>()

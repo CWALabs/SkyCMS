@@ -117,7 +117,6 @@ namespace Sky.Editor.Services.Layouts
                 var url = $"{COSMOSLAYOUTSREPO}/Layouts/{layout.Id}/catalog.json";
                 var data = await client.GetStringAsync(url);
 
-
                 var root = JsonConvert.DeserializeObject<PageRoot>(data);
                 return root.Pages.OrderBy(o => o.Title).ToList();
             }

@@ -128,7 +128,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public async Task<TRoleEntity> FindByIdAsync(string roleId, CancellationToken cancellationToken = default)
+        public async Task<TRoleEntity?> FindByIdAsync(string roleId, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -143,7 +143,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public async Task<TRoleEntity> FindByNameAsync(string normalizedName,
+        public async Task<TRoleEntity?> FindByNameAsync(string normalizedName,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -173,7 +173,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public Task<string?> GetRoleIdAsync(TRoleEntity role, CancellationToken cancellationToken = default)
+        public Task<string> GetRoleIdAsync(TRoleEntity role, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();

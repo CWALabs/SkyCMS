@@ -158,7 +158,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public async Task<TUserEntity> FindByEmailAsync(string normalizedEmailName,
+        public async Task<TUserEntity?> FindByEmailAsync(string normalizedEmailName,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -224,7 +224,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public Task<string> GetEmailAsync(TUserEntity user, CancellationToken cancellationToken = default)
+        public Task<string?> GetEmailAsync(TUserEntity user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -244,7 +244,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public Task<string> GetNormalizedEmailAsync(TUserEntity user, CancellationToken cancellationToken = default)
+        public Task<string?> GetNormalizedEmailAsync(TUserEntity user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -261,7 +261,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public Task<string> GetPasswordHashAsync(TUserEntity user, CancellationToken cancellationToken = default)
+        public Task<string?> GetPasswordHashAsync(TUserEntity user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -271,7 +271,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public Task<string> GetPhoneNumberAsync(TUserEntity user, CancellationToken cancellationToken = default)
+        public Task<string?> GetPhoneNumberAsync(TUserEntity user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -334,10 +334,10 @@ namespace AspNetCore.Identity.FlexDb.Stores
         /// <summary>
         /// Sets a user's email address
         /// </summary>
-        /// <param name="user"></param>
-        /// <param name="emailAddress"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="user">Identity user object.</param>
+        /// <param name="emailAddress">The email address to set.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public Task SetEmailAsync(TUserEntity user, string emailAddress, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(emailAddress))

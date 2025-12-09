@@ -78,7 +78,7 @@ namespace Cosmos.Publisher.Controllers
                         if (!await CosmosUtilities.AuthUser(dbContext, User, articleNumber))
                         {
                             logger.LogWarning(
-                                "Unauthorized access attempt to {Path} - User {UserName} not authorized for article {ArticleNumber}", 
+                                "Unauthorized access attempt to {Path} - User {UserName} not authorized for article {ArticleNumber}",
                                 path,
                                 User.Identity.Name,
                                 articleNumber);

@@ -34,22 +34,22 @@ namespace Sky.Editor.Features.Articles.Save
         /// <summary>
         /// Gets or sets the URL path/slug.
         /// </summary>
-        public string? UrlPath { get; init; }
+        public string UrlPath { get; init; }
 
         /// <summary>
         /// Gets or sets the header JavaScript.
         /// </summary>
-        public string? HeadJavaScript { get; init; }
+        public string HeadJavaScript { get; init; }
 
         /// <summary>
         /// Gets or sets the footer JavaScript.
         /// </summary>
-        public string? FooterJavaScript { get; init; }
+        public string FooterJavaScript { get; init; }
 
         /// <summary>
         /// Gets or sets the banner image URL.
         /// </summary>
-        public string? BannerImage { get; init; }
+        public string BannerImage { get; init; }
 
         /// <summary>
         /// Gets or sets the article type.
@@ -59,12 +59,12 @@ namespace Sky.Editor.Features.Articles.Save
         /// <summary>
         /// Gets or sets the category (for blog posts).
         /// </summary>
-        public string? Category { get; init; }
+        public string Category { get; init; }
 
         /// <summary>
         /// Gets or sets the introduction/summary text.
         /// </summary>
-        public string? Introduction { get; init; }
+        public string Introduction { get; init; }
 
         /// <summary>
         /// Gets or sets the published timestamp (null for unpublished).

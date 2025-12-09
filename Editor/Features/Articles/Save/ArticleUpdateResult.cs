@@ -24,11 +24,11 @@ namespace Sky.Editor.Features.Articles.Save
         /// <summary>
         /// Gets or sets the updated article view model.
         /// </summary>
-        public ArticleViewModel? Model { get; set; }
+        public ArticleViewModel Model { get; set; }
 
         /// <summary>
         /// Gets or sets the CDN purge results (empty if not published or no CDN configured).
         /// </summary>
-        public List<CdnResult> CdnResults { get; set; } = new();
+        public List<CdnResult> CdnResults { get; set; } = new List<CdnResult>();
     }
 }

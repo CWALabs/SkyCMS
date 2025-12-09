@@ -64,7 +64,6 @@ namespace Cosmos.Common.Data.Logic
         /// Initializes a new instance of the <see cref="ArticleLogic"/> class.
         /// </summary>
         /// <param name="dbContext">EF Core context (content + identity).</param>
-        /// <param name="config">Cms configuration options.</param>
         /// <param name="memoryCache">Optional memory cache for short‑term view model/layout caching.</param>
         /// <param name="publisherUrl">Absolute publisher base URL (used for OG links).</param>
         /// <param name="blobPublicUrl">Public blob root (for assets).</param>
@@ -96,12 +95,15 @@ namespace Cosmos.Common.Data.Logic
         /// <summary>
         /// Health probe: returns true when publisher logic layer is available.
         /// </summary>
+        /// <returns>Gets the health status of the publisher logic layer.</returns>
         public static bool GetPublisherHealth() => true;
 
         /// <summary>
         /// Deserialize a UTF-32 encoded JSON payload into a <typeparamref name="T"/> instance.
         /// </summary>
+        /// <typeparam name="T">Target type.</typeparam>
         /// <param name="bytes">UTF-32 encoded JSON byte array.</param>
+        /// <returns>A deserialized instance of <typeparamref name="T"/>.</returns>
         public static T Deserialize<T>(byte[] bytes)
         {
             var data = Encoding.UTF32.GetString(bytes);
@@ -282,6 +284,11 @@ namespace Cosmos.Common.Data.Logic
         /// <summary>
         /// Resolve the current published version of a page/article by URL path with optional caching.
         /// </summary>
+        /// <param name="urlPath">URL path (e.g., "blog/my-article"). Case-insensitive. Root page is "root".</param>
+        /// <param name="lang">Language code.</param>
+        /// <param name="cacheSpan">Cache duration.</param>
+        /// <param name="layoutCache">Layout cache duration.</param>
+        /// <param name="includeLayout">Whether to include layout information.</param>
         /// <remarks>
         /// Cache key: {url}-{lang}-{includeLayout}. Layout caching duration is separate.
         /// SQLite nuance: DateTimeOffset comparison adjustments addressed by explicit HasValue checks.
@@ -338,6 +345,8 @@ namespace Cosmos.Common.Data.Logic
         /// <summary>
         /// Lightweight header-only fetch (omits large text fields) for a published page used in partial render or dependency checks.
         /// </summary>
+        /// <param name="urlPath">URL path (e.g., "blog/my-article"). Case-insensitive. Root page is "root".</param>
+        /// <returns>Article view model.</returns>
         public virtual async Task<ArticleViewModel> GetPublishedPageHeaderByUrl(string urlPath)
         {
             urlPath = urlPath?.ToLower().Trim(new char[] { ' ', '/' });
@@ -365,6 +374,8 @@ namespace Cosmos.Common.Data.Logic
         /// <summary>
         /// Returns the default layout (optionally cached) including navigation markup placeholders.
         /// </summary>
+        /// <param name="layoutCache">Optional layout cache duration.</param>
+        /// <returns>The default layout view model.</returns>
         public async Task<LayoutViewModel> GetDefaultLayout(TimeSpan? layoutCache = null)
         {
             if (memoryCache == null || layoutCache == null)
@@ -389,6 +400,8 @@ namespace Cosmos.Common.Data.Logic
         /// <summary>
         /// Naive full-text (Contains/LIKE based) search across published pages (Title + Content).
         /// </summary>
+        /// <param name="text">Search text.</param>
+        /// <returns>A list of matching table of contents items.</returns>
         /// <remarks>
         /// Expensive for large datasets. Consider external indexing (e.g., Azure Search, Elastic) for scale.
         /// Multi-term queries are AND-combined.
@@ -443,11 +456,65 @@ namespace Cosmos.Common.Data.Logic
         }
 
         /// <summary>
+        /// Fetch previous and next published blog posts relative to a given publish timestamp.
+        /// </summary>
+        /// <param name="published">The publish timestamp to compare against.</param>
+        /// <returns>A tuple containing the previous and next blog posts.</returns>
+        public async Task<(TableOfContentsItem previous, TableOfContentsItem next)> GetAdjacentBlogPosts(DateTimeOffset published)
+        {
+            var prev = await DbContext.ArticleCatalog
+                .Where(a => a.Published < published && a.Published != null)
+                .OrderByDescending(a => a.Published)
+                .Select(a => new TableOfContentsItem { Title = a.Title, UrlPath = a.UrlPath, Published = a.Published.Value })
+                .FirstOrDefaultAsync();
+
+            var next = await DbContext.ArticleCatalog
+                .Where(a => a.Published > published && a.Published != null)
+                .OrderBy(a => a.Published)
+                .Select(a => new TableOfContentsItem { Title = a.Title, UrlPath = a.UrlPath, Published = a.Published.Value })
+                .FirstOrDefaultAsync();
+
+            return (prev, next);
+        }
+
+        /// <summary>
+        /// Enriches a blog post view model with previous/next navigation links when applicable.
+        /// No-op for non-blog types or unpublished content.
+        /// </summary>
+        /// <param name="model">Blog post view model.</param>
+        /// <returns>Task.</returns>
+        public async Task EnrichBlogNavigation(ArticleViewModel model)
+        {
+            if (model == null || model.ArticleType != ArticleType.BlogPost || !model.Published.HasValue)
+            {
+                return;
+            }
+
+            var (previous, next) = await GetAdjacentBlogPosts(model.Published.Value);
+
+            if (previous != null)
+            {
+                model.PreviousTitle = previous.Title;
+                model.PreviousUrl = previous.UrlPath == "root" ? "/" : "/" + previous.UrlPath.TrimStart('/');
+            }
+
+            if (next != null)
+            {
+                model.NextTitle = next.Title;
+                model.NextUrl = next.UrlPath == "root" ? "/" : "/" + next.UrlPath.TrimStart('/');
+            }
+        }
+
+        /// <summary>
         /// Build a full <see cref="ArticleViewModel"/> from an <see cref="Article"/> draft/published entity.
         /// </summary>
+        /// <param name="article">Source article entity.</param>
+        /// <param name="lang">Language code.</param>
+        /// <param name="includeLayout">Whether to include layout information.</param>
         /// <remarks>
         /// Author info is serialized (single-quoted JSON) to embed safely in attributes if needed.
         /// </remarks>
+        /// <returns>A <see cref="ArticleViewModel"/>.</returns>
         protected async Task<ArticleViewModel> BuildArticleViewModel(Article article, string lang, bool includeLayout = true)
         {
             var author = string.Empty;
@@ -461,12 +528,16 @@ namespace Cosmos.Common.Data.Logic
             }
 
             return new ArticleViewModel(article, await GetDefaultLayout(), authorInfo: author, lang: lang);
-
         }
 
         /// <summary>
         /// Build a full <see cref="ArticleViewModel"/> from a persisted published snapshot (<see cref="PublishedPage"/>).
         /// </summary>
+        /// <param name="article">Source published page entity.</param>
+        /// <param name="lang">Language code.</param>
+        /// <param name="layoutCache">Layout cache duration.</param>
+        /// <param name="includeLayout">Whether to include layout information.</param>
+        /// <returns>A <see cref="ArticleViewModel"/>.</returns>
         protected async Task<ArticleViewModel> BuildArticleViewModel(PublishedPage article, string lang, TimeSpan? layoutCache = null, bool includeLayout = true)
         {
             return new ArticleViewModel
@@ -512,54 +583,8 @@ namespace Cosmos.Common.Data.Logic
             {
                 return urlPath;
             }
+
             return publisherUrl.TrimEnd('/') + "/" + urlPath.TrimStart('/');
-        }
-
-        /// <summary>
-        /// Fetch previous and next published blog posts relative to a given publish timestamp.
-        /// </summary>
-        public async Task<(TableOfContentsItem previous, TableOfContentsItem next)> GetAdjacentBlogPosts(DateTimeOffset published)
-        {
-            var prev = await DbContext.ArticleCatalog
-                .Where(a => a.Published < published && a.Published != null)
-                .OrderByDescending(a => a.Published)
-                .Select(a => new TableOfContentsItem { Title = a.Title, UrlPath = a.UrlPath, Published = a.Published.Value })
-                .FirstOrDefaultAsync();
-
-            var next = await DbContext.ArticleCatalog
-                .Where(a => a.Published > published && a.Published != null)
-                .OrderBy(a => a.Published)
-                .Select(a => new TableOfContentsItem { Title = a.Title, UrlPath = a.UrlPath, Published = a.Published.Value })
-                .FirstOrDefaultAsync();
-
-            return (prev, next);
-        }
-
-        /// <summary>
-        /// Enriches a blog post view model with previous/next navigation links when applicable.
-        /// No-op for non-blog types or unpublished content.
-        /// </summary>
-        /// <param name="model">Blog post view model.</param>
-        /// <returns>Task.</returns>
-        public async Task EnrichBlogNavigation(ArticleViewModel model)
-        {
-            if (model == null || model.ArticleType != ArticleType.BlogPost || !model.Published.HasValue)
-            {
-                return;
-            }
-
-            var (previous, next) = await GetAdjacentBlogPosts(model.Published.Value);
-
-            if (previous != null)
-            {
-                model.PreviousTitle = previous.Title;
-                model.PreviousUrl = previous.UrlPath == "root" ? "/" : "/" + previous.UrlPath.TrimStart('/');
-            }
-            if (next != null)
-            {
-                model.NextTitle = next.Title;
-                model.NextUrl = next.UrlPath == "root" ? "/" : "/" + next.UrlPath.TrimStart('/');
-            }
         }
     }
 }

@@ -940,8 +940,6 @@ namespace Sky.Cms.Controllers
             }
         }
 
-
-
         /// <summary>
         /// Imports community templates.
         /// </summary>
@@ -1179,8 +1177,6 @@ namespace Sky.Cms.Controllers
             model.HtmlHeader = DecryptContent(StripBOM(model.HtmlHeader));
             model.FooterHtmlContent = DecryptContent(StripBOM(model.FooterHtmlContent));
         }
-
-
 
         /// <summary>
         /// Strips Byte Order Marks.

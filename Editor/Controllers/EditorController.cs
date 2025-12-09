@@ -2381,8 +2381,6 @@ namespace Sky.Cms.Controllers
             return originalHtmlDoc.DocumentNode.OuterHtml;
         }
 
-
-
         private async Task<Article> GetArticleForEdit(int articleNumber)
         {
             var article = await dbContext.Articles.Where(w => w.ArticleNumber == articleNumber).OrderByDescending(o => o.VersionNumber).FirstOrDefaultAsync();
