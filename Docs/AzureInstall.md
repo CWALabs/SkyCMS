@@ -42,8 +42,10 @@ The easiest way to install SkyCMS is using the Deploy button located in the main
 2. **Access Your Installation**
     - Once deployment is finished, open the resource groups where you installed Sky.
     - Find the editor web app. The name prefix will start with "ed".
-    - Follow the directions for creating a user account.
-    - Then select a website design and first home page.
+    - Browse to `https://<your-editor>.azurewebsites.net/Setup` and run the **single-tenant setup wizard** (enabled via `CosmosAllowSetup=true`). Multi-tenant deployments should leave this flag false and use DynamicConfig instead.
+    - Wizard steps: Storage → Admin account → Publisher URL/title/layout → (optional) Email provider → (optional) CDN → Review & Complete. It validates storage and database connectivity and creates the first Administrator user.
+    - After finishing the wizard, restart the app (App Service restarts itself after a configuration change) and sign in with the admin email/password you specified.
+    - Create your first page and choose a starter design.
     - At your website's home page, select the "Menu" button, then "Public Website".
 
 ### Next Steps

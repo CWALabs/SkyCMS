@@ -160,6 +160,16 @@ The main controller handling content editing operations:
 
    The Editor will be available at `https://localhost:5001`
 
+### Single-tenant setup wizard (new)
+
+Use the built-in setup wizard for single-tenant deployments only (`MultiTenantEditor=false`).
+
+- Prereqs: set `CosmosAllowSetup=true` in `appsettings.json` or environment variables and ensure `ConnectionStrings:ApplicationDbContextConnection` points to a reachable database (the wizard validates this on start). Keep this flag **false** for multi-tenant installs and use DynamicConfig instead.
+- Start the wizard at `/Setup` (the app redirects there if `CosmosAllowSetup` is enabled and setup is incomplete).
+- Steps: Welcome → Storage (Azure Blob / S3 / R2 + CDN/public URL) → Admin account (email + strong password) → Publisher (site URL, title, layout, auth toggle, allowed file types) → Email (SendGrid / Azure Communication Services / SMTP, optional test send) → CDN (Azure CDN/Front Door, Cloudflare, or Sucuri; optional) → Review & Complete.
+- Completion: wizard writes settings to the database, disables itself, and requires an app restart; credentials entered here become the first Administrator account.
+- Single-tenant only: multi-tenant editors must leave `CosmosAllowSetup=false` and configure tenants through `Cosmos.ConnectionStrings`.
+
 ## 🔧 Configuration
 
 ### Single Tenant vs Multi-Tenant
@@ -210,7 +220,7 @@ And add the config database connection:
 | `AzureBlobStorageEndPoint` | Static file storage URL (legacy) | "/" |
 | `CosmosRequiresAuthentication` | Publisher authentication | false |
 | `CosmosStaticWebPages` | Static site generation | true |
-| `AllowSetup` | Enable setup wizard | false |
+| `CosmosAllowSetup` | Enable single-tenant setup wizard | false |
 
 ### Storage Provider Selection
 
