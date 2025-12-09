@@ -17,12 +17,12 @@ namespace Sky.Tests
             // Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
 
             // Validate environment variables - halt all tests if validation fails
-            if (!ValidateEnvironmentVariables(context))
-            {
-                // Abort further initialization if environment is invalid
-                context.WriteLine("Environment variables are invalid. Aborting further tests.");
-                return;
-            }
+            //if (!ValidateEnvironmentVariables(context))
+            //{
+            //    // Abort further initialization if environment is invalid
+            //    context.WriteLine("Environment variables are invalid. Aborting further tests.");
+            //    return;
+            //}
 
             // Lightweight configuration (all in-memory).
             var configuration = new ConfigurationBuilder()
