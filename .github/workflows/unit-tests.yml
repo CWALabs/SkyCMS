@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
+        CosmosIdentityDbName: "localtests"
         CosmosPublisherUrl: ${{ secrets.COSMOSPUBLISHERURL }}
         AdminEmail: ${{ secrets.ADMINEMAIL }}
         CosmosAllowSetup: ${{ secrets.COSMOSALLOWSETUP }}
