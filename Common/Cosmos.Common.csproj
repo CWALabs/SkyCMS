@@ -91,7 +91,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Monitor.Query" />
 		<PackageReference Include="MailChimp.Net.V3" />
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
 		<PackageReference Include="Otp.NET">
@@ -102,6 +101,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="X.Web.Sitemap" />
+		<PackageReference Include="Azure.Monitor.Query" />
 	</ItemGroup>
 
 	<ItemGroup>

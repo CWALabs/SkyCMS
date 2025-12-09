@@ -46,7 +46,6 @@
 		<Content Include="B2C_BrandIcon_Black.png" />
 		<Content Include="_res\icons\B2C_BrandIcon_Black.png" />
 		<PackageReference Include="Duende.IdentityServer.EntityFramework.Storage" />
-		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" />
 	</ItemGroup>
 
 	<ItemGroup>

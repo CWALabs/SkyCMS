@@ -73,8 +73,8 @@
       },
       "Duende.IdentityServer.Storage": {
         "type": "Transitive",
-        "resolved": "7.4.2",
-        "contentHash": "UfH/WmLT3SVC0w1g+dmbUaJN3imGq0/raSwJkPS3LepPwLtL/lh/TJ9QeMa6rYzmuLSibnov74BK13BxgXgZvQ==",
+        "resolved": "7.4.3",
+        "contentHash": "lY6u5Jha4zzeWM1EPqBsNtWtzZZAiyUTNcecfMG7tkDfCmCXVJmsWbjmJGO4a9pswAFb4igE8KipptofBMA0Zg==",
         "dependencies": {
           "Duende.IdentityModel": "8.0.0",
           "Microsoft.AspNetCore.DataProtection.Abstractions": "10.0.0"
@@ -536,29 +536,16 @@
       },
       "SQLitePCLRaw.core": {
         "type": "Transitive",
-        "resolved": "2.1.11",
-        "contentHash": "PK0GLFkfhZzLQeR3PJf71FmhtHox+U3vcY6ZtswoMjrefkB9k6ErNJEnwXqc5KgXDSjige2XXrezqS39gkpQKA==",
+        "resolved": "2.1.10",
+        "contentHash": "Ii8JCbC7oiVclaE/mbDEK000EFIJ+ShRPwAvvV89GOZhQ+ZLtlnSWl6ksCNMKu/VGXA4Nfi2B7LhN/QFN9oBcw==",
         "dependencies": {
           "System.Memory": "4.5.3"
         }
-      },
-      "SQLitePCLRaw.lib.e_sqlcipher": {
-        "type": "Transitive",
-        "resolved": "2.1.11",
-        "contentHash": "Cg6UPeDbH8jyaOs1vqXYIgeewH0wYrBnmbC5Ml3GYBo+GKzNmyxrWSO52JV68bfB7Addt/PZLMekJV1RH2ftWQ=="
       },
       "SQLitePCLRaw.lib.e_sqlite3": {
         "type": "Transitive",
         "resolved": "2.1.10",
         "contentHash": "mAr69tDbnf3QJpRy2nJz8Qdpebdil00fvycyByR58Cn9eARvR+UiG2Vzsp+4q1tV3ikwiYIjlXCQFc12GfebbA=="
-      },
-      "SQLitePCLRaw.provider.e_sqlcipher": {
-        "type": "Transitive",
-        "resolved": "2.1.11",
-        "contentHash": "5L7YXWtPzKYHeXBHmj63QsHbLQmy0SYvhQp3xWA2yzSq1SvlnGFViveLfUDr/GEmePrqzXQ9tOJG9iQnFspfBA==",
-        "dependencies": {
-          "SQLitePCLRaw.core": "2.1.11"
-        }
       },
       "SQLitePCLRaw.provider.e_sqlite3": {
         "type": "Transitive",
@@ -1152,21 +1139,20 @@
       "aspnetcore.identity.flexdb": {
         "type": "Project",
         "dependencies": {
-          "Duende.IdentityServer.EntityFramework.Storage": "[7.4.2, )",
+          "Duende.IdentityServer.EntityFramework.Storage": "[7.4.3, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.AspNetCore.Identity.UI": "[9.0.10, 10.0.0)",
           "Microsoft.Data.Sqlite.Core": "[9.0.0, 10.0.0)",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.10, 10.0.0)",
           "Microsoft.EntityFrameworkCore.SqlServer": "[9.0.10, 10.0.0)",
           "Microsoft.EntityFrameworkCore.Sqlite": "[9.0.0, 10.0.0)",
-          "Pomelo.EntityFrameworkCore.MySql": "[9.0.0, 10.0.0)",
-          "SQLitePCLRaw.bundle_e_sqlcipher": "[2.1.11, 3.0.0)"
+          "Pomelo.EntityFrameworkCore.MySql": "[9.0.0, 10.0.0)"
         }
       },
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.1.1, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.2.2, )",
           "Microsoft.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.10, 10.0.0)"
         }
@@ -1197,11 +1183,11 @@
       },
       "Duende.IdentityServer.EntityFramework.Storage": {
         "type": "CentralTransitive",
-        "requested": "[7.4.2, )",
-        "resolved": "7.4.2",
-        "contentHash": "RDp2Ttr4fVn1k/VjGv3gwVSrjA20yGjt2YGUiKR49o5DTg0f4L1sTD8EdltipA2GCKXcyLdmyNiz3hMbAgVyaQ==",
+        "requested": "[7.4.3, )",
+        "resolved": "7.4.3",
+        "contentHash": "XfMyreJqoYDzJuXDkQ5Kr69KRzEt9ywUfJVFYTAa/Cw2XOjQ7lZc6DIr/kxPJrp0Mq0tSes5YJ49nKl6TDE1GA==",
         "dependencies": {
-          "Duende.IdentityServer.Storage": "7.4.2",
+          "Duende.IdentityServer.Storage": "7.4.3",
           "Microsoft.EntityFrameworkCore.Relational": "9.0.9"
         }
       },
@@ -1318,16 +1304,6 @@
         "dependencies": {
           "Microsoft.EntityFrameworkCore.Relational": "[9.0.0, 9.0.999]",
           "MySqlConnector": "2.4.0"
-        }
-      },
-      "SQLitePCLRaw.bundle_e_sqlcipher": {
-        "type": "CentralTransitive",
-        "requested": "[2.1.11, 3.0.0)",
-        "resolved": "2.1.11",
-        "contentHash": "NFuxa/rD3Ah88jbFOgsoUjuWcLiBkj3iqgO2gJXola9NtjtCTRI3HMQtVjQDnrhCvdBOAJ4RqbwnqoEMLht8GQ==",
-        "dependencies": {
-          "SQLitePCLRaw.lib.e_sqlcipher": "2.1.11",
-          "SQLitePCLRaw.provider.e_sqlcipher": "2.1.11"
         }
       },
       "SQLitePCLRaw.bundle_e_sqlite3": {
