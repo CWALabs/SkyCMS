@@ -76,10 +76,13 @@ namespace Sky.Tests
             var missing = new List<string>();
             var warnings = new List<string>();
 
+            context.WriteLine("🔍 Validating Configuration...");
+            
             // Validate required variables
             foreach (var key in RequiredVariables)
             {
                 var value = configuration[key];
+                context.WriteLine($"   Checking '{key}': {(string.IsNullOrWhiteSpace(value) ? "❌ MISSING" : "✅ Found")}");
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     missing.Add(key);
@@ -87,11 +90,22 @@ namespace Sky.Tests
             }
 
             // Check that at least ONE database connection is configured
+            context.WriteLine("   Checking database connections...");
+            var cosmosDb = configuration.GetConnectionString("CosmosDB");
+            var sqlServer = configuration.GetConnectionString("SqlServer");
+            var mysql = configuration.GetConnectionString("MySQL");
+            var sqlite = configuration.GetConnectionString("SQLite");
+            
+            context.WriteLine($"      CosmosDB: {(!string.IsNullOrWhiteSpace(cosmosDb) ? "✅ Configured" : "❌ Not configured")}");
+            context.WriteLine($"      SqlServer: {(!string.IsNullOrWhiteSpace(sqlServer) ? "✅ Configured" : "❌ Not configured")}");
+            context.WriteLine($"      MySQL: {(!string.IsNullOrWhiteSpace(mysql) ? "✅ Configured" : "❌ Not configured")}");
+            context.WriteLine($"      SQLite: {(!string.IsNullOrWhiteSpace(sqlite) ? "✅ Configured" : "❌ Not configured")}");
+            
             var hasDatabaseConnection = 
-                !string.IsNullOrWhiteSpace(configuration.GetConnectionString("CosmosDB")) ||
-                !string.IsNullOrWhiteSpace(configuration.GetConnectionString("SqlServer")) ||
-                !string.IsNullOrWhiteSpace(configuration.GetConnectionString("MySQL")) ||
-                !string.IsNullOrWhiteSpace(configuration.GetConnectionString("SQLite"));
+                !string.IsNullOrWhiteSpace(cosmosDb) ||
+                !string.IsNullOrWhiteSpace(sqlServer) ||
+                !string.IsNullOrWhiteSpace(mysql) ||
+                !string.IsNullOrWhiteSpace(sqlite);
 
             if (!hasDatabaseConnection)
             {
@@ -99,11 +113,22 @@ namespace Sky.Tests
             }
 
             // Check that at least ONE storage connection is configured
+            context.WriteLine("   Checking storage connections...");
+            var storageDefault = configuration.GetConnectionString("StorageConnectionString");
+            var azureBlob = configuration.GetConnectionString("AzureBlobStorageConnectionString");
+            var amazonS3 = configuration.GetConnectionString("AmazonS3ConnectionString");
+            var cloudflareR2 = configuration.GetConnectionString("CloudflareR2ConnectionString");
+            
+            context.WriteLine($"      StorageConnectionString: {(!string.IsNullOrWhiteSpace(storageDefault) ? "✅ Configured" : "❌ Not configured")}");
+            context.WriteLine($"      AzureBlobStorageConnectionString: {(!string.IsNullOrWhiteSpace(azureBlob) ? "✅ Configured" : "❌ Not configured")}");
+            context.WriteLine($"      AmazonS3ConnectionString: {(!string.IsNullOrWhiteSpace(amazonS3) ? "✅ Configured" : "❌ Not configured")}");
+            context.WriteLine($"      CloudflareR2ConnectionString: {(!string.IsNullOrWhiteSpace(cloudflareR2) ? "✅ Configured" : "❌ Not configured")}");
+            
             var hasStorageConnection = 
-                !string.IsNullOrWhiteSpace(configuration.GetConnectionString("StorageConnectionString")) ||
-                !string.IsNullOrWhiteSpace(configuration.GetConnectionString("AzureBlobStorageConnectionString")) ||
-                !string.IsNullOrWhiteSpace(configuration.GetConnectionString("AmazonS3ConnectionString")) ||
-                !string.IsNullOrWhiteSpace(configuration.GetConnectionString("CloudflareR2ConnectionString"));
+                !string.IsNullOrWhiteSpace(storageDefault) ||
+                !string.IsNullOrWhiteSpace(azureBlob) ||
+                !string.IsNullOrWhiteSpace(amazonS3) ||
+                !string.IsNullOrWhiteSpace(cloudflareR2);
 
             if (!hasStorageConnection)
             {
@@ -159,7 +184,15 @@ namespace Sky.Tests
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true)
                 .AddEnvironmentVariables();
 
-            return builder.Build();
+            var configuration = builder.Build();
+            
+            // Add debug output to see what's being loaded
+            Console.WriteLine("🔍 Configuration Debug Information:");
+            Console.WriteLine($"   Current Directory: {Environment.CurrentDirectory}");
+            Console.WriteLine($"   appsettings.json exists: {File.Exists(jsonConfig)}");
+            Console.WriteLine($"   Environment Variables loaded: {Environment.GetEnvironmentVariables().Count}");
+            
+            return configuration;
         }
 
         private static string GetConfigurationInstructions()
