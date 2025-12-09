@@ -137,6 +137,8 @@
 
 - [Master Docs Index (Human-Friendly)](./README.md)
 
+- [Uploading Secrets to GitHub Repository](./UploadSecretsToGithubRepo.md)
+
 ---
 
 ## 12. How to Use This TOC

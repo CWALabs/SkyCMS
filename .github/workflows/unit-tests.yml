@@ -30,9 +30,6 @@ jobs:
         ConnectionStrings__SqlServer: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
         ConnectionStrings__MySQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
         ConnectionStrings__SQLite: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
-        TestSettings__UseCloudDatabases: ${{ secrets.TESTSETTINGS__USECLOUDDATABASES }}
-        TestSettings__SkipSlowTests: ${{ secrets.TESTSETTINGS__SKIPSLOWTESTS }}
-        TestSettings__CleanupAfterTests: ${{ secrets.TESTSETTINGS__CLEANUPAFTERTESTS }}
         CdnIntegrationTests__Cloudflare__ApiToken: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
         CdnIntegrationTests__Cloudflare__ZoneId: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
         CdnIntegrationTests__Cloudflare__TestDomain: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
