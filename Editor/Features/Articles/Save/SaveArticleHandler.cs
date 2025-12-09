@@ -64,6 +64,7 @@ namespace Sky.Editor.Features.Articles.Save
         /// <summary>
         /// Handles the save article command.
         /// </summary>
+        /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
         public async Task<CommandResult<ArticleUpdateResult>> HandleAsync(
             SaveArticleCommand command,
             CancellationToken cancellationToken = default)

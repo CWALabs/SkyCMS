@@ -45,16 +45,19 @@
       },
       "Duende.IdentityModel": {
         "type": "Transitive",
-        "resolved": "7.1.0",
-        "contentHash": "Ihn2LiHZfiGD0Qu6aKngK5xtqOocZcS88khVG0Xv7uObfzilevAvXHDhAqpvWiZNIXPeCD6SA5Wy/rfP0U4brA=="
+        "resolved": "8.0.0",
+        "contentHash": "8i+Tv4c38LgwoTRKbD0+MqtnNNDSVA83G6JkjGHgC4/7jH0nxZBP0RBhH8xTsvNQ5Pv9zrg+TR8rmtWK9HDOPg==",
+        "dependencies": {
+          "Microsoft.BCL.Memory": "10.0.0"
+        }
       },
       "Duende.IdentityServer.Storage": {
         "type": "Transitive",
-        "resolved": "7.3.2",
-        "contentHash": "a3G+kV9NM/DN3v2g0OCpy0h77e/vSr2rcLDcPnLCQjGUHTcMQtC+GNuAX0Tr9I/mdNrjdO37lYF+zDKUB9NiOA==",
+        "resolved": "7.4.2",
+        "contentHash": "UfH/WmLT3SVC0w1g+dmbUaJN3imGq0/raSwJkPS3LepPwLtL/lh/TJ9QeMa6rYzmuLSibnov74BK13BxgXgZvQ==",
         "dependencies": {
-          "Duende.IdentityModel": "7.1.0",
-          "Microsoft.AspNetCore.DataProtection.Abstractions": "9.0.3"
+          "Duende.IdentityModel": "8.0.0",
+          "Microsoft.AspNetCore.DataProtection.Abstractions": "10.0.0"
         }
       },
       "Microsoft.AspNetCore.Cryptography.Internal": {
@@ -72,8 +75,8 @@
       },
       "Microsoft.AspNetCore.DataProtection.Abstractions": {
         "type": "Transitive",
-        "resolved": "9.0.3",
-        "contentHash": "cz8/avBwCEd92X7xkK7gGJkOJJfTTb6uJzZltyCr329GLekD4aiLLwRGYhh/3Z0KNor9IujBlFJOW3e6cUMeHg=="
+        "resolved": "10.0.0",
+        "contentHash": "MFwimSi2FH/CMGydm5EnoQFORoaArEX4QG1nijiRN05XUyJqzWwIlYT4AvnhoU1cGett/EvD416f7OnrDisbiA=="
       },
       "Microsoft.Azure.Cosmos": {
         "type": "Transitive",
@@ -105,6 +108,11 @@
         "type": "Transitive",
         "resolved": "1.1.0",
         "contentHash": "J2G1k+u5unBV+aYcwxo94ip16Rkp65pgWFb0R6zwJipzWNMgvqlWeuI7/+R+e8bob66LnSG+llLJ+z8wI94cHg=="
+      },
+      "Microsoft.Bcl.Memory": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "a5PdIQh+01OrOViDfJA0zfo2ty5ruSxpR+4ZOkY1nGr0ybvm3XKxckxKp0BVR9ZtVIauQscgHABFysUJYOqnsg=="
       },
       "Microsoft.CSharp": {
         "type": "Transitive",
@@ -1074,7 +1082,7 @@
       "aspnetcore.identity.flexdb": {
         "type": "Project",
         "dependencies": {
-          "Duende.IdentityServer.EntityFramework.Storage": "[7.3.2, 8.0.0)",
+          "Duende.IdentityServer.EntityFramework.Storage": "[7.4.2, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.AspNetCore.Identity.UI": "[9.0.10, 10.0.0)",
           "Microsoft.Data.Sqlite.Core": "[9.0.0, 10.0.0)",
@@ -1102,12 +1110,12 @@
       },
       "Duende.IdentityServer.EntityFramework.Storage": {
         "type": "CentralTransitive",
-        "requested": "[7.3.2, 8.0.0)",
-        "resolved": "7.3.2",
-        "contentHash": "3fV0mJ7x9LMvJ8Z4LftlUDY+cCV8HMUcoIg5NGIefqC1A5EMxYFvACR7/Y5K3WxhP2OytiziH9P02qe2y3Jxrw==",
+        "requested": "[7.4.2, )",
+        "resolved": "7.4.2",
+        "contentHash": "RDp2Ttr4fVn1k/VjGv3gwVSrjA20yGjt2YGUiKR49o5DTg0f4L1sTD8EdltipA2GCKXcyLdmyNiz3hMbAgVyaQ==",
         "dependencies": {
-          "Duende.IdentityServer.Storage": "7.3.2",
-          "Microsoft.EntityFrameworkCore.Relational": "9.0.3"
+          "Duende.IdentityServer.Storage": "7.4.2",
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.9"
         }
       },
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {

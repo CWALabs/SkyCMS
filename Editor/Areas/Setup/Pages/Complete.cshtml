@@ -1,0 +1,136 @@
+@page
+@model Sky.Editor.Areas.Setup.Pages.CompleteModel
+@{
+    ViewData["Title"] = "Setup Complete";
+    Layout = "_LayoutSetup";
+}
+
+<div class="text-center">
+    <div class="mb-4">
+        <i class="fas fa-check-circle text-success" style="font-size: 80px;"></i>
+    </div>
+    
+    <h2 class="text-success mb-3">Setup Complete!</h2>
+    <p class="lead">SkyCMS has been successfully configured.</p>
+</div>
+
+<div class="card border-success mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0">What Happened</h5>
+    </div>
+    <div class="card-body">
+        <ul class="mb-0 text-success">
+            <li><i class="fas fa-check text-success"></i> Database initialized successfully</li>
+            <li><i class="fas fa-check text-success"></i> Administrator account created: <strong>@Model.AdminEmail</strong></li>
+            <li><i class="fas fa-check text-success"></i> Storage configuration saved</li>
+            <li><i class="fas fa-check text-success"></i> Publisher settings configured</li>
+            @if (Model.EmailConfigured)
+            {
+                <li><i class="fas fa-check text-success"></i> Email service configured</li>
+            }
+            @if (Model.CdnConfigured)
+            {
+                <li><i class="fas fa-check text-success"></i> CDN configured</li>
+            }
+            <li><i class="fas fa-check text-success"></i> Setup wizard disabled</li>
+        </ul>
+    </div>
+</div>
+
+<div class="alert alert-warning">
+    <h5><i class="fas fa-exclamation-triangle"></i> Action Required: Restart Application</h5>
+    <p class="mb-2">
+        For all changes to take effect, you must <strong>restart the application</strong>.
+    </p>
+    
+    @if (Model.IsDocker)
+    {
+        <div class="mt-3">
+            <form method="post" asp-page-handler="Restart" id="restartForm">
+                <button type="submit" class="btn btn-warning btn-lg">
+                    <i class="fas fa-sync-alt"></i> Restart Application Now
+                </button>
+            </form>
+            <p class="mt-3 mb-0"><small class="text-muted">Docker will automatically restart the container.</small></p>
+        </div>
+        <div class="mt-3">
+            <p><strong>Or manually restart using Docker:</strong></p>
+            <pre class="bg-dark text-white p-3 rounded"><code>docker restart skycms-editor</code></pre>
+        </div>
+    }
+    else
+    {
+        <div class="mt-3">
+            <form method="post" asp-page-handler="Restart" id="restartForm">
+                <button type="submit" class="btn btn-warning btn-lg">
+                    <i class="fas fa-sync-alt"></i> Restart Application Now
+                </button>
+            </form>
+            <p class="mt-3 mb-2"><small class="text-muted">Or manually restart:</small></p>
+            <p><strong>IIS / Windows:</strong> Restart the application pool or stop/start the site</p>
+            <p><strong>Linux / systemd:</strong></p>
+            <pre class="bg-dark text-white p-3 rounded"><code>sudo systemctl restart skycms-editor</code></pre>
+        </div>
+    }
+</div>
+
+<div class="card mb-4 bg-secondary text-light">
+    <div class="card-header">
+        <h5 class="mb-0">Next Steps</h5>
+    </div>
+    <div class="card-body">
+        <ol>
+            <li>
+                <strong>Restart the application</strong> (use button above or manual command)
+            </li>
+            <li>
+                <strong>Log in</strong> with your administrator account:
+                <div class="mt-2">
+                    <code class="text-light">Email: @Model.AdminEmail</code>
+                </div>
+            </li>
+            <li>
+                <strong>Create your home page</strong> and start building your website
+            </li>
+            <li>
+                <strong>Configure additional settings</strong> in the admin panel (optional)
+            </li>
+        </ol>
+    </div>
+</div>
+
+<div class="card bg-secondary text-light">
+    <div class="card-header bg-secondary text-light">
+        <h5 class="mb-0"><i class="fas fa-book"></i> Documentation</h5>
+    </div>
+    <div class="card-body">
+        <p>Learn more about SkyCMS:</p>
+        <ul>
+            <li><a href="https://github.com/MoonriseSoftwareCalifornia/SkyCMS" target="_blank">GitHub Repository</a></li>
+            <li><a href="https://github.com/MoonriseSoftwareCalifornia/SkyCMS/wiki" target="_blank">Documentation Wiki</a></li>
+            <li><a href="https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues" target="_blank">Report Issues</a></li>
+        </ul>
+    </div>
+</div>
+
+<div class="text-center mt-4">
+    <a href="/Identity/Account/Login" class="btn btn-primary btn-lg">
+        <i class="fas fa-sign-in-alt"></i> Go to Login
+    </a>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('restartForm').addEventListener('submit', function(e) {
+            const button = this.querySelector('button');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Restarting...';
+            
+            // Show message and redirect after delay
+            setTimeout(function() {
+                alert('Application is restarting. Please wait a moment and then log in.');
+                window.location.href = '/Identity/Account/Login';
+            }, 2000);
+        });
+    </script>
+}

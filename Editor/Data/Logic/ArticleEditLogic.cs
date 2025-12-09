@@ -27,6 +27,8 @@ namespace Sky.Editor.Data.Logic
     using Sky.Cms.Controllers;
     using Sky.Cms.Models;
     using Sky.Cms.Services;
+    using Sky.Editor.Features.Articles.Save;
+    using Sky.Editor.Features.Shared;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.Catalog;
     using Sky.Editor.Services.CDN;
@@ -37,6 +39,7 @@ namespace Sky.Editor.Data.Logic
     using Sky.Editor.Services.Slugs;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
+    using ArticleUpdateResult = Cms.Models.ArticleUpdateResult;
 
     /// <summary>
     /// Article editing and management logic (editor-facing). Inherits read/view logic from <see cref="ArticleLogic"/>.

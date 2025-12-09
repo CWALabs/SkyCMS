@@ -5,12 +5,6 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
-using System;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using System.Threading.RateLimiting;
-using System.Threading.Tasks;
-using System.Web;
 using AspNetCore.Identity.FlexDb.Extensions;
 using Azure.Identity;
 using Cosmos.BlobService;
@@ -29,6 +23,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -37,6 +32,7 @@ using Newtonsoft.Json.Serialization;
 using Sky.Cms.Hubs;
 using Sky.Cms.Services;
 using Sky.Editor.Boot;
+using Sky.Editor.Data;
 using Sky.Editor.Data.Logic;
 using Sky.Editor.Domain.Events;
 using Sky.Editor.Features.Articles.Create;
@@ -53,11 +49,31 @@ using Sky.Editor.Services.Publishing;
 using Sky.Editor.Services.Redirects;
 using Sky.Editor.Services.ReservedPaths;
 using Sky.Editor.Services.Scheduling;
+using Sky.Editor.Services.Setup;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using System.Threading.RateLimiting;
+using System.Threading.Tasks;
+using System.Web;
+using Sky.Editor.Middleware;
+using Sky.Editor.Services.Layouts;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+
+// ---------------------------------------------------------------
+// Register Setup Wizard Services (before single/multi-tenant configuration)
+// ---------------------------------------------------------------
+builder.Services.AddScoped<ISetupService, SetupService>();
+builder.Services.AddDbContext<SetupDbContext>(options =>
+{
+    var setupDbPath = Path.Combine(Path.GetTempPath(), "skycms-setup.db");
+    options.UseSqlite($"Data Source={setupDbPath}");
+});
 
 var isMultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
 var versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -125,6 +141,7 @@ builder.Services.AddTransient<StorageContext>();
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 
 // ---------------------------------------------------------------
 // Register Vertical Slice Architecture Feature Handlers
@@ -132,6 +149,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IMediator, Mediator>();
 builder.Services.AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>, CreateArticleHandler>();
 builder.Services.AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>, SaveArticleHandler>();
+builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
 
 // ---------------------------------------------------------------
 // Continue registering services common to both single-tenant and multi-tenant modes
@@ -201,7 +219,22 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromSeconds(3600);
     options.Cookie.IsEssential = true;
 });
+
+builder.Services.AddRazorPages(options =>
+{
+    // Setup wizard pages (accessible via /___setup)
+    options.Conventions.AddAreaPageRoute("Setup", "/Index", "___setup");
+    options.Conventions.AddAreaPageRoute("Setup", "/Step1_Mode", "___setup/mode");
+    options.Conventions.AddAreaPageRoute("Setup", "/Step2_Storage", "___setup/storage");
+    options.Conventions.AddAreaPageRoute("Setup", "/Step3_AdminAccount", "___setup/admin");
+    options.Conventions.AddAreaPageRoute("Setup", "/Step4_Publisher", "___setup/publisher");
+    options.Conventions.AddAreaPageRoute("Setup", "/Step5_Email", "___setup/email");
+    options.Conventions.AddAreaPageRoute("Setup", "/Step6_Review", "___setup/review");
+    options.Conventions.AddAreaPageRoute("Setup", "/Complete", "___setup/complete");
+});
+
 builder.Services.AddRazorPages();
+
 builder.Services.AddMvc()
     .AddNewtonsoftJson(options =>
         options.SerializerSettings.ContractResolver =
@@ -364,6 +397,26 @@ if (isMultiTenantEditor)
 app.UseCosmosCmsDataProtection(); // Enable data protection services for Cosmos CMS.
 app.UseForwardedHeaders(); // https://seankilleen.com/2020/06/solved-net-core-azure-ad-in-docker-container-incorrectly-uses-an-non-https-redirect-uri/
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/___setup"))
+    {
+        var config = context.RequestServices.GetRequiredService<IConfiguration>();
+        var allowSetup = config.GetValue<bool?>("CosmosAllowSetup") ?? false;
+
+        if (!allowSetup)
+        {
+            context.Response.Redirect("/");
+            return;
+        }
+    }
+
+    await next();
+});
+
+// ✅ Add automatic setup detection middleware
+app.UseMiddleware<SetupRedirectMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -413,6 +466,15 @@ app.MapControllerRoute(name: "blog", pattern: "blog/{page?}", defaults: new { co
 app.MapControllerRoute(name: "blog_post", pattern: "blog/post/{*slug}", defaults: new { controller = "Blog", action = "Post" });
 app.MapControllerRoute(name: "blog_rss", pattern: "blog/rss", defaults: new { controller = "Blog", action = "Rss" });
 app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
+
+// Setup wizard route (uses triple underscore to avoid conflicts with user pages)
+app.MapRazorPages().WithMetadata(new { Area = "Setup" });
+app.MapAreaControllerRoute(
+    name: "setup",
+    areaName: "Setup",
+    pattern: "___setup/{*pathInfo}",
+    defaults: new { page = "/Index" });
+
 app.MapFallbackToController("Index", "Home"); // Deep path
 
 app.MapRazorPages();

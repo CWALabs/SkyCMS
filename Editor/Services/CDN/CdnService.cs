@@ -108,23 +108,6 @@ namespace Sky.Editor.Services.CDN
         {
             var results = new List<CdnResult>();
 
-            // Since this uses the default azure credential, we need to check if the host is localhost.
-            // If it is, then we don't need to do anything.
-            //if (context.Request.Host.Host.Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
-            //{
-            //    results.Add(new CdnResult
-            //    {
-            //        Status = HttpStatusCode.OK,
-            //        ReasonPhrase = "Localhost",
-            //        IsSuccessStatusCode = true,
-            //        ClientRequestId = Guid.NewGuid().ToString(),
-            //        Id = Guid.NewGuid().ToString(),
-            //        EstimatedFlushDateTime = DateTimeOffset.UtcNow.AddMinutes(10),
-            //        Message = "Localhost CDN purge request.",
-            //    });
-            //    return results;
-            //}
-
             purgeUrls = purgeUrls.Distinct().ToList();
 
             foreach (var setting in settings)

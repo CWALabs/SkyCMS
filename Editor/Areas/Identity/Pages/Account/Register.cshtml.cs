@@ -41,7 +41,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     {
         private readonly ICosmosEmailSender emailSender;
         private readonly ILogger<RegisterModel> logger;
-        private readonly IOptions<SiteSettings> options;
         private readonly IServiceProvider services;
 
         /// <summary>
@@ -49,19 +48,14 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         /// Constructor.
         /// </summary>
         /// <param name="logger">Log service.</param>
-        /// <param name="options">Cosmos site options.</param>
         /// <param name="services">App services.</param>
-        /// <param name="configuration">App configuration.</param>
         /// <param name="emailSender">Email sender service.</param>
         public RegisterModel(
             ILogger<RegisterModel> logger,
-            IOptions<SiteSettings> options,
             IServiceProvider services,
-            IConfiguration configuration,
             IEmailSender emailSender)
         {
             this.logger = logger;
-            this.options = options;
             this.services = services;
             this.emailSender = (ICosmosEmailSender)emailSender;
         }
@@ -152,9 +146,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                var t = DbContext.Database.EnsureCreatedAsync();
-                t.Wait();
-
                 var user = new IdentityUser { UserName = Input.Email, Email = Input.Email };
                 var result = await UserManager.CreateAsync(user, Input.Password);
                 if (result.Succeeded)

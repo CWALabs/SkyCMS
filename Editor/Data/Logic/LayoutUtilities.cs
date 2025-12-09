@@ -22,21 +22,21 @@ namespace Cosmos.Cms.Data.Logic
     /// <summary>
     /// Loads external layouts and associated page templates into Comsos CMS.
     /// </summary>
-    /// <remarks>Layouts are loaded from here: <see href="https://cosmos-layouts.moonrise.net"/>.</remarks>
+    /// <remarks>Layouts are loaded from here: <see href="https://cwalabs.github.io/Cosmos.Starter.Designs"/>.</remarks>
+    [Obsolete("This class is obsolete. Replaced by ILayoutImportService.")]
     public class LayoutUtilities
     {
         /// <summary>
         /// Default online catalog location.
         /// </summary>
-        private const string COSMOSLAYOUTSREPO = "https://cosmos-layouts.moonrise.net";
+        private const string COSMOSLAYOUTSREPO = "https://cwalabs.github.io/Cosmos.Starter.Designs";
+        private Root _communityCatalog = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LayoutUtilities"/> class.
         /// </summary>
         public LayoutUtilities()
         {
-            var task = LoadCatalog();
-            task.Wait();
         }
 
         private string ParseAttributes(HtmlAttributeCollection collection)
@@ -55,14 +55,20 @@ namespace Cosmos.Cms.Data.Logic
             return builder.ToString().Trim();
         }
 
-        private async Task LoadCatalog()
+        private async Task<Root> LoadCatalog()
         {
-            using var client = new HttpClient();
-            var data = await client.GetStringAsync($"{COSMOSLAYOUTSREPO}/catalog.json");
-            CommunityCatalog = JsonConvert.DeserializeObject<Root>(data);
-            if (CommunityCatalog != null && CommunityCatalog.LayoutCatalog != null && CommunityCatalog.LayoutCatalog.Any())
+            try
             {
-                CommunityCatalog.LayoutCatalog = CommunityCatalog.LayoutCatalog.OrderBy(o => o.Name).ToList();
+                using var client = new HttpClient();
+                var data = await client.GetStringAsync($"{COSMOSLAYOUTSREPO}/catalog.json");
+                return JsonConvert.DeserializeObject<Root>(data);
+            }
+            catch (Exception)
+            {
+                return new Root()
+                {
+                    LayoutCatalog = new List<LayoutCatalogItem>()
+                };
             }
         }
 
@@ -96,7 +102,19 @@ namespace Cosmos.Cms.Data.Logic
         /// <summary>
         /// Gets catalog of layouts.
         /// </summary>
-        public Root CommunityCatalog { get; private set; }
+        public Root CommunityCatalog
+        {
+            get
+            {
+                if (_communityCatalog == null)
+                {
+                    _communityCatalog = LoadCatalog().GetAwaiter().GetResult();
+                }
+
+                return _communityCatalog;
+            }
+        }
+
 
         /// <summary>
         /// Gets a specified layout.

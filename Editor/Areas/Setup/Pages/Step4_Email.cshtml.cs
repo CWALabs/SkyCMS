@@ -1,0 +1,246 @@
+// <copyright file="Step4_Email.cshtml.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// for more information concerning the license and the contributors participating to this project.
+// </copyright>
+
+namespace Sky.Editor.Areas.Setup.Pages
+{
+    using System;
+    using System.ComponentModel.DataAnnotations;
+    using System.Threading.Tasks;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.RazorPages;
+    using Sky.Editor.Services.Setup;
+
+    /// <summary>
+    /// Setup wizard step 4: Email configuration.
+    /// </summary>
+    public class Step4_Email : PageModel
+    {
+        private readonly ISetupService setupService;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Step4_EmailModel"/> class.
+        /// </summary>
+        /// <param name="setupService">Setup service.</param>
+        public Step4_Email(ISetupService setupService)
+        {
+            this.setupService = setupService;
+        }
+
+        /// <summary>
+        /// Gets or sets the setup session ID.
+        /// </summary>
+        [BindProperty]
+        public Guid SetupId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the email provider.
+        /// </summary>
+        [BindProperty]
+        public string EmailProvider { get; set; } = "none";
+
+        /// <summary>
+        /// Gets or sets the SendGrid API key.
+        /// </summary>
+        [BindProperty]
+        public string SendGridApiKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Azure Communication Services connection string.
+        /// </summary>
+        [BindProperty]
+        public string AzureEmailConnectionString { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SMTP host.
+        /// </summary>
+        [BindProperty]
+        public string SmtpHost { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SMTP port.
+        /// </summary>
+        [BindProperty]
+        public int SmtpPort { get; set; } = 587;
+
+        /// <summary>
+        /// Gets or sets the SMTP username.
+        /// </summary>
+        [BindProperty]
+        public string SmtpUsername { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SMTP password.
+        /// </summary>
+        [BindProperty]
+        public string SmtpPassword { get; set; }
+
+        /// <summary>
+        /// Gets or sets the sender email address.
+        /// </summary>
+        [BindProperty]
+        [EmailAddress(ErrorMessage = "Invalid email address")]
+        public string SenderEmail { get; set; }
+
+        /// <summary>
+        /// Gets or sets the test result.
+        /// </summary>
+        public TestResult TestResult { get; set; }
+
+        /// <summary>
+        /// Gets or sets the error message.
+        /// </summary>
+        public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Gets or sets the success message.
+        /// </summary>
+        public string SuccessMessage { get; set; }
+
+        /// <summary>
+        /// Handles GET requests.
+        /// </summary>
+        /// <returns>Page result.</returns>
+        public async Task<IActionResult> OnGetAsync()
+        {
+            var config = await setupService.GetCurrentSetupAsync();
+            if (config == null)
+            {
+                return RedirectToPage("./Index");
+            }
+
+            SetupId = config.Id;
+            SendGridApiKey = config.SendGridApiKey;
+            AzureEmailConnectionString = config.AzureEmailConnectionString;
+            SmtpHost = config.SmtpHost;
+            SmtpPort = config.SmtpPort;
+            SmtpUsername = config.SmtpUsername;
+            SmtpPassword = config.SmtpPassword;
+
+            // Infer email provider
+            if (!string.IsNullOrWhiteSpace(SendGridApiKey))
+            {
+                EmailProvider = "SendGrid";
+            }
+            else if (!string.IsNullOrWhiteSpace(AzureEmailConnectionString))
+            {
+                EmailProvider = "AzureCommunication";
+            }
+            else if (!string.IsNullOrWhiteSpace(SmtpHost))
+            {
+                EmailProvider = "SMTP";
+            }
+            else
+            {
+                EmailProvider = "none";
+            }
+
+            return Page();
+        }
+
+        /// <summary>
+        /// Handles POST requests to test email.
+        /// </summary>
+        /// <returns>Page result.</returns>
+        public async Task<IActionResult> OnPostTestEmailAsync()
+        {
+            if (string.IsNullOrEmpty(EmailProvider))
+            {
+                ErrorMessage = "Please select an email provider";
+                return Page();
+            }
+
+            if (string.IsNullOrEmpty(SenderEmail))
+            {
+                ErrorMessage = "Please enter a sender email address to test email configuration";
+                return Page();
+            }
+
+            try
+            {
+                var config = await setupService.GetCurrentSetupAsync();
+
+                if (string.IsNullOrWhiteSpace(config.SmtpHost))
+                {
+                    EmailProvider = "none";
+                }
+                else if (!string.IsNullOrWhiteSpace(config.SmtpHost))
+                {
+                    EmailProvider = "SMTP";
+                }
+                else if (!string.IsNullOrWhiteSpace(config.AzureEmailConnectionString))
+                {
+                    EmailProvider = "AzureCommunication";
+                }
+                else if (!string.IsNullOrWhiteSpace(config.SendGridApiKey))
+                {
+                    EmailProvider = "SendGrid";
+                }
+                else
+                {
+                    EmailProvider = "none";
+                }
+
+                TestResult = await setupService.TestEmailConfigAsync(
+                    EmailProvider,
+                    SendGridApiKey,
+                    AzureEmailConnectionString,
+                    SmtpHost,
+                    SmtpPort,
+                    SmtpUsername,
+                    SmtpPassword,
+                    SenderEmail,
+                    config.AdminEmail); // Send to admin email
+
+                if (TestResult.Success)
+                {
+                    SuccessMessage = "Test email sent successfully! Check your inbox.";
+                }
+
+                return Page();
+            }
+            catch (Exception ex)
+            {
+                TestResult = new TestResult
+                {
+                    Success = false,
+                    Message = $"Email test failed: {ex.Message}"
+                };
+                return Page();
+            }
+        }
+
+        /// <summary>
+        /// Handles POST requests to proceed to next step.
+        /// </summary>
+        /// <returns>Redirect to next step.</returns>
+        public async Task<IActionResult> OnPostAsync()
+        {
+            try
+            {
+                // Email is optional, so we don't validate
+                await setupService.UpdateEmailConfigAsync(
+                    SetupId,
+                    EmailProvider,
+                    SendGridApiKey,
+                    AzureEmailConnectionString,
+                    SmtpHost,
+                    SmtpPort,
+                    SmtpUsername,
+                    SmtpPassword);
+
+                await setupService.UpdateStepAsync(SetupId, 4);
+
+                return RedirectToPage("./Step5_Cdn"); // Changed from ./Step5_Review
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Failed to save email configuration: {ex.Message}";
+                return Page();
+            }
+        }
+    }
+}

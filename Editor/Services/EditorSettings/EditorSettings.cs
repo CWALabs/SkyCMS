@@ -8,6 +8,7 @@
 namespace Sky.Editor.Services.EditorSettings
 {
     using System;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
@@ -50,15 +51,22 @@ namespace Sky.Editor.Services.EditorSettings
         /// <param name="memoryCache">Memory cache.</param>
         /// <param name="serviceProvider">Service provider.</param>
         /// <param name="domainName">Optional domain name for multi-tenant operations.</param>
-        public EditorSettings(IConfiguration configuration, ApplicationDbContext dbContext, IHttpContextAccessor httpContextAccessor, IMemoryCache memoryCache, IServiceProvider serviceProvider, string domainName = "")
+        public EditorSettings(
+            IConfiguration configuration,
+            ApplicationDbContext dbContext,
+            IHttpContextAccessor httpContextAccessor,
+            IMemoryCache memoryCache,
+            IServiceProvider serviceProvider,
+            string domainName = "")
         {
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
             this.memoryCache = memoryCache;
             this.configuration = configuration;
             backupStorageConnectionString = this.configuration.GetConnectionString("BackupStorageConnectionString") ?? null;
-            this.domainName = domainName ?? string.Empty; // Always initialize
+            this.domainName = domainName ?? string.Empty;
             isMultiTenantEditor = this.configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+            
             if (isMultiTenantEditor)
             {
                 dynamicConfigurationProvider = serviceProvider.GetRequiredService<IDynamicConfigurationProvider>();
@@ -74,7 +82,8 @@ namespace Sky.Editor.Services.EditorSettings
         {
             get
             {
-                return ".js,.css,.htm,.html,.htm,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json";
+                EnsureConfigLoaded();
+                return editorConfig.AllowedFileTypes ?? ".js,.css,.htm,.html,.htm,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json";
             }
         }
 
@@ -191,18 +200,6 @@ namespace Sky.Editor.Services.EditorSettings
         }
 
         /// <summary>
-        /// Gets the editor configuration settings synchronously.
-        /// </summary>
-        /// <returns>Editor configuration.</returns>
-        /// <remarks>
-        /// This method uses GetAwaiter().GetResult() internally. For async contexts, use GetEditorConfigAsync instead.
-        /// </remarks>
-        public EditorConfig GetEditorConfig()
-        {
-            return GetEditorConfigAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
         /// Gets the editor configuration settings asynchronously.
         /// </summary>
         /// <returns>Editor configuration.</returns>
@@ -218,19 +215,12 @@ namespace Sky.Editor.Services.EditorSettings
 
             if (!isMultiTenantEditor)
             {
-                newConfig = new EditorConfig()
-                {
-                    AllowSetup = configuration.GetValue<bool?>("AllowSetup") ?? false,
-                    IsMultiTenantEditor = isMultiTenantEditor,
-                    BlobPublicUrl = configuration.GetValue<string>("AzureBlobStorageEndPoint") ?? "/",
-                    CosmosRequiresAuthentication = configuration.GetValue<bool?>("CosmosRequiresAuthentication") ?? false,
-                    MicrosoftAppId = configuration.GetValue<string>("MicrosoftAppId") ?? string.Empty,
-                    PublisherUrl = configuration.GetValue<string>("CosmosPublisherUrl"),
-                    StaticWebPages = configuration.GetValue<bool?>("CosmosStaticWebPages") ?? true,
-                };
+                // ✅ Single-tenant: Environment variables/secrets OVERRIDE database settings
+                newConfig = await LoadConfigWithPriorityAsync();
             }
             else
             {
+                // ✅ Multi-tenant: Load from dynamic config database
                 string scopedDomainName = domainName;
                 if (string.IsNullOrWhiteSpace(domainName))
                 {
@@ -242,7 +232,6 @@ namespace Sky.Editor.Services.EditorSettings
                     scopedDomainName = dynamicConfigurationProvider.GetTenantDomainNameFromRequest();
                 }
 
-                // Use await instead of .Result to avoid potential deadlocks
                 var connection = await dynamicConfigurationProvider.GetTenantConnectionAsync(scopedDomainName);
 
                 if (connection == null)
@@ -258,13 +247,181 @@ namespace Sky.Editor.Services.EditorSettings
                     CosmosRequiresAuthentication = connection.PublisherRequiresAuthentication,
                     MicrosoftAppId = connection.MicrosoftAppId,
                     PublisherUrl = connection.WebsiteUrl,
-                    StaticWebPages = connection.PublisherMode == "Static"
+                    StaticWebPages = connection.PublisherMode == "Static",
+                    AllowedFileTypes = ".js,.css,.htm,.html,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json"
                 };
             }
 
+            // Cache for 5 minutes
             memoryCache.Set(GetNormalizedKeyName(domainName), newConfig, TimeSpan.FromMinutes(5));
 
             return newConfig;
+        }
+
+        /// <summary>
+        /// Loads configuration with priority: IConfiguration (env vars/secrets) > Database > Defaults.
+        /// </summary>
+        /// <returns>EditorConfig with merged settings.</returns>
+        private async Task<EditorConfig> LoadConfigWithPriorityAsync()
+        {
+            // ✅ Load from database first (baseline)
+            var dbConfig = await LoadConfigFromDatabaseAsync();
+
+            // ✅ Load from IConfiguration (environment variables, secrets, appsettings.json)
+            var configFromFiles = LoadConfigFromConfiguration();
+
+            // ✅ Merge with correct priority: IConfiguration > Database > Defaults
+            return MergeConfigurations(configFromFiles, dbConfig);
+        }
+
+        /// <summary>
+        /// Loads configuration from IConfiguration (appsettings.json, user secrets, environment variables).
+        /// Returns nullable values to indicate "not set" vs "explicitly set to false".
+        /// </summary>
+        /// <returns>EditorConfig from configuration sources.</returns>
+        private ConfigurationSource LoadConfigFromConfiguration()
+        {
+            return new ConfigurationSource
+            {
+                AllowSetup = configuration.GetValue<bool?>("CosmosAllowSetup"),
+                BlobPublicUrl = configuration.GetValue<string>("AzureBlobStorageEndPoint"),
+                CosmosRequiresAuthentication = configuration.GetValue<bool?>("CosmosRequiresAuthentication"),
+                MicrosoftAppId = configuration.GetValue<string>("MicrosoftAppId"),
+                PublisherUrl = configuration.GetValue<string>("CosmosPublisherUrl"),
+                StaticWebPages = configuration.GetValue<bool?>("CosmosStaticWebPages"),
+                AllowedFileTypes = configuration.GetValue<string>("AllowedFileTypes")
+            };
+        }
+
+        /// <summary>
+        /// Merges configurations with strict priority: IConfiguration > Database > Defaults.
+        /// </summary>
+        /// <param name="configSource">Configuration from IConfiguration (highest priority).</param>
+        /// <param name="dbSource">Configuration from database (medium priority).</param>
+        /// <returns>Merged EditorConfig.</returns>
+        private EditorConfig MergeConfigurations(ConfigurationSource configSource, EditorConfig dbSource)
+        {
+            return new EditorConfig
+            {
+                // ✅ CORRECT PRIORITY: IConfiguration > Database > Default
+                // If IConfiguration has a value (even false), use it. Otherwise fall back to database, then default.
+                AllowSetup = configSource.AllowSetup 
+                    ?? dbSource?.AllowSetup 
+                    ?? false,
+
+                IsMultiTenantEditor = isMultiTenantEditor,
+
+                BlobPublicUrl = configSource.BlobPublicUrl 
+                    ?? dbSource?.BlobPublicUrl 
+                    ?? "/",
+
+                CosmosRequiresAuthentication = configSource.CosmosRequiresAuthentication 
+                    ?? dbSource?.CosmosRequiresAuthentication 
+                    ?? false,
+
+                MicrosoftAppId = configSource.MicrosoftAppId 
+                    ?? dbSource?.MicrosoftAppId 
+                    ?? string.Empty,
+
+                PublisherUrl = configSource.PublisherUrl 
+                    ?? dbSource?.PublisherUrl 
+                    ?? string.Empty,
+
+                StaticWebPages = configSource.StaticWebPages 
+                    ?? dbSource?.StaticWebPages 
+                    ?? true,
+
+                AllowedFileTypes = configSource.AllowedFileTypes 
+                    ?? dbSource?.AllowedFileTypes 
+                    ?? ".js,.css,.htm,.html,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json"
+            };
+        }
+
+        /// <summary>
+        /// Loads configuration from the database Settings table.
+        /// </summary>
+        /// <returns>EditorConfig if found, null otherwise.</returns>
+        private async Task<EditorConfig> LoadConfigFromDatabaseAsync()
+        {
+            try
+            {
+                // Check if the database is accessible
+                if (!await dbContext.Database.CanConnectAsync())
+                {
+                    return null;
+                }
+
+                // ✅ Check if setup has been completed
+                var allowSetupSetting = await dbContext.Settings
+                    .Where(s => s.Group == "SYSTEM" && s.Name == "AllowSetup")
+                    .FirstOrDefaultAsync();
+
+                // If AllowSetup is not "false", setup hasn't been completed yet
+                if (allowSetupSetting == null || !allowSetupSetting.Value.Equals("false", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null; // Fall back to configuration files
+                }
+
+                // ✅ Load all settings from database
+                var settings = await dbContext.Settings
+                    .Where(s => s.Group == "STORAGE" || s.Group == "PUBLISHER" || s.Group == "SYSTEM" || s.Group == "OAUTH")
+                    .ToListAsync();
+
+                if (!settings.Any())
+                {
+                    return null; // No settings in database yet
+                }
+
+                // ✅ Build EditorConfig from database settings
+                var config = new EditorConfig
+                {
+                    AllowSetup = false, // Setup is complete if we're here
+                    IsMultiTenantEditor = isMultiTenantEditor,
+                    BlobPublicUrl = GetSettingValue(settings, "STORAGE", "BlobPublicUrl"),
+                    CosmosRequiresAuthentication = GetSettingValueAsBool(settings, "PUBLISHER", "CosmosRequiresAuthentication") ?? false,
+                    MicrosoftAppId = GetSettingValue(settings, "OAUTH", "MicrosoftAppId"),
+                    PublisherUrl = GetSettingValue(settings, "PUBLISHER", "PublisherUrl"),
+                    StaticWebPages = GetSettingValueAsBool(settings, "PUBLISHER", "StaticWebPages") ?? true,
+                    AllowedFileTypes = GetSettingValue(settings, "PUBLISHER", "AllowedFileTypes")
+                };
+
+                return config;
+            }
+            catch (Exception)
+            {
+                // If database query fails, return null to fall back to configuration
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets a setting value from the settings collection.
+        /// </summary>
+        private string GetSettingValue(System.Collections.Generic.List<Setting> settings, string group, string name)
+        {
+            return settings
+                .FirstOrDefault(s => s.Group == group && s.Name == name)
+                ?.Value;
+        }
+
+        /// <summary>
+        /// Gets a setting value as a boolean.
+        /// </summary>
+        private bool? GetSettingValueAsBool(System.Collections.Generic.List<Setting> settings, string group, string name)
+        {
+            var value = GetSettingValue(settings, group, name);
+            
+            if (string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+
+            if (bool.TryParse(value, out var result))
+            {
+                return result;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -279,30 +436,7 @@ namespace Sky.Editor.Services.EditorSettings
                 {
                     if (editorConfig == null)
                     {
-                        editorConfig = GetEditorConfig();
-                    }
-                }
-                finally
-                {
-                    _configSemaphore.Release();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Ensures the editor configuration is loaded before accessing it (asynchronous version).
-        /// </summary>
-        /// <returns>A task that represents the asynchronous operation.</returns>
-        private async Task EnsureConfigLoadedAsync()
-        {
-            if (editorConfig == null)
-            {
-                await _configSemaphore.WaitAsync();
-                try
-                {
-                    if (editorConfig == null)
-                    {
-                        editorConfig = await GetEditorConfigAsync();
+                        editorConfig = GetEditorConfigAsync().GetAwaiter().GetResult();
                     }
                 }
                 finally
@@ -315,6 +449,20 @@ namespace Sky.Editor.Services.EditorSettings
         private string GetNormalizedKeyName(string domainName)
         {
             return $"edsetting-{domainName.ToLower()}";
+        }
+
+        /// <summary>
+        /// Helper class to hold configuration values from IConfiguration with proper nullable handling.
+        /// </summary>
+        private class ConfigurationSource
+        {
+            public bool? AllowSetup { get; set; }
+            public string BlobPublicUrl { get; set; }
+            public bool? CosmosRequiresAuthentication { get; set; }
+            public string MicrosoftAppId { get; set; }
+            public string PublisherUrl { get; set; }
+            public bool? StaticWebPages { get; set; }
+            public string AllowedFileTypes { get; set; }
         }
     }
 }

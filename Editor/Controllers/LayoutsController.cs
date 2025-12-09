@@ -15,7 +15,6 @@ namespace Sky.Cms.Controllers
     using System.Threading.Tasks;
     using System.Web;
     using Cosmos.BlobService;
-    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Cms.Data.Logic;
     using Cosmos.Common.Data;
     using Cosmos.Common.Models;
@@ -36,6 +35,7 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
+    using Sky.Editor.Services.Layouts;
 
     /// <summary>
     /// Layouts controller.
@@ -74,6 +74,7 @@ namespace Sky.Cms.Controllers
         private readonly IEditorSettings editorSettings;
         private readonly IArticleHtmlService htmlService;
         private readonly ILogger<LayoutsController> logger;
+        private readonly ILayoutImportService layoutImportService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LayoutsController"/> class.
@@ -81,12 +82,13 @@ namespace Sky.Cms.Controllers
         /// <param name="dbContext">Database context.</param>
         /// <param name="userManager">User manager.</param>
         /// <param name="articleLogic"><see cref="ArticleEditLogic">Article edit logic</see>.</param>
-        /// <param name="options"><see cref="CosmosConfig">Cosmos configuration</see> options.</param>
+        /// <param name="options"><see cref="IEditorSettings">Editor configuration</see> options.</param>
         /// <param name="storageContext">Storage context.</param>
         /// <param name="viewRenderService">View rendering service.</param>
         /// <param name="editorSettings">Editor settings.</param>
         /// <param name="htmlService">Html service.</param>
         /// <param name="logger">Logger instance.</param>
+        /// <param name="layoutImportService">Layout import service.</param>
         public LayoutsController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
@@ -96,7 +98,8 @@ namespace Sky.Cms.Controllers
             IViewRenderService viewRenderService,
             IEditorSettings editorSettings,
             IArticleHtmlService htmlService,
-            ILogger<LayoutsController> logger)
+            ILogger<LayoutsController> logger,
+            ILayoutImportService layoutImportService)
             : base(dbContext, userManager)
         {
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -106,6 +109,7 @@ namespace Sky.Cms.Controllers
             this.htmlService = htmlService ?? throw new ArgumentNullException(nameof(htmlService));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.viewRenderService = viewRenderService ?? throw new ArgumentNullException(nameof(viewRenderService));
+            this.layoutImportService = layoutImportService ?? throw new ArgumentNullException(nameof(layoutImportService));
 
             if (options == null)
             {
@@ -120,7 +124,7 @@ namespace Sky.Cms.Controllers
             }
             else
             {
-                blobPublicAbsoluteUrl = new Uri($"{options.PublisherUrl.TrimEnd('/')}/{options.BlobPublicUrl.TrimStart('/')}");
+                blobPublicAbsoluteUrl = new Uri($"{options.PublisherUrl.TrimEnd('/')}/{options.BlobPublicUrl.TrimStart('/')}");    
             }
         }
 
@@ -231,7 +235,7 @@ namespace Sky.Cms.Controllers
         /// <param name="pageNo">Page number to return.</param>
         /// <param name="pageSize">Number of records in each page.</param>
         /// <returns>Returns an <see cref="IActionResult"/>.</returns>
-        public IActionResult CommunityLayouts(string sortOrder = SortOrderAsc, string currentSort = SortFieldName, int pageNo = 0, int pageSize = 10)
+        public async Task<IActionResult> CommunityLayouts(string sortOrder = SortOrderAsc, string currentSort = SortFieldName, int pageNo = 0, int pageSize = 10)
         {
             if (!ModelState.IsValid)
             {
@@ -258,8 +262,8 @@ namespace Sky.Cms.Controllers
                 ViewData["pageNo"] = pageNo;
                 ViewData["pageSize"] = pageSize;
 
-                var utilities = new LayoutUtilities();
-                var query = utilities.CommunityCatalog.LayoutCatalog.AsQueryable();
+                var catalog = await layoutImportService.GetCommunityCatalogAsync();
+                var query = catalog.LayoutCatalog.AsQueryable();
 
                 ViewData["RowCount"] = query.Count();
 
@@ -863,9 +867,8 @@ namespace Sky.Cms.Controllers
                     return BadRequest("Design already loaded.");
                 }
 
-                var utilities = new LayoutUtilities();
-                var layout = await utilities.GetCommunityLayout(id, false);
-                var communityPages = await utilities.GetCommunityTemplatePages(id);
+                var layout = await layoutImportService.GetCommunityLayoutAsync(id, false);
+                var communityPages = await layoutImportService.GetCommunityTemplatePagesAsync(id);
 
                 if ((await dbContext.Layouts.FirstOrDefaultAsync(a => a.IsDefault)) == null)
                 {
@@ -885,7 +888,7 @@ namespace Sky.Cms.Controllers
 
                 if (communityPages != null && communityPages.Any())
                 {
-                    await ImportCommunityTemplates(communityPages, layout.Id, id);
+                    await ImportCommunityTemplates(htmlService, dbContext, communityPages, layout.Id, id);
                 }
             }
             catch (Exception ex)
@@ -935,6 +938,42 @@ namespace Sky.Cms.Controllers
                 logger.LogError(ex, "Error promoting layout {LayoutId}", id);
                 return StatusCode(500, "An error occurred while promoting the layout");
             }
+        }
+
+
+
+        /// <summary>
+        /// Imports community templates.
+        /// </summary>
+        /// <param name="htmlService">HTML service.</param>
+        /// <param name="dbContext">Database context.</param>
+        /// <param name="communityPages">Community pages.</param>
+        /// <param name="layoutId">Layout ID.</param>
+        /// <param name="communityLayoutId">Community layout ID.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public static async Task ImportCommunityTemplates(
+            IArticleHtmlService htmlService,
+            ApplicationDbContext dbContext,
+            IEnumerable<Template> communityPages,
+            Guid layoutId,
+            string communityLayoutId)
+        {
+            foreach (var page in communityPages)
+            {
+                var template = new Template
+                {
+                    CommunityLayoutId = page.CommunityLayoutId,
+                    Content = htmlService.EnsureEditableMarkers(page.Content),
+                    Description = page.Description,
+                    LayoutId = layoutId,
+                    Title = page.Title,
+                    PageType = page.PageType,
+                    Id = Guid.NewGuid()
+                };
+                dbContext.Templates.Add(template);
+            }
+
+            await dbContext.SaveChangesAsync();
         }
 
         #region Private Helper Methods
@@ -1266,34 +1305,6 @@ namespace Sky.Cms.Controllers
                 logger.LogError(backupEx, "Error creating backup after publishing layout {LayoutId}", layoutId);
                 // Don't fail the publish operation if backup fails
             }
-        }
-
-        /// <summary>
-        /// Imports community templates.
-        /// </summary>
-        private async Task ImportCommunityTemplates(
-            IEnumerable<Template> communityPages,
-            Guid layoutId,
-            string communityLayoutId)
-        {
-            foreach (var page in communityPages)
-            {
-                var template = new Template
-                {
-                    CommunityLayoutId = page.CommunityLayoutId,
-                    Content = htmlService.EnsureEditableMarkers(page.Content),
-                    Description = page.Description,
-                    LayoutId = layoutId,
-                    Title = page.Title,
-                    PageType = page.PageType,
-                    Id = Guid.NewGuid()
-                };
-                dbContext.Templates.Add(template);
-            }
-
-            await dbContext.SaveChangesAsync();
-            logger.LogInformation("Imported {TemplateCount} templates with community layout {CommunityLayoutId}",
-                communityPages.Count(), communityLayoutId);
         }
 
         /// <summary>

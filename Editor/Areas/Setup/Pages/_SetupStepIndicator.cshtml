@@ -1,0 +1,11 @@
+@model int
+
+<div class="setup-step-indicator">
+    <div class="setup-step @(Model >= 0 ? "completed" : "") @(Model == 0 ? "active" : "")">Welcome</div>
+    <div class="setup-step @(Model >= 1 ? "completed" : "") @(Model == 1 ? "active" : "")">Storage</div>
+    <div class="setup-step @(Model >= 2 ? "completed" : "") @(Model == 2 ? "active" : "")">Admin</div>
+    <div class="setup-step @(Model >= 3 ? "completed" : "") @(Model == 3 ? "active" : "")">Publisher</div>
+    <div class="setup-step @(Model >= 4 ? "completed" : "") @(Model == 4 ? "active" : "")">Email</div>
+    <div class="setup-step @(Model >= 5 ? "completed" : "") @(Model == 5 ? "active" : "")">CDN</div>
+    <div class="setup-step @(Model >= 6 ? "completed" : "") @(Model == 6 ? "active" : "")">Review</div>
+</div>

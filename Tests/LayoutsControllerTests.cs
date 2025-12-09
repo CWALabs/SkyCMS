@@ -70,7 +70,9 @@ namespace Sky.Tests.Controllers
                 ViewRenderService,
                 EditorSettings,
                 ArticleHtmlService,
-                _mockLogger.Object);
+                _mockLogger.Object,
+                LayoutImportService
+                );
 
             // Setup HttpContext for the controller
             var httpContext = new DefaultHttpContext();
@@ -120,7 +122,7 @@ namespace Sky.Tests.Controllers
             var jsonResult = result as JsonResult;
             var layouts = jsonResult.Value as System.Collections.Generic.List<LayoutIndexViewModel>;
             Assert.IsNotNull(layouts);
-            Assert.HasCount(2, layouts);
+            Assert.AreEqual(2, layouts.Count);
         }
 
         /// <summary>
@@ -179,7 +181,7 @@ namespace Sky.Tests.Controllers
             var viewResult = result as ViewResult;
             var model = viewResult.Model as System.Collections.Generic.List<LayoutIndexViewModel>;
             Assert.IsNotNull(model);
-            Assert.HasCount(3, model);
+            Assert.AreEqual(3, model.Count);
         }
 
         /// <summary>
@@ -269,7 +271,7 @@ namespace Sky.Tests.Controllers
                 .OrderByDescending(l => l.LastModified ?? DateTimeOffset.MinValue)
                 .ThenByDescending(l => l.Id)
                 .FirstAsync();
-            Assert.Contains("New Layout", newLayout.LayoutName);
+            Assert.IsTrue(newLayout.LayoutName.Contains("New Layout"));
             Assert.IsFalse(newLayout.IsDefault);
         }
 
@@ -316,7 +318,7 @@ namespace Sky.Tests.Controllers
             // Assert
             Assert.IsInstanceOfType(result, typeof(BadRequestObjectResult));
             var badRequestResult = result as BadRequestObjectResult;
-            Assert.Contains("Cannot delete the default layout", badRequestResult.Value.ToString());
+            Assert.IsTrue(badRequestResult.Value.ToString().Contains("Cannot delete the default layout"));
         }
 
         /// <summary>
@@ -731,7 +733,7 @@ namespace Sky.Tests.Controllers
             // Since we started with 5 layouts, the new version should be 6
             Assert.IsNotNull(newVersion, "Promote should return a version number");
             Assert.AreEqual(6, newVersion, $"Expected version to be 6 (count of 5 + 1), but got {newVersion}");
-            Assert.IsGreaterThan(5, newVersion, $"New version {newVersion} should be greater than the original version 5");
+            Assert.IsTrue(newVersion > 5, $"New version {newVersion} should be greater than the original version 5");
             
             // Verify the count increased
             var finalCount = await Db.Layouts.CountAsync();
@@ -812,13 +814,13 @@ namespace Sky.Tests.Controllers
         /// Tests that CommunityLayouts returns view with catalog.
         /// </summary>
         [TestMethod]
-        public void CommunityLayouts_ReturnsViewWithCatalog()
+        public async Task CommunityLayouts_ReturnsViewWithCatalog()
         {
             // Act
-            var result = _controller.CommunityLayouts();
+            var result = await _controller.CommunityLayouts();
 
             // Assert
-            // Can return ViewResult or ObjectResult (StatusCode 500) if LayoutUtilities fails to load catalog
+            // Can return ViewResult or ObjectResult (StatusCode 500) if LayoutImportService fails to load catalog
             Assert.IsTrue(
                 result is ViewResult || result is ObjectResult,
                 $"Expected ViewResult or ObjectResult, but got {result.GetType().Name}");
@@ -834,13 +836,13 @@ namespace Sky.Tests.Controllers
         /// Tests that CommunityLayouts handles pagination.
         /// </summary>
         [TestMethod]
-        public void CommunityLayouts_HandlesPagination()
+        public async Task CommunityLayouts_HandlesPagination()
         {
             // Act
-            var result = _controller.CommunityLayouts(pageNo: 0, pageSize: 5);
+            var result = await _controller.CommunityLayouts(pageNo: 0, pageSize: 5);
 
             // Assert
-            // Can return ViewResult or ObjectResult (StatusCode 500) if LayoutUtilities fails to load catalog
+            // Can return ViewResult or ObjectResult (StatusCode 500) if LayoutImportService fails to load catalog
             Assert.IsTrue(
                 result is ViewResult || result is ObjectResult,
                 $"Expected ViewResult or ObjectResult, but got {result.GetType().Name}");
@@ -965,7 +967,7 @@ namespace Sky.Tests.Controllers
             Assert.IsInstanceOfType(result, typeof(FileContentResult));
             var fileResult = result as FileContentResult;
             Assert.AreEqual("application/octet-stream", fileResult.ContentType);
-            Assert.Contains("layout-", fileResult.FileDownloadName);
+            Assert.IsTrue(fileResult.FileDownloadName.Contains("layout-"));
         }
 
         /// <summary>

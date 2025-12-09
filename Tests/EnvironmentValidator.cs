@@ -12,11 +12,7 @@ namespace Sky.Tests
         private static readonly string[] RequiredVariables = new[]
         {
             // ✅ Core Application Settings
-            "CosmosPublisherUrl",
             "AdminEmail",
-            "CosmosAllowSetup",
-            "MultiTenantEditor",
-            "CosmosStaticWebPages"
             
             // ✅ Database Connection Strings (at least ONE is required)
             // These are checked separately below
@@ -176,11 +172,7 @@ namespace Sky.Tests
                    "1️⃣  Initialize User Secrets:\n" +
                    "   dotnet user-secrets init --project Tests\n\n" +
                    "2️⃣  Configure Required Application Settings:\n" +
-                   "   dotnet user-secrets set \"CosmosPublisherUrl\" \"https://your-site.com\" --project Tests\n" +
                    "   dotnet user-secrets set \"AdminEmail\" \"admin@example.com\" --project Tests\n" +
-                   "   dotnet user-secrets set \"CosmosAllowSetup\" \"true\" --project Tests\n" +
-                   "   dotnet user-secrets set \"MultiTenantEditor\" \"true\" --project Tests\n" +
-                   "   dotnet user-secrets set \"CosmosStaticWebPages\" \"true\" --project Tests\n\n" +
                    "3️⃣  Configure Database Connection (choose at least ONE):\n" +
                    "   # SQLite (recommended for testing)\n" +
                    "   dotnet user-secrets set \"ConnectionStrings:SQLite\" \"Data Source=:memory:;Mode=Memory;Cache=Shared;\" --project Tests\n\n" +
@@ -245,15 +237,9 @@ namespace Sky.Tests
             context.WriteLine($"   Storage: {(storage.Any() ? string.Join(", ", storage) : "None configured")}");
             
             // Multi-Tenant
-            var isMultiTenant = configuration.GetValue<bool>("MultiTenantEditor");
+            var isMultiTenant = false;
             context.WriteLine($"   Multi-Tenant: {(isMultiTenant ? "Enabled" : "Disabled")}");
-            
-            // Test Settings
-            var useCloudDb = configuration.GetValue<bool>("TestSettings:UseCloudDatabases");
-            var skipSlow = configuration.GetValue<bool>("TestSettings:SkipSlowTests");
-            var cleanup = configuration.GetValue<bool>("TestSettings:CleanupAfterTests", true);
-            context.WriteLine($"   Test Settings: UseCloudDb={useCloudDb}, SkipSlow={skipSlow}, Cleanup={cleanup}");
-            
+                        
             // CDN Tests
             var hasCloudflareCdn = !string.IsNullOrWhiteSpace(configuration["CdnIntegrationTests:Cloudflare:ApiToken"]);
             if (hasCloudflareCdn)

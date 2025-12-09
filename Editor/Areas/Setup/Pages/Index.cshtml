@@ -1,0 +1,52 @@
+@page
+@model Sky.Editor.Areas.Setup.Pages.IndexModel
+@{
+    ViewData["Title"] = "Welcome";
+}
+
+@await Html.PartialAsync("_SetupStepIndicator", 0) @* Current step number *@
+
+<div class="text-center mb-5">
+    <h2>Welcome to SkyCMS Setup Wizard</h2>
+    <p class="lead">This wizard will guide you through the initial setup of your SkyCMS installation.</p>
+    <p class="text-light">SkyCMS is open source software. <a href="https://github.com/CWALabs/SkyCMS" target="_blank">View on GitHub</a></p>
+</div>
+
+<div class="card mb-4 bg-secondary text-light">
+    <div class="card-body">
+        <h5 class="card-title"><i class="fas fa-info-circle"></i> Before You Begin</h5>
+        <p class="card-text">Please ensure you have the following information ready:</p>
+        <ul>
+            <li><strong>Storage Connection String</strong> - For Azure Blob Storage, AWS S3 (or compatible), or Cloudflare R2</li>
+            <li><strong>Administrator Email & Password</strong> - For the initial admin account</li>
+            <li><strong>Publisher URL</strong> - The public URL of your website</li>
+            <li><strong>(Optional)</strong> Email service credentials (SendGrid, Azure Communication Services, or SMTP)</li>
+            <li><strong>(Optional)</strong> CDN service credentials (Azure, CloudFlare or Securi)</li>
+        </ul>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <strong><i class="fas fa-lock"></i> Security Note:</strong> 
+    The database connection string must be configured in your environment/user secrets before running this wizard.
+    All other settings will be stored in the database and can be changed later through the admin interface.
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @Model.ErrorMessage
+    </div>
+}
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <div class="d-flex justify-content-between mt-4">
+        <a href="/" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Start Setup <i class="fas fa-arrow-right"></i></button>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+}

@@ -1,0 +1,177 @@
+﻿// <copyright file="Step1_Storage.cshtml.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
+// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// for more information concerning the license and the contributors participating to this project.
+// </copyright>
+
+namespace Sky.Editor.Areas.Setup.Pages
+{
+    using System;
+    using System.ComponentModel.DataAnnotations;
+    using System.Threading.Tasks;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.RazorPages;
+    using Sky.Editor.Services.Setup;
+
+    /// <summary>
+    /// Setup wizard step 2: Storage configuration.
+    /// </summary>
+    public class Step1_Storage : PageModel
+    {
+        private readonly ISetupService setupService;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Step2_StorageModel"/> class.
+        /// </summary>
+        /// <param name="setupService">Setup service.</param>
+        public Step1_Storage(ISetupService setupService)
+        {
+            this.setupService = setupService;
+        }
+
+        /// <summary>
+        /// Gets or sets the setup session ID.
+        /// </summary>
+        [BindProperty]
+        public Guid SetupId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the storage type.
+        /// </summary>
+        [BindProperty]
+        public string StorageType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the storage connection string.
+        /// </summary>
+        [BindProperty]
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Connection string is required")]
+        public string StorageConnectionString { get; set; }
+
+        /// <summary>
+        /// Gets or sets the container name (for Azure Blob Storage).
+        /// </summary>
+        [BindProperty]
+        public string ContainerName { get; set; } = "$web";
+
+        /// <summary>
+        /// Gets or sets the blob public URL.
+        /// </summary>
+        [BindProperty]
+        [Required(ErrorMessage = "Public URL is required")]
+        public string BlobPublicUrl { get; set; } = "/";
+
+        /// <summary>
+        /// Gets or sets the error message.
+        /// </summary>
+        public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Gets or sets the success message.
+        /// </summary>
+        public string SuccessMessage { get; set; }
+
+        /// <summary>
+        /// Handles GET requests.
+        /// </summary>
+        /// <returns>Page result.</returns>
+        public async Task<IActionResult> OnGetAsync()
+        {
+            var config = await setupService.GetCurrentSetupAsync();
+            if (config == null)
+            {
+                return RedirectToPage("./Index");
+            }
+
+            SetupId = config.Id;
+            StorageConnectionString = config.StorageConnectionString;
+            BlobPublicUrl = config.BlobPublicUrl;
+
+            // Infer storage type from connection string
+            if (!string.IsNullOrEmpty(StorageConnectionString))
+            {
+                StorageType = InferStorageType(StorageConnectionString);
+            }
+
+            return Page();
+        }
+
+        /// <summary>
+        /// Handles POST requests to proceed to next step.
+        /// </summary>
+        /// <returns>Redirect to next step.</returns>
+        public async Task<IActionResult> OnPostAsync()
+        {
+            if (!ModelState.IsValid)
+            {
+                return Page();
+            }
+
+            var config = await setupService.GetCurrentSetupAsync();
+            SetupId = config.Id;
+
+            try
+            {
+                var result = await setupService.TestStorageConnectionAsync(StorageConnectionString);
+                if (!result.Success)
+                {
+                    ErrorMessage = "Storage connection test failed. Please ensure the connection string is correct.";
+                    return Page();
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Failed to proceed: {ex.Message}";
+                return Page();
+            }
+
+            try
+            {
+                await setupService.UpdateStorageConfigAsync(
+                    SetupId,
+                    StorageConnectionString,
+                    BlobPublicUrl);
+
+                await setupService.UpdateStepAsync(SetupId, 1);  // ✅ Changed back to 1
+                return RedirectToPage("./Step2_AdminAccount");
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Failed to proceed: {ex.Message}";
+                return Page();
+            }
+        }
+
+        /// <summary>
+        /// Infers storage type from connection string.
+        /// </summary>
+        /// <param name="connectionString">Connection string.</param>
+        /// <returns>Storage type.</returns>
+        private string InferStorageType(string connectionString)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                return string.Empty;
+            }
+
+            if (connectionString.Contains("DefaultEndpointsProtocol=", StringComparison.OrdinalIgnoreCase) ||
+                connectionString.Contains("AccountName=", StringComparison.OrdinalIgnoreCase))
+            {
+                return "AzureBlob";
+            }
+            else if (connectionString.Contains("Bucket=", StringComparison.OrdinalIgnoreCase) &&
+                     connectionString.Contains("Region=", StringComparison.OrdinalIgnoreCase))
+            {
+                return "AmazonS3";
+            }
+            else if (connectionString.Contains("AccountId=", StringComparison.OrdinalIgnoreCase) &&
+                     connectionString.Contains("Bucket=", StringComparison.OrdinalIgnoreCase))
+            {
+                return "CloudflareR2";
+            }
+
+            return string.Empty;
+        }
+    }
+}

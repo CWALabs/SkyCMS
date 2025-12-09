@@ -20,6 +20,7 @@ namespace Sky.Editor.Models
         /// </summary>
         public EditorConfig()
         {
+            AllowedFileTypes = ".jpg,.jpeg,.png,.gif,.bmp,.svg,.webp,.mp4,.mp3,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip";
         }
 
         /// <summary>
@@ -30,6 +31,7 @@ namespace Sky.Editor.Models
         {
             if (string.IsNullOrEmpty(serializedJson))
             {
+                AllowedFileTypes = ".jpg,.jpeg,.png,.gif,.bmp,.svg,.webp,.mp4,.mp3,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip";
                 return;
             }
 
@@ -43,6 +45,7 @@ namespace Sky.Editor.Models
                 this.MicrosoftAppId = config.MicrosoftAppId;
                 this.PublisherUrl = config.PublisherUrl;
                 this.StaticWebPages = config.StaticWebPages;
+                this.AllowedFileTypes = config.AllowedFileTypes;
             }
         }
 
@@ -59,17 +62,16 @@ namespace Sky.Editor.Models
             this.MicrosoftAppId = settings.MicrosoftAppId;
             this.PublisherUrl = settings.PublisherUrl;
             this.StaticWebPages = settings.StaticWebPages;
+            this.AllowedFileTypes = settings.AllowedFileTypes;
         }
 
         /// <summary>
-        /// Gets allowed file types for the file uploader.
+        /// Gets or sets allowed file types for the file uploader.
         /// </summary>
         public string AllowedFileTypes
         {
-            get
-            {
-                return ".js,.css,.htm,.html,.htm,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json";
-            }
+            get;
+            set;
         }
 
         /// <summary>

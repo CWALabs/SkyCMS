@@ -227,8 +227,8 @@
       },
       "AWSSDK.Core": {
         "type": "Transitive",
-        "resolved": "4.0.3.3",
-        "contentHash": "YQv10JuxnciWh0QwnkarSbge4gXQV1qTURf5jkBjNUH/3jYS9QrbxopA4TK1qdjfOfP37tqiJkLSrRRNqX81aw=="
+        "resolved": "4.0.3.4",
+        "contentHash": "Bykx2u1jNLfPr/otJBPb1QwXiEip4GbjX72Ah+Rhv7QiazUZGo+d+zuhi4uT1HCnzGK7JfQZ7V+vzTysaLcObw=="
       },
       "Azure.Communication.Email": {
         "type": "Transitive",
@@ -269,16 +269,19 @@
       },
       "Duende.IdentityModel": {
         "type": "Transitive",
-        "resolved": "7.1.0",
-        "contentHash": "Ihn2LiHZfiGD0Qu6aKngK5xtqOocZcS88khVG0Xv7uObfzilevAvXHDhAqpvWiZNIXPeCD6SA5Wy/rfP0U4brA=="
+        "resolved": "8.0.0",
+        "contentHash": "8i+Tv4c38LgwoTRKbD0+MqtnNNDSVA83G6JkjGHgC4/7jH0nxZBP0RBhH8xTsvNQ5Pv9zrg+TR8rmtWK9HDOPg==",
+        "dependencies": {
+          "Microsoft.BCL.Memory": "10.0.0"
+        }
       },
       "Duende.IdentityServer.Storage": {
         "type": "Transitive",
-        "resolved": "7.3.2",
-        "contentHash": "a3G+kV9NM/DN3v2g0OCpy0h77e/vSr2rcLDcPnLCQjGUHTcMQtC+GNuAX0Tr9I/mdNrjdO37lYF+zDKUB9NiOA==",
+        "resolved": "7.4.2",
+        "contentHash": "UfH/WmLT3SVC0w1g+dmbUaJN3imGq0/raSwJkPS3LepPwLtL/lh/TJ9QeMa6rYzmuLSibnov74BK13BxgXgZvQ==",
         "dependencies": {
-          "Duende.IdentityModel": "7.1.0",
-          "Microsoft.AspNetCore.DataProtection.Abstractions": "9.0.3"
+          "Duende.IdentityModel": "8.0.0",
+          "Microsoft.AspNetCore.DataProtection.Abstractions": "10.0.0"
         }
       },
       "Hangfire.Core": {
@@ -390,8 +393,8 @@
       },
       "Microsoft.AspNetCore.DataProtection.Abstractions": {
         "type": "Transitive",
-        "resolved": "9.0.10",
-        "contentHash": "Ub80BRAU968oxE9DO5t5OGNxGYUW0UQYBp0BbYFV9XzNnZVVlraVaUssu0AUtbneOGqHjjLJ8rDUIJHpWGCSVA=="
+        "resolved": "10.0.0",
+        "contentHash": "MFwimSi2FH/CMGydm5EnoQFORoaArEX4QG1nijiRN05XUyJqzWwIlYT4AvnhoU1cGett/EvD416f7OnrDisbiA=="
       },
       "Microsoft.AspNetCore.Hosting": {
         "type": "Transitive",
@@ -520,6 +523,11 @@
         "type": "Transitive",
         "resolved": "1.1.0",
         "contentHash": "J2G1k+u5unBV+aYcwxo94ip16Rkp65pgWFb0R6zwJipzWNMgvqlWeuI7/+R+e8bob66LnSG+llLJ+z8wI94cHg=="
+      },
+      "Microsoft.Bcl.Memory": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "a5PdIQh+01OrOViDfJA0zfo2ty5ruSxpR+4ZOkY1nGr0ybvm3XKxckxKp0BVR9ZtVIauQscgHABFysUJYOqnsg=="
       },
       "Microsoft.Build.Framework": {
         "type": "Transitive",
@@ -2160,7 +2168,7 @@
       "aspnetcore.identity.flexdb": {
         "type": "Project",
         "dependencies": {
-          "Duende.IdentityServer.EntityFramework.Storage": "[7.3.2, 8.0.0)",
+          "Duende.IdentityServer.EntityFramework.Storage": "[7.4.2, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.AspNetCore.Identity.UI": "[9.0.10, 10.0.0)",
           "Microsoft.Data.Sqlite.Core": "[9.0.0, 10.0.0)",
@@ -2174,40 +2182,40 @@
       "cosmos.blobservice": {
         "type": "Project",
         "dependencies": {
-          "AWSSDK.S3": "[4.0.13.1, )",
+          "AWSSDK.S3": "[4.0.14.1, )",
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.1, 2.0.0)",
           "Azure.Storage.Files.Shares": "[12.24.0, 13.0.0)",
-          "Cosmos.DynamicConfig": "[9.2.1, )"
+          "Cosmos.DynamicConfig": "[9.2.2.1, )"
         }
       },
       "cosmos.common": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.1, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.1.1, )",
           "Azure.Monitor.Query": "[1.7.1, 2.0.0)",
-          "Cosmos.BlobService": "[9.2.1, )",
-          "Cosmos.DynamicConfig": "[9.2.1, )",
+          "Cosmos.BlobService": "[9.2.2.1, )",
+          "Cosmos.DynamicConfig": "[9.2.2.1, )",
           "MailChimp.Net.V3": "[5.8.2, 6.0.0)",
           "Microsoft.AspNetCore.DataProtection.EntityFrameworkCore": "[9.0.10, 10.0.0)",
-          "Otp.NET": "[1.4.0, 2.0.0)",
+          "Otp.NET": "[1.4.1, )",
           "X.Web.Sitemap": "[2.11.3, 3.0.0)"
         }
       },
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.1, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.1.1, )",
           "Microsoft.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.10, 10.0.0)"
         }
       },
       "AWSSDK.S3": {
         "type": "CentralTransitive",
-        "requested": "[4.0.13.1, )",
-        "resolved": "4.0.13.1",
-        "contentHash": "+YDlfV80LsY9Q/+G31SepQW+XqLYIyqlpfkhHtHMAsB18T1dRtIGaiPtqkdYSPxBJpVQ+FaxwZ45bIwLneKrxA==",
+        "requested": "[4.0.14.1, )",
+        "resolved": "4.0.14.1",
+        "contentHash": "9nhBDBtLQM5vs4HKCJeQAvsMU6tiH0q6cv5dg0N7BYphhlDPLPRDL+10aHvYYffj4qA8E48Yyook+/trPqu6Ow==",
         "dependencies": {
-          "AWSSDK.Core": "[4.0.3.3, 5.0.0)"
+          "AWSSDK.Core": "[4.0.3.4, 5.0.0)"
         }
       },
       "Azure.Extensions.AspNetCore.DataProtection.Blobs": {
@@ -2266,12 +2274,12 @@
       },
       "Duende.IdentityServer.EntityFramework.Storage": {
         "type": "CentralTransitive",
-        "requested": "[7.3.2, 8.0.0)",
-        "resolved": "7.3.2",
-        "contentHash": "3fV0mJ7x9LMvJ8Z4LftlUDY+cCV8HMUcoIg5NGIefqC1A5EMxYFvACR7/Y5K3WxhP2OytiziH9P02qe2y3Jxrw==",
+        "requested": "[7.4.2, )",
+        "resolved": "7.4.2",
+        "contentHash": "RDp2Ttr4fVn1k/VjGv3gwVSrjA20yGjt2YGUiKR49o5DTg0f4L1sTD8EdltipA2GCKXcyLdmyNiz3hMbAgVyaQ==",
         "dependencies": {
-          "Duende.IdentityServer.Storage": "7.3.2",
-          "Microsoft.EntityFrameworkCore.Relational": "9.0.3"
+          "Duende.IdentityServer.Storage": "7.4.2",
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.9"
         }
       },
       "HtmlAgilityPack": {
@@ -2431,9 +2439,9 @@
       },
       "Otp.NET": {
         "type": "CentralTransitive",
-        "requested": "[1.4.0, 2.0.0)",
-        "resolved": "1.4.0",
-        "contentHash": "Fk1NKc0lWmlo6LAFYpFJInRgFKt72knRNEvxndDYoQHFwYOPXav+WEUBvQA0k4lxq5xt0SymrZ+oi0F/G40bPQ=="
+        "requested": "[1.4.1, )",
+        "resolved": "1.4.1",
+        "contentHash": "UXjZ80T6BfVACJWmEcz4UFZ93hwX3STKojKvVpPk3qUhubjnLwIiZMsI4Hh91HhYxC0JlatNdNrVK2wkv4O9/Q=="
       },
       "Pomelo.EntityFrameworkCore.MySql": {
         "type": "CentralTransitive",

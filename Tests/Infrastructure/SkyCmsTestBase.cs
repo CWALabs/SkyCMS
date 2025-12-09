@@ -41,6 +41,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.AspNetCore.DataProtection;
+using Sky.Editor.Services.Layouts;
 
 namespace Sky.Tests
 {
@@ -80,6 +81,8 @@ namespace Sky.Tests
         protected ILogger<EditorController> Logger = null!;
         protected Mock<IHubContext<Sky.Cms.Hubs.LiveEditorHub>> Hub = null!;
         protected EditorController EditorController = null!;
+        protected ILayoutImportService LayoutImportService = null!;
+        protected IHttpClientFactory HttpClientFactory = null!;
 
         // ADD THESE PROPERTIES FOR VERTICAL SLICE ARCHITECTURE
         protected IMediator Mediator = null!;
@@ -361,12 +364,22 @@ namespace Sky.Tests
                 .AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>>(sp => CreateArticleHandler)
                 .AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>>(sp => SaveArticleHandler)
                 .AddScoped<IMediator, Mediator>()
+                .AddHttpClient()  // ✅ ADD THIS - Registers IHttpClientFactory
                 .AddRazorPages()
                 .Services
                 .BuildServiceProvider();
 
             // GET MEDIATOR FROM SERVICE PROVIDER
             Mediator = Services.GetRequiredService<IMediator>();
+
+            // ✅ ADD THIS - Get the real IHttpClientFactory from DI
+            HttpClientFactory = Services.GetRequiredService<IHttpClientFactory>();
+
+            // ✅ ADD THIS - Create real LayoutImportService with live HttpClientFactory
+            LayoutImportService = new LayoutImportService(
+                HttpClientFactory,
+                Cache,
+                new LoggerFactory().CreateLogger<LayoutImportService>());
 
             ArticleScheduler = new ArticleScheduler(
                 new NullLogger<ArticleScheduler>(),
