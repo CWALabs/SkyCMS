@@ -41,7 +41,18 @@ namespace AspNetCore.Identity.FlexDb.Strategies
                 throw new ArgumentNullException(nameof(connectionString));
             }
 
-            optionsBuilder.UseSqlServer(connectionString);
+            optionsBuilder.UseSqlServer(connectionString, sqlServerOptions =>
+            {
+                // Enable retry on failure for transient errors
+                // This handles temporary network issues, database unavailability, etc.
+                sqlServerOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorNumbersToAdd: null);
+                
+                // Set command timeout (optional, but recommended for CI/CD)
+                sqlServerOptions.CommandTimeout(60); // 60 seconds
+            });
         }
     }
 }

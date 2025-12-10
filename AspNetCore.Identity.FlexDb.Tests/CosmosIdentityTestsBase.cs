@@ -125,20 +125,18 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                         // Step 2: Create fresh database with a new context
                         using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
                         {
-                            // Verify the model is configured correctly BEFORE attempting to create
-                            VerifyDatabaseSchema(dbContext);
-        
-                            var created = dbContext.Database.EnsureCreated();
+                            var created = dbContext.Database.EnsureCreatedAsync().Result;
+                            // Give SQLite a moment to finalize the schema
+                            System.Threading.Thread.Sleep(100);
 
                             if (!created)
                             {
                                 throw new InvalidOperationException("SQLite database creation returned false");
                             }
+
+                            VerifyDatabaseSchema(dbContext);
                         }
-                        
-                        // Give SQLite a moment to finalize the schema
-                        System.Threading.Thread.Sleep(100);
-                        
+
                         // Step 3: Verify tables with yet another fresh context
                         using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
                         {
@@ -149,51 +147,11 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                     {
                         // SQL Server / MySQL - use migrations if available, otherwise ensure created
                         using var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility);
-                        
-                        try
-                        {
-                            // Try to apply migrations first
-                            var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
-                            if (pendingMigrations.Any())
-                            {
-                                // Set longer timeout for migrations
-                                dbContext.Database.SetCommandTimeout(180); // 3 minutes
-                                dbContext.Database.Migrate();
-                            }
-                            else
-                            {
-                                // No migrations, use EnsureCreated (but be aware this creates schema without migration history)
-                                dbContext.Database.SetCommandTimeout(60); // 1 minute
-                                var created = dbContext.Database.EnsureCreated();
-                                
-                                // Verify tables exist
-                                VerifyTablesExist(dbContext, retryCount: 2);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // If migrations fail or timeout, try EnsureCreated as fallback
-                            if (ex.Message.Contains("Timeout") || ex.Message.Contains("timeout"))
-                            {
-                                // For timeout issues, the database might already exist
-                                // Just verify tables exist
-                                try
-                                {
-                                    VerifyTablesExist(dbContext, retryCount: 1);
-                                }
-                                catch
-                                {
-                                    // If verification fails, try to create with longer timeout
-                                    dbContext.Database.SetCommandTimeout(300); // 5 minutes
-                                    dbContext.Database.EnsureCreated();
-                                    VerifyTablesExist(dbContext, retryCount: 1);
-                                }
-                            }
-                            else
-                            {
-                                throw;
-                            }
-                        }
+
+                        var created = dbContext.Database.EnsureCreated();
+
+                        // Verify tables exist
+                        VerifyTablesExist(dbContext, retryCount: 2);
                     }
                     else
                     {

@@ -34,6 +34,7 @@ jobs:
         # The double underscores (__) map to nested config in .NET (ConnectionStrings:StorageConnectionString)
         
         ADMINEMAIL: ${{ secrets.ADMINEMAIL }}
+        COSMOSIDENTITYDBNAME: ${{ secrets.COSMOSIDENTITYDBNAME }}
         
         # Storage Connections
         CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
