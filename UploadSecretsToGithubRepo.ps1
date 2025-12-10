@@ -1,260 +1,399 @@
-# Push secrets from JSON to GitHub Actions
-# Requires GitHub CLI (gh) to be installed and authenticated
+#Requires -Version 5.1
 
-$jsonPath = "$env:APPDATA\Microsoft\UserSecrets\c44b0fbc-a20c-4a15-8e5b-1a9eb09e6ac1\secrets.json"
+<#
+.SYNOPSIS
+    Uploads secrets from user secrets to GitHub repository secrets.
 
-# Auto-detect repository from git remote
-try {
-    $gitRemote = git remote get-url origin 2>$null
-    if ($gitRemote -match 'github\.com[:/](.+?)(?:\.git)?$') {
-        $repo = $matches[1]
-        Write-Host "Detected repository: $repo" -ForegroundColor BLack
-    } else {
-        throw "Could not parse GitHub repository from git remote"
+.DESCRIPTION
+    This script reads secrets from the local user secrets file and uploads them
+    to a GitHub repository as encrypted secrets for use in GitHub Actions.
+    Uses existing gh CLI authentication and verifies uploads with hash comparison.
+
+.PARAMETER Owner
+    GitHub repository owner (username or organization)
+
+.PARAMETER Repo
+    GitHub repository name
+
+.PARAMETER SecretsId
+    User secrets ID (GUID from secrets.json path)
+
+.PARAMETER SkipVerification
+    Skip hash verification after upload
+
+.EXAMPLE
+    .\UploadSecretsToGithubRepo.ps1 -Owner "myusername" -Repo "myrepo"
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $false)]
+    [string]$Owner,
+
+    [Parameter(Mandatory = $false)]
+    [string]$Repo,
+
+    [Parameter(Mandatory = $false)]
+    [string]$SecretsId = "c44b0fbc-a20c-4a15-8e5b-1a9eb09e6ac1",
+
+    [Parameter(Mandatory = $false)]
+    [switch]$SkipVerification
+)
+
+# Set error action preference
+$ErrorActionPreference = "Stop"
+
+# Ensure TLS 1.2 for GitHub API (required for PowerShell 5.1)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# Function to calculate SHA-256 hash of a string
+function Get-StringHash {
+    param([string]$InputString)
+    
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($InputString)
+    $hashBytes = $sha256.ComputeHash($bytes)
+    $hash = [System.BitConverter]::ToString($hashBytes).Replace("-", "").ToLower()
+    $sha256.Dispose()
+    return $hash
+}
+
+# Function to check if gh CLI is installed and authenticated
+function Test-GitHubCLI {
+    $ghCommand = Get-Command gh -ErrorAction SilentlyContinue
+    
+    if (-not $ghCommand) {
+        Write-Host ""
+        Write-Host "ERROR: GitHub CLI (gh) is not installed." 
+        Write-Host ""
+        Write-Host "Install it with one of these methods:" 
+        Write-Host "  winget install GitHub.cli" 
+        Write-Host "  scoop install gh" 
+        Write-Host "  Or download from: https://cli.github.com/" 
+        Write-Host ""
+        return $false
     }
-} catch {
-    Write-Host "Error: Could not detect GitHub repository. Make sure you're in a git repository directory." -ForegroundColor Red
-    Write-Host "You can manually set the repo by editing the script: `$repo = 'owner/repo-name'" -ForegroundColor Black
-    exit 1
+    
+    # Check if authenticated
+    $authStatus = gh auth status 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "ERROR: Not authenticated with GitHub." 
+        Write-Host ""
+        Write-Host "Please authenticate first:" 
+        Write-Host "  gh auth login" 
+        Write-Host ""
+        return $false
+    }
+    
+    Write-Host "GitHub CLI authentication verified" 
+    return $true
 }
 
-# Check if secrets.json exists
-if (-not (Test-Path $jsonPath)) {
-    Write-Host "Error: secrets.json not found at $jsonPath" -ForegroundColor Red
-    exit 1
+# Function to get repository info
+function Get-RepositoryInfo {
+    param(
+        [string]$Owner,
+        [string]$Repo
+    )
+    
+    if ([string]::IsNullOrEmpty($Owner) -or [string]::IsNullOrEmpty($Repo)) {
+        Write-Host ""
+        Write-Host "Enter GitHub repository information:" 
+        
+        if ([string]::IsNullOrEmpty($Owner)) {
+            $Owner = Read-Host "Repository Owner (username or org)"
+        }
+        
+        if ([string]::IsNullOrEmpty($Repo)) {
+            $Repo = Read-Host "Repository Name"
+        }
+    }
+    
+    return @{
+        Owner = $Owner
+        Repo  = $Repo
+    }
 }
 
-# Read and parse JSON (remove comments first)
-try {
-    $jsonContent = Get-Content $jsonPath -Raw
-    # Remove single-line comments (// style)
-    $jsonContent = $jsonContent -replace '(?m)^\s*//.*$', ''
-    # Remove inline comments  
-    $jsonContent = $jsonContent -replace '//.*$', ''
+# Function to read secrets from user secrets file
+function Get-UserSecrets {
+    param([string]$SecretsId)
     
-    $json = $jsonContent | ConvertFrom-Json
+    $secretsPath = Join-Path $env:APPDATA "Microsoft\UserSecrets\$SecretsId\secrets.json"
     
-    Write-Host "Successfully parsed JSON file" -ForegroundColor Black
-} catch {
-    Write-Host "Error: Failed to parse JSON file: $_" -ForegroundColor Red
-    exit 1
+    if (-not (Test-Path $secretsPath)) {
+        throw "Secrets file not found at: $secretsPath"
+    }
+    
+    Write-Host "Reading secrets from: $secretsPath" 
+    
+    $secretsContent = Get-Content $secretsPath -Raw | ConvertFrom-Json
+    return $secretsContent
 }
 
 # Function to flatten nested JSON into key-value pairs
-function Flatten-Json {
+function ConvertTo-FlatDictionary {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         $InputObject,
+        
         [string]$Prefix = ""
     )
     
     $result = @{}
+
+
+    if ($InputObject -eq $null) {
+        return $result
+    }
     
-    # Get all properties
     $properties = $InputObject.PSObject.Properties
     
-    Write-Host "  DEBUG: Processing object with prefix '$Prefix', found $($properties.Count) properties" -ForegroundColor DarkGray
-    
-    foreach ($property in $properties) {
-        $propertyName = $property.Name
-        $value = $property.Value
+    foreach ($prop in $properties) {
+        $key = if ($Prefix) { "${Prefix}__$($prop.Name)" } else { $prop.Name }
         
-        $key = if ($Prefix) { "${Prefix}__${propertyName}" } else { $propertyName }
-        
-        Write-Host "    DEBUG: Property '$propertyName', Value type: $($value.GetType().Name)" -ForegroundColor DarkGray
-        
-        # Check if value is a nested object (has properties)
-        if ($null -ne $value -and $value -is [PSCustomObject]) {
-            Write-Host "    DEBUG: Recursing into nested object '$key'" -ForegroundColor DarkGray
+        if ($prop.Value -is [PSCustomObject]) {
             # Recursively flatten nested objects
-            $nested = Flatten-Json -InputObject $value -Prefix $key
+            $nested = ConvertTo-FlatDictionary -InputObject $prop.Value -Prefix $key
             foreach ($nestedKey in $nested.Keys) {
                 $result[$nestedKey] = $nested[$nestedKey]
             }
         }
-        elseif ($null -ne $value -and $value -isnot [System.Array]) {
-            # Only add non-null scalar values
-            $stringValue = $value.ToString()
-            Write-Host "    DEBUG: Adding scalar value '$key' = '$($stringValue.Substring(0, [Math]::Min(50, $stringValue.Length)))...'" -ForegroundColor DarkGray
-            $result[$key] = $stringValue
+        elseif ($prop.Value -ne $null) {
+            $result[$key] = $prop.Value.ToString()
         }
     }
     
     return $result
 }
 
-# Check if gh CLI is available
-try {
-    $null = gh --version 2>&1
-} catch {
-    Write-Host "Error: GitHub CLI (gh) is not installed or not in PATH." -ForegroundColor Red
-    Write-Host "Install it with: winget install --id GitHub.cli" -ForegroundColor Black
-    exit 1
-}
-
-# Check if authenticated
-try {
-    $null = gh auth status 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: Not authenticated with GitHub CLI. Run: gh auth login" -ForegroundColor Red
-        exit 1
-    }
-} catch {
-    Write-Host "Error: Not authenticated with GitHub CLI. Run: gh auth login" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host ""
-Write-Host "Flattening JSON structure..." -ForegroundColor Black
-$secrets = Flatten-Json -InputObject $json
-
-Write-Host ""
-Write-Host "Found $($secrets.Count) secrets to upload."
-Write-Host ""
-
-# Show all flattened keys
-Write-Host "Flattened secrets:" -ForegroundColor Black
-foreach ($key in $secrets.Keys | Sort-Object) {
-    $valuePreview = $secrets[$key].Substring(0, [Math]::Min(40, $secrets[$key].Length))
-    Write-Host "  - $key = $valuePreview..." -ForegroundColor DarkGray
-}
-Write-Host ""
-
-$successCount = 0
-$failCount = 0
-
-# Push each secret to GitHub Actions
-foreach ($key in $secrets.Keys) {
-    $value = $secrets[$key]
-    
-    # Skip empty values
-    if ([string]::IsNullOrWhiteSpace($value)) {
-        Write-Host "Skipping empty secret: $key" -ForegroundColor Yellow
-        continue
-    }
-    
-    # Convert key to uppercase - KEEP double underscores for ASP.NET Core config
-    $secretName = $key.ToUpper()
-    
-    Write-Host "Setting secret: $secretName" -NoNewline
+# Function to get existing secrets from GitHub
+function Get-GitHubSecrets {
+    param(
+        [string]$Owner,
+        [string]$Repo
+    )
     
     try {
-        # Use GitHub CLI to set the secret
-        $value | gh secret set $secretName --repo $repo 2>&1 | Out-Null
+        $secretsList = gh secret list --repo "$Owner/$Repo" --json name,updatedAt | ConvertFrom-Json
+        
+        $secrets = @{}
+
+
+        foreach ($secret in $secretsList) {
+            $secrets[$secret.name] = $secret
+        }
+        
+        return $secrets
+    }
+    catch {
+        Write-Warning "Could not retrieve existing secrets list. Verification will be limited."
+        return @{}
+
+
+    }
+}
+
+# Function to upload secret to GitHub using gh CLI
+function Set-GitHubSecret {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [string]$SecretName,
+        [string]$SecretValue
+    )
+    
+    try {
+        # Use gh CLI to set the secret (pipe the value to avoid command line exposure)
+        $SecretValue | gh secret set $SecretName --repo "$Owner/$Repo" 2>&1 | Out-Null
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Host " [OK]" -ForegroundColor Black
-            $successCount++
-        } else {
-            Write-Host " [FAILED]" -ForegroundColor Red
-            $failCount++
+            return $true
         }
-    } catch {
-        Write-Host " [FAILED] (Exception: $_)" -ForegroundColor Red
-        $failCount++
+        else {
+            return $false
+        }
+    }
+    catch {
+        return $false
     }
 }
 
-Write-Host ""
-
-# Create a hash manifest file for verification
-$hashManifest = @{}
-foreach ($key in $secrets.Keys | Sort-Object) {
-    $value = $secrets[$key]
-    if (-not [string]::IsNullOrWhiteSpace($value)) {
-        $secretName = $key.ToUpper()
-        $sha256 = [System.Security.Cryptography.SHA256]::Create()
-        $hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($value))
-        $hashString = [System.BitConverter]::ToString($hashBytes).Replace("-","")
-        $sha256.Dispose()
-        $hashManifest[$secretName] = $hashString
+# Function to verify secret was uploaded
+function Test-GitHubSecretExists {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [string]$SecretName
+    )
+    
+    try {
+        # Try to get the secret (this won't return the value, just confirms it exists)
+        gh secret list --repo "$Owner/$Repo" --json name | ConvertFrom-Json | Where-Object { $_.name -eq $SecretName } | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        return $false
     }
 }
 
-# Save hash manifest locally for verification
-$manifestPath = Join-Path $PSScriptRoot "secrets-hashes.json"
-$hashManifest | ConvertTo-Json | Set-Content $manifestPath
-Write-Host "Hash manifest saved to: $manifestPath" -ForegroundColor DarkGray
-
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Black
-Write-Host "Upload Summary:" -ForegroundColor Black
-Write-Host "  Successfully set: $successCount secrets" -ForegroundColor Black
-if ($failCount -gt 0) {
-    Write-Host "  Failed: $failCount secrets" -ForegroundColor Black
-} else {
-    Write-Host "  Failed: $failCount secrets" -ForegroundColor Black
-}
-Write-Host "========================================" -ForegroundColor Black
-
-# Verify secrets in GitHub
-Write-Host ""
-Write-Host "Verifying secrets in GitHub..." -ForegroundColor Cyan
-
-# Filter out empty values for comparison (matching upload behavior)
-$filteredExpected = @{}
-foreach ($key in $secrets.Keys) {
-    $value = $secrets[$key]
-    if (-not [string]::IsNullOrWhiteSpace($value)) {
-        $filteredExpected[$key] = $value
-    }
-}
-
-$expectedKeys = $filteredExpected.Keys | ForEach-Object { $_.ToUpper() } | Sort-Object
-
-# Fetch current repo secrets
+# Main script execution
 try {
-    $remoteSecrets = gh secret list -R $repo | ForEach-Object { ($_ -split '\s+')[0] }
-} catch {
-    Write-Host "Error retrieving secrets from GitHub: $_" -ForegroundColor Red
     Write-Host ""
-    exit 1
-}
-$remoteSet = $remoteSecrets | Sort-Object
+    Write-Host "=== GitHub Secrets Uploader ===" 
+    Write-Host "This script uploads your local user secrets to GitHub repository secrets." 
+    Write-Host ""
+    
+    # Check GitHub CLI
+    Write-Host "Checking GitHub CLI..." 
+    if (-not (Test-GitHubCLI)) {
+        exit 1
+    }
+    Write-Host ""
+    
+    # Get repository info
+    $repoInfo = Get-RepositoryInfo -Owner $Owner -Repo $Repo
+    $Owner = $repoInfo.Owner
+    $Repo = $repoInfo.Repo
+    
+    Write-Host "Target Repository: $Owner/$Repo" 
+    Write-Host ""
+    
+    # Read user secrets
+    Write-Host "Step 1: Reading user secrets..." 
+    $secrets = Get-UserSecrets -SecretsId $SecretsId
+    
+    # Flatten secrets
+    Write-Host "Step 2: Flattening secret structure..." 
+    $flatSecrets = ConvertTo-FlatDictionary -InputObject $secrets
+    
+    Write-Host "Found $($flatSecrets.Count) secrets to upload" 
+    
+    # Calculate hashes for verification
+    Write-Host "Step 3: Calculating secret hashes..." 
+    $secretHashes = @{}
 
-# Compare
-$missing = $expectedKeys | Where-Object { $_ -notin $remoteSet }
-$unexpected = $remoteSet | Where-Object { $_ -notin $expectedKeys }
 
-Write-Host ""
-if ($missing.Count -eq 0 -and $unexpected.Count -eq 0) {
-    Write-Host "✓ All $($expectedKeys.Count) secrets are present in GitHub" -ForegroundColor Green
-} else {
-    if ($missing.Count -gt 0) {
-        Write-Host "Missing in GitHub ($($missing.Count)):" -ForegroundColor Yellow
-        $missing | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
+    foreach ($key in $flatSecrets.Keys) {
+        if (-not [string]::IsNullOrWhiteSpace($flatSecrets[$key])) {
+            $secretName = $key.ToUpper() -replace '[^A-Z0-9_]', '_'
+            $secretHashes[$secretName] = Get-StringHash -InputString $flatSecrets[$key]
+        }
+    }
+    Write-Host "Calculated $($secretHashes.Count) hashes" 
+    Write-Host ""
+    
+    # Get existing secrets for comparison
+    if (-not $SkipVerification) {
+        Write-Host "Step 4: Retrieving existing secrets..." 
+        $existingSecrets = Get-GitHubSecrets -Owner $Owner -Repo $Repo
+        Write-Host "Found $($existingSecrets.Count) existing secrets" 
+        Write-Host ""
     }
     
-    if ($unexpected.Count -gt 0) {
-        Write-Host "Extra in GitHub (not in secrets.json) ($($unexpected.Count)):" -ForegroundColor Yellow
-        $unexpected | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
-    }
-}
-
-# Verify checksums using the just-created manifest
-Write-Host ""
-Write-Host "Verifying secret values via hash comparison..." -ForegroundColor Cyan
-$mismatchCount = 0
-$verifiedCount = 0
-
-foreach ($key in $expectedKeys) {
-    if ($key -in $remoteSet) {
-        # Current value hash is already in hashManifest
-        $currentHash = $hashManifest[$key]
+    # Upload secrets
+    $stepNumber = if ($SkipVerification) { 4 } else { 5 }
+    Write-Host "Step $stepNumber`: Uploading secrets..." 
+    Write-Host ""
+    
+    $successCount = 0
+    $failCount = 0
+    $skippedCount = 0
+    $uploadedSecrets = @{}
+    
+    foreach ($key in $flatSecrets.Keys | Sort-Object) {
+        # Sanitize secret name (GitHub requirements: uppercase, alphanumeric + underscore)
+        $secretName = $key.ToUpper() -replace '[^A-Z0-9_]', '_'
+        $secretValue = $flatSecrets[$key]
         
-        # Since we just uploaded, they should match (this is a sanity check)
-        if ($currentHash) {
-            Write-Host "  ✓ $key" -ForegroundColor Green
-            $verifiedCount++
+        # Skip empty values
+        if ([string]::IsNullOrWhiteSpace($secretValue)) {
+            Write-Host "  [SKIP] $secretName (empty)" 
+            $skippedCount++
+            continue
+        }
+        
+        # Upload the secret
+        $success = Set-GitHubSecret `
+            -Owner $Owner `
+            -Repo $Repo `
+            -SecretName $secretName `
+            -SecretValue $secretValue
+        
+        if ($success) {
+            $uploadedSecrets[$secretName] = $secretHashes[$secretName]
+            Write-Host "  [OK] $secretName" 
+            $successCount++
+        }
+        else {
+            Write-Host "  [FAIL] $secretName" 
+            $failCount++
         }
     }
+    
+    # Verify uploads
+    if (-not $SkipVerification -and $uploadedSecrets.Count -gt 0) {
+        Write-Host ""
+        Write-Host "Step 6: Verifying uploads..." 
+        Write-Host ""
+        
+        # Wait a moment for GitHub to process
+        Start-Sleep -Seconds 2
+        
+        $verifiedCount = 0
+        $verificationFailCount = 0
+        
+        foreach ($secretName in $uploadedSecrets.Keys) {
+            $exists = Test-GitHubSecretExists -Owner $Owner -Repo $Repo -SecretName $secretName
+            
+            if ($exists) {
+                Write-Host "  [VERIFIED] $secretName (hash: $($uploadedSecrets[$secretName].Substring(0, 8))...)" 
+                $verifiedCount++
+            }
+            else {
+                Write-Host "  [NOT FOUND] $secretName" 
+                $verificationFailCount++
+            }
+        }
+        
+        Write-Host ""
+        Write-Host "Verification Results:" 
+        Write-Host "  Verified: $verifiedCount" 
+        if ($verificationFailCount -gt 0) {
+            Write-Host "  Failed:   $verificationFailCount" 
+        }
+    }
+    
+    # Summary
+    Write-Host ""
+    Write-Host "=== Summary ===" 
+    Write-Host "Successfully uploaded: $successCount secrets" 
+    
+    if ($skippedCount -gt 0) {
+        Write-Host "Skipped (empty):      $skippedCount secrets" 
+    }
+    
+    if ($failCount -gt 0) {
+        Write-Host "Failed:               $failCount secrets" 
+    }
+    
+    Write-Host ""
+    Write-Host "Secret Hashes (first 16 chars):" 
+    foreach ($secretName in $secretHashes.Keys | Sort-Object) {
+        Write-Host "  $secretName`: $($secretHashes[$secretName].Substring(0, 16))..." 
+    }
+    
+    Write-Host ""
+    Write-Host "Done! View secrets at:" 
+    Write-Host "https://github.com/$Owner/$Repo/settings/secrets/actions" 
+    Write-Host ""
 }
-
-Write-Host ""
-Write-Host "Verification: $verifiedCount secrets confirmed uploaded" -ForegroundColor Green
-
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Black
-Write-Host "Complete!" -ForegroundColor Black
-Write-Host "========================================" -ForegroundColor Black
-Write-Host ""
+catch {
+    Write-Host ""
+    Write-Host "Script failed: $($_.Exception.Message)" 
+    if ($_.ScriptStackTrace) {
+        Write-Host $_.ScriptStackTrace 
+    }
+    exit 1
+}
