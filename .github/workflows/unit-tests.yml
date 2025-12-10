@@ -41,14 +41,27 @@ jobs:
         CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
         CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
         
-        # Database Connections
+        # Database Connections (using live Azure databases)
         CONNECTIONSTRINGS__COSMOSDB: ${{ secrets.CONNECTIONSTRINGS__COSMOSDB }}
         CONNECTIONSTRINGS__SQLSERVER: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
         CONNECTIONSTRINGS__MYSQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
-        CONNECTIONSTRINGS__SQLITE: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
+        # SQLite: Excluded from CI/CD tests (removed line below)
+        # CONNECTIONSTRINGS__SQLITE: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
         
         # CDN Integration Tests
         CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
         CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
         CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
-      run: dotnet test SkyCMS.sln --no-build --configuration Release --verbosity normal
+      run: |
+        dotnet test SkyCMS.sln --no-build --configuration Release --verbosity normal \
+          --logger "trx;LogFileName=test-results.trx" \
+          --logger "html;LogFileName=test-results.html" \
+          --results-directory ./TestResults
+    
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: ./TestResults/
+        retention-days: 30
