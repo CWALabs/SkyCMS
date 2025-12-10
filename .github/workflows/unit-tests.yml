@@ -23,10 +23,10 @@ jobs:
         dotnet-version: '9.0.x'
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore SkyCMS.sln
     
     - name: Build
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build SkyCMS.sln --no-restore --configuration Release
     
     - name: Run Tests
       env:
@@ -51,4 +51,4 @@ jobs:
         CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
         CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
         CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      run: dotnet test SkyCMS.sln --no-build --configuration Release --verbosity normal
