@@ -254,7 +254,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         }
 
         // <inheritdoc />
-        public Task<string> GetNormalizedUserNameAsync(TUserEntity user, CancellationToken cancellationToken = default)
+        public Task<string?> GetNormalizedUserNameAsync(TUserEntity user, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(
                 GetUserProperty(user, user => user.NormalizedUserName, cancellationToken));
@@ -292,7 +292,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
 
 
         // <inheritdoc />
-        public Task<string> GetUserIdAsync(TUserEntity user, CancellationToken cancellationToken = default)
+        public Task<string?> GetUserIdAsync(TUserEntity user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -307,7 +307,7 @@ namespace AspNetCore.Identity.FlexDb.Stores
         /// <param name="user"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public Task<string> GetUserNameAsync(TUserEntity user, CancellationToken cancellationToken = default)
+        public Task<string?> GetUserNameAsync(TUserEntity user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();

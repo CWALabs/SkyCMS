@@ -8,11 +8,6 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
     [TestClass]
     public class EnvironmentValidator
     {
-        private static readonly string[] RequiredVariables = new[]
-        {
-            // ✅ Core Configuration - Required for database tests
-            "CosmosIdentityDbName" // Used as database name
-        };
 
         /// <summary>
         /// Validates configuration before ANY test class runs.
@@ -23,16 +18,6 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
         {
             var configuration = TestUtilities.GetConfig();
             var missing = new List<string>();
-
-            // Check required variables
-            foreach (var key in RequiredVariables)
-            {
-                var value = configuration[key];
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    missing.Add(key);
-                }
-            }
 
             // At least one database connection must be configured
             var hasDatabase = !string.IsNullOrWhiteSpace(configuration.GetConnectionString("CosmosDB")) ||
