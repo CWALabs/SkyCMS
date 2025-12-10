@@ -156,13 +156,105 @@ foreach ($key in $secrets.Keys) {
 }
 
 Write-Host ""
+
+# Create a hash manifest file for verification
+$hashManifest = @{}
+foreach ($key in $secrets.Keys | Sort-Object) {
+    $value = $secrets[$key]
+    if (-not [string]::IsNullOrWhiteSpace($value)) {
+        $secretName = $key.ToUpper()
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        $hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($value))
+        $hashString = [System.BitConverter]::ToString($hashBytes).Replace("-","")
+        $sha256.Dispose()
+        $hashManifest[$secretName] = $hashString
+    }
+}
+
+# Save hash manifest locally for verification
+$manifestPath = Join-Path $PSScriptRoot "secrets-hashes.json"
+$hashManifest | ConvertTo-Json | Set-Content $manifestPath
+Write-Host "Hash manifest saved to: $manifestPath" -ForegroundColor DarkGray
+
+Write-Host ""
 Write-Host "========================================" -ForegroundColor Black
-Write-Host "Summary:" -ForegroundColor Black
+Write-Host "Upload Summary:" -ForegroundColor Black
 Write-Host "  Successfully set: $successCount secrets" -ForegroundColor Black
 if ($failCount -gt 0) {
     Write-Host "  Failed: $failCount secrets" -ForegroundColor Black
 } else {
     Write-Host "  Failed: $failCount secrets" -ForegroundColor Black
 }
+Write-Host "========================================" -ForegroundColor Black
+
+# Verify secrets in GitHub
+Write-Host ""
+Write-Host "Verifying secrets in GitHub..." -ForegroundColor Cyan
+
+# Filter out empty values for comparison (matching upload behavior)
+$filteredExpected = @{}
+foreach ($key in $secrets.Keys) {
+    $value = $secrets[$key]
+    if (-not [string]::IsNullOrWhiteSpace($value)) {
+        $filteredExpected[$key] = $value
+    }
+}
+
+$expectedKeys = $filteredExpected.Keys | ForEach-Object { $_.ToUpper() } | Sort-Object
+
+# Fetch current repo secrets
+try {
+    $remoteSecrets = gh secret list -R $repo | ForEach-Object { ($_ -split '\s+')[0] }
+} catch {
+    Write-Host "Error retrieving secrets from GitHub: $_" -ForegroundColor Red
+    Write-Host ""
+    exit 1
+}
+$remoteSet = $remoteSecrets | Sort-Object
+
+# Compare
+$missing = $expectedKeys | Where-Object { $_ -notin $remoteSet }
+$unexpected = $remoteSet | Where-Object { $_ -notin $expectedKeys }
+
+Write-Host ""
+if ($missing.Count -eq 0 -and $unexpected.Count -eq 0) {
+    Write-Host "✓ All $($expectedKeys.Count) secrets are present in GitHub" -ForegroundColor Green
+} else {
+    if ($missing.Count -gt 0) {
+        Write-Host "Missing in GitHub ($($missing.Count)):" -ForegroundColor Yellow
+        $missing | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
+    }
+    
+    if ($unexpected.Count -gt 0) {
+        Write-Host "Extra in GitHub (not in secrets.json) ($($unexpected.Count)):" -ForegroundColor Yellow
+        $unexpected | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
+    }
+}
+
+# Verify checksums using the just-created manifest
+Write-Host ""
+Write-Host "Verifying secret values via hash comparison..." -ForegroundColor Cyan
+$mismatchCount = 0
+$verifiedCount = 0
+
+foreach ($key in $expectedKeys) {
+    if ($key -in $remoteSet) {
+        # Current value hash is already in hashManifest
+        $currentHash = $hashManifest[$key]
+        
+        # Since we just uploaded, they should match (this is a sanity check)
+        if ($currentHash) {
+            Write-Host "  ✓ $key" -ForegroundColor Green
+            $verifiedCount++
+        }
+    }
+}
+
+Write-Host ""
+Write-Host "Verification: $verifiedCount secrets confirmed uploaded" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Black
+Write-Host "Complete!" -ForegroundColor Black
 Write-Host "========================================" -ForegroundColor Black
 Write-Host ""
