@@ -160,6 +160,8 @@ namespace Sky.Tests
             {
                 ["ConnectionStrings:ApplicationDbContextConnection"] = $"Data Source={Path.GetTempPath()}/cosmos-test-{Guid.NewGuid()}.db;Password=strong-password;",
                 ["ConnectionStrings:ConfigDbConnectionString"] = $"Data Source={Path.GetTempPath()}/cosmos-test-m-{Guid.NewGuid()}.db;Password=strong-password;",
+                ["CosmosPublisherUrl"] = "https://www.sky-cms.com",  // ADD THIS
+                ["AzureBlobStorageEndPoint"] = "https://www.sky-cms.com"  // ADD THIS
             };
 
             // Lightweight configuration (all in-memory).

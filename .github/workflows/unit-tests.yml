@@ -45,4 +45,22 @@ jobs:
     - name: Build
       run: dotnet build SkyCMS.sln --no-restore
     - name: Test
-      run: dotnet test SkyCMS.sln --no-build --verbosity detailed
+      run: dotnet test SkyCMS.sln --no-build --verbosity detailed --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+    
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: '**/test-results.trx'
+        check_name: Unit Test Results
+        comment_title: Unit Test Report
+    
+    # - name: Upload coverage reports to Codecov
+    #   uses: codecov/codecov-action@v4
+    #   if: always()
+    #   with:
+    #     files: '**/coverage.cobertura.xml'
+    #     flags: unittests
+    #     fail_ci_if_error: false
+    #   env:
+    #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
