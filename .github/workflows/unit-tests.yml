@@ -5,62 +5,50 @@ name: Unit Tests
 
 on:
   workflow_dispatch
-  #push:
-  #  branches: [ "main" ]
-  #pull_request:
-  #  branches: [ "main" ]
+  # push:
+  #   branches: [ main, develop ]
+  # pull_request:
+  #   branches: [ main, develop ]
 
 jobs:
-    
-  build:
-
+  test:
     runs-on: ubuntu-latest
     
-    env:
-        CosmosIdentityDbName: "localtests"
-        CosmosPublisherUrl: ${{ secrets.COSMOSPUBLISHERURL }}
-        AdminEmail: ${{ secrets.ADMINEMAIL }}
-        CosmosAllowSetup: ${{ secrets.COSMOSALLOWSETUP }}
-        CosmosStaticWebPages: ${{ secrets.COSMOSSTATICWEBPAGES }}
-        ConnectionStrings__StorageConnectionString: ${{ secrets.STORAGECONNECTIONSTRING }}
-        ConnectionStrings__AzureBlobStorageConnectionString: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
-        ConnectionStrings__AmazonS3ConnectionString: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
-        ConnectionStrings__CloudflareR2ConnectionString: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
-        ConnectionStrings__CosmosDB: ${{ secrets.CONNECTIONSTRINGS__COSMOSDB }}
-        ConnectionStrings__SqlServer: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
-        ConnectionStrings__MySQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
-        ConnectionStrings__SQLite: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
-        CdnIntegrationTests__Cloudflare__ApiToken: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
-        CdnIntegrationTests__Cloudflare__ZoneId: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
-        CdnIntegrationTests__Cloudflare__TestDomain: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
-
     steps:
     - uses: actions/checkout@v4
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: '9.0.x'
+    
     - name: Restore dependencies
-      run: dotnet restore SkyCMS.sln
+      run: dotnet restore
+    
     - name: Build
-      run: dotnet build SkyCMS.sln --no-restore
-    - name: Test
-      run: dotnet test SkyCMS.sln --no-build --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" /clp:ErrorsOnly
+      run: dotnet build --no-restore --configuration Release
     
-    - name: Publish test results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
-      with:
-        files: '**/test-results.trx'
-        check_name: Unit Test Results
-        comment_title: Unit Test Report
-    
-    # - name: Upload coverage reports to Codecov
-    #   uses: codecov/codecov-action@v4
-    #   if: always()
-    #   with:
-    #     files: '**/coverage.cobertura.xml'
-    #     flags: unittests
-    #     fail_ci_if_error: false
-    #   env:
-    #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    - name: Run Tests
+      env:
+        # CRITICAL: These environment variable names must match what your PowerShell script uploads
+        # The double underscores (__) map to nested config in .NET (ConnectionStrings:StorageConnectionString)
+        
+        ADMINEMAIL: ${{ secrets.ADMINEMAIL }}
+        
+        # Storage Connections
+        CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
+        CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
+        CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
+        CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
+        
+        # Database Connections
+        CONNECTIONSTRINGS__COSMOSDB: ${{ secrets.CONNECTIONSTRINGS__COSMOSDB }}
+        CONNECTIONSTRINGS__SQLSERVER: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
+        CONNECTIONSTRINGS__MYSQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
+        CONNECTIONSTRINGS__SQLITE: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
+        
+        # CDN Integration Tests
+        CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
+        CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
+        CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
+      run: dotnet test --no-build --configuration Release --verbosity normal
