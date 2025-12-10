@@ -35,7 +35,7 @@ jobs:
         
         ADMINEMAIL: ${{ secrets.ADMINEMAIL }}
         COSMOSIDENTITYDBNAME: ${{ secrets.COSMOSIDENTITYDBNAME }}
-        
+
         # Storage Connections
         CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
         CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
@@ -54,7 +54,7 @@ jobs:
         CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
         CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
       run: |
-        dotnet test SkyCMS.sln --no-build --configuration Release --verbosity normal \
+        dotnet test SkyCMS.sln --no-build --configuration Release --verbosity quiet \
           --logger "trx;LogFileName=test-results.trx" \
           --logger "html;LogFileName=test-results.html" \
           --results-directory ./TestResults
