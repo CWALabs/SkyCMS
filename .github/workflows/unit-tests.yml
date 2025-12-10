@@ -45,7 +45,7 @@ jobs:
     - name: Build
       run: dotnet build SkyCMS.sln --no-restore
     - name: Test
-      run: dotnet test SkyCMS.sln --no-build --verbosity detailed --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+      run: dotnet test SkyCMS.sln --no-build --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" /clp:ErrorsOnly
     
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
