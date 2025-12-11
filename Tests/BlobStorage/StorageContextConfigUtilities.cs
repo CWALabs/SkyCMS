@@ -45,6 +45,7 @@ namespace Sky.Tests.BlobStorage
         {
             var builder = new ConfigurationBuilder();
             builder.AddUserSecrets(Assembly.GetExecutingAssembly(), true);
+            builder.AddEnvironmentVariables(); // ✅ ADD: Read environment variables (GitHub Actions)
             var configuration = builder.Build();
 
             return new StorageContext(configuration, GetMemoryCache(), GetServiceProvider());
@@ -61,7 +62,7 @@ namespace Sky.Tests.BlobStorage
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                Assert.Inconclusive($"Connection string for {provider} not configured in user secrets. Skipping test for this provider.");
+                Assert.Inconclusive($"Connection string for {provider} not configured in user secrets or environment variables. Skipping test for this provider.");
                 return null; // Never reached due to Assert.Inconclusive
             }
 
@@ -69,7 +70,7 @@ namespace Sky.Tests.BlobStorage
         }
 
         /// <summary>
-        /// Gets the connection string for a specific storage provider from user secrets.
+        /// Gets the connection string for a specific storage provider from user secrets or environment variables.
         /// </summary>
         /// <param name="provider">The storage provider.</param>
         /// <returns>Connection string or null if not configured.</returns>
@@ -77,6 +78,7 @@ namespace Sky.Tests.BlobStorage
         {
             var builder = new ConfigurationBuilder();
             builder.AddUserSecrets(Assembly.GetExecutingAssembly(), true);
+            builder.AddEnvironmentVariables(); // ✅ ADD: Read environment variables (takes precedence over user secrets)
             var configuration = builder.Build();
 
             return provider switch
