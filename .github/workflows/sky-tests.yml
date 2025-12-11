@@ -32,8 +32,15 @@ jobs:
         image: mcr.microsoft.com/azure-storage/azurite:latest
         ports:
           - 10000:10000
-          - 10001:10001
-          - 10002:10002
+        options: >-
+          --health-cmd "nc -z localhost 10000 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          AZURITE_ACCOUNTS: devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+        # Run only blob service
+        cmd: azurite-blob --blobHost 0.0.0.0 --blobPort 10000
           
     steps:
     - name: Checkout code
@@ -46,9 +53,9 @@ jobs:
     
     - name: Wait for Azurite to be ready
       run: |
-        echo "Waiting for Azurite to be ready..."
+        echo "Waiting for Azurite Blob service to be ready..."
         timeout 30 bash -c 'until curl -f http://localhost:10000/devstoreaccount1?comp=list 2>/dev/null; do sleep 2; done'
-        echo "Azurite is ready!"
+        echo "Azurite Blob service is ready!"
         
     - name: Display test configuration
       run: |
