@@ -32,15 +32,12 @@ jobs:
         image: mcr.microsoft.com/azure-storage/azurite:latest
         ports:
           - 10000:10000
-        options: >-
-          --health-cmd "nc -z localhost 10000 || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
         env:
+          # Disable Queue and Table services - only run Blob
           AZURITE_ACCOUNTS: devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
-        # Run only blob service
-        cmd: azurite-blob --blobHost 0.0.0.0 --blobPort 10000
+        options: >-
+          --entrypoint "sh"
+          --command "-c 'azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --loose'"
           
     steps:
     - name: Checkout code
