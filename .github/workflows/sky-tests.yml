@@ -26,19 +26,7 @@ jobs:
   sky-tests:
     name: Run Sky.Tests
     runs-on: ubuntu-latest
-
-    services:
-      azurite:
-        image: mcr.microsoft.com/azure-storage/azurite:latest
-        ports:
-          - 10000:10000
-        env:
-          # Disable Queue and Table services - only run Blob
-          AZURITE_ACCOUNTS: devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
-        options: >-
-          --entrypoint "sh"
-          --command "-c 'azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --loose'"
-          
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -47,18 +35,13 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
-    
-    - name: Wait for Azurite to be ready
-      run: |
-        echo "Waiting for Azurite Blob service to be ready..."
-        timeout 30 bash -c 'until curl -f http://localhost:10000/devstoreaccount1?comp=list 2>/dev/null; do sleep 2; done'
-        echo "Azurite Blob service is ready!"
         
     - name: Display test configuration
       run: |
         echo "🔧 Test Configuration:"
         echo "  Test Filter: ${{ inputs.test_filter || 'All tests' }}"
         echo "  Verbosity: ${{ inputs.verbosity }}"
+        echo "  Storage: Real Azure Blob Storage"
         
     - name: Restore dependencies
       run: dotnet restore Tests/Sky.Tests.csproj
@@ -75,12 +58,8 @@ jobs:
         ADMINEMAIL: ${{ secrets.ADMINEMAIL }}
         COSMOSIDENTITYDBNAME: ${{ secrets.COSMOSIDENTITYDBNAME }}
 
-        # Azurite connection string (using service container)
-        CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;"
-
-        # Storage Connections
-        # CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
-        # CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
+        # Storage Connections (using REAL Azure Blob Storage - no Azurite)
+        CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
         CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
         CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
         
@@ -88,8 +67,6 @@ jobs:
         CONNECTIONSTRINGS__COSMOSDB: ${{ secrets.CONNECTIONSTRINGS__COSMOSDB }}
         CONNECTIONSTRINGS__SQLSERVER: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
         CONNECTIONSTRINGS__MYSQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
-        # SQLite: Excluded from CI/CD tests
-        # CONNECTIONSTRINGS__SQLITE: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
         
         # CDN Integration Tests
         CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
@@ -107,24 +84,18 @@ jobs:
     - name: Run Sky.Tests (Filtered)
       if: ${{ inputs.test_filter != '' }}
       env:
-        # CRITICAL: These environment variable names must match what your PowerShell script uploads
-        # The double underscores (__) map to nested config in .NET (ConnectionStrings:StorageConnectionString)
-        
         ADMINEMAIL: ${{ secrets.ADMINEMAIL }}
         COSMOSIDENTITYDBNAME: ${{ secrets.COSMOSIDENTITYDBNAME }}
 
         # Storage Connections
         CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
-        CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
         CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
         CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
         
-        # Database Connections (using live Azure databases)
+        # Database Connections
         CONNECTIONSTRINGS__COSMOSDB: ${{ secrets.CONNECTIONSTRINGS__COSMOSDB }}
         CONNECTIONSTRINGS__SQLSERVER: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
         CONNECTIONSTRINGS__MYSQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
-        # SQLite: Excluded from CI/CD tests
-        # CONNECTIONSTRINGS__SQLITE: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
         
         # CDN Integration Tests
         CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
@@ -156,6 +127,7 @@ jobs:
         echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
         echo "- Test Filter: \`${{ inputs.test_filter || 'All tests' }}\`" >> $GITHUB_STEP_SUMMARY
         echo "- Verbosity: \`${{ inputs.verbosity }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Storage: Real Azure Blob Storage (no Azurite)" >> $GITHUB_STEP_SUMMARY
         echo "- Status: **${{ job.status }}**" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
