@@ -98,13 +98,27 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                 {
                     // Create the database and all tables
                     _ = dbContext.Database.EnsureCreatedAsync().Result;
+                    
+                    // For MySQL/SQL Server, ensure connection is fully flushed
+                    dbContext.Database.CloseConnection();
+                }
+
+                // MySQL can take longer to finalize schema changes in CI environments
+                // Add a brief delay to ensure schema is committed
+                var isMySql = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
+                              (connectionString.Contains("mysql", StringComparison.OrdinalIgnoreCase) ||
+                               connectionString.Contains("mariadb", StringComparison.OrdinalIgnoreCase));
+        
+                if (isMySql)
+                {
+                    System.Threading.Thread.Sleep(500); // Wait 500ms for MySQL to commit schema
                 }
 
                 // Verify tables were created with yet another fresh context
                 using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
                 {
-                    // MySQL can take longer to finalize schema, so use more retries
-                    VerifyTablesExist(dbContext, retryCount: 5);
+                    // MySQL can take longer to finalize schema, so use more retries with longer delays
+                    VerifyTablesExist(dbContext, retryCount: isMySql ? 10 : 5);
                 }
 
                 // Mark this provider as initialized
