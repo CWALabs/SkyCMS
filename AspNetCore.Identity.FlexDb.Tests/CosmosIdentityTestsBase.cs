@@ -36,9 +36,20 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                     return;
                 }
 
-                // Check provider type first before creating context
+                // Detect provider type
                 var isSqlite = connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)
                                && !connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);
+        
+                var isMySql = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
+                              (connectionString.Contains("mysql", StringComparison.OrdinalIgnoreCase) ||
+                               connectionString.Contains("mariadb", StringComparison.OrdinalIgnoreCase));
+        
+                var isSqlServer = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
+                          !isMySql;
+        
+                var isCosmosDb = connectionString.Contains("AccountEndpoint=", StringComparison.OrdinalIgnoreCase);
+        
+                var isRelational = isSqlite || isMySql || isSqlServer;
 
                 if (isSqlite)
                 {
@@ -84,7 +95,10 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                                     // If file is locked, try EnsureDeleted instead
                                     using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
                                     {
-                                        dbContext.Database.CloseConnection();
+                                        if (isRelational)
+                                        {
+                                            dbContext.Database.CloseConnection();
+                                        }
                                         var deleted = dbContext.Database.EnsureDeleted();
                                     }
                                 }
@@ -98,27 +112,26 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                 {
                     // Create the database and all tables
                     _ = dbContext.Database.EnsureCreatedAsync().Result;
-                    
-                    // For MySQL/SQL Server, ensure connection is fully flushed
-                    dbContext.Database.CloseConnection();
+            
+                    // For relational databases, ensure connection is fully flushed
+                    if (isRelational)
+                    {
+                        dbContext.Database.CloseConnection();
+                    }
                 }
 
                 // MySQL can take longer to finalize schema changes in CI environments
                 // Add a brief delay to ensure schema is committed
-                var isMySql = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
-                              (connectionString.Contains("mysql", StringComparison.OrdinalIgnoreCase) ||
-                               connectionString.Contains("mariadb", StringComparison.OrdinalIgnoreCase));
-        
                 if (isMySql)
                 {
-                    System.Threading.Thread.Sleep(500); // Wait 500ms for MySQL to commit schema
+                    System.Threading.Thread.Sleep(1000); // Increased to 1 second for MySQL to commit schema
                 }
 
                 // Verify tables were created with yet another fresh context
                 using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
                 {
                     // MySQL can take longer to finalize schema, so use more retries with longer delays
-                    VerifyTablesExist(dbContext, retryCount: isMySql ? 10 : 5);
+                    VerifyTablesExist(dbContext, retryCount: isMySql ? 15 : 5, isRelational: isRelational);
                 }
 
                 // Mark this provider as initialized
@@ -129,7 +142,7 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
         /// <summary>
         /// Verifies that critical Identity tables exist in the database
         /// </summary>
-        private static void VerifyTablesExist(CosmosIdentityDbContext<IdentityUser, IdentityRole, string> dbContext, int retryCount = 1)
+        private static void VerifyTablesExist(CosmosIdentityDbContext<IdentityUser, IdentityRole, string> dbContext, int retryCount = 1, bool isRelational = true)
         {
             Exception lastException = null;
 
@@ -153,13 +166,30 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                     // If this isn't the last attempt, wait and retry
                     if (attempt < retryCount - 1)
                     {
-                        System.Threading.Thread.Sleep(200); // Wait 200ms before retry
+                        // Progressive backoff: 300ms, 600ms, 900ms, etc.
+                        var delay = 300 * (attempt + 1);
+                        System.Threading.Thread.Sleep(delay);
+                        
+                        // Force a new connection for next attempt (relational databases only)
+                        if (isRelational)
+                        {
+                            try
+                            {
+                                dbContext.Database.CloseConnection();
+                            }
+                            catch
+                            {
+                                // Ignore if connection is already closed
+                            }
+                        }
                     }
                 }
             }
 
             // If we get here, all retries failed
-            throw lastException ?? new InvalidOperationException("Table verification failed after all retries");
+            // Provide detailed error information
+            var errorMessage = $"Table verification failed after {retryCount} retries. Last error: {lastException?.Message}";
+            throw new InvalidOperationException(errorMessage, lastException);
         }
 
         /// <summary>
