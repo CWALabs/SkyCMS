@@ -36,102 +36,18 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                     return;
                 }
 
-                // Detect provider type
-                var isSqlite = connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)
-                               && !connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);
-        
-                var isMySql = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
-                              (connectionString.Contains("mysql", StringComparison.OrdinalIgnoreCase) ||
-                               connectionString.Contains("mariadb", StringComparison.OrdinalIgnoreCase));
-        
-                var isSqlServer = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
-                          !isMySql;
-        
-                var isCosmosDb = connectionString.Contains("AccountEndpoint=", StringComparison.OrdinalIgnoreCase);
-        
-                var isRelational = isSqlite || isMySql || isSqlServer;
-
-                if (isSqlite)
-                {
-                    // Step 1: Delete existing database file directly (handles both encrypted and unencrypted)
-                    // Extract the Data Source path from connection string
-                    var dataSourceMatch = System.Text.RegularExpressions.Regex.Match(
-                        connectionString,
-                        @"Data Source\s*=\s*([^;]+)",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-                    if (dataSourceMatch.Success)
-                    {
-                        var dbPath = dataSourceMatch.Groups[1].Value.Trim();
-
-                        // Skip file deletion for in-memory databases
-                        if (!dbPath.Equals(":memory:", StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Try to delete the file directly first
-                            if (System.IO.File.Exists(dbPath))
-                            {
-                                try
-                                {
-                                    System.IO.File.Delete(dbPath);
-
-                                    // Also delete any associated files (-wal, -shm, etc.)
-                                    var directory = System.IO.Path.GetDirectoryName(dbPath);
-                                    var fileName = System.IO.Path.GetFileName(dbPath);
-
-                                    if (!string.IsNullOrEmpty(directory))
-                                    {
-                                        var associatedFiles = System.IO.Directory.GetFiles(directory, $"{fileName}*");
-                                        foreach (var file in associatedFiles)
-                                        {
-                                            if (file != dbPath) // Already deleted
-                                            {
-                                                try { System.IO.File.Delete(file); } catch { /* Ignore */ }
-                                            }
-                                        }
-                                    }
-                                }
-                                catch (System.IO.IOException)
-                                {
-                                    // If file is locked, try EnsureDeleted instead
-                                    using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
-                                    {
-                                        if (isRelational)
-                                        {
-                                            dbContext.Database.CloseConnection();
-                                        }
-                                        var deleted = dbContext.Database.EnsureDeleted();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
                 // Create fresh database with a new context
                 using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
                 {
-                    // Create the database and all tables
                     _ = dbContext.Database.EnsureCreatedAsync().Result;
-            
-                    // For relational databases, ensure connection is fully flushed
-                    if (isRelational)
-                    {
-                        dbContext.Database.CloseConnection();
-                    }
                 }
 
-                // MySQL can take longer to finalize schema changes in CI environments
-                // Add a brief delay to ensure schema is committed
-                if (isMySql)
-                {
-                    System.Threading.Thread.Sleep(1000); // Increased to 1 second for MySQL to commit schema
-                }
 
                 // Verify tables were created with yet another fresh context
                 using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
                 {
                     // MySQL can take longer to finalize schema, so use more retries with longer delays
-                    VerifyTablesExist(dbContext, retryCount: isMySql ? 15 : 5, isRelational: isRelational);
+                    VerifyTablesExist(dbContext);
                 }
 
                 // Mark this provider as initialized
@@ -140,56 +56,52 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
         }
 
         /// <summary>
+        /// Gets a friendly provider name for logging
+        /// </summary>
+        private static string GetProviderName(bool isSqlServer, bool isMySql, bool isSqlite)
+        {
+            if (isSqlServer) return "SQL Server";
+            if (isMySql) return "MySQL";
+            if (isSqlite) return "SQLite";
+            return "Unknown";
+        }
+
+        /// <summary>
         /// Verifies that critical Identity tables exist in the database
         /// </summary>
         private static void VerifyTablesExist(CosmosIdentityDbContext<IdentityUser, IdentityRole, string> dbContext, int retryCount = 1, bool isRelational = true)
         {
-            Exception lastException = null;
+            // Verify by attempting to query each DbSet
+            var usersExist = dbContext.Users.CountAsync().Result;
+            var rolesExist = dbContext.Roles.CountAsync().Result;
+            var userRolesExist = dbContext.UserRoles.CountAsync().Result;
+            var userClaimsExist = dbContext.UserClaims.CountAsync().Result;
+            var roleClaimsExist = dbContext.RoleClaims.CountAsync().Result;
+        }
 
-            for (int attempt = 0; attempt < retryCount; attempt++)
+        /// <summary>
+        /// Optional: Clears test data from database while preserving schema
+        /// </summary>
+        private static void ClearTestData(CosmosIdentityDbContext<IdentityUser, IdentityRole, string> dbContext)
+        {
+            try
             {
-                try
-                {
-                    // Verify by attempting to query each DbSet
-                    var usersExist = dbContext.Users.CountAsync().Result;
-                    var rolesExist = dbContext.Roles.CountAsync().Result;
-                    var userRolesExist = dbContext.UserRoles.CountAsync().Result;
-                    var userClaimsExist = dbContext.UserClaims.CountAsync().Result;
-                    var roleClaimsExist = dbContext.RoleClaims.CountAsync().Result;
-
-                    return; // Success
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-
-                    // If this isn't the last attempt, wait and retry
-                    if (attempt < retryCount - 1)
-                    {
-                        // Progressive backoff: 300ms, 600ms, 900ms, etc.
-                        var delay = 300 * (attempt + 1);
-                        System.Threading.Thread.Sleep(delay);
-                        
-                        // Force a new connection for next attempt (relational databases only)
-                        if (isRelational)
-                        {
-                            try
-                            {
-                                dbContext.Database.CloseConnection();
-                            }
-                            catch
-                            {
-                                // Ignore if connection is already closed
-                            }
-                        }
-                    }
-                }
+                // Clear Identity tables in correct order (respecting foreign keys)
+                dbContext.UserTokens.RemoveRange(dbContext.UserTokens);
+                dbContext.UserLogins.RemoveRange(dbContext.UserLogins);
+                dbContext.UserClaims.RemoveRange(dbContext.UserClaims);
+                dbContext.UserRoles.RemoveRange(dbContext.UserRoles);
+                dbContext.RoleClaims.RemoveRange(dbContext.RoleClaims);
+                dbContext.Users.RemoveRange(dbContext.Users);
+                dbContext.Roles.RemoveRange(dbContext.Roles);
+                
+                dbContext.SaveChanges();
+                Console.WriteLine("  ℹ Cleared existing test data");
             }
-
-            // If we get here, all retries failed
-            // Provide detailed error information
-            var errorMessage = $"Table verification failed after {retryCount} retries. Last error: {lastException?.Message}";
-            throw new InvalidOperationException(errorMessage, lastException);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  ⚠ Failed to clear test data: {ex.Message}");
+            }
         }
 
         /// <summary>

@@ -26,7 +26,21 @@ jobs:
   sky-tests:
     name: Run Sky.Tests
     runs-on: ubuntu-latest
-    
+
+    services:
+      # ✅ Run Azurite as a service container
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite
+        ports:
+          - 10000:10000  # Blob service
+          - 10001:10001  # Queue service
+          - 10002:10002  # Table service
+        options: >-
+          --health-cmd "azurite-blob --blobHost 0.0.0.0 --blobPort 10000"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -57,9 +71,12 @@ jobs:
         ADMINEMAIL: ${{ secrets.ADMINEMAIL }}
         COSMOSIDENTITYDBNAME: ${{ secrets.COSMOSIDENTITYDBNAME }}
 
+        # Azurite connection string (using service container)
+        CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;"
+
         # Storage Connections
-        CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
-        CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
+        # CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
+        # CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
         CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
         CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
         

@@ -160,8 +160,8 @@ namespace Sky.Tests
             {
                 ["ConnectionStrings:ApplicationDbContextConnection"] = $"Data Source={Path.GetTempPath()}/cosmos-test-{Guid.NewGuid()}.db;Password=strong-password;",
                 ["ConnectionStrings:ConfigDbConnectionString"] = $"Data Source={Path.GetTempPath()}/cosmos-test-m-{Guid.NewGuid()}.db;Password=strong-password;",
-                ["CosmosPublisherUrl"] = "https://www.sky-cms.com",  // ADD THIS
-                ["AzureBlobStorageEndPoint"] = "https://www.sky-cms.com"  // ADD THIS
+                ["CosmosPublisherUrl"] = "https://www.sky-cms.com",
+                ["AzureBlobStorageEndPoint"] = "https://www.sky-cms.com"
             };
 
             // Lightweight configuration (all in-memory).
@@ -181,10 +181,37 @@ namespace Sky.Tests
             webHostEnvironmentMock.Setup(m => m.ContentRootPath).Returns(path);
             var webHostEnvironment = webHostEnvironmentMock.Object;
 
-            // Provide a safe fallback for storage if no connection string is configured.
-            var storageConnectionString = configuration.GetConnectionString("StorageConnectionString")
-                                         ?? "UseDevelopmentStorage=true;";
-            Storage = new StorageContext(storageConnectionString, Cache);
+            // ✅ UPDATED: Configure Azure Blob Storage to use Azurite for tests
+            var storageConnectionString = configuration.GetConnectionString("StorageConnectionString");
+            
+            // If no connection string is configured, check if Azurite is available
+            if (string.IsNullOrEmpty(storageConnectionString))
+            {
+                // Default Azurite connection string (works for both local dev and GitHub Actions)
+                storageConnectionString = "UseDevelopmentStorage=true;";
+                
+                // Optional: Log that we're using Azurite
+                Console.WriteLine("ℹ Using Azurite (Azure Storage Emulator) for blob storage tests");
+            }
+            
+            // Initialize Storage with connection validation
+            try
+            {
+                Storage = new StorageContext(storageConnectionString, Cache);
+                
+                // Optional: Verify Azurite connectivity (will throw if not available)
+                // Uncomment if you want tests to fail fast when Azurite is not running
+                // await VerifyAzuriteConnectivityAsync(Storage);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠ Warning: Storage initialization failed: {ex.Message}");
+                Console.WriteLine("  Tests requiring blob storage may fail.");
+                Console.WriteLine("  Ensure Azurite is running: azurite-blob --silent --location .azurite");
+                
+                // Still create StorageContext to allow tests to run (they may be mocked)
+                Storage = new StorageContext(storageConnectionString, Cache);
+            }
 
             // Core service graph.
             SlugService = new SlugService();
