@@ -2,9 +2,9 @@
 
 ![SkyCMS Logo](/Editor/wwwroot/images/skycms/SkyCMSLogoNoWiTextDarkTransparent30h.png)
 
-[![CodeQL](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/codeql.yml/badge.svg)](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/codeql.yml)
-[![Unit Tests](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/unit-tests.yml)
-[![Publish Docker Images CI](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/docker-image.yml/badge.svg)](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/actions/workflows/docker-image.yml)
+[![CodeQL](https://github.com/CWALabs/SkyCMS/actions/workflows/codeql.yml/badge.svg)](https://github.com/CWALabs/SkyCMS/actions/workflows/codeql.yml)
+![Test Results](./test-badge.svg)(https://github.com/CWALabs/SkyCMS/actions/workflows/sky-tests.yml)
+[![Publish Docker Images CI](https://github.com/CWALabs/SkyCMS/actions/workflows/docker-image.yml/badge.svg)](https://github.com/CWALabs/SkyCMS/actions/workflows/docker-image.yml)
 [![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![Documentation](https://img.shields.io/badge/docs-complete-brightgreen.svg)](./Docs/README.md)
 
@@ -387,7 +387,7 @@ SkyCMS applications are distributed as Docker containers for consistent deployme
 - **Publisher**: [`toiyabe/sky-publisher:latest`](https://hub.docker.com/r/toiyabe/sky-publisher)
 - **API**: [`toiyabe/sky-api:latest`](https://hub.docker.com/r/toiyabe/sky-api)
 
-Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/MoonriseSoftwareCalifornia/Sky.Publisher.NodeJs)
+Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/CWALabs/Sky.Publisher.NodeJs)
 
 ## 🚀 Quick Start
 
