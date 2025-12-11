@@ -54,7 +54,7 @@ jobs:
         CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
         CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
       run: |
-        dotnet test SkyCMS.sln --no-build --configuration Release --verbosity quiet \
+        dotnet test SkyCMS.sln --no-build --configuration Release --verbosity normal \
           --logger "trx;LogFileName=test-results.trx" \
           --logger "html;LogFileName=test-results.html" \
           --results-directory ./TestResults
