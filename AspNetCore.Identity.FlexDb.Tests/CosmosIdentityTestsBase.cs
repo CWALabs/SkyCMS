@@ -1,4 +1,5 @@
-﻿using AspNetCore.Identity.FlexDb.Stores;
+﻿using AspNetCore.Identity.FlexDb;
+using AspNetCore.Identity.FlexDb.Stores;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,299 +36,106 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                     return;
                 }
 
-                try
+                // Check provider type first before creating context
+                var isSqlite = connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)
+                               && !connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);
+
+                if (isSqlite)
                 {
-                    // Different strategies for different providers
-                    // Check provider type first before creating context
-                    var isCosmosDb = connectionString.Contains("AccountEndpoint=", StringComparison.OrdinalIgnoreCase);
-                    var isSqlite = connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) 
-                                   && !connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);
-                    var isSqlServer = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) 
-                                      && (connectionString.Contains("User ID=", StringComparison.OrdinalIgnoreCase) 
-                                          || connectionString.Contains("Integrated Security=", StringComparison.OrdinalIgnoreCase));
-                    var isMySql = connectionString.Contains("uid=", StringComparison.OrdinalIgnoreCase) 
-                                  || connectionString.Contains("user id=", StringComparison.OrdinalIgnoreCase);
+                    // Step 1: Delete existing database file directly (handles both encrypted and unencrypted)
+                    // Extract the Data Source path from connection string
+                    var dataSourceMatch = System.Text.RegularExpressions.Regex.Match(
+                        connectionString,
+                        @"Data Source\s*=\s*([^;]+)",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-                    if (isCosmosDb)
+                    if (dataSourceMatch.Success)
                     {
-                        // Cosmos DB - ensure created
-                        using var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility);
-                        var createTask = dbContext.Database.EnsureCreatedAsync();
-                        createTask.Wait();
+                        var dbPath = dataSourceMatch.Groups[1].Value.Trim();
 
-                        if (createTask.IsFaulted)
+                        // Skip file deletion for in-memory databases
+                        if (!dbPath.Equals(":memory:", StringComparison.OrdinalIgnoreCase))
                         {
-                            throw new InvalidOperationException(
-                                $"Cosmos DB creation failed: {createTask.Exception?.GetBaseException().Message}",
-                                createTask.Exception);
-                        }
-                        
-                        // Cosmos DB doesn't have traditional tables, skip verification
-                    }
-                    else if (isSqlite)
-                    {
-                        // SQLite - always recreate for clean state
-                        // Use a fresh context for each operation to avoid disposal issues
-                        
-                        // Step 1: Delete existing database file directly (handles both encrypted and unencrypted)
-                        // Extract the Data Source path from connection string
-                        var dataSourceMatch = System.Text.RegularExpressions.Regex.Match(
-                            connectionString, 
-                            @"Data Source\s*=\s*([^;]+)", 
-                            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                        
-                        if (dataSourceMatch.Success)
-                        {
-                            var dbPath = dataSourceMatch.Groups[1].Value.Trim();
-                            
-                            // Skip file deletion for in-memory databases
-                            if (!dbPath.Equals(":memory:", StringComparison.OrdinalIgnoreCase))
+                            // Try to delete the file directly first
+                            if (System.IO.File.Exists(dbPath))
                             {
-                                // Try to delete the file directly first
-                                if (System.IO.File.Exists(dbPath))
+                                try
                                 {
-                                    try
+                                    System.IO.File.Delete(dbPath);
+
+                                    // Also delete any associated files (-wal, -shm, etc.)
+                                    var directory = System.IO.Path.GetDirectoryName(dbPath);
+                                    var fileName = System.IO.Path.GetFileName(dbPath);
+
+                                    if (!string.IsNullOrEmpty(directory))
                                     {
-                                        System.IO.File.Delete(dbPath);
-                    
-                                        // Also delete any associated files (-wal, -shm, etc.)
-                                        var directory = System.IO.Path.GetDirectoryName(dbPath);
-                                        var fileName = System.IO.Path.GetFileName(dbPath);
-                    
-                                        if (!string.IsNullOrEmpty(directory))
+                                        var associatedFiles = System.IO.Directory.GetFiles(directory, $"{fileName}*");
+                                        foreach (var file in associatedFiles)
                                         {
-                                            var associatedFiles = System.IO.Directory.GetFiles(directory, $"{fileName}*");
-                                            foreach (var file in associatedFiles)
+                                            if (file != dbPath) // Already deleted
                                             {
-                                                if (file != dbPath) // Already deleted
-                                                {
-                                                    try { System.IO.File.Delete(file); } catch { /* Ignore */ }
-                                                }
+                                                try { System.IO.File.Delete(file); } catch { /* Ignore */ }
                                             }
                                         }
                                     }
-                                    catch (System.IO.IOException)
+                                }
+                                catch (System.IO.IOException)
+                                {
+                                    // If file is locked, try EnsureDeleted instead
+                                    using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
                                     {
-                                        // If file is locked, try EnsureDeleted instead
-                                        using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
-                                        {
-                                            dbContext.Database.CloseConnection();
-                                            var deleted = dbContext.Database.EnsureDeleted();
-                                        }
+                                        dbContext.Database.CloseConnection();
+                                        var deleted = dbContext.Database.EnsureDeleted();
                                     }
                                 }
                             }
                         }
-                        
-                        // Small delay to ensure file system has released the file
-                        System.Threading.Thread.Sleep(100);
-                        
-                        // Step 2: Create fresh database with a new context
-                        using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
-                        {
-                            var created = dbContext.Database.EnsureCreatedAsync().Result;
-                            // Give SQLite a moment to finalize the schema
-                            System.Threading.Thread.Sleep(100);
-
-                            if (!created)
-                            {
-                                throw new InvalidOperationException("SQLite database creation returned false");
-                            }
-
-                            VerifyDatabaseSchema(dbContext);
-                        }
-
-                        // Step 3: Verify tables with yet another fresh context
-                        using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
-                        {
-                            VerifyTablesExist(dbContext, retryCount: 3);
-                        }
                     }
-                    else if (isSqlServer || isMySql)
-                    {
-                        // SQL Server / MySQL - use migrations if available, otherwise ensure created
-                        using var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility);
+                }
 
-                        var created = dbContext.Database.EnsureCreated();
+                // Create fresh database with a new context
+                using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
+                {
+                    // Create the database and all tables
+                    _ = dbContext.Database.EnsureCreatedAsync().Result;
+                }
 
-                        // Verify tables exist
-                        VerifyTablesExist(dbContext, retryCount: 2);
-                    }
-                    else
-                    {
-                        // Unknown provider - use default behavior
-                        using var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility);
-                        var createTask = dbContext.Database.EnsureCreatedAsync();
-                        createTask.Wait();
+                // Verify tables were created with yet another fresh context
+                using (var dbContext = _testUtilities.GetDbContext(connectionString, databaseName, backwardCompatibility: backwardCompatibility))
+                {
+                    // MySQL can take longer to finalize schema, so use more retries
+                    VerifyTablesExist(dbContext, retryCount: 5);
+                }
 
-                        if (createTask.IsFaulted)
-                        {
-                            throw new InvalidOperationException(
-                                $"Database creation failed: {createTask.Exception?.GetBaseException().Message}",
-                                createTask.Exception);
-                        }
-                    }
-
-                    // Mark this provider as initialized
-                    _initializedProviders[providerKey] = true;
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException(
-                        $"Database initialization failed: {ex.Message}",
-                        ex);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Verifies the database schema is properly configured
-        /// </summary>
-        private static void VerifyDatabaseSchema(DbContext dbContext)
-        {
-            try
-            {
-                // Get the model from the context
-                var model = dbContext.Model;
-                
-                // Check if Identity entities are registered
-                var userEntityType = model.FindEntityType(typeof(IdentityUser));
-                var roleEntityType = model.FindEntityType(typeof(IdentityRole));
-                
-                if (userEntityType == null)
-                {
-                    throw new InvalidOperationException(
-                        "IdentityUser entity is not registered in the model. " +
-                        "This suggests the DbContext configuration is incorrect.");
-                }
-                
-                if (roleEntityType == null)
-                {
-                    throw new InvalidOperationException(
-                        "IdentityRole entity is not registered in the model. " +
-                        "This suggests the DbContext configuration is incorrect.");
-                }
-                
-                // Get table names to verify they're set
-                var userTableName = userEntityType.GetTableName();
-                var roleTableName = roleEntityType.GetTableName();
-                
-                if (string.IsNullOrEmpty(userTableName))
-                {
-                    throw new InvalidOperationException("IdentityUser table name is not configured");
-                }
-                
-                if (string.IsNullOrEmpty(roleTableName))
-                {
-                    throw new InvalidOperationException("IdentityRole table name is not configured");
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException(
-                    $"Database schema verification failed: {ex.Message}. " +
-                    "This may indicate the DbContext is not properly inheriting from IdentityDbContext " +
-                    "or OnModelCreating is not calling base.OnModelCreating() for relational databases.",
-                    ex);
+                // Mark this provider as initialized
+                _initializedProviders[providerKey] = true;
             }
         }
 
         /// <summary>
         /// Verifies that critical Identity tables exist in the database
         /// </summary>
-        private static void VerifyTablesExist(DbContext dbContext, int retryCount = 1)
+        private static void VerifyTablesExist(CosmosIdentityDbContext<IdentityUser, IdentityRole, string> dbContext, int retryCount = 1)
         {
             Exception lastException = null;
-            
+
             for (int attempt = 0; attempt < retryCount; attempt++)
             {
                 try
                 {
-                    var connection = dbContext.Database.GetDbConnection();
-                    var wasOpen = connection.State == System.Data.ConnectionState.Open;
-                    
-                    if (!wasOpen)
-                    {
-                        connection.Open();
-                    }
+                    // Verify by attempting to query each DbSet
+                    var usersExist = dbContext.Users.CountAsync().Result;
+                    var rolesExist = dbContext.Roles.CountAsync().Result;
+                    var userRolesExist = dbContext.UserRoles.CountAsync().Result;
+                    var userClaimsExist = dbContext.UserClaims.CountAsync().Result;
+                    var roleClaimsExist = dbContext.RoleClaims.CountAsync().Result;
 
-                    try
-                    {
-                        using var command = connection.CreateCommand();
-                        
-                        // Check for AspNetRoles table (critical for the failing tests)
-                        if (dbContext.Database.IsSqlite())
-                        {
-                            command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='AspNetRoles'";
-                        }
-                        else if (dbContext.Database.IsSqlServer())
-                        {
-                            command.CommandText = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'AspNetRoles'";
-                        }
-                        else if (dbContext.Database.IsMySql())
-                        {
-                            command.CommandText = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'AspNetRoles' AND TABLE_SCHEMA = DATABASE()";
-                        }
-                        else
-                        {
-                            return; // Skip verification for other providers
-                        }
-
-                        var result = command.ExecuteScalar();
-                        
-                        if (result == null)
-                        {
-                            // List all tables for diagnostic purposes
-                            string allTablesQuery;
-                            if (dbContext.Database.IsSqlite())
-                            {
-                                allTablesQuery = "SELECT name FROM sqlite_master WHERE type='table'";
-                            }
-                            else if (dbContext.Database.IsSqlServer())
-                            {
-                                allTablesQuery = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES";
-                            }
-                            else if (dbContext.Database.IsMySql())
-                            {
-                                allTablesQuery = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()";
-                            }
-                            else
-                            {
-                                throw new InvalidOperationException("AspNetRoles table was not created during database initialization");
-                            }
-                            
-                            command.CommandText = allTablesQuery;
-                            var tables = new List<string>();
-                            using (var reader = command.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    tables.Add(reader.GetString(0));
-                                }
-                            }
-                            
-                            var tableList = tables.Any() ? string.Join(", ", tables) : "No tables found";
-                            throw new InvalidOperationException(
-                                $"AspNetRoles table was not created during database initialization. " +
-                                $"Tables that exist: {tableList}. " +
-                                $"This indicates EnsureCreated() ran but didn't create Identity tables.");
-                        }
-                        
-                        // Success - table exists
-                        return;
-                    }
-                    finally
-                    {
-                        if (!wasOpen)
-                        {
-                            connection.Close();
-                        }
-                    }
+                    return; // Success
                 }
                 catch (Exception ex)
                 {
                     lastException = ex;
-                    
+
                     // If this isn't the last attempt, wait and retry
                     if (attempt < retryCount - 1)
                     {
@@ -335,7 +143,7 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                     }
                 }
             }
-            
+
             // If we get here, all retries failed
             throw lastException ?? new InvalidOperationException("Table verification failed after all retries");
         }
@@ -370,17 +178,17 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             // Format: TestRole_a1b2c3d4e5f6 (shorter, fully unique)
             var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 12); // 12 hex chars = 2^48 combinations
             var roleName = $"TestRole_{uniqueId}";
-            
+
             var role = new IdentityRole(roleName);
             role.NormalizedName = role.Name.ToUpper();
 
             if (roleStore != null && saveToDatabase)
             {
                 var result = await roleStore.CreateAsync(role);
-                
+
                 // If creation fails due to duplicate (extremely unlikely but possible), retry once with new GUID
-                if (!result.Succeeded && result.Errors.Any(e => 
-                    e.Code == "DuplicateRoleName" || 
+                if (!result.Succeeded && result.Errors.Any(e =>
+                    e.Code == "DuplicateRoleName" ||
                     e.Description.Contains("duplicate", StringComparison.OrdinalIgnoreCase)))
                 {
                     // Retry with new GUID
@@ -390,19 +198,19 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
                     role.NormalizedName = role.Name.ToUpper();
                     result = await roleStore.CreateAsync(role);
                 }
-                
+
                 // Improved error reporting
                 if (!result.Succeeded)
                 {
                     var errors = string.Join(", ", result.Errors.Select(e => $"[{e.Code}] {e.Description}"));
                     Assert.Fail($"Failed to create role '{roleName}': {errors}");
                 }
-                
+
                 Assert.IsTrue(result.Succeeded, $"Failed to create role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                
+
                 // Verify role was actually created and can be retrieved
                 role = await roleStore.FindByIdAsync(role.Id);
-                
+
                 if (role == null)
                 {
                     Assert.Fail($"Role was created successfully but could not be retrieved by ID.");
@@ -422,11 +230,11 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             // Use GUID to ensure uniqueness across all test runs
             var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
             var randomEmail = $"test{uniqueId}_{GetNextRandomNumber(1000, 9999)}@test{GetNextRandomNumber(10000, 99999)}.com";
-            
-            var user = new IdentityUser(randomEmail) 
-            { 
-                Email = randomEmail, 
-                Id = Guid.NewGuid().ToString() 
+
+            var user = new IdentityUser(randomEmail)
+            {
+                Email = randomEmail,
+                Id = Guid.NewGuid().ToString()
             };
 
             user.NormalizedUserName = user.UserName.ToUpper();
@@ -435,14 +243,14 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             if (userStore != null && saveToDatabase)
             {
                 var result = await userStore.CreateAsync(user);
-                
+
                 // Improved error reporting
                 if (!result.Succeeded)
                 {
                     var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                     Assert.Fail($"Failed to create user: {errors}");
                 }
-                
+
                 Assert.IsTrue(result.Succeeded, $"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 user = await userStore.FindByNameAsync(user.UserName.ToUpper());
             }
@@ -541,7 +349,7 @@ namespace AspNetCore.Identity.CosmosDb.Tests.Net9
             // This ensures test isolation
             lock (_initLock)
             {
-                
+
                 _initializedProviders.Clear();
             }
         }
