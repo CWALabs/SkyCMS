@@ -1,0 +1,174 @@
+﻿name: Identity FlexDb Tests
+
+# This workflow runs only when manually triggered
+on:
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: 'Test filter (optional, leave empty for all tests)'
+        required: false
+        type: string
+        default: ''
+      
+      verbosity:
+        description: 'Test output verbosity'
+        required: false
+        default: 'normal'
+        type: choice
+        options:
+          - quiet
+          - minimal
+          - normal
+          - detailed
+          - diagnostic
+
+jobs:
+  identity-tests:
+    name: Run Identity FlexDb Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Display test configuration
+      run: |
+        echo "🔧 Test Configuration:"
+        echo "  Test Filter: ${{ inputs.test_filter || 'All tests' }}"
+        echo "  Verbosity: ${{ inputs.verbosity }}"
+        
+    - name: Restore dependencies
+      run: dotnet restore AspNetCore.Identity.FlexDb.Tests/AspNetCore.Identity.FlexDb.Tests.csproj
+      
+    - name: Build AspNetCore.Identity.FlexDb.Tests
+      run: dotnet build AspNetCore.Identity.FlexDb.Tests/AspNetCore.Identity.FlexDb.Tests.csproj --no-restore --configuration Release
+      
+    - name: Run Identity FlexDb tests (All tests)
+      if: ${{ inputs.test_filter == '' }}
+      env:
+        # CRITICAL: These environment variable names must match what your PowerShell script uploads
+        # The double underscores (__) map to nested config in .NET (ConnectionStrings:StorageConnectionString)
+        
+        ADMINEMAIL: ${{ secrets.ADMINEMAIL }}
+        COSMOSIDENTITYDBNAME: ${{ secrets.COSMOSIDENTITYDBNAME }}
+
+        # Storage Connections
+        CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
+        CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
+        CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
+        CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
+        
+        # Database Connections (using live Azure databases)
+        CONNECTIONSTRINGS__COSMOSDB: ${{ secrets.CONNECTIONSTRINGS__COSMOSDB }}
+        CONNECTIONSTRINGS__SQLSERVER: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
+        CONNECTIONSTRINGS__MYSQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
+        # SQLite: Excluded from CI/CD tests
+        # CONNECTIONSTRINGS__SQLITE: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
+        
+        # CDN Integration Tests
+        CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
+        CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
+        CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
+      run: |
+        dotnet test AspNetCore.Identity.FlexDb.Tests/AspNetCore.Identity.FlexDb.Tests.csproj \
+          --no-build \
+          --configuration Release \
+          --logger "console;verbosity=${{ inputs.verbosity }}" \
+          --logger "trx;LogFileName=identity-flexdb-test-results.trx" \
+          --logger "html;LogFileName=identity-flexdb-test-results.html" \
+          --results-directory ./TestResults \
+          --collect:"XPlat Code Coverage" \
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura,json,lcov,opencover
+      
+    - name: Run Identity FlexDb tests (Filtered)
+      if: ${{ inputs.test_filter != '' }}
+      env:
+        # CRITICAL: These environment variable names must match what your PowerShell script uploads
+        # The double underscores (__) map to nested config in .NET (ConnectionStrings:StorageConnectionString)
+        
+        ADMINEMAIL: ${{ secrets.ADMINEMAIL }}
+        COSMOSIDENTITYDBNAME: ${{ secrets.COSMOSIDENTITYDBNAME }}
+
+        # Storage Connections
+        CONNECTIONSTRINGS__STORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__STORAGECONNECTIONSTRING }}
+        CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AZUREBLOBSTORAGECONNECTIONSTRING }}
+        CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__AMAZONS3CONNECTIONSTRING }}
+        CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING: ${{ secrets.CONNECTIONSTRINGS__CLOUDFLARER2CONNECTIONSTRING }}
+        
+        # Database Connections (using live Azure databases)
+        CONNECTIONSTRINGS__COSMOSDB: ${{ secrets.CONNECTIONSTRINGS__COSMOSDB }}
+        CONNECTIONSTRINGS__SQLSERVER: ${{ secrets.CONNECTIONSTRINGS__SQLSERVER }}
+        CONNECTIONSTRINGS__MYSQL: ${{ secrets.CONNECTIONSTRINGS__MYSQL }}
+        # SQLite: Excluded from CI/CD tests
+        # CONNECTIONSTRINGS__SQLITE: ${{ secrets.CONNECTIONSTRINGS__SQLITE }}
+        
+        # CDN Integration Tests
+        CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__APITOKEN }}
+        CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__ZONEID }}
+        CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN: ${{ secrets.CDNINTEGRATIONTESTS__CLOUDFLARE__TESTDOMAIN }}
+      run: |
+        dotnet test AspNetCore.Identity.FlexDb.Tests/AspNetCore.Identity.FlexDb.Tests.csproj \
+          --no-build \
+          --configuration Release \
+          --filter "${{ inputs.test_filter }}" \
+          --logger "console;verbosity=${{ inputs.verbosity }}" \
+          --logger "trx;LogFileName=identity-flexdb-test-results.trx" \
+          --logger "html;LogFileName=identity-flexdb-test-results.html" \
+          --results-directory ./TestResults \
+          --collect:"XPlat Code Coverage" \
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura,json,lcov,opencover
+      
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: identity-flexdb-test-results-${{ github.run_number }}
+        path: ./TestResults/
+        retention-days: 30
+        
+    - name: Upload code coverage
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: identity-flexdb-code-coverage-${{ github.run_number }}
+        path: ./TestResults/**/*.cobertura.xml
+        retention-days: 30
+        
+    - name: Generate test summary
+      if: always()
+      run: |
+        echo "## 🧪 Identity FlexDb Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Test Filter: \`${{ inputs.test_filter || 'All tests' }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Verbosity: \`${{ inputs.verbosity }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Status: **${{ job.status }}**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "### ✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Test Coverage:**" >> $GITHUB_STEP_SUMMARY
+        echo "Code coverage reports are available in the artifacts." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Database Providers Tested:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 🗄️ CosmosDB" >> $GITHUB_STEP_SUMMARY
+        echo "- 🗄️ SQL Server" >> $GITHUB_STEP_SUMMARY
+        echo "- 🗄️ MySQL" >> $GITHUB_STEP_SUMMARY
+        echo "- 🗄️ SQLite _(excluded from CI/CD)_" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Test Categories:**" >> $GITHUB_STEP_SUMMARY
+        echo "- User Store Operations" >> $GITHUB_STEP_SUMMARY
+        echo "- Role Store Operations" >> $GITHUB_STEP_SUMMARY
+        echo "- Claims Management" >> $GITHUB_STEP_SUMMARY
+        echo "- Authentication & Authorization" >> $GITHUB_STEP_SUMMARY
+        echo "- Multi-Database Provider Support" >> $GITHUB_STEP_SUMMARY
