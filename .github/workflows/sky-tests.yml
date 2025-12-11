@@ -76,6 +76,7 @@ jobs:
         dotnet test Tests/Sky.Tests.csproj \
           --no-build \
           --configuration Release \
+          --collect:"XPlat Code Coverage" \
           --logger "console;verbosity=${{ inputs.verbosity }}" \
           --logger "trx;LogFileName=sky-test-results.trx" \
           --logger "html;LogFileName=sky-test-results.html" \
@@ -106,10 +107,40 @@ jobs:
           --no-build \
           --configuration Release \
           --filter "${{ inputs.test_filter }}" \
+          --collect:"XPlat Code Coverage" \
           --logger "console;verbosity=${{ inputs.verbosity }}" \
           --logger "trx;LogFileName=sky-test-results.trx" \
           --logger "html;LogFileName=sky-test-results.html" \
           --results-directory ./TestResults
+
+    - name: Install ReportGenerator
+      if: always()
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+    - name: Generate Code Coverage Report
+      if: always()
+      run: |
+        reportgenerator \
+          -reports:"TestResults/**/coverage.cobertura.xml" \
+          -targetdir:"TestResults/CoverageReport" \
+          -reporttypes:"Html;JsonSummary"
+
+    - name: Parse Test Results and Generate Badge
+      if: always()
+      shell: pwsh
+      run: .\.github\scripts\generate-test-badge.ps1
+
+    - name: Commit and Push Badge
+      if: always() && github.ref == 'refs/heads/main'
+      shell: pwsh
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        if (Test-Path "./test-badge.svg") {
+          git add test-badge.svg
+          git diff --staged --quiet || git commit -m "docs: update test badge [skip ci]"
+          git push
+        }
       
     - name: Upload test results
       if: always()
