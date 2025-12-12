@@ -7,6 +7,7 @@
 
 namespace Sky.Editor.Services.Slugs
 {
+    using System;
     using System.Globalization;
     using System.Text;
     using System.Text.RegularExpressions;
@@ -21,7 +22,6 @@ namespace Sky.Editor.Services.Slugs
         private const char Separator = '-';
 
         /// <inheritdoc cref="ISlugService.Normalize(string, string)"/>
-        /// <inheritdoc cref="ISlugService.Normalize(string, string)"/>
         public string Normalize(string input, string blogKey = "")
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -29,25 +29,31 @@ namespace Sky.Editor.Services.Slugs
                 return string.Empty;
             }
 
-            // 1) Normalize and lowercase
-            var s = input.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+            // 1) Normalize to decomposed form and lowercase
+            var normalized = input.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
 
-            // 2) Remove diacritics and map everything non [a-z0-9/] to the separator
-            var sb = new StringBuilder(s.Length);
-            foreach (var ch in s)
+            // 2) Build string by removing diacritics and normalizing characters
+            var sb = new StringBuilder(normalized.Length);
+            foreach (var ch in normalized)
             {
-                var cat = CharUnicodeInfo.GetUnicodeCategory(ch);
-                if (cat is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark)
+                var category = CharUnicodeInfo.GetUnicodeCategory(ch);
+                
+                // Skip combining diacritical marks (the accent marks, not the base character)
+                if (category == UnicodeCategory.NonSpacingMark || 
+                    category == UnicodeCategory.SpacingCombiningMark || 
+                    category == UnicodeCategory.EnclosingMark)
                 {
                     continue;
                 }
 
+                // Keep ASCII letters, digits, and forward slashes
                 if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '/')
                 {
                     sb.Append(ch);
                 }
                 else
                 {
+                    // Replace everything else (spaces, punctuation, etc.) with separator
                     sb.Append(Separator);
                 }
             }
@@ -59,10 +65,10 @@ namespace Sky.Editor.Services.Slugs
                 return sb.ToString();
             }
 
-            // 4) Collapse duplicate separators
+            // 4) Collapse consecutive separators into single separator
             var collapsed = Regex.Replace(sb.ToString(), $"{Regex.Escape(Separator.ToString())}{{2,}}", Separator.ToString());
 
-            // 5) Trim unsafe ends for normal inputs
+            // 5) Trim separators and other unsafe characters from ends
             var slug = collapsed.Trim(Separator, '/', '.', '_', '~');
 
             // 6) Prepend blogKey if provided

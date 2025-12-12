@@ -719,6 +719,9 @@ namespace Sky.Tests.Services.EditorSettings
             var services = new ServiceCollection().BuildServiceProvider();
             var editorSettings = new EditorSettings(config, Db, mockHttpContextAccessor.Object, memoryCache, services);
 
+            // Ensure configuration is loaded before accessing URL properties
+            await editorSettings.GetEditorConfigAsync();
+
             // Act
             var result = editorSettings.GetBlobAbsoluteUrl();
 

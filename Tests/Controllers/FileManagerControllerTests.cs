@@ -883,11 +883,32 @@ namespace Sky.Tests.Controllers
 
         private async Task CreateTestFile(string path, string content = "Test Content")
         {
-            // Ensure parent directory exists
+            // Ensure ALL parent directories exist (handle nested paths)
             var directory = Path.GetDirectoryName(path)?.Replace('\\', '/');
             if (!string.IsNullOrEmpty(directory))
             {
-                await Storage.CreateFolder(directory);
+                // Split the path and create each level
+                var pathParts = directory.TrimStart('/').Split('/');
+                var currentPath = string.Empty;
+                
+                foreach (var part in pathParts)
+                {
+                    if (string.IsNullOrWhiteSpace(part))
+                    {
+                        continue;
+                    }
+                    
+                    currentPath = string.IsNullOrEmpty(currentPath) 
+                        ? part 
+                        : $"{currentPath}/{part}";
+                    
+                    // Create folder if it doesn't exist
+                    var folderPath = $"/{currentPath}";
+                    if (!await Storage.BlobExistsAsync($"{folderPath}/folder.stubxx"))
+                    {
+                        await Storage.CreateFolder(folderPath);
+                    }
+                }
             }
 
             // The RelativePath should be the full path including filename

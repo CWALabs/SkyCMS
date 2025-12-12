@@ -63,7 +63,7 @@ namespace Sky.Tests.Features.Articles.Save
             var command = new SaveArticleCommand
             {
                 ArticleNumber = article.ArticleNumber,
-                Title = "Café Résumé Naïve",
+                Title = "Caf\u00e9 R\u00e9sum\u00e9 Na\u00efve",
                 Content = "<p>Content</p>",
                 UserId = TestUserId,
                 ArticleType = ArticleType.General
