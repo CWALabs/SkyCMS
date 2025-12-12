@@ -35,6 +35,14 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
+
+    - name: Setup Azurite for Tests
+      run: |
+        npm install -g azurite
+        mkdir -p ./azurite-data
+        azurite --silent --location ./azurite-data &
+        sleep 5
+        echo "Azurite started successfully"
         
     - name: Display test configuration
       run: |
