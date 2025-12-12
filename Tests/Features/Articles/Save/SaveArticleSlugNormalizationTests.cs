@@ -1,4 +1,4 @@
-// <copyright file="SaveArticleSlugNormalizationTests.cs" company="Moonrise Software, LLC">
+ï»¿// <copyright file="SaveArticleSlugNormalizationTests.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
@@ -254,7 +254,7 @@ namespace Sky.Tests.Features.Articles.Save
         [DataRow("Email: user@domain.com", "email-user-domain-com")]
         [DataRow("50% Off", "50-off")]
         [DataRow("Parent/Child", "parent/child")] // Slash preserved
-        [DataRow("café résumé", "cafe-resume")]
+        [DataRow("caf\u00e9 r\u00e9sum\u00e9", "cafe-resume")]  // âœ… Use Unicode escape sequences
         [DataRow("Hello   World", "hello-world")] // Multiple spaces
         [DataRow("  Trimmed  ", "trimmed")] // Leading/trailing
         public async Task SaveArticle_VariousSpecialCharacters_NormalizesCorrectly(string title, string expectedSlug)

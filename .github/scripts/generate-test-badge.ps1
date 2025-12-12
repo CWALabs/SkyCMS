@@ -82,4 +82,3 @@ if ($env:GITHUB_ENV) {
     Add-Content -Path $env:GITHUB_ENV -Value "TEST_SKIPPED=$skipped"
     Add-Content -Path $env:GITHUB_ENV -Value "TEST_COVERAGE=$coverage"
 }
-"@

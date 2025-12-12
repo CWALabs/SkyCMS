@@ -187,15 +187,26 @@ namespace Sky.Editor.Services.EditorSettings
         /// <returns>Uri.</returns>
         public Uri GetBlobAbsoluteUrl()
         {
+            EnsureConfigLoaded();  // Ensure config is loaded BEFORE accessing properties
+            
             var htmlUtilities = new HtmlUtilities();
+            var blobUrl = BlobPublicUrl;
+            var publisherUrl = PublisherUrl;
 
-            if (htmlUtilities.IsAbsoluteUri(BlobPublicUrl))
+            if (htmlUtilities.IsAbsoluteUri(blobUrl))
             {
-                return new Uri(BlobPublicUrl);
+                return new Uri(blobUrl);
             }
             else
             {
-                return new Uri(PublisherUrl.TrimEnd('/') + "/" + BlobPublicUrl.TrimStart('/'));
+                // Ensure we have a valid publisher URL before constructing the combined URL
+                if (string.IsNullOrWhiteSpace(publisherUrl))
+                {
+                    // If no publisher URL is configured, return a relative URI
+                    return new Uri(blobUrl, UriKind.Relative);
+                }
+                
+                return new Uri(publisherUrl.TrimEnd('/') + "/" + blobUrl.TrimStart('/'));
             }
         }
 

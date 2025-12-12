@@ -547,21 +547,45 @@ namespace Sky.Tests.Controllers
         public async Task Copy_WithNestedPath_PreservesFilename()
         {
             // Arrange
-            await CreateTestFile("/pub/deeply/nested/source/file.txt");
-            await Storage.CreateFolder("/pub/destination");
-            
-            var model = new MoveFilesViewModel
+            var testPath = "/pub/deeply/nested/source/file.txt";
+    
+            try
             {
-                Items = new List<string> { "/pub/deeply/nested/source/file.txt" },
-                Destination = "/pub/destination"
-            };
+                await CreateTestFile(testPath);
+                await Storage.CreateFolder("/pub/destination");
+                
+                // Verify source file exists before copy with detailed diagnostics
+                var sourceExists = await Storage.BlobExistsAsync(testPath);
+                if (!sourceExists)
+                {
+                    var allFiles = await Storage.GetFilesAndDirectories("/pub");
+                    var fileList = string.Join(", ", allFiles.Select(f => f.Path));
+                    Assert.Fail($"Source file not created. Platform: {Environment.OSVersion.Platform}. Files: {fileList}");
+                }
+                
+                var model = new MoveFilesViewModel
+                {
+                    Items = new List<string> { testPath },
+                    Destination = "/pub/destination"
+                };
 
-            // Act
-            var result = await controller.Copy(model);
+                // Act
+                var result = await controller.Copy(model);
 
-            // Assert
-            Assert.IsInstanceOfType(result, typeof(OkResult));
-            Assert.IsTrue(await Storage.BlobExistsAsync("/pub/destination/file.txt"));
+                // Assert with better error messages
+                if (result is BadRequestObjectResult badRequest)
+                {
+                    var errorMessage = badRequest.Value?.ToString() ?? "Unknown error";
+                    Assert.Fail($"Copy operation failed. Platform: {Environment.OSVersion.Platform}. Error: {errorMessage}");
+                }
+                
+                Assert.IsInstanceOfType(result, typeof(OkResult));
+                Assert.IsTrue(await Storage.BlobExistsAsync("/pub/destination/file.txt"));
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail($"Test failed on platform {Environment.OSVersion.Platform}: {ex.Message}\nStack: {ex.StackTrace}");
+            }
         }
 
         [TestMethod]
@@ -883,21 +907,23 @@ namespace Sky.Tests.Controllers
 
         private async Task CreateTestFile(string path, string content = "Test Content")
         {
+            // Normalize path to Unix-style (always use forward slashes)
+            path = path.Replace('\\', '/');
+            
             // Ensure ALL parent directories exist (handle nested paths)
-            var directory = Path.GetDirectoryName(path)?.Replace('\\', '/');
+            var directory = Path.GetDirectoryName(path);
+            
             if (!string.IsNullOrEmpty(directory))
             {
+                // Normalize directory path to Unix-style
+                directory = directory.Replace('\\', '/');
+                
                 // Split the path and create each level
-                var pathParts = directory.TrimStart('/').Split('/');
+                var pathParts = directory.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
                 var currentPath = string.Empty;
                 
                 foreach (var part in pathParts)
                 {
-                    if (string.IsNullOrWhiteSpace(part))
-                    {
-                        continue;
-                    }
-                    
                     currentPath = string.IsNullOrEmpty(currentPath) 
                         ? $"/{part}" 
                         : $"{currentPath}/{part}";
@@ -905,13 +931,13 @@ namespace Sky.Tests.Controllers
                     // Always attempt to create the folder - CreateFolder should be idempotent
                     await Storage.CreateFolder(currentPath);
                     
-                    // Small delay to ensure storage consistency (especially important for nested paths)
-                    await Task.Delay(50);
+                    // Increased delay for CI environments
+                    await Task.Delay(100);
                 }
             }
 
             // Additional delay before creating the file to ensure all folders are ready
-            await Task.Delay(100);
+            await Task.Delay(150);
 
             // The RelativePath should be the full path including filename
             var fileName = Path.GetFileName(path);
@@ -931,11 +957,26 @@ namespace Sky.Tests.Controllers
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
             await Storage.AppendBlob(stream, metadata);
             
-            // Verify the file was created successfully
-            var exists = await Storage.BlobExistsAsync(path);
+            // Verify the file was created successfully with retry
+            var maxRetries = 3;
+            var exists = false;
+            
+            for (int i = 0; i < maxRetries; i++)
+            {
+                exists = await Storage.BlobExistsAsync(path);
+                if (exists) break;
+                await Task.Delay(100);
+            }
+            
             if (!exists)
             {
-                throw new InvalidOperationException($"Failed to create test file at path: {path}");
+                // Provide detailed diagnostic information
+                var allFiles = await Storage.GetFilesAndDirectories("/pub");
+                var fileList = string.Join(", ", allFiles.Select(f => f.Path));
+                throw new InvalidOperationException(
+                    $"Failed to create test file at path: {path}. " +
+                    $"Platform: {Environment.OSVersion.Platform}. " +
+                    $"Existing files: {fileList}");
             }
         }
 
