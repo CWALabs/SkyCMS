@@ -1152,9 +1152,9 @@ namespace Sky.Cms.Controllers
                     model.ToBlobName = model.ToBlobName.TrimEnd('/');
                 }
 
-                var target = $"{model.BlobRootPath}/{model.FromBlobName}";
+                var target = $"{model.BlobRootPath.TrimEnd('/')}/{model.FromBlobName}";
 
-                var dest = $"{model.BlobRootPath}/{UrlEncode(model.ToBlobName)}";
+                var dest = $"{model.BlobRootPath.TrimEnd('/')}/{UrlEncode(model.ToBlobName)}";
 
                 await storageContext.MoveFileAsync(target, dest);
             }

@@ -98,59 +98,68 @@ namespace Cosmos.Publisher.Controllers
 
             try
             {
-                var cacheKey = $"file_{HttpContext.Request.Path}";
+                var cacheKey = $"{HttpContext.Request.Host.Host}-{HttpContext.Request.Path}";
+
+                if (memoryCache.TryGetValue(cacheKey, out CachedFile cachedFile))
+                {
+                    return File(
+                        fileContents: cachedFile.Data,
+                        contentType: cachedFile.Metadata.ContentType,
+                        lastModified: cachedFile.Metadata.ModifiedUtc,
+                        entityTag: cachedFile.ETag);
+                }
 
                 // Try to get from cache first
-                if (!memoryCache.TryGetValue(cacheKey, out (byte[] data, string contentType, DateTimeOffset? lastModified, string etag) cachedFile))
+                var properties = await storageContext.GetFileAsync(HttpContext.Request.Path);
+
+                if (properties == null)
                 {
-                    var properties = await storageContext.GetFileAsync(HttpContext.Request.Path);
-
-                    if (properties == null)
-                    {
-                        logger.LogWarning("File not found: {Path}", path);
-                        return NotFound();
-                    }
-
-                    var fileStream = await storageContext.GetStreamAsync(HttpContext.Request.Path);
-                    var contentType = properties.ContentType ?? Utilities.GetContentType(properties.Name);
-
-                    // Read to byte array for caching
-                    byte[] fileData;
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        await fileStream.CopyToAsync(memoryStream);
-                        fileData = memoryStream.ToArray();
-                    }
-
-                    cachedFile = (fileData, contentType, properties.ModifiedUtc, properties.ETag);
-
-                    // Cache for 5 minutes for authenticated, 1 hour for public
-                    var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetSlidingExpiration(TimeSpan.FromMinutes(2))
-                        .SetSize(fileData.Length);
-
-                    memoryCache.Set(cacheKey, cachedFile, cacheOptions);
-
-                    logger.LogDebug("Cached file {Path} ({Size} bytes) with content type {ContentType}", path, fileData.Length, cachedFile.contentType);
-                }
-                else
-                {
-                    logger.LogDebug("Serving cached file {Path} ({Size} bytes) with content type {ContentType}", path, cachedFile.data.Length, cachedFile.contentType);
+                    logger.LogWarning("File not found: {Path}", path);
+                    return NotFound();
                 }
 
-                var etag = new Microsoft.Net.Http.Headers.EntityTagHeaderValue($"\"{cachedFile.etag}\"");
+                var fileStream = await storageContext.GetStreamAsync(HttpContext.Request.Path);
+                var contentType = properties.ContentType ?? Utilities.GetContentType(properties.Name);
+
+                // Read to byte array for caching
+                byte[] fileData;
+                using (var memoryStream = new MemoryStream())
+                {
+                    await fileStream.CopyToAsync(memoryStream);
+                    fileData = memoryStream.ToArray();
+                }
+
+                cachedFile = new CachedFile()
+                {
+                    Data = fileData,
+                    Metadata = properties,
+                    ETag = new Microsoft.Net.Http.Headers.EntityTagHeaderValue(properties.ETag)
+                };
+
+                memoryCache.CreateEntry(cacheKey)
+                    .SetValue(cachedFile)
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(4));
 
                 return File(
-                    fileContents: cachedFile.data,
-                    contentType: cachedFile.contentType,
-                    lastModified: cachedFile.lastModified,
-                    entityTag: etag);
+                    fileContents: cachedFile.Data,
+                    contentType: cachedFile.Metadata.ContentType,
+                    lastModified: cachedFile.Metadata.ModifiedUtc,
+                    entityTag: cachedFile.ETag);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error serving file {Path}", path);
                 return NotFound();
             }
+        }
+
+        private class CachedFile
+        {
+            public byte[] Data { get; set; }
+
+            public FileManagerEntry Metadata { get; set; }
+
+            public Microsoft.Net.Http.Headers.EntityTagHeaderValue ETag { get; set; }
         }
     }
 }

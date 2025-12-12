@@ -27,6 +27,7 @@ namespace Sky.Editor.Middleware
         private readonly bool allowSetup;
         private static bool? isSetupCompleted = null;
         private static readonly object lockObject = new object();
+        private readonly bool isMultiTenant;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupRedirectMiddleware"/> class.
@@ -39,6 +40,7 @@ namespace Sky.Editor.Middleware
             this.next = next;
             this.logger = logger;
             allowSetup = configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
+            isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
         }
 
         /// <summary>
@@ -51,6 +53,12 @@ namespace Sky.Editor.Middleware
             HttpContext context,
             ApplicationDbContext dbContext)
         {
+            if (isMultiTenant)
+            {
+                await next(context);
+                return;
+            }
+
             var path = context.Request.Path.Value ?? string.Empty;
 
             // Skip for setup pages themselves (by path or area)
