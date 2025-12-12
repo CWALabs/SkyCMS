@@ -107,7 +107,6 @@
 		</PackageReference>
 		
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
-		<PackageReference Include="NUglify" />
 		<PackageReference Include="PasswordGenerator" />
 		<PackageReference Include="RestSharp" />
 		<PackageReference Include="rodriGS750.Hangfire.Dashboard.Themes.Dark" />

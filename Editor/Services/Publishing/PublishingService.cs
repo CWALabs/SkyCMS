@@ -468,10 +468,7 @@ namespace Sky.Editor.Services.Publishing
 
             var html = await viewRenderer.RenderToStringAsync("~/Views/Home/Static.cshtml", model);
 
-            var result = NUglify.Uglify.Html(html);
-            var contentToUpload = result.HasErrors ? html : result.Code;
-
-            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(contentToUpload));
+            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(html));
             await storage.AppendBlob(ms, new FileUploadMetaData
             {
                 ChunkIndex = 0,
@@ -764,10 +761,7 @@ namespace Sky.Editor.Services.Publishing
 
             var html = await viewRenderService.RenderToStringAsync("~/Views/Home/Static.cshtml", model);
 
-            var result = NUglify.Uglify.Html(html);
-            var contentToUpload = result.HasErrors ? html : result.Code;
-
-            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(contentToUpload));
+            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(html));
             await _storage.AppendBlob(ms, new FileUploadMetaData
             {
                 ChunkIndex = 0,

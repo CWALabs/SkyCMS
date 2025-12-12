@@ -152,8 +152,7 @@ namespace Sky.Editor.Services.Layouts
                 try
                 {
                     var url = $"{COSMOSLAYOUTSREPO}/Layouts/{layout.Id}/{page.Path}";
-                    var uglifiedUrl = NUglify.Uglify.Html(url);
-                    var html = await client.GetStringAsync(uglifiedUrl.Code);
+                    var html = await client.GetStringAsync(url);
 
                     var template = ParseHtml<Template>(html);
                     template.PageType = page.Type;
