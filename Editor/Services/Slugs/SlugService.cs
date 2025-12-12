@@ -30,7 +30,7 @@ namespace Sky.Editor.Services.Slugs
             }
 
             // 1) Normalize to decomposed form and lowercase
-            var normalized = input.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+            var normalized = input.Trim().Normalize(NormalizationForm.FormD);
 
             // 2) Build string by removing diacritics and normalizing characters
             var sb = new StringBuilder(normalized.Length);
@@ -46,10 +46,13 @@ namespace Sky.Editor.Services.Slugs
                     continue;
                 }
 
+                // Convert to lowercase after diacritic removal
+                var lowerCh = char.ToLowerInvariant(ch);
+
                 // Keep ASCII letters, digits, and forward slashes
-                if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '/')
+                if ((lowerCh >= 'a' && lowerCh <= 'z') || (lowerCh >= '0' && lowerCh <= '9') || lowerCh == '/')
                 {
-                    sb.Append(ch);
+                    sb.Append(lowerCh);
                 }
                 else
                 {

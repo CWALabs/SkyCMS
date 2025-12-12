@@ -899,17 +899,19 @@ namespace Sky.Tests.Controllers
                     }
                     
                     currentPath = string.IsNullOrEmpty(currentPath) 
-                        ? part 
+                        ? $"/{part}" 
                         : $"{currentPath}/{part}";
                     
-                    // Create folder if it doesn't exist
-                    var folderPath = $"/{currentPath}";
-                    if (!await Storage.BlobExistsAsync($"{folderPath}/folder.stubxx"))
-                    {
-                        await Storage.CreateFolder(folderPath);
-                    }
+                    // Always attempt to create the folder - CreateFolder should be idempotent
+                    await Storage.CreateFolder(currentPath);
+                    
+                    // Small delay to ensure storage consistency (especially important for nested paths)
+                    await Task.Delay(50);
                 }
             }
+
+            // Additional delay before creating the file to ensure all folders are ready
+            await Task.Delay(100);
 
             // The RelativePath should be the full path including filename
             var fileName = Path.GetFileName(path);
@@ -928,6 +930,13 @@ namespace Sky.Tests.Controllers
             
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
             await Storage.AppendBlob(stream, metadata);
+            
+            // Verify the file was created successfully
+            var exists = await Storage.BlobExistsAsync(path);
+            if (!exists)
+            {
+                throw new InvalidOperationException($"Failed to create test file at path: {path}");
+            }
         }
 
         private async Task CreateTestImageFile(string path)

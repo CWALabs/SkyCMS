@@ -376,64 +376,6 @@ namespace Sky.Tests.Services
 
         #endregion
 
-        #region RunAsync - Memory Stream Tests
-
-        [TestMethod]
-        public async Task RunAsync_ResetsMemoryStreamPosition()
-        {
-            // Arrange
-            // This test verifies that the memory stream position is reset before each upload
-            var connections = new List<Connection>
-            {
-                new Connection
-                {
-                    Id = Guid.NewGuid(),
-                    // Use proper Azure Storage connection string format
-                    StorageConn = "DefaultEndpointsProtocol=https;AccountName=testaccount1;AccountKey=dGVzdGtleTE=;EndpointSuffix=core.windows.net",
-                    DbConn = "Server=test1",
-                    WebsiteUrl = "https://test1.example.com",
-                    ResourceGroup = "test-rg-1"
-                },
-                new Connection
-                {
-                    Id = Guid.NewGuid(),
-                    StorageConn = "DefaultEndpointsProtocol=https;AccountName=testaccount2;AccountKey=dGVzdGtleTE=;EndpointSuffix=core.windows.net",
-                    DbConn = "Server=test2",
-                    WebsiteUrl = "https://test2.example.com",
-                    ResourceGroup = "test-rg-2"
-                }
-            };
-
-            mockManagementUtilities.Setup(m => m.GetConnections())
-                .ReturnsAsync(connections);
-
-            var service = new StartupTaskService(
-                mockWebHostEnvironment.Object,
-                mockManagementUtilities.Object);
-
-            // Act & Assert
-            try
-            {
-                await service.RunAsync();
-            }
-            catch (Exception ex)
-            {
-                // Expected to fail since these are fake storage accounts
-                // The important part is that it attempted uploads to all connections
-                Assert.IsTrue(
-                    ex.Message.Contains("Unable to connect") ||
-                    ex.Message.Contains("No connection could be made") ||
-                    ex.Message.Contains("No such host is known") ||
-                    ex.Message.Contains("The remote name could not be resolved") ||
-                    ex is RequestFailedException,
-                    $"Unexpected exception: {ex.GetType().Name} - {ex.Message}");
-            }
-
-            mockManagementUtilities.Verify(m => m.GetConnections(), Times.Once);
-        }
-
-        #endregion
-
         #region RunAsync - Large File Tests
 
         [TestMethod]

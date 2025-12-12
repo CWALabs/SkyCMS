@@ -139,7 +139,6 @@ namespace Sky.Tests.Services.EditorSettings
             var config = CreateConfiguration(new Dictionary<string, string>
             {
                 ["MultiTenantEditor"] = "false",
-                ["CosmosAllowSetup"] = "true",
                 ["CosmosPublisherUrl"] = "https://config.example.com",
                 ["AzureBlobStorageEndPoint"] = "/config-blob",
                 ["CosmosStaticWebPages"] = "true"
@@ -720,7 +719,11 @@ namespace Sky.Tests.Services.EditorSettings
             var editorSettings = new EditorSettings(config, Db, mockHttpContextAccessor.Object, memoryCache, services);
 
             // Ensure configuration is loaded before accessing URL properties
-            await editorSettings.GetEditorConfigAsync();
+            var loadedConfig = await editorSettings.GetEditorConfigAsync();
+    
+            // Verify the configuration was loaded correctly
+            Assert.AreEqual("https://publisher.example.com", loadedConfig.PublisherUrl, "PublisherUrl should be loaded from configuration");
+            Assert.AreEqual("/blobs", loadedConfig.BlobPublicUrl, "BlobPublicUrl should be loaded from configuration");
 
             // Act
             var result = editorSettings.GetBlobAbsoluteUrl();
