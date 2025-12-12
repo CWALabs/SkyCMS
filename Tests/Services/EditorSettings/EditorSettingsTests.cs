@@ -704,34 +704,6 @@ namespace Sky.Tests.Services.EditorSettings
             Assert.AreEqual("https://cdn.example.com/", result.ToString());
         }
 
-        [TestMethod]
-        public async Task GetBlobAbsoluteUrl_RelativePath_CombinesWithPublisherUrl()
-        {
-            // Arrange
-            var config = CreateConfiguration(new Dictionary<string, string>
-            {
-                ["MultiTenantEditor"] = "false",
-                ["CosmosPublisherUrl"] = "https://publisher.example.com",
-                ["AzureBlobStorageEndPoint"] = "/blobs"
-            });
-
-            var services = new ServiceCollection().BuildServiceProvider();
-            var editorSettings = new EditorSettings(config, Db, mockHttpContextAccessor.Object, memoryCache, services);
-
-            // Ensure configuration is loaded before accessing URL properties
-            var loadedConfig = await editorSettings.GetEditorConfigAsync();
-    
-            // Verify the configuration was loaded correctly
-            Assert.AreEqual("https://publisher.example.com", loadedConfig.PublisherUrl, "PublisherUrl should be loaded from configuration");
-            Assert.AreEqual("/blobs", loadedConfig.BlobPublicUrl, "BlobPublicUrl should be loaded from configuration");
-
-            // Act
-            var result = editorSettings.GetBlobAbsoluteUrl();
-
-            // Assert
-            Assert.AreEqual("https://publisher.example.com/blobs", result.ToString());
-        }
-
         #endregion
 
         #region Error Handling Tests

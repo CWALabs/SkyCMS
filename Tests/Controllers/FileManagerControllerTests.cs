@@ -82,7 +82,47 @@ namespace Sky.Tests.Controllers
         [TestCleanup]
         public async Task Cleanup()
         {
-            await DisposeAsync();
+            try
+            {
+                // Clean up all test directories
+                var testPaths = new[]
+                {
+                    "/pub/source",
+                    "/pub/destination",
+                    "/pub/deeply",
+                    "/pub/test",
+                    "/pub/downloads",
+                    "/pub/sort",
+                    "/pub/paging",
+                    "/pub/folders",
+                    "/pub/images",
+                    "/pub/files",
+                    "/pub/gallery",
+                    "/pub/uploads"
+                };
+
+                foreach (var path in testPaths)
+                {
+                    try
+                    {
+                        if (await Storage.BlobExistsAsync(path + "/"))
+                        {
+                            await Storage.DeleteFolderAsync(path);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore individual cleanup errors
+                    }
+                }
+                
+                // Small delay to allow storage to finish cleanup
+                await Task.Delay(200);
+            }
+            finally
+            {
+                await DisposeAsync();
+            }
         }
 
         #region Index Action Tests
@@ -546,13 +586,31 @@ namespace Sky.Tests.Controllers
         [TestMethod]
         public async Task Copy_WithNestedPath_PreservesFilename()
         {
-            // Arrange
+            // Arrange - Ensure clean state by removing any pre-existing files
             var testPath = "/pub/deeply/nested/source/file.txt";
-    
+            var destPath = "/pub/destination/file.txt";
+            
             try
             {
+                // Clean up any existing files from previous test runs
+                if (await Storage.BlobExistsAsync(testPath))
+                {
+                    Storage.DeleteFile(testPath);
+                    await Task.Delay(100); // Give storage time to process deletion
+                }
+                
+                if (await Storage.BlobExistsAsync(destPath))
+                {
+                    Storage.DeleteFile(destPath);
+                    await Task.Delay(100); // Give storage time to process deletion
+                }
+                
+                // Create test file
                 await CreateTestFile(testPath);
                 await Storage.CreateFolder("/pub/destination");
+                
+                // Additional delay to ensure storage is consistent
+                await Task.Delay(200);
                 
                 // Verify source file exists before copy with detailed diagnostics
                 var sourceExists = await Storage.BlobExistsAsync(testPath);
@@ -580,11 +638,31 @@ namespace Sky.Tests.Controllers
                 }
                 
                 Assert.IsInstanceOfType(result, typeof(OkResult));
-                Assert.IsTrue(await Storage.BlobExistsAsync("/pub/destination/file.txt"));
+                Assert.IsTrue(await Storage.BlobExistsAsync(destPath));
             }
             catch (Exception ex)
             {
                 Assert.Fail($"Test failed on platform {Environment.OSVersion.Platform}: {ex.Message}\nStack: {ex.StackTrace}");
+            }
+            finally
+            {
+                // Cleanup - Remove test files to ensure clean state for next run
+                try
+                {
+                    if (await Storage.BlobExistsAsync(testPath))
+                    {
+                        Storage.DeleteFile(testPath);
+                    }
+                    
+                    if (await Storage.BlobExistsAsync(destPath))
+                    {
+                        Storage.DeleteFile(destPath);
+                    }
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
             }
         }
 
