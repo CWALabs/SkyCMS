@@ -33,21 +33,21 @@ if ($coverageJson) {
 
 # Determine badge color based on results and coverage
 $badgeColor = if ($failed -gt 0) {
-    "red"
+    "orange"  # Orange when tests fail
 } elseif ($coverage -lt 60) {
     "orange"
 } elseif ($coverage -lt 80) {
     "yellow"
 } else {
-    "brightgreen"
+    "brightgreen"  # Green when all tests pass
 }
 
-# Create comprehensive badge text (using Unicode symbols)
-$badgeText = "$passed✓ $failed✗ $skipped⊘ | $coverage%"
+# Create comprehensive badge text showing Pass/Fail/Skipped counts
+$badgeText = "Pass: $passed Fail: $failed Skip: $skipped"
 
 # Create badge SVG
 $badgeSvg = @"
-<svg xmlns="http://www.w3.org/2000/svg" width="280" height="20">
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="20">
   <defs>
     <linearGradient id="b" x2="0" y2="100%">
       <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
@@ -59,14 +59,14 @@ $badgeSvg = @"
   </clipPath>
   <g clip-path="url(#a)">
     <path fill="#555" d="M0 0h90v20H0z"/>
-    <path fill="$badgeColor" d="M90 0h190v20H90z"/>
-    <path fill="url(#b)" d="M0 0h280v20H0z"/>
+    <path fill="$badgeColor" d="M90 0h230v20H90z"/>
+    <path fill="url(#b)" d="M0 0h320v20H0z"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
     <text x="46" y="15" fill="#010101" fill-opacity=".3">tests</text>
     <text x="45" y="14">tests</text>
-    <text x="184" y="15" fill="#010101" fill-opacity=".3">$badgeText</text>
-    <text x="183" y="14">$badgeText</text>
+    <text x="204" y="15" fill="#010101" fill-opacity=".3">$badgeText</text>
+    <text x="203" y="14">$badgeText</text>
   </g>
 </svg>
 "@
