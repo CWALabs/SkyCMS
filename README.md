@@ -19,7 +19,7 @@ Content tools are intuitive and rich, making them developer-friendly and non-tec
 
 Choose your hosting model: [Static](./Docs/StorageConfig.md#static-website-hosting-azure) | [Edge (origin-less)](./Docs/CloudflareEdgeHosting.md) | [Dynamic](./Publisher/README.md) | [Decoupled](./Publisher/README.md)
 
-📚 **[View the Master Table of Contents](./Docs/README.md)** for complete documentation index and navigation.
+**[View the Master Table of Contents](./Docs/README.md)** for complete documentation index and navigation.
 
 ---
 
@@ -33,37 +33,37 @@ Modern web teams face a difficult choice:
 
 **Traditional CMSs** (WordPress, Drupal, etc.)
 
-- ✅ Easy for editors to use
-- ✅ Real-time content updates
-- ❌ Slow performance under load
-- ❌ Security vulnerabilities
-- ❌ High hosting costs
-- ❌ Complex scaling requirements
+- Easy for editors to use
+- Real-time content updates
+- Slow performance under load
+- Security vulnerabilities
+- High hosting costs
+- Complex scaling requirements
 
 **Static Site Generators** (Jekyll, Hugo, Gatsby, Next.js)
 
-- ✅ Blazing fast performance
-- ✅ Low hosting costs
-- ✅ Great security
-- ❌ Complex Git-based workflows
-- ❌ Requires technical knowledge
-- ❌ Long build times
-- ❌ Multiple tools to configure and maintain
+- Blazing fast performance
+- Low hosting costs
+- Great security
+- Complex Git-based workflows
+- Requires technical knowledge
+- Long build times
+- Multiple tools to configure and maintain
 
 **Headless CMSs** (Contentful, Strapi, Sanity)
 
-- ✅ Modern editing experience
-- ✅ API-driven content delivery
-- ❌ Expensive API usage costs
-- ❌ Requires custom frontend development
-- ❌ Complex architecture with multiple systems
-- ❌ Ongoing maintenance burden
+- Modern editing experience
+- API-driven content delivery
+- Expensive API usage costs
+- Requires custom frontend development
+- Complex architecture with multiple systems
+- Ongoing maintenance burden
 
 ### The SkyCMS Solution
 
 **SkyCMS eliminates this false choice** by being purpose-built for edge deployment while maintaining a complete CMS editing experience:
 
-#### 🎯 **For Content Editors**
+#### **For Content Editors**
 
 - Familiar WYSIWYG editing (CKEditor 5)
 - Visual page building (GrapesJS)
@@ -72,7 +72,7 @@ Modern web teams face a difficult choice:
 - Built-in version control
 - One-click publishing
 
-#### ⚡ **For Developers**
+#### **For Developers**
 
 - No external build pipelines to configure
 - No CI/CD complexity
@@ -81,7 +81,7 @@ Modern web teams face a difficult choice:
 - Multiple deployment modes
 - Docker-based infrastructure
 
-#### 🚀 **For Performance**
+#### **For Performance**
 
 - Static file generation at the edge
 - Global CDN distribution
@@ -139,7 +139,7 @@ Traditional CMS          SkyCMS (Edge-Native)      Static Site Generator
 - **Decoupled Mode**: Separate editor and publisher applications — near-static performance with backend functionality
 - **API Mode** (Optional): RESTful API available for headless scenarios — content delivered as JSON for multi-channel distribution
 
-## 🎯 Design Objectives
+## Design Objectives
 
 SkyCMS was built with the following core objectives:
 
@@ -151,7 +151,7 @@ SkyCMS was built with the following core objectives:
 - **Complete Page Rendering**: Primary focus on delivering complete HTML pages rather than API-first architecture
 - **Integrated Publishing**: Built-in version control, automatic triggers, and direct cloud deployment—eliminating the complexity of traditional Git-based static site workflows
 
-## ✨ Key Features
+## Key Features
 
 ### Advantages Over Traditional Git-Based Static Site Deployment
 
@@ -228,7 +228,7 @@ SkyCMS includes robust blogging capabilities built on its flexible article syste
 - **Permission System**: Article-level access control
 - **Secure File Storage**: Encrypted and authenticated storage access
 
-## 🚀 Use Cases
+## Use Cases
 
 SkyCMS excels in demanding scenarios:
 
@@ -238,7 +238,7 @@ SkyCMS excels in demanding scenarios:
 - **Global Distribution**: Multi-regional redundancy with minimal administration overhead
 - **Non-Technical Teams**: User-friendly interface requiring minimal training
 
-## 🛠️ Content Editing Tools
+## Content Editing Tools
 
 SkyCMS integrates the best web content creation tools to provide a comprehensive editing experience:
 
@@ -278,7 +278,7 @@ Integrated image editing with resizing, cropping, filtering, and annotation capa
 
 Modern file upload interface with drag-and-drop, image previews, and file validation. Supports multiple file types with progress tracking.
 
-## 🏗️ Architecture & Technology Stack
+## Architecture & Technology Stack
 
 ### Core Applications
 
@@ -312,7 +312,7 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 - **Edge Hosting Options**
   - Cloudflare R2 + Rules: Origin-less static hosting at the edge (no Worker required)
 
-## 📁 Project Structure
+## Project Structure
 
 SkyCMS/
 ├── ArmTemplates/ # Azure Resource Manager deployment templates
@@ -326,7 +326,7 @@ SkyCMS/
 └── SkyCMS.sln             # Visual Studio solution file
 
 
-## 📚 Component Documentation
+## Component Documentation
 
 Each component has detailed documentation explaining its purpose, configuration, and usage:
 
@@ -378,7 +378,7 @@ Each component has detailed documentation explaining its purpose, configuration,
   - Azure B2C and external provider support
   - Role-based security and permissions
 
-## 🐳 Docker Containers
+## Docker Containers
 
 SkyCMS applications are distributed as Docker containers for consistent deployment:
 
@@ -388,7 +388,7 @@ SkyCMS applications are distributed as Docker containers for consistent deployme
 
 Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/CWALabs/Sky.Publisher.NodeJs)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Azure Deployment (Recommended)
 
@@ -404,11 +404,11 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/CWALabs/
 - **Azure/AWS/Google Cloud, etc...** for cloud deployment
 - **Visual Studio 2022** or **VS Code** (recommended for development)
 
-## 📖 Documentation
+## Documentation
 
-> **📚 [Complete Documentation Index →](./Docs/README.md)**  
+> **[Complete Documentation Index →](./Docs/README.md)**  
 > **Browse 40+ guides organized by topic** - installation, configuration, content management, development, and more
-> **🧭 [Master Table of Contents →](./Docs/MASTER_TOC.md)**  
+> **[Master Table of Contents →](./Docs/MASTER_TOC.md)**  
 > Exhaustive hierarchical index of all documentation files
 
 ### Quick Links
@@ -450,7 +450,7 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/CWALabs/
 - **[Widgets Overview](./Docs/Widgets/README.md)** - Reusable UI components
 - **[Component READMEs](./Docs/README.md#architecture--components)** - Architecture documentation
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our contributing guidelines and:
 
@@ -460,7 +460,7 @@ We welcome contributions! Please see our contributing guidelines and:
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📧 Email Configuration
+## Email Configuration
 
 SkyCMS supports multiple email providers:
 
@@ -491,9 +491,9 @@ or any later version of the GPL.
 
 **This means:**
 
-- ✅ Free to use for open-source projects
-- ✅ Must distribute source code of modifications
-- ✅ Derivative works must also be GPL-licensed
+- Free to use for open-source projects
+- Must distribute source code of modifications
+- Derivative works must also be GPL-licensed
 
 ---
 
@@ -513,9 +513,9 @@ you may use the **entire SkyCMS application** under the **MIT License**.
 
 **This means:**
 
-- ✅ Use in proprietary/commercial applications
-- ✅ No requirement to distribute source code
-- ✅ Minimal restrictions
+- Use in proprietary/commercial applications
+- No requirement to distribute source code
+- Minimal restrictions
 
 ---
 
@@ -558,19 +558,10 @@ See [NOTICE.md](NOTICE.md) for complete third-party license information and full
 
 ---
 
-<!-- ## 📞 Support
-
-- **Free Community Support**: [sky.moonrise.net/support](https://sky.moonrise.net/support)
-- **Slack Community**: [sky-cms.slack.com](https://sky-cms.slack.com/)
-- **GitHub Issues**: Report bugs and request features
-- **Professional Support**: Available through Moonrise Software -->
-
-## 📄 License Summary
+## License Summary
 
 This project is dual-licensed under GPL 2.0-or-later (with open-source CKEditor) or MIT License (with commercial CKEditor license). See [LICENSE-GPL](LICENSE-GPL), [LICENSE-MIT](LICENSE-MIT), and [NOTICE.md](NOTICE.md) for full license terms and third-party attributions.
 
 ---
 
 **Copyright (c) 2025 Moonrise Software, LLC. All rights reserved.**
-
-Built with ❤️ by the [Moonrise Software](https://moonrise.net) team.

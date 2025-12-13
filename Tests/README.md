@@ -2,7 +2,7 @@
 
 Comprehensive test suite for the SkyCMS platform covering Editor functionality, security, authentication, authorization, and multi-database support.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Prerequisites](#prerequisites)

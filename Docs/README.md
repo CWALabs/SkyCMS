@@ -6,7 +6,7 @@ For a project overview and introduction to SkyCMS, see the [main README](../READ
 
 ---
 
-## 📖 Table of Contents
+## Table of Contents
 
 - [Getting Started](#-getting-started)
 - [Installation & Deployment](#-installation--deployment)
@@ -21,7 +21,7 @@ For a project overview and introduction to SkyCMS, see the [main README](../READ
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 Start here if you're new to SkyCMS.
 
@@ -31,7 +31,7 @@ Start here if you're new to SkyCMS.
 
 ---
 
-## 📦 Installation & Deployment
+## Installation & Deployment
 
 ### Cloud Platform Guides
 
@@ -51,7 +51,7 @@ Start here if you're new to SkyCMS.
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Essential configuration guides for databases and storage.
 
@@ -60,7 +60,7 @@ Essential configuration guides for databases and storage.
 
 ---
 
-## 📝 Content Management
+## Content Management
 
 ### Page & Layout Management
 
@@ -131,7 +131,7 @@ Technical documentation for customization and development.
 
 ---
 
-## 🏗️ Architecture & Components
+## Architecture & Components
 
 Learn about SkyCMS's internal structure and libraries.
 
@@ -157,7 +157,7 @@ Understand how SkyCMS compares to other solutions.
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 ### Marketing & Content
 
@@ -199,13 +199,13 @@ If you're looking for documentation that doesn't exist yet or needs updating:
 
 ---
 
-## 📝 Documentation Conventions
+## Documentation Conventions
 
 Throughout this documentation:
 
 - **Bold** - Important terms and UI elements
 - `Code blocks` - File names, commands, and code snippets
-- 🎯 **Icons** - Visual organization and quick reference
+- **Icons** - Visual organization and quick reference
 - [Links] - Cross-references to related documentation
 
 ---

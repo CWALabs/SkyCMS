@@ -6,10 +6,10 @@ The legacy `ArticleEditLogic.SaveArticle()` method has been deprecated in favor 
 
 ## Status
 
-✅ **Production Code**: Fully migrated  
-✅ **EditorController**: Migrated  
-✅ **BlogController**: Migrated  
-⏳ **Test Files**: Legacy tests remain for backward compatibility
+**Production Code**: Fully migrated  
+**EditorController**: Migrated  
+**BlogController**: Migrated  
+**Test Files**: Legacy tests remain for backward compatibility
 
 ## Migration Path
 

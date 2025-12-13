@@ -170,12 +170,12 @@ Google Cloud Storage (GCS) is supported through the S3-compatible API. SkyCMS au
 
 ### Supported Features
 
-- ✅ Upload, download, delete operations
-- ✅ Chunked multipart uploads
-- ✅ Metadata management
-- ✅ S3-compatible API
-- ⚠️ Static website hosting (requires additional CDN setup)
-- ❌ Native GCS API features (use S3 compatibility mode)
+- Upload, download, delete operations
+- Chunked multipart uploads
+- Metadata management
+- S3-compatible API
+- Static website hosting (requires additional CDN setup)
+- Native GCS API features (use S3 compatibility mode)
 
 ### Important Notes
 

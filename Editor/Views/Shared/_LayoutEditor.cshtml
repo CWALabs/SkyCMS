@@ -25,7 +25,6 @@
     <link rel="stylesheet" type="text/css" href="~/lib/bootstrap/css/bootstrap.min.css">
 
     <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-ui.combobox@1.0.7/lib/jquery-ui.combobox.min.css">
 
     <link rel="stylesheet" type="text/css" href="~/lib/font-awesome/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="~/css/2024-01-20-01-site.css" />
@@ -39,12 +38,16 @@
 
     <script src="~/lib/promise-window/promise-window.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
-    
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js" integrity="sha256-AlTido85uXPlSyyaZNsjJXeCs07eSv3r43kyCVc8ChI=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery-ui.combobox@1.0.7/lib/jquery-ui.combobox.min.js"></script>
+
     <script src="~/lib/cosmos/jquery.blockui.js"></script>
     <script src="~/ccms/js/TimeUtils.js"></script>
+
+    @* Combobox *@
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
 
     <script>
         let cosmos_plugin_array = [];
@@ -227,7 +230,6 @@
     <partial name="_EditorModals" />
 
     <script>
-
         const isDesigner = @((isDesigner.HasValue ? isDesigner : false).ToString().ToLower());
         const modalRecoverData = new bootstrap.Modal(document.getElementById('modalRecoverData'));
         const modalChangeTitle = new bootstrap.Modal(document.getElementById('modalChangeTitle'));
@@ -274,12 +276,7 @@
             $(contentId).height = 50 + (window.innerHeight - document.getElementById("ccmsNavMenu").clientHeight);
         }
 
-        $("#iframeFileMgr").on("load", setupIframes("#iframeFileMgr", "#fileMgrModalContent"));
-
-        $("#iframePermMgr").on("load", setupIframes("#iframePermMgr", "#permMgrModalContent"));
-
         function openSelectFileModal(mode) {
-
             selectFileMode = mode;
 
             let id = $("#ArticleNumber").val();
@@ -300,7 +297,6 @@
             $('#iframeSelectFile').attr('src', url);
 
             modalSelectFile.show();
-
         }
 
         function getAutoSave() {
@@ -393,7 +389,7 @@
                     break;
                 case "Close":
                     next = function () {
-                        switch("@controllerName") {
+                        switch ("@controllerName") {
                             case "Code":
                                 window.location.href = "/Code/Source?target=" + itemPath;
                                 break;
@@ -560,12 +556,85 @@
             }
         }
 
+        function closeDropDowns() {
+            $("#btnSave").removeClass("show");
+            $("#ddSave").removeClass("show");
+            $("#btnInsert").removeClass("show");
+            $("#ddInsert").removeClass("show");
+        }
+
+        // Displays a 3 second message in a bootstrap toast.
+        function toastMsg(message) {
+
+        }
+
+        function saving() {
+            //var toast = new bootstrap.Toast(document.getElementById('liveToast'));
+            //$("#liveToastMsg").html("Saving... <img height='36' src='/images/az-busy.gif' >");
+            //toast.show();
+            showSaving();
+        }
+
+        function doneSaving() {
+            showSaved();
+        }
+
+        function clearFileMgrPaths() {
+            let iframe = document.getElementById("iframeSelectFile");
+            let iframeWin = iframe.contentWindow || iframe.contentDocument.parentWindow;
+            if (iframeWin.clearPaths !== "undefined" && iframeWin.clearPaths !== null) {
+                iframeWin.clearPaths();
+            }
+            //iframeWin.reloadPaths();
+        }
+
+        function checkBannerImage() {
+            $("#btnOpenBannerImage").removeClass("btn-secondary");
+            $("#btnOpenBannerImage").removeClass("btn-success");
+
+            const url = $("#BannerImage").val();
+            if (url !== null && url !== "") {
+                $("#btnOpenBannerImage").addClass("btn-success");
+                $("#btnOpenBannerImage").attr("title", "Changes the preview image for this page.")
+                $("#btnClearBannerImage").show();
+            } else {
+                $("#btnOpenBannerImage").addClass("btn-secondary");
+                $("#btnOpenBannerImage").attr("title", "Sets the preview image for this page.")
+                $("#btnClearBannerImage").hide();
+            }
+        }
+
+        let cdnTimer = null;
+        let cdnMsgTimeout;
+
+        function setCdnResults(cdnResults) {
+            if ( typeof cdnResults !== "undefined"
+                && cdnResults !== null
+                && cdnResults.length > 0
+                && cdnResults[0].EstimatedFlushDateTime) {
+                    if (cdnMsgTimeout) {
+                        clearTimeout(cdnMsgTimeout);
+                    }
+                    $("#cdnMsg").show();
+                    const dateTime = new Date(cdnResults[0].EstimatedFlushDateTime);
+                    $("#cdnMsg").html("CDN refresh: " + dateTime.toLocaleString());
+                    cdnMsgTimeout = setTimeout(() => {
+                        $("#cdnMsg").html("");
+                        $("#cdnMsg").hide();
+                    }, 120000);
+            }
+        }
+
+        $("#iframeFileMgr").on("load", function () {
+            setupIframes("#iframeFileMgr", "#fileMgrModalContent");
+        });
+
+        $("#iframePermMgr").on("load", function () {
+            setupIframes("#iframePermMgr", "#permMgrModalContent");
+        });
+
         $(document).ready(function () {
-
             displayLastPublished(lastPublished);
-
-            // Sets the color of the permissions button to
-            // success for permissions exist, or danger for not.
             checkForSetPermissions();
 
             if (isAuthor) {
@@ -628,78 +697,6 @@
                 modalChangeTitle.hide();
                 saveChanges();
                 autoSaveOn = true;
-            });
-
-            // COMBOBOX
-            $("#combobox").combobox({
-                source: function (request, response) {
-                    $("#btnOpen").prop('disabled', true);
-                    $("#pageStatus").hide();
-                    $("#divLinkDetails").hide();
-                    $("#btnApplyLink").prop('disabled', true);
-                    $("#btnCreatePage").hide();
-                    if (comboBoxTimeout !== null) {
-                        clearTimeout(comboBoxTimeout);
-                    }
-                    $.ajax({
-                        url: "@Url.Action("GetArticleList", "Editor")",
-                        dataType: "json",
-                        data: {
-                            term: request.term
-                        },
-                        success: function (data) {
-                            var results = [];
-                            if (data.length === 0) {
-                                comboBoxTimeout = setTimeout(function () {
-                                    $("#btnCreatePage").show();
-                                    const url = "@Url.Action("Create", "Editor")?title=" + $("#combobox").val();
-                                    $("#btnCreatePage").attr("href", url);
-                                }, 1500);
-                            }
-                            $.each(data, function (index, entity) {
-                                var item = { label: entity.Title, value: entity.Title, url: entity.UrlPath, updated: entity.Updated, id: entity.ArticleNumber, published: entity.LastPublished };
-                                results.push(item);
-                            });
-                            response(results);
-                        }
-                    });
-                },
-                focus: function () {
-                    // prevent value inserted on focus
-                    return false;
-                },
-                select: function (event, ui) {
-
-                    if (ui.item.published === null || ui.item.published === "") {
-                        $("#pageStatus").html("Status: - DRAFT - ");
-                        $("#tbPublished").addClass("is-invalid");
-                        $("#btnPublishNow").show();
-                        $("#btnDraftNow").hide();
-                    } else {
-                        const date = new Date(ui.item.published);
-                        $("#pageStatus").html("Publihed: " + date.toUTCString());
-                        $("#tbPublished").removeClass("is-invalid");
-                        $("#btnPublishNow").hide();
-                        $("#btnDraftNow").show();
-                    }
-
-                    var titleArray = ui.item.label.split('/');
-
-                    $("#inputLinkText").val(titleArray[titleArray.length - 1]);
-
-                    $("#pageStatus").show();
-                    $("#divLinkDetails").show();
-                    $("#btnOpenLink").attr("href", "@Url.Action("Versions", "Editor")/" + ui.item.id);
-                    $("#btnApplyLink").prop('disabled', false);
-                    selectedAnchorData = ui.item; // Save this as the last selected item
-                    return true;
-                }
-            });
-
-            $("#btnRefreshList").click(function (e) {
-                e.preventDefault();
-                const value = $("#combobox").val();
-                $("#combobox").autocomplete("search", value);
             });
 
             $("#btnOpenLink").click(function (e) {
@@ -776,76 +773,9 @@
             });
 
             checkBannerImage();
+
         });
 
-        function closeDropDowns() {
-            $("#btnSave").removeClass("show");
-            $("#ddSave").removeClass("show");
-            $("#btnInsert").removeClass("show");
-            $("#ddInsert").removeClass("show");
-        }
-
-        // Displays a 3 second message in a bootstrap toast.
-        function toastMsg(message) {
-
-        }
-
-        function saving() {
-            //var toast = new bootstrap.Toast(document.getElementById('liveToast'));
-            //$("#liveToastMsg").html("Saving... <img height='36' src='/images/az-busy.gif' >");
-            //toast.show();
-            showSaving();
-        }
-
-        function doneSaving() {
-            showSaved();
-        }
-
-        function clearFileMgrPaths() {
-            let iframe = document.getElementById("iframeSelectFile");
-            let iframeWin = iframe.contentWindow || iframe.contentDocument.parentWindow;
-            if (iframeWin.clearPaths !== "undefined" && iframeWin.clearPaths !== null) {
-                iframeWin.clearPaths();
-            }
-            //iframeWin.reloadPaths();
-        }
-
-        function checkBannerImage() {
-            $("#btnOpenBannerImage").removeClass("btn-secondary");
-            $("#btnOpenBannerImage").removeClass("btn-success");
-
-            const url = $("#BannerImage").val();
-            if (url !== null && url !== "") {
-                $("#btnOpenBannerImage").addClass("btn-success");
-                $("#btnOpenBannerImage").attr("title", "Changes the preview image for this page.")
-                $("#btnClearBannerImage").show();
-            } else {
-                $("#btnOpenBannerImage").addClass("btn-secondary");
-                $("#btnOpenBannerImage").attr("title", "Sets the preview image for this page.")
-                $("#btnClearBannerImage").hide();
-            }
-        }
-
-        let cdnTimer = null;
-        let cdnMsgTimeout;
-
-        function setCdnResults(cdnResults) {
-            if ( typeof cdnResults !== "undefined"
-                && cdnResults !== null
-                && cdnResults.length > 0
-                && cdnResults[0].EstimatedFlushDateTime) {
-                    if (cdnMsgTimeout) {
-                        clearTimeout(cdnMsgTimeout);
-                    }
-                    $("#cdnMsg").show();
-                    const dateTime = new Date(cdnResults[0].EstimatedFlushDateTime);
-                    $("#cdnMsg").html("CDN refresh: " + dateTime.toLocaleString());
-                    cdnMsgTimeout = setTimeout(() => {
-                        $("#cdnMsg").html("");
-                        $("#cdnMsg").hide();
-                    }, 120000);
-            }
-        }
     </script>
 
     @await RenderSectionAsync("Scripts", false)

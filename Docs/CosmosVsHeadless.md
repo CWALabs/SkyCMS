@@ -61,18 +61,18 @@ The typical JAMstack workflow involves:
 4. **Build process generates HTML** (can take minutes)
 5. **Deployment to hosting platform** (CDN, object storage)
 
-**Pain Points:**
+**Disadvantages:**
 
-- ❌ Content creators must learn Git workflows (clone, commit, push, branches, merge conflicts)
-- ❌ Separate CI/CD pipeline must be configured and maintained
-- ❌ External static site generator required (additional tool to learn)
-- ❌ Build time delays (minutes per deployment, longer for large sites)
-- ❌ Complex troubleshooting across multiple systems (Git → CI/CD → Generator → Deployment)
-- ❌ Multiple tools and services to integrate and maintain
-- ❌ Must choose between static OR dynamic content
-- ❌ Preview URLs require additional CI/CD configuration
-- ❌ Pipeline failures can block content publishing
-- ❌ Difficult for non-technical users
+- Content creators must learn Git workflows (clone, commit, push, branches, merge conflicts)
+- Separate CI/CD pipeline must be configured and maintained
+- External static site generator required (additional tool to learn)
+- Build time delays (minutes per deployment, longer for large sites)
+- Complex troubleshooting across multiple systems (Git → CI/CD → Generator → Deployment)
+- Multiple tools and services to integrate and maintain
+- Must choose between static OR dynamic content
+- Preview URLs require additional CI/CD configuration
+- Pipeline failures can block content publishing
+- Difficult for non-technical users
 
 ### SkyCMS Integrated Approach
 
@@ -85,16 +85,16 @@ SkyCMS eliminates the entire pipeline by integrating all capabilities into a sin
 
 **Advantages:**
 
-- ✅ **No Git Knowledge Required**: Content creators use intuitive CMS interface
-- ✅ **No CI/CD Pipeline**: Automatic triggers built into the system
-- ✅ **No External Generators**: Publisher renders directly (no Jekyll, Hugo, Gatsby, Next.js)
-- ✅ **Instant Publishing**: Changes go live immediately without build delays
-- ✅ **Single Integrated Platform**: All tools in one system
-- ✅ **Simplified Operations**: Fewer moving parts, fewer failure points
-- ✅ **Hybrid Architecture**: Static files AND dynamic content simultaneously
-- ✅ **Built-in Preview**: Preview before publishing without CI/CD configuration
-- ✅ **No Pipeline Failures**: Direct deployment eliminates intermediate failures
-- ✅ **User-Friendly**: Non-technical users can publish content confidently
+- **No Git Knowledge Required**: Content creators use intuitive CMS interface
+- **No CI/CD Pipeline**: Automatic triggers built into the system
+- **No External Generators**: Publisher renders directly (no Jekyll, Hugo, Gatsby, Next.js)
+- **Instant Publishing**: Changes go live immediately without build delays
+- **Single Integrated Platform**: All tools in one system
+- **Simplified Operations**: Fewer moving parts, fewer failure points
+- **Hybrid Architecture**: Static files AND dynamic content simultaneously
+- **Built-in Preview**: Preview before publishing without CI/CD configuration
+- **No Pipeline Failures**: Direct deployment eliminates intermediate failures
+- **User-Friendly**: Non-technical users can publish content confidently
 
 ### Performance Comparison
 
@@ -201,12 +201,12 @@ While SkyCMS is not primarily a headless CMS, it does offer optional API endpoin
 
 SkyCMS combines the best aspects of traditional and modern CMS architectures:
 
-✅ **Traditional strengths**: Integrated editing, page rendering, SEO-friendly output, lower complexity
-✅ **Modern capabilities**: Cloud-native, static site generation, edge hosting, optional API
-✅ **Performance**: Static file delivery rivals or exceeds headless CMS performance
-✅ **Flexibility**: Choose static, dynamic, or API delivery based on your needs
-✅ **Simplicity**: No separate frontend application required
-✅ **Cost-effective**: Minimal infrastructure and development costs
+**Traditional strengths**: Integrated editing, page rendering, SEO-friendly output, lower complexity
+**Modern capabilities**: Cloud-native, static site generation, edge hosting, optional API
+**Performance**: Static file delivery rivals or exceeds headless CMS performance
+**Flexibility**: Choose static, dynamic, or API delivery based on your needs
+**Simplicity**: No separate frontend application required
+**Cost-effective**: Minimal infrastructure and development costs
 
 ## Conclusion
 

@@ -8,7 +8,7 @@ A flexible, multi-database implementation of ASP.NET Core Identity that **automa
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [What's New](#-whats-new)
 - [Overview](#-overview)
@@ -27,31 +27,31 @@ A flexible, multi-database implementation of ASP.NET Core Identity that **automa
 
 ---
 
-## 🆕 What's New
+## What's New
 
 ### Version 9.0+
 
-- ✅ **.NET 9** support with C# 13.0 features
-- ✅ **Enhanced Strategy Pattern** with improved provider detection
-- ✅ **Thread-safe** stateless strategy implementations
-- ✅ **Improved documentation** with comprehensive XML comments
-- ✅ **Performance optimizations** for all providers
-- ✅ **Better error messages** with detailed provider information
+- **.NET 9** support with C# 13.0 features
+- **Enhanced Strategy Pattern** with improved provider detection
+- **Thread-safe** stateless strategy implementations
+- **Improved documentation** with comprehensive XML comments
+- **Performance optimizations** for all providers
+- **Better error messages** with detailed provider information
 
 ---
 
-## 🎯 Overview
+## Overview
 
 AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database provider at compile time**. Simply provide a connection string, and the library automatically configures the correct Entity Framework provider using the **Strategy Pattern**.
 
 ### Why FlexDb?
 
-- 🔄 **Zero Code Changes**: Switch databases by changing connection strings only
-- 🚀 **Rapid Development**: No provider-specific configuration needed
-- 🌐 **Multi-Environment**: Use MySQL for dev, SQL Server for staging, Cosmos DB for production
-- 📦 **Single Package**: All providers in one NuGet package
-- 🔧 **Extensible**: Add custom providers by implementing `IDatabaseConfigurationStrategy`
-- 🛡️ **Secure**: Built-in personal data encryption and protection
+- **Zero Code Changes**: Switch databases by changing connection strings only
+- **Rapid Development**: No provider-specific configuration needed
+- **Multi-Environment**: Use MySQL for dev, SQL Server for staging, Cosmos DB for production
+- **Single Package**: All providers in one NuGet package
+- **Extensible**: Add custom providers by implementing `IDatabaseConfigurationStrategy`
+- **Secure**: Built-in personal data encryption and protection
 
 ### Key Features
 
@@ -409,7 +409,7 @@ public async Task<Dictionary<string, string>> ExportPersonalDataAsync(string use
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -506,7 +506,7 @@ public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, Identi
 }
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Components
 
@@ -568,7 +568,7 @@ public interface IRepository
 }
 ```
 
-## 🔧 Configuration Options
+## Configuration Options
 
 ### Identity Configuration
 
@@ -655,7 +655,7 @@ services.AddSingleton<IPersonalDataProtector, MyPersonalDataProtector>();
 - **Claims-Based Security**: Fine-grained permission system
 - **Policy-Based Authorization**: Flexible authorization policies
 
-## 🚀 Database Migration
+## Database Migration
 
 ### Switching Between Providers
 
@@ -676,7 +676,7 @@ FlexDb makes it easy to migrate between database providers:
 await context.Database.MigrateAsync();
 ```
 
-## 📊 Performance Considerations
+## Performance Considerations
 
 ### Cosmos DB Optimizations
 
@@ -691,7 +691,7 @@ await context.Database.MigrateAsync();
 - **Connection Pooling**: Efficient connection management
 - **Query Optimization**: Optimized LINQ to SQL translations
 
-## 🛠️ Advanced Usage
+## Advanced Usage
 
 ### Custom User and Role Types
 
@@ -757,7 +757,7 @@ public class MultiTenantDbContext : CosmosIdentityDbContext<IdentityUser, Identi
 }
 ```
 
-## 📦 NuGet Package Information
+## NuGet Package Information
 
 - **Package ID**: `AspNetCore.Identity.FlexDb`
 - **Target Framework**: .NET 9.0

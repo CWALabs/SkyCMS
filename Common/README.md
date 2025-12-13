@@ -1,6 +1,6 @@
 ﻿# Cosmos.Common - SkyCMS Core Library
 
-> **📦 Package Info:** This is the `Cosmos.Common` package with namespace `Cosmos.Common.*`. It provides shared functionality for both Sky.Editor and Cosmos.Publisher applications.
+> **Package Info:** This is the `Cosmos.Common` package with namespace `Cosmos.Common.*`. It provides shared functionality for both Sky.Editor and Cosmos.Publisher applications.
 
 ## Overview
 

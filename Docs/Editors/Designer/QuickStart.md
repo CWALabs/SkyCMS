@@ -154,14 +154,14 @@ Most styling can be done visually:
 
 ## Common Pitfalls to Avoid
 
-### ❌ Don't:
+### Don't:
 - Nest editable regions inside editable regions
 - Use excessive inline styles
 - Create overly complex nested structures
 - Forget to test on mobile devices
 - Navigate away without saving
 
-### ✅ Do:
+### Do:
 - Use semantic HTML elements
 - Add CSS classes for reusable styles
 - Keep structure organized in Layer Manager

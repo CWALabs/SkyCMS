@@ -1,6 +1,6 @@
-# Cosmos.DynamicConfig - Multi-Tenant Dynamic Configuration Provider
+# Cosmos.DynamicConfig - Multi-Tenant Configuration Provider
 
-> **📁 Note:** This project is located in the `Cosmos.ConnectionStrings/` folder but the project file is `Cosmos.DynamicConfig.csproj`. Both names refer to the same package - the namespace and assembly name is `Cosmos.DynamicConfig`.
+> **Note:** This project is located in the `Cosmos.ConnectionStrings/` folder but the project file is `Cosmos.DynamicConfig.csproj`. Both names refer to the same package - the namespace and assembly name is `Cosmos.DynamicConfig`.
 
 ## Overview
 
@@ -321,12 +321,12 @@ Task<Connection?> GetConnectionByDomainAsync(string domain);
 
 **When to Use Explicit Domain:**
 
-- ✅ Background services / hosted services
-- ✅ Console applications
-- ✅ Unit tests
-- ✅ Scheduled jobs (Hangfire, Quartz)
-- ✅ Azure Functions (when not triggered by HTTP)
-- ❌ Regular HTTP requests (use middleware - automatic)
+- Background services / hosted services
+- Console applications
+- Unit tests
+- Scheduled jobs (Hangfire, Quartz)
+- Azure Functions (when not triggered by HTTP)
+- Regular HTTP requests (use middleware - automatic)
 
 ### Metrics Collection
 

@@ -96,7 +96,7 @@ The main controller handling content editing operations:
 - Crop, resize, and filter operations
 - Direct integration with file management
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -170,7 +170,7 @@ Use the built-in setup wizard for single-tenant deployments only (`MultiTenantEd
 - Completion: wizard writes settings to the database, disables itself, and requires an app restart; credentials entered here become the first Administrator account.
 - Single-tenant only: multi-tenant editors must leave `CosmosAllowSetup=false` and configure tenants through `Cosmos.ConnectionStrings`.
 
-## 🔧 Configuration
+## Configuration
 
 ### Single Tenant vs Multi-Tenant
 

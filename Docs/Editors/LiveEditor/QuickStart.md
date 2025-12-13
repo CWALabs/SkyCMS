@@ -83,13 +83,13 @@
 
 ## Important Notes
 
-✅ **Do's**
+**Do's**
 - Save frequently (even with auto-save)
 - Preview before publishing
 - Use semantic headings (H1 → H2 → H3)
 - Add alt text to images
 
-❌ **Don'ts**
+**Don'ts**
 - Don't click links while editing (they're disabled)
 - Don't edit the same region as another user
 - Don't paste complex formatting from Word (use paste special)

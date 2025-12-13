@@ -6,7 +6,7 @@ Welcome to the SkyCMS Live Editor documentation. This collection of guides will 
 
 ### For End Users
 
-#### 📖 [Complete User Guide](README.md)
+#### [Complete User Guide](README.md)
 The comprehensive guide to using the Live Editor. Covers all features, tools, and workflows in detail.
 
 **Topics include:**
@@ -23,7 +23,7 @@ The comprehensive guide to using the Live Editor. Covers all features, tools, an
 
 **Best for:** Content editors, authors, and anyone who will be creating or editing web pages.
 
-#### 🚀 [Quick Start Guide](QuickStart.md)
+#### [Quick Start Guide](QuickStart.md)
 Get up and running in 5 minutes with this condensed guide.
 
 **Topics include:**
@@ -35,7 +35,7 @@ Get up and running in 5 minutes with this condensed guide.
 
 **Best for:** New users who need to start editing quickly, or experienced users who need a quick reference.
 
-#### 🎨 [Visual Guide](VisualGuide.md)
+#### [Visual Guide](VisualGuide.md)
 Visual reference showing the Live Editor's interface components and layouts.
 
 **Topics include:**
@@ -50,7 +50,7 @@ Visual reference showing the Live Editor's interface components and layouts.
 
 ### For Developers and Administrators
 
-#### 🔧 [Technical Reference](TechnicalReference.md)
+#### [Technical Reference](TechnicalReference.md)
 Detailed technical documentation for developers and system administrators.
 
 **Topics include:**
