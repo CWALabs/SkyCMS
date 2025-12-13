@@ -170,6 +170,17 @@ namespace Sky.Editor.Services.Publishing
                 article.Published = DateTimeOffset.UtcNow.AddSeconds(-1);
             }
 
+            // Validate UserId before parsing
+            if (string.IsNullOrWhiteSpace(article.UserId))
+            {
+                throw new ArgumentException("User ID cannot be null or empty when publishing an article.", nameof(article));
+            }
+
+            if (!Guid.TryParse(article.UserId, out var userId))
+            {
+                throw new ArgumentException($"User ID '{article.UserId}' is not a valid GUID format.", nameof(article));
+            }
+
             // Unpublish earlier versions of this article number.
             await UnpublishEalierVersions(article);
 
@@ -186,7 +197,7 @@ namespace Sky.Editor.Services.Publishing
                 DeleteStatic(prior);
             }
 
-            var authorInfo = await _authors.GetOrCreateAsync(Guid.Parse(article.UserId));
+            var authorInfo = await _authors.GetOrCreateAsync(userId);  // Use the already-parsed userId
 
             PublishedPage page;
 

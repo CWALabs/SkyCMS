@@ -1964,11 +1964,11 @@ namespace Sky.Cms.Controllers
             if (dbContext.Database.IsCosmos())
             {
                 var whereClause = publishedOnly ? $"WHERE c.Published != null AND " : "WHERE ";
-                whereClause += $"c.StatusCode = {(int)StatusCodeEnum.Active} AND ";
+                whereClause += $"c.StatusCode = {(int)StatusCodeEnum.Active} ";
 
                 if (!string.IsNullOrEmpty(term))
                 {
-                    whereClause += $"LOWER(c.Title) LIKE '%{term.ToLower()}%' ";
+                    whereClause += $"AND LOWER(c.Title) LIKE '%{term.ToLower()}%' ";
                 }
 
                 var query = $"SELECT c.ArticleNumber, c.ArticleType, c.Title, c.UrlPath, MAX(c.Published) as Published, MAX(c.Updated) as Updated FROM Articles c {whereClause} GROUP BY c.ArticleNumber, c.ArticleType, c.Title, c.UrlPath";

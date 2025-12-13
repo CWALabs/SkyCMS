@@ -677,31 +677,5 @@ namespace Sky.Editor.Controllers
             return entity;
         }
 
-        private async Task UpdateBlogStreamArticle(Cosmos.Common.Data.Article article, BlogStreamViewModel model)
-        {
-            // Save old title in case of change.
-            var oldTitle = article.Title;
-            var oldUrlPath = article.UrlPath;
-
-            // Update changes.
-            article.Title = model.Title;
-            article.UrlPath = slugService.Normalize(model.Title);
-            article.Introduction = model.Description;
-            article.BannerImage = model.HeroImage;
-            article.Published = model.Published;
-            article.Content = await blogRenderingService.GenerateBlogStreamHtml(article);
-            await db.SaveChangesAsync();
-
-            // Handle title change.
-            if (oldTitle != article.Title)
-            {
-                await titleChangeService.HandleTitleChangeAsync(article, oldTitle, oldUrlPath);
-            }
-
-            if (article.Published.HasValue)
-            {
-                await articleLogic.PublishArticle(article.Id, article.Published.Value);
-            }
-        }
     }
 }

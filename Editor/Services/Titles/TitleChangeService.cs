@@ -115,12 +115,6 @@ namespace Sky.Editor.Services.Titles
             var oldSlug = oldUrlPath; // The old URL path is already normalized
             var newSlug = BuildArticleUrl(article);
 
-            // Only proceed if the slug actually changed
-            if (oldSlug.Equals(newSlug, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
             // **PRESERVE ROOT PAGE URL PATH**
             // The root page must always remain at "root" regardless of title changes
             var isRootPage = article.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase);
@@ -196,12 +190,16 @@ namespace Sky.Editor.Services.Titles
                 await publishingService.PublishAsync(article);
             }
 
-            // Create redirects for all changed URLs (ONLY if article is published)
-            if (changedUrls.Any() && article.Published.HasValue && article.Published <= clock.UtcNow)
+            // Only proceed if the slug actually changed
+            if (!oldSlug.Equals(newSlug, StringComparison.OrdinalIgnoreCase))
             {
-                await CreateRedirectsAsync(changedUrls, article.UserId);
+                // Create redirects for all changed URLs
+                if (changedUrls.Any() && article.Published.HasValue && article.Published <= clock.UtcNow)
+                {
+                    await CreateRedirectsAsync(changedUrls, article.UserId);
+                }
             }
-
+            
             // ✅ FIX: Dispatch event with the actual old title
             await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
         }
@@ -351,7 +349,7 @@ namespace Sky.Editor.Services.Titles
         }
 
         /// <summary>
-        /// Updates all versions of an article to reflect a new slug and URL path.
+        /// Updates all versions of an article to reflect a new title and slug, and URL path.
         /// </summary>
         /// <param name="article">The article whose versions are to be updated. Versions are identified by matching <see cref="Article.ArticleNumber"/>.</param>
         /// <param name="newSlug">The new slug to assign to all versions of the article.</param>
@@ -400,10 +398,12 @@ namespace Sky.Editor.Services.Titles
             var count = 0;
             foreach (var version in versions)
             {
+                version.Title = article.Title;
+
                 // Only update BlogKey for BlogPost and BlogStream articles
                 if (version.ArticleType == (int)ArticleType.BlogPost || version.ArticleType == (int)ArticleType.BlogStream)
                 {
-                    version.BlogKey = newSlug;
+                    version.BlogKey = article.BlogKey;  // Use article's BlogKey, not newSlug
                 }
 
                 // Always update the URL path using the BuildArticleUrl logic
@@ -414,8 +414,8 @@ namespace Sky.Editor.Services.Titles
                 }
                 else
                 {
-                    version.UrlPath = version.ArticleType == (int)ArticleType.BlogPost
-                        ? slugs.Normalize(version.Title, newSlug)
+                     version.UrlPath = version.ArticleType == (int)ArticleType.BlogPost
+                        ? slugs.Normalize(version.Title, article.BlogKey)  // Use article.BlogKey
                         : slugs.Normalize(version.Title);
                 }
 
@@ -558,6 +558,7 @@ namespace Sky.Editor.Services.Titles
                 var oldChildPath = child.UrlPath;
 
                 // Replace the old slug prefix with the new slug in the URL path
+                // Note: Child article titles remain unchanged - only the URL path hierarchy is updated
                 var newChildPath = newSlug + oldChildPath.Substring(oldSlug.Length);
 
                 child.UrlPath = newChildPath;
@@ -569,6 +570,7 @@ namespace Sky.Editor.Services.Titles
                 }
 
                 // Synchronize all versions of this child article
+                // UpdateVersionsAsync will update versions with the child's current title and new URL path
                 await UpdateVersionsAsync(child, newChildPath, oldChildPath);
 
                 // Republish if the child article is currently published
@@ -626,6 +628,9 @@ namespace Sky.Editor.Services.Titles
             var count = 0;
             foreach (var version in versions)
             {
+                // Update title to match the current article
+                version.Title = article.Title;
+                
                 // Ensure UrlPath remains "root" for all versions
                 version.UrlPath = "root";
 

@@ -21,7 +21,7 @@ namespace Sky.Editor.Services.Html
         {
             if (string.IsNullOrWhiteSpace(html))
             {
-                return $"<div contenteditable='true' data-ccms-ceid='{Guid.NewGuid():N}'></div>";
+                return string.Empty;
             }
 
             try
@@ -30,23 +30,23 @@ namespace Sky.Editor.Services.Html
                 doc.LoadHtml(html);
                 var editable = doc.DocumentNode.SelectNodes("//*[@contenteditable='true' or translate(@contenteditable,'TRUE','true')='true']")
                               ?? new HtmlNodeCollection(null);
-                int i = 0;
-                foreach (var node in editable)
-                {
-                    if (node.Attributes["data-ccms-ceid"] == null)
-                        node.Attributes.Add("data-ccms-ceid", Guid.NewGuid().ToString("N"));
-                    if (node.Attributes["data-ccms-index"] == null)
-                        node.Attributes.Add("data-ccms-index", (i++).ToString());
-                }
 
-                if (editable.Count == 0)
+                // Only add markers to nodes that have contenteditable="true".
+                if (editable.Count > 0)
                 {
-                    var wrapper = doc.CreateElement("div");
-                    wrapper.SetAttributeValue("contenteditable", "true");
-                    wrapper.SetAttributeValue("data-ccms-ceid", Guid.NewGuid().ToString("N"));
-                    wrapper.InnerHtml = doc.DocumentNode.InnerHtml;
-                    doc.DocumentNode.RemoveAllChildren();
-                    doc.DocumentNode.AppendChild(wrapper);
+                    int i = 0;
+                    foreach (var node in editable)
+                    {
+                        if (node.Attributes["data-ccms-ceid"] == null)
+                        {
+                            node.Attributes.Add("data-ccms-ceid", Guid.NewGuid().ToString("N"));
+                        }
+
+                        if (node.Attributes["data-ccms-index"] == null)
+                        {
+                            node.Attributes.Add("data-ccms-index", (i++).ToString());
+                        }
+                    }
                 }
 
                 return doc.DocumentNode.OuterHtml;
@@ -61,7 +61,9 @@ namespace Sky.Editor.Services.Html
         public string EnsureAngularBase(string headerFragment, string urlPath)
         {
             if (string.IsNullOrWhiteSpace(headerFragment))
+            {
                 return string.Empty;
+            }
 
             var doc = new HtmlDocument();
             try { doc.LoadHtml(headerFragment); } catch { return headerFragment; }
@@ -70,11 +72,16 @@ namespace Sky.Editor.Services.Html
             if (meta == null ||
                 meta.Attributes["value"] == null ||
                 !meta.Attributes["value"].Value.Equals("angular", System.StringComparison.OrdinalIgnoreCase))
+            {
                 return headerFragment;
+            }
 
             var baseNode = doc.DocumentNode.SelectSingleNode("//base");
             var normalized = "/" + (urlPath ?? string.Empty).Trim('/').ToLowerInvariant() + "/";
-            if (normalized == "//") normalized = "/";
+            if (normalized == "//")
+            {
+                normalized = "/";
+            }
 
             if (baseNode == null)
             {
@@ -85,9 +92,13 @@ namespace Sky.Editor.Services.Html
             else
             {
                 if (baseNode.Attributes["href"] == null)
+                {
                     baseNode.Attributes.Add("href", normalized);
+                }
                 else
+                {
                     baseNode.Attributes["href"].Value = normalized;
+                }
             }
 
             return doc.DocumentNode.OuterHtml;

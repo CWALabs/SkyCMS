@@ -142,6 +142,7 @@
                             <div class="col-auto ms-5">
                                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
                                 <button id="btnApplyLink" type="button" class="btn btn-sm btn-primary" disabled>Apply <i class="fa-solid fa-circle-arrow-right"></i></button>
+                                <button id="btnCopyLink" type="button" class="btn btn-sm btn-primary" style="display:none">Copy Link <i class="fa-solid fa-copy"></i></button>
                                 <a id="btnCreatePage" target="_blank" href="" class="btn btn-sm btn-primary" style="display:none">Create page <i class="fa-solid fa-circle-arrow-right"></i></a>
                             </div>
                         </div>
@@ -195,6 +196,20 @@
         </div>
     </div>
 </div>
+
+<!-- Toast notification for copy confirmation -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 2000;">
+    <div id="copyToast" class="toast border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex bg-dark text-light rounded">
+            <div class="toast-body">
+                <i class="fa-solid fa-check text-success me-2"></i>
+                <strong>URL copied to clipboard!</strong>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <script>
     // let comboBoxTimeout = null;
     // let selectedAnchorData = null;
@@ -281,6 +296,7 @@
                     $("#divLinkDetails").show();
                     $("#btnOpenLink").attr("href", "@Url.Action("Versions", "Editor")/" + item.id);
                     $("#btnApplyLink").prop('disabled', false);
+                    $("#btnCopyLink").show();
                 },
                 onType: function() {
                     $("#btnOpen").prop('disabled', true);
@@ -288,6 +304,7 @@
                     $("#divLinkDetails").hide();
                     $("#btnApplyLink").prop('disabled', true);
                     $("#btnCreatePage").hide();
+                    $("#btnCopyLink").hide();
                 },
                 render: {
                     option: function(item, escape) {
@@ -307,5 +324,37 @@
         $("#btnCreatePage").hide();
         $("#divLinkDetails").hide();
         $("#pageStatus").hide();
+        $("#btnCopyLink").hide();
+    });
+
+    // Handle copy link button click
+    $("#btnCopyLink").click(function(e) {
+        e.preventDefault();
+        
+        if (selectedAnchorData && selectedAnchorData.url) {
+            const url = '/' + selectedAnchorData.url;
+            
+            // Copy to clipboard using modern Clipboard API
+            navigator.clipboard.writeText(url).then(function() {
+                // Close the modal first
+                const modal = bootstrap.Modal.getInstance(document.getElementById('pickPageModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Then show toast notification after a brief delay to ensure modal closes smoothly
+                setTimeout(function() {
+                    const toastEl = document.getElementById('copyToast');
+                    const toast = new bootstrap.Toast(toastEl, {
+                        autohide: true,
+                        delay: 3000
+                    });
+                    toast.show();
+                }, 300);
+            }).catch(function(err) {
+                console.error('Failed to copy URL:', err);
+                alert('Failed to copy URL to clipboard');
+            });
+        }
     });
 </script>

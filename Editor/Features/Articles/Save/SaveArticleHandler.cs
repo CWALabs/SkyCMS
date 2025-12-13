@@ -129,7 +129,7 @@ namespace Sky.Editor.Features.Articles.Save
                 }
 
                 // ✅ FIX: Handle title change with BOTH old title and old URL path
-                if (!oldTitle.Equals(article.Title, StringComparison.OrdinalIgnoreCase))
+                if (!oldTitle.Equals(article.Title))
                 {
                     logger.LogInformation(
                         "Title changed from '{OldTitle}' to '{NewTitle}' for article {ArticleNumber}",

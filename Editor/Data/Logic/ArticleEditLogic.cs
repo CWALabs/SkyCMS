@@ -393,7 +393,7 @@ namespace Sky.Editor.Data.Logic
             {
                 defaultTemplate =
                     "<div style='width: 100%;padding-left: 20px;padding-right: 20px;margin-left: auto;margin-right: auto;'>" +
-                    "<div contenteditable='true'><h1>Why Lorem Ipsum?</h1><p>" +
+                    "<div><h1>Why Lorem Ipsum?</h1><p>" +
                     LoremIpsum.WhyLoremIpsum + "</p></div></div></div>";
             }
 
@@ -702,7 +702,7 @@ namespace Sky.Editor.Data.Logic
                 }
             }
 
-            if (!oldTitle.Equals(article.Title, StringComparison.OrdinalIgnoreCase))
+            if (!oldTitle.Equals(article.Title))
             {
                 await titleChangeService.HandleTitleChangeAsync(article, oldTitle, oldUrlPath);
             }

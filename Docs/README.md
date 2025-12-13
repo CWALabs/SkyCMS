@@ -25,6 +25,7 @@ For a project overview and introduction to SkyCMS, see the [main README](../READ
 
 Start here if you're new to SkyCMS.
 
+- **[About SkyCMS](./About.md)** - What SkyCMS is and who it's for
 - **[Quick Start Guide](./QuickStart.md)** - Get up and running quickly
 - **[Developer Experience](./DeveloperExperience.md)** - Overview for developers
 - **[Cost Comparison](./CostComparison.md)** - Understanding SkyCMS costs vs alternatives
