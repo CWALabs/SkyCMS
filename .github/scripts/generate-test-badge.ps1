@@ -34,16 +34,12 @@ if ($coverageJson) {
 # Determine badge color based on results and coverage
 $badgeColor = if ($failed -gt 0) {
     "orange"  # Orange when tests fail
-} elseif ($coverage -lt 60) {
-    "orange"
-} elseif ($coverage -lt 80) {
-    "yellow"
 } else {
     "brightgreen"  # Green when all tests pass
 }
 
 # Create comprehensive badge text showing Pass/Fail/Skipped counts
-$badgeText = "Pass: $passed Fail: $failed Skip: $skipped"
+$badgeText = "Pass: $passed Fail: $failed Skip: $skipped | Cov: $coverage%"
 
 # Create badge SVG
 $badgeSvg = @"
