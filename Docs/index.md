@@ -3,7 +3,7 @@
 {% include nav.html %}
 
 <p align="center">
-  <img src="assets/images/sky-logo.svg" alt="SkyCMS Logo" width="200" />
+  <img src="assets/images/sky-logo.svg" alt="SkyCMS Logo" width="40" />
 </p>
 
 <h1 align="center">SkyCMS Documentation</h1>
