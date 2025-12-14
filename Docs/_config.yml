@@ -3,9 +3,7 @@
 
 # Site settings
 title: SkyCMS Documentation
-description: > # this means to ignore newlines until "footer_text:"
-  Complete documentation for SkyCMS - A modern, cloud-native content management system
-  built on ASP.NET Core with multi-database support and advanced content management features.
+# description: > # this means to ignore newlines until "footer_text:"
 
 baseurl: "/SkyCMS" # The subpath of your site, e.g. /blog
 url: "https://cwalabs.github.io" # the base hostname & protocol for your site
