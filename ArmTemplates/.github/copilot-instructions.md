@@ -108,4 +108,4 @@ When modifying templates:
 ## External Dependencies
 - Docker Hub images: `toiyabe/cosmos-*` container registry
 - External WAF policy in `RG-ADMIN` resource group
-- Documentation site: `https://cosmos.moonrise.net/install`
+- Documentation site: `https://sky-cms.com/install`

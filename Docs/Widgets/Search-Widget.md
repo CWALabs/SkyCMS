@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Cosmos CMS Search Widget
 
 Client-side helpers for a simple search form that posts to the SkyCMS search endpoint and renders results.

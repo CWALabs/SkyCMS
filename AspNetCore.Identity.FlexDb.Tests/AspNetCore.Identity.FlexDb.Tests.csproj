@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
@@ -16,7 +16,8 @@
 		<CollectCoverage>true</CollectCoverage>
 		<CoverletOutputFormat>cobertura,json,lcov,opencover</CoverletOutputFormat>
 		<CoverletOutput>./TestResults/</CoverletOutput>
-		<Exclude>[*.Tests]*,[*.Tests.*]*</Exclude>
+		<!-- Exclude: test projects, migrations, boot/startup, and model/DTO classes -->
+		<Exclude>[*.Tests]*,[*.Tests.*]*,[*]*.Migrations.*,[*].Boot.*,[*].Models.*</Exclude>
 	</PropertyGroup>
 
 	<ItemGroup>

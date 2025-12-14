@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS Developer Documentation
 
 Welcome to the developer documentation area. This section complements the feature guides under `Docs/` by describing the architecture, shared components, and extension points used across SkyCMS projects.

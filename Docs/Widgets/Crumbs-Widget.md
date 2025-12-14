@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Cosmos CMS Crumbs Widget (breadcrumbs)
 
 Builds breadcrumb navigation from the current page title and a meta tag that encodes the path segments.

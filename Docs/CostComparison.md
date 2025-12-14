@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 ### Monthly Cost Comparison (10,000 page views/month site)
 
 **Traditional JAMstack (Netlify/Vercel Pro):**

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<Deterministic>true</Deterministic>
@@ -48,7 +48,7 @@
 		<DisableImplicitAspNetCoreAnalyzers>true</DisableImplicitAspNetCoreAnalyzers>
 		<Title>Sky CMS Common Objects</Title>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryUrl>https://github.com/MoonriseSoftwareCalifornia/SkyCMS</RepositoryUrl>
+		<RepositoryUrl>https://github.com/CWALabs/SkyCMS</RepositoryUrl>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 
 namespace AspNetCore.Identity.CosmosDb.Tests.Net9
 {

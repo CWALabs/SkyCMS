@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 
 # SkyCMS Live Editor Documentation (2025)
 

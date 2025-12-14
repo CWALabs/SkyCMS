@@ -108,7 +108,7 @@ ASP.NET Core middleware that captures the current request's domain and stores it
 
 ## Installation
 
-This package is part of the SkyCMS solution. You can obtain it by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+This package is part of the SkyCMS solution. You can obtain it by cloning the [SkyCMS GitHub repository](https://github.com/CWALabs/SkyCMS).
 
 ## Configuration
 
@@ -622,7 +622,7 @@ Licensed under the GNU Public License, Version 3.0. See the LICENSE file for det
 
 ## Contributing
 
-This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/CWALabs/SkyCMS).
 
 ## Troubleshooting
 
@@ -640,9 +640,9 @@ This project is part of the SkyCMS ecosystem. For contribution guidelines and mo
 ### Related Documentation
 - [Editor Documentation](../Editor/README.md) - Content management interface using dynamic configuration
 - [Publisher Documentation](../Publisher/README.md) - Public website using multi-tenant support
-- [Database Configuration Guide](../Docs/DatabaseConfig.md) - Database provider setup instructions
-- [Storage Configuration Guide](../Docs/StorageConfig.md) - Storage provider setup instructions
-- [Azure Installation Guide](../Docs/AzureInstall.md) - Azure deployment and configuration
+- [Database Configuration Guide](https://cwalabs.github.io/SkyCMS/DatabaseConfig.html) - Database provider setup instructions
+- [Storage Configuration Guide](https://cwalabs.github.io/SkyCMS/StorageConfig.html) - Storage provider setup instructions
+- [Azure Installation Guide](https://cwalabs.github.io/SkyCMS/AzureInstall.html) - Azure deployment and configuration
 
 ### Configuration Files
 - [appsettings.json](../launchSettings.json) - Application configuration examples

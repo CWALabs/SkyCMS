@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS File Management Documentation
 
 Welcome to the SkyCMS File Management documentation. This collection of guides will help you master the File Manager and its powerful editing capabilities.
@@ -236,7 +238,7 @@ Having issues? Check these resources:
 If you encounter bugs or have suggestions:
 1. Check the troubleshooting sections
 2. Search existing GitHub issues
-3. [Report a new issue](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues)
+3. [Report a new issue](https://github.com/CWALabs/SkyCMS/issues)
 
 ### Need Help?
 - Review this documentation thoroughly
@@ -247,7 +249,7 @@ If you encounter bugs or have suggestions:
 
 This documentation is part of the open-source SkyCMS project. Contributions are welcome!
 
-- [SkyCMS GitHub Repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
+- [SkyCMS GitHub Repository](https://github.com/CWALabs/SkyCMS)
 - Fork, improve, and submit pull requests
 - Help improve documentation for all users
 
@@ -258,4 +260,4 @@ This documentation is part of the open-source SkyCMS project. Contributions are 
 - SkyCMS Version: Current
 - Documentation Maintained By: SkyCMS Community
 
-For more information about SkyCMS, visit the [project homepage](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+For more information about SkyCMS, visit the [project homepage](https://github.com/CWALabs/SkyCMS).

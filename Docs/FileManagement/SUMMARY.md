@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # File Management Documentation - Summary
 
 This document provides a summary of the File Management documentation created for SkyCMS end users.
@@ -243,7 +245,7 @@ To keep documentation current:
 ## Contact and Contribution
 
 This documentation is part of the open-source SkyCMS project:
-- Repository: https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+- Repository: https://github.com/CWALabs/SkyCMS
 - Issues: Report documentation issues or suggestions
 - Contributions: Pull requests welcome for improvements
 

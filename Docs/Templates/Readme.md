@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Page Templates Guide
 
 ## Overview
@@ -311,5 +313,5 @@ Other elements with `contenteditable` will work in the editor but may not be pro
 
 For additional help or to report issues:
 
-- Visit the [SkyCMS GitHub Repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
+- Visit the [SkyCMS GitHub Repository](https://github.com/CWALabs/SkyCMS)
 - Check the official documentation at [moonrise.net](https://www.moonrise.net/cosmos/documentation/)

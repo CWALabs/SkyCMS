@@ -1,9 +1,10 @@
-﻿// <copyright file="Cosmos___SettingsController.cs" company="Moonrise Software, LLC">
+// <copyright file="CdnViewModel.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
-// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// See https://github.com/CWALabs/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
+
 namespace Sky.Editor.Models
 {
     using System.Collections.Generic;
@@ -39,6 +40,9 @@ namespace Sky.Editor.Models
                     case CdnProviderEnum.Cloudflare:
                         Cloudflare = JsonConvert.DeserializeObject<CloudflareCdnConfig>(setting.Value);
                         break;
+                    case CdnProviderEnum.CloudFront:
+                        CloudFront = JsonConvert.DeserializeObject<CloudFrontCdnConfig>(setting.Value);
+                        break;
                     case CdnProviderEnum.Sucuri:
                         Sucuri = JsonConvert.DeserializeObject<SucuriCdnConfig>(setting.Value);
                         break;
@@ -57,6 +61,11 @@ namespace Sky.Editor.Models
         /// Gets or sets the configuration settings for the Cloudflare CDN.
         /// </summary>
         public CloudflareCdnConfig Cloudflare { get; set; } = new CloudflareCdnConfig();
+
+        /// <summary>
+        /// Gets or sets the configuration settings for the Amazon CloudFront CDN.
+        /// </summary>
+        public CloudFrontCdnConfig CloudFront { get; set; } = new CloudFrontCdnConfig();
 
         /// <summary>
         /// Gets or sets the configuration settings for the Sucuri CDN.

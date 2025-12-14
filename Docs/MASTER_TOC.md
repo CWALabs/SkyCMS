@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS Master Table of Contents
 
 > Comprehensive, hierarchical index of all first-party SkyCMS documentation. Third-party library READMEs and issue templates are excluded.
@@ -113,35 +115,53 @@
 
 ## 8. Architecture & Components
 
+### 8.1 Core Applications
+
 - [Editor Application](../Editor/README.md)
 - [Publisher Application](../Publisher/README.md)
-- [Common Library](../Common/README.md)
-- [Blob Service](../Cosmos.BlobService/README.md)
-- [Dynamic Configuration](../Cosmos.ConnectionStrings/README.md)
-- [Identity Framework](../AspNetCore.Identity.FlexDb/README.md)
 
-## 9. Marketing & Content Assets
+### 8.2 Component Libraries
+
+- [Common Library](./Components/Cosmos.Common.md) — Core CMS library ([full docs](../Common/README.md))
+- [Blob Service](./Components/Cosmos.BlobService.md) — Multi-cloud storage ([full docs](../Cosmos.BlobService/README.md))
+- [Identity Framework](./Components/AspNetCore.Identity.FlexDb.md) — Flexible database identity ([full docs](../AspNetCore.Identity.FlexDb/README.md))
+- [Dynamic Configuration](../Cosmos.ConnectionStrings/README.md)
+
+## 9. Development & Testing
+
+### 9.1 Testing Guide
+
+- [Testing Overview](./Development/Testing/README.md)
+
+## 10. Release & Changelog
+
+- [Changelog](./CHANGELOG.md)
+
+## 10. Release & Changelog
+
+- [Changelog](./CHANGELOG.md)
+
+## 11. Marketing & Content Assets
 
 - [Homepage Content (HTML)](./SkyCMS-Homepage-Content.html)
 - [Homepage Content (Markdown)](./SkyCMS-Homepage-Content.md)
 - [Azure Marketplace Description](./AzureMarketplaceDescription.html)
 
-## 10. Licensing & Legal
+## 12. Licensing & Legal
 
 - [License Summary](./License.md)
 - [Third-Party Notices](../NOTICE.md)
 - [GPL License](../LICENSE-GPL)
 - [MIT License](../LICENSE-MIT)
 
-## 11. Additional Reference
+## 13. Additional Reference
 
 - [Master Docs Index (Human-Friendly)](./README.md)
-
 - [Uploading Secrets to GitHub Repository](./UploadSecretsToGithubRepo.md)
 
 ---
 
-## 12. How to Use This TOC
+## 14. How to Use This TOC
 
 - Use this file for exhaustive discovery.
 - Prefer the curated `README.md` for onboarding.
@@ -149,4 +169,4 @@
 
 ---
 
-Last updated: November 2025
+Last updated: December 2025

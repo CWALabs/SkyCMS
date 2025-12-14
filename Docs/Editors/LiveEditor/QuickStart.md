@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Live Editor Quick Start Guide
 
 ## Getting Started in 5 Minutes

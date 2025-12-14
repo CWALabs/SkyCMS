@@ -1,0 +1,292 @@
+// <copyright file="CloudFrontCdnDriver.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
+// See https://github.com/CWALabs/SkyCMS
+// for more information concerning the license and the contributors participating to this project.
+// </copyright>
+
+namespace Sky.Editor.Services.CDN
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net;
+    using System.Net.Http;
+    using System.Security.Cryptography;
+    using System.Text;
+    using System.Threading.Tasks;
+    using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
+
+    /// <summary>
+    /// Amazon CloudFront CDN Service for cache invalidation management.
+    /// </summary>
+    public class CloudFrontCdnDriver : ICdnDriver
+    {
+        private readonly CloudFrontCdnConfig config;
+        private readonly ILogger logger;
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="CloudFrontCdnDriver"/> class.
+        /// </summary>
+        /// <param name="setting">CDN setting.</param>
+        /// <param name="logger">Log service.</param>
+        /// <exception cref="ArgumentNullException">Thrown when setting is null.</exception>
+        /// <exception cref="JsonException">Thrown when setting.Value contains invalid JSON.</exception>
+        public CloudFrontCdnDriver(CdnSetting setting, ILogger logger)
+        {
+            if (setting == null)
+            {
+                throw new ArgumentNullException(nameof(setting));
+            }
+
+            if (string.IsNullOrWhiteSpace(setting.Value))
+            {
+                throw new ArgumentException("CDN setting value cannot be null or empty.", nameof(setting));
+            }
+
+            try
+            {
+                config = JsonConvert.DeserializeObject<CloudFrontCdnConfig>(setting.Value);
+
+                if (config == null)
+                {
+                    throw new ArgumentException("Failed to deserialize CDN configuration.", nameof(setting));
+                }
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException($"Invalid JSON in CDN setting: {ex.Message}", nameof(setting), ex);
+            }
+
+            this.logger = logger;
+        }
+
+        /// <summary>
+        /// Gets the provider name.
+        /// </summary>
+        public string ProviderName
+        {
+            get { return "CloudFront"; }
+        }
+
+        /// <summary>
+        ///  Purge all cached content by invalidating all paths.
+        /// </summary>
+        /// <returns>CDN purge results.</returns>
+        public async Task<List<CdnResult>> PurgeCdn()
+        {
+            return await PurgeCdn(new List<string> { "/*" });
+        }
+
+        /// <summary>
+        ///  Purge cached content by specific URLs or paths.
+        /// </summary>
+        /// <param name="purgeUrls">URL or path list.</param>
+        /// <returns>CDN purge results.</returns>
+        public async Task<List<CdnResult>> PurgeCdn(List<string> purgeUrls)
+        {
+            var model = new List<CdnResult>();
+
+            if (purgeUrls == null || purgeUrls.Count == 0 || purgeUrls.Any(a => a == "/") || purgeUrls.Any(a => a.Equals("root", StringComparison.CurrentCultureIgnoreCase)))
+            {
+                purgeUrls = new List<string> { "/*" };
+            }
+
+            try
+            {
+                var invalidationId = await CreateInvalidationAsync(purgeUrls);
+
+                var cdnResult = new CdnResult
+                {
+                    ClientRequestId = Guid.NewGuid().ToString(),
+                    Id = invalidationId,
+                    IsSuccessStatusCode = !string.IsNullOrEmpty(invalidationId),
+                    Status = !string.IsNullOrEmpty(invalidationId) ? HttpStatusCode.OK : HttpStatusCode.BadRequest,
+                    ReasonPhrase = !string.IsNullOrEmpty(invalidationId) ? "Invalidation created successfully" : "Failed to create invalidation",
+                    Message = $"Invalidation ID: {invalidationId}",
+                    EstimatedFlushDateTime = DateTimeOffset.UtcNow.AddMinutes(5),
+                    ProviderName = ProviderName
+                };
+
+                model.Add(cdnResult);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error creating CloudFront invalidation");
+
+                var cdnResult = new CdnResult
+                {
+                    ClientRequestId = Guid.NewGuid().ToString(),
+                    Id = string.Empty,
+                    IsSuccessStatusCode = false,
+                    Status = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = "Exception occurred",
+                    Message = ex.Message,
+                    EstimatedFlushDateTime = DateTimeOffset.UtcNow,
+                    ProviderName = ProviderName
+                };
+
+                model.Add(cdnResult);
+            }
+
+            return model;
+        }
+
+        /// <summary>
+        /// Creates an invalidation request in CloudFront.
+        /// </summary>
+        /// <param name="paths">List of paths to invalidate.</param>
+        /// <returns>The invalidation ID if successful, otherwise null.</returns>
+        private async Task<string> CreateInvalidationAsync(List<string> paths)
+        {
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
+            var callerReference = $"SkyCMS-{timestamp}-{Guid.NewGuid()}";
+
+            // Build the invalidation batch XML
+            var pathItems = string.Join(string.Empty, paths.Select(p => $"<Path>{System.Security.SecurityElement.Escape(p)}</Path>"));
+            var requestBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<InvalidationBatch>
+    <Paths>
+        <Quantity>{paths.Count}</Quantity>
+        <Items>
+            {pathItems}
+        </Items>
+    </Paths>
+    <CallerReference>{callerReference}</CallerReference>
+</InvalidationBatch>";
+
+            var endpoint = $"https://cloudfront.amazonaws.com/2020-05-31/distribution/{config.DistributionId}/invalidation";
+            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            var amzDate = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
+
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            request.Content = new StringContent(requestBody, Encoding.UTF8, "application/xml");
+
+            // AWS Signature Version 4 signing process
+            var authorization = CreateAwsSignature(
+                request.Method.Method,
+                endpoint,
+                requestBody,
+                amzDate,
+                dateStamp);
+
+            request.Headers.Add("x-amz-date", amzDate);
+            request.Headers.Add("Authorization", authorization);
+
+            var response = await httpClient.SendAsync(request);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Extract invalidation ID from XML response
+                var idStart = responseContent.IndexOf("<Id>") + 4;
+                var idEnd = responseContent.IndexOf("</Id>");
+                if (idStart > 3 && idEnd > idStart)
+                {
+                    return responseContent.Substring(idStart, idEnd - idStart);
+                }
+            }
+            else
+            {
+                logger.LogError($"CloudFront API error: {response.StatusCode} - {responseContent}");
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Creates AWS Signature Version 4 authorization header.
+        /// </summary>
+        /// <param name="method">HTTP method.</param>
+        /// <param name="endpoint">API endpoint URL.</param>
+        /// <param name="requestBody">Request body content.</param>
+        /// <param name="amzDate">AMZ date timestamp.</param>
+        /// <param name="dateStamp">Date stamp.</param>
+        /// <returns>Authorization header value.</returns>
+        private string CreateAwsSignature(string method, string endpoint, string requestBody, string amzDate, string dateStamp)
+        {
+            var service = "cloudfront";
+            var region = config.Region;
+            var algorithm = "AWS4-HMAC-SHA256";
+            var credentialScope = $"{dateStamp}/{region}/{service}/aws4_request";
+
+            // Create canonical request
+            var uri = new Uri(endpoint);
+            var canonicalUri = uri.AbsolutePath;
+            var canonicalQueryString = string.Empty;
+            var canonicalHeaders = $"host:{uri.Host}\nx-amz-date:{amzDate}\n";
+            var signedHeaders = "host;x-amz-date";
+            var payloadHash = ComputeSha256Hash(requestBody);
+
+            var canonicalRequest = $"{method}\n{canonicalUri}\n{canonicalQueryString}\n{canonicalHeaders}\n{signedHeaders}\n{payloadHash}";
+
+            // Create string to sign
+            var canonicalRequestHash = ComputeSha256Hash(canonicalRequest);
+            var stringToSign = $"{algorithm}\n{amzDate}\n{credentialScope}\n{canonicalRequestHash}";
+
+            // Calculate signature
+            var signingKey = GetSignatureKey(config.SecretAccessKey, dateStamp, region, service);
+            var signature = ComputeHmacSha256(signingKey, stringToSign);
+
+            // Build authorization header
+            return $"{algorithm} Credential={config.AccessKeyId}/{credentialScope}, SignedHeaders={signedHeaders}, Signature={signature}";
+        }
+
+        /// <summary>
+        /// Computes SHA256 hash of the input string.
+        /// </summary>
+        /// <param name="data">Input data.</param>
+        /// <returns>Hex-encoded hash.</returns>
+        private string ComputeSha256Hash(string data)
+        {
+            using var sha256 = SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(data));
+            return BitConverter.ToString(bytes).Replace("-", string.Empty).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Computes HMAC-SHA256.
+        /// </summary>
+        /// <param name="key">Key bytes.</param>
+        /// <param name="data">Data to hash.</param>
+        /// <returns>Hex-encoded hash.</returns>
+        private string ComputeHmacSha256(byte[] key, string data)
+        {
+            using var hmac = new HMACSHA256(key);
+            var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
+            return BitConverter.ToString(bytes).Replace("-", string.Empty).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Computes HMAC-SHA256 returning raw bytes.
+        /// </summary>
+        /// <param name="key">Key bytes.</param>
+        /// <param name="data">Data to hash.</param>
+        /// <returns>Hash bytes.</returns>
+        private byte[] ComputeHmacSha256Bytes(byte[] key, string data)
+        {
+            using var hmac = new HMACSHA256(key);
+            return hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
+        }
+
+        /// <summary>
+        /// Derives the AWS signing key.
+        /// </summary>
+        /// <param name="key">Secret access key.</param>
+        /// <param name="dateStamp">Date stamp.</param>
+        /// <param name="regionName">AWS region.</param>
+        /// <param name="serviceName">AWS service name.</param>
+        /// <returns>Signing key bytes.</returns>
+        private byte[] GetSignatureKey(string key, string dateStamp, string regionName, string serviceName)
+        {
+            var kSecret = Encoding.UTF8.GetBytes($"AWS4{key}");
+            var kDate = ComputeHmacSha256Bytes(kSecret, dateStamp);
+            var kRegion = ComputeHmacSha256Bytes(kDate, regionName);
+            var kService = ComputeHmacSha256Bytes(kRegion, serviceName);
+            var kSigning = ComputeHmacSha256Bytes(kService, "aws4_request");
+            return kSigning;
+        }
+    }
+}

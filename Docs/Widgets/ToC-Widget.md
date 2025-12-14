@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Cosmos CMS Table of Contents (ToC) Widgets
 
 Helpers to render navigation lists from the SkyCMS Table of Contents API and to build breadcrumbs automatically.

@@ -761,7 +761,7 @@ public class MultiTenantDbContext : CosmosIdentityDbContext<IdentityUser, Identi
 
 - **Package ID**: `AspNetCore.Identity.FlexDb`
 - **Target Framework**: .NET 9.0
-- **Repository**: [GitHub](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
+- **Repository**: [GitHub](https://github.com/CWALabs/SkyCMS)
 - **License**: MIT License
 - **Dependencies**:
   - Microsoft.AspNetCore.Identity.EntityFrameworkCore
@@ -841,8 +841,8 @@ This project is licensed under the MIT License. See the license file for details
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues)
-- **Documentation**: [SkyCMS Documentation](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/tree/main/Docs)
+- **Issues**: [GitHub Issues](https://github.com/CWALabs/SkyCMS/issues)
+- **Documentation**: [SkyCMS Documentation](https://github.com/CWALabs/SkyCMS/tree/main/Docs)
 - **NuGet**: [Package Page](https://www.nuget.org/packages/AspNetCore.Identity.FlexDb/)
 
 ---

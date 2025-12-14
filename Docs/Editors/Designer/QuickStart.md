@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Design Editor Quick Start Guide
 
 This is a quick reference guide to get you started with the Design Editor (GrapesJS) in SkyCMS. For complete documentation, see [README.md](README.md).
@@ -203,7 +205,7 @@ Default blocks include:
 - Official GrapesJS docs: [https://grapesjs.com/docs/](https://grapesjs.com/docs/)
 
 ### Community
-- SkyCMS GitHub: [https://github.com/MoonriseSoftwareCalifornia/SkyCMS](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
+- SkyCMS GitHub: [https://github.com/CWALabs/SkyCMS](https://github.com/CWALabs/SkyCMS)
 - Video tutorials: [YouTube @Sky-cms](https://www.youtube.com/@Sky-cms)
 - Slack channel: [Sky-cms.slack.com](https://Sky-cms.slack.com/)
 

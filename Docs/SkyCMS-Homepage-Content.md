@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS: The High-Performance CMS Built for the Cloud
 
 **Lightweight • Fast • Multi-Cloud • Developer-Friendly**
@@ -114,14 +116,14 @@ SkyCMS powers websites that demand:
 
 ### **Try It Now**
 
-**Deploy to Azure**: https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMoonriseSoftwareCalifornia%2FSkyCMS%2Frefs%2Fheads%2Fmain%2FArmTemplates%2Fazuredeploy.json
+**Deploy to Azure**: https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Frefs%2Fheads%2Fmain%2FArmTemplates%2Fazuredeploy.json
 
-**Launch on AWS**: https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://raw.githubusercontent.com/MoonriseSoftwareCalifornia/SkyCMS/main/AWS/cloudformation-skycms.yaml&stackName=skycms
+**Launch on AWS**: https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://raw.githubusercontent.com/CWALabs/SkyCMS/main/AWS/cloudformation-skycms.yaml&stackName=skycms
 
 ### **Learn More**
 
 - **Documentation**: Complete setup and configuration guide
-- **GitHub Repository**: https://github.com/MoonriseSoftwareCalifornia/SkyCMS - Source code and issues
+- **GitHub Repository**: https://github.com/CWALabs/SkyCMS - Source code and issues
 - **Video Tutorials**: https://www.youtube.com/@Sky-cms - Watch SkyCMS in action
 
 ### 💬 **Get Support**

@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # About SkyCMS
 
 SkyCMS is an edge-native CMS that combines the usability of traditional editors with the speed of static site generation—without CI/CD or Git pipelines. It ships as Docker containers and deploys to any cloud that supports S3-compatible storage or Azure Blob, with optional origin-less edge hosting on Cloudflare R2 + Rules.

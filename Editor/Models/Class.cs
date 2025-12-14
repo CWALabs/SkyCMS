@@ -1,4 +1,4 @@
-﻿namespace Sky.Editor.Models
+namespace Sky.Editor.Models
 {
     public class Class
     {

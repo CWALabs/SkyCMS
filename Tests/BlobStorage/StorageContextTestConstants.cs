@@ -1,4 +1,4 @@
-﻿namespace Sky.Tests.BlobStorage
+namespace Sky.Tests.BlobStorage
 {
     public static class StorageContextTestConstants
     {

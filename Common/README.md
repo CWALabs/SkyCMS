@@ -1,4 +1,4 @@
-﻿# Cosmos.Common - SkyCMS Core Library
+# Cosmos.Common - SkyCMS Core Library
 
 > **Package Info:** This is the `Cosmos.Common` package with namespace `Cosmos.Common.*`. It provides shared functionality for both Sky.Editor and Cosmos.Publisher applications.
 
@@ -67,7 +67,7 @@ Comprehensive set of entities including Articles, Pages, Layouts, Templates, Use
 
 ## Installation
 
-This package is part of the SkyCMS solution and can be obtained by cloning the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+This package is part of the SkyCMS solution and can be obtained by cloning the [SkyCMS GitHub repository](https://github.com/CWALabs/SkyCMS).
 
 ### NuGet Package
 
@@ -416,10 +416,10 @@ public class FileService
 
 ## Related Documentation
 
-- Storage: [Docs/StorageConfig.md](../Docs/StorageConfig.md)
-    - AWS S3 keys: [Docs/AWS-S3-AccessKeys.md](../Docs/AWS-S3-AccessKeys.md)
-    - Cloudflare R2 keys: [Docs/Cloudflare-R2-AccessKeys.md](../Docs/Cloudflare-R2-AccessKeys.md)
-- Database: [Docs/DatabaseConfig.md](../Docs/DatabaseConfig.md)
+- Storage: [Docs/StorageConfig.md](https://cwalabs.github.io/SkyCMS/StorageConfig.html)
+    - AWS S3 keys: [Docs/AWS-S3-AccessKeys.md](https://cwalabs.github.io/SkyCMS/AWS-S3-AccessKeys.html)
+    - Cloudflare R2 keys: [Docs/Cloudflare-R2-AccessKeys.md](https://cwalabs.github.io/SkyCMS/Cloudflare-R2-AccessKeys.html)
+- Database: [Docs/DatabaseConfig.md](https://cwalabs.github.io/SkyCMS/DatabaseConfig.html)
 
 ## Multi-Database Support
 
@@ -947,5 +947,5 @@ Licensed under the MIT License. See the LICENSE file for details.
 
 ## Contributing
 
-This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+This project is part of the SkyCMS ecosystem. For contribution guidelines and more information, visit the [SkyCMS GitHub repository](https://github.com/CWALabs/SkyCMS).
 

@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # 5-Minute Quick Start
 
 Use the new setup wizard for **single-tenant** installs. It walks you through storage, admin user, publisher URL, optional email, and optional CDN. Set `CosmosAllowSetup=true` and make sure `ConnectionStrings:ApplicationDbContextConnection` points to a reachable database before you begin.

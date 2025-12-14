@@ -1,4 +1,4 @@
-﻿using Cosmos.Common.Data;
+using Cosmos.Common.Data;
 using Cosmos.Common.Data.Logic;
 using Microsoft.EntityFrameworkCore;
 

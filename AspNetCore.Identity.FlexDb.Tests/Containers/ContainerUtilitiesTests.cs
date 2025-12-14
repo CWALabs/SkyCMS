@@ -1,4 +1,4 @@
-﻿using AspNetCore.Identity.FlexDb.Containers;
+using AspNetCore.Identity.FlexDb.Containers;
 
 namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Containers
 {

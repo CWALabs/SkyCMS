@@ -1,0 +1,80 @@
+# GitHub Pages + Jekyll Configuration
+# For SkyCMS Documentation
+
+# Site settings
+title: SkyCMS Documentation
+description: > # this means to ignore newlines until "footer_text:"
+  Complete documentation for SkyCMS - A modern, cloud-native content management system
+  built on ASP.NET Core with multi-database support and advanced content management features.
+
+baseurl: "/SkyCMS" # The subpath of your site, e.g. /blog
+url: "https://cwalabs.github.io" # the base hostname & protocol for your site
+repository: "CWALabs/SkyCMS"
+github_username: CWALabs
+
+# Build settings
+markdown: kramdown
+theme: jekyll-theme-slate
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude items
+exclude:
+  - .github
+  - .gitignore
+  - LICENSE
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - bin
+  - obj
+  - .vscode
+  - .vs
+  - node_modules
+
+# Include items
+include:
+  - _redirects
+
+# Front matter defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+
+# SEO settings
+google_site_verification: # Add your Google site verification code
+social:
+  name: Moonrise Software
+  links:
+    - https://github.com/CWALabs/SkyCMS
+    - https://sky-cms.com
+
+# Analytics (optional)
+# google_analytics: UA-XXXXXXXXX-X
+
+# Comments (optional)
+# disqus:
+#   shortname: skycms
+
+# Breadcrumb navigation
+breadcrumbs:
+  enabled: true
+
+# Search (if using lunr)
+search:
+  enabled: true
+
+# Navigation menu (customize as needed)
+nav_order: 1

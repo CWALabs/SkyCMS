@@ -1,4 +1,6 @@
-# SkyCMS Blog Feature – Proposed Enhancements
+{% include nav.html %}
+
+# SkyCMS Blog Feature ï¿½ Proposed Enhancements
 
 ## 1. Listing (Blog Index)
 - Path: `/blog`
@@ -11,14 +13,14 @@
 - Path: `/blog/category/{category-slug}`
 - Slug Strategy: lowercase + `-` replace spaces
 - Query: same as index plus `Category == category-slug`
-- Empty Category: return 404 or soft “No posts yet.”
+- Empty Category: return 404 or soft ï¿½No posts yet.ï¿½
 
 ## 3. RSS Feed
 - Path: `/blog/rss`
 - Format: RSS 2.0 (or Atom)
 - Items: Most recent N (configurable, default 20)
 - Fields: Title, Link, PubDate, Description (Introduction), GUID (ArticleNumber + version or UrlPath)
-- Cache: In-memory 5–15 minutes; bust on publish event.
+- Cache: In-memory 5ï¿½15 minutes; bust on publish event.
 
 ## 4. Sitemap Integration
 - Extend existing sitemap generator to include published BlogPosts
@@ -51,12 +53,12 @@
 | Draft badge | Indicate unpublished status in Versions & index preview. |
 
 ## 9. Analytics Hooks
-- Event: “BlogPostPublished” (ArticleNumber, Category, PublishedUtc)
+- Event: ï¿½BlogPostPublishedï¿½ (ArticleNumber, Category, PublishedUtc)
 - Optional injection: structured data for each blog post page (JSON-LD)
 
 ## 10. Security / Permissions
 - If `ArticlePermissions` populated, exclude from public index & RSS
-- Option: Add “PrivatePost” badge internally
+- Option: Add ï¿½PrivatePostï¿½ badge internally
 
 ## 11. API Endpoints (Future)
 | Endpoint | Method | Purpose |

@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS - Traditional CMS Architecture with Modern Performance
 
 ## Overview

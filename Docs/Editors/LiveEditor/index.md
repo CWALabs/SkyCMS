@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS Live Editor Documentation
 
 Welcome to the SkyCMS Live Editor documentation. This collection of guides will help you understand and use the Live Editor effectively, whether you're a content editor, administrator, or developer.

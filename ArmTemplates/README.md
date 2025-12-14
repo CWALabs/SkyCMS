@@ -173,10 +173,10 @@ After successful deployment:
 
 ## Documentation Links
 
-- [Cosmos CMS Installation Guide](https://cosmos.moonrise.net/install)
-- [Email Configuration](https://cosmos.moonrise.net/install#Com)
-- [App Service Plan Options](https://cosmos.moonrise.net/install#Plan)
-- [Storage Configuration](https://cosmos.moonrise.net/install#Storage)
+- [Cosmos CMS Installation Guide](https://sky-cms.com/install)
+- [Email Configuration](https://sky-cms.com/install#Com)
+- [App Service Plan Options](https://sky-cms.com/install#Plan)
+- [Storage Configuration](https://sky-cms.com/install#Storage)
 
 ## Version
 

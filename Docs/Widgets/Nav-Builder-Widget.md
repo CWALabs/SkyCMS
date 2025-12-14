@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Cosmos CMS Nav Builder
 
 Builds a simple list of links (child pages) under a given root path using the SkyCMS Table of Contents API.

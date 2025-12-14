@@ -1,4 +1,6 @@
-﻿# SaveArticle() Migration Guide
+{% include nav.html %}
+
+# SaveArticle() Migration Guide
 
 ## Overview
 

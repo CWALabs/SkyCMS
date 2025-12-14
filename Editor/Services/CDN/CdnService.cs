@@ -1,7 +1,7 @@
-﻿// <copyright file="CdnService.cs" company="Moonrise Software, LLC">
+// <copyright file="CdnService.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
-// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// See https://github.com/CWALabs/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -123,6 +123,9 @@ namespace Sky.Editor.Services.CDN
                     case CdnProviderEnum.Cloudflare:
                         driver = new CloudflareCdnDriver(setting, logger);
                         break;
+                    case CdnProviderEnum.CloudFront:
+                        driver = new CloudFrontCdnDriver(setting, logger);
+                        break;
                     case CdnProviderEnum.Sucuri:
                         driver = new SucuriCdnService(setting, logger);
                         break;
@@ -130,7 +133,10 @@ namespace Sky.Editor.Services.CDN
                         break;
                 }
 
-                results.AddRange(await driver.PurgeCdn(purgeUrls));
+                if (driver != null)
+                {
+                    results.AddRange(await driver.PurgeCdn(purgeUrls));
+                }
             }
 
             return results;
@@ -155,6 +161,9 @@ namespace Sky.Editor.Services.CDN
                     case CdnProviderEnum.Cloudflare:
                         driver = new CloudflareCdnDriver(setting, logger);
                         break;
+                    case CdnProviderEnum.CloudFront:
+                        driver = new CloudFrontCdnDriver(setting, logger);
+                        break;
                     case CdnProviderEnum.Sucuri:
                         driver = new SucuriCdnService(setting, logger);
                         break;
@@ -162,7 +171,10 @@ namespace Sky.Editor.Services.CDN
                         break;
                 }
 
-                results.AddRange(await driver.PurgeCdn());
+                if (driver != null)
+                {
+                    results.AddRange(await driver.PurgeCdn());
+                }
             }
 
             return results;

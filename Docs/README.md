@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS Documentation
 
 **Welcome to the SkyCMS documentation hub.** This page provides organized access to all SkyCMS documentation, guides, and resources.
@@ -173,11 +175,11 @@ Understand how SkyCMS compares to other solutions.
 
 ### Project Links
 
-- **[GitHub Repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)** - Source code and issue tracking
+- **[GitHub Repository](https://github.com/CWALabs/SkyCMS)** - Source code and issue tracking
 - **[Docker Hub - Editor](https://hub.docker.com/r/toiyabe/sky-editor)** - Editor container images
 - **[Docker Hub - Publisher](https://hub.docker.com/r/toiyabe/sky-publisher)** - Publisher container images
 - **[Docker Hub - API](https://hub.docker.com/r/toiyabe/sky-api)** - API container images
-- **[Alternative NodeJS Publisher](https://github.com/MoonriseSoftwareCalifornia/Sky.Publisher.NodeJs)** - NodeJS-based Publisher implementation
+- **[Alternative NodeJS Publisher](https://github.com/CWALabs/Sky.Publisher.NodeJs)** - NodeJS-based Publisher implementation
 
 ---
 
@@ -194,7 +196,7 @@ If you're looking for documentation that doesn't exist yet or needs updating:
 
 ### Support Channels
 
-- **GitHub Issues** - [Report bugs and request features](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues)
+- **GitHub Issues** - [Report bugs and request features](https://github.com/CWALabs/SkyCMS/issues)
 - **Discussions** - Community support and questions
 - **Documentation Contributions** - Pull requests welcome for documentation improvements
 

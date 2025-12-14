@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Code Editing Guide
 
 SkyCMS includes a powerful code editor based on Microsoft's Monaco Editor (the same editor that powers Visual Studio Code). This guide covers all the code editing capabilities available in the File Manager.

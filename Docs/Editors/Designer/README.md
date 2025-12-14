@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Design Editor (GrapesJS)
 
 The Design Editor in SkyCMS is a powerful visual drag-and-drop editor built on [GrapesJS](https://grapesjs.com/), an open-source web builder framework. This editor allows you to create and design professional web layouts, page templates, and article content without writing code, making it accessible to both technical and non-technical users.
@@ -866,11 +868,11 @@ For visual learners, SkyCMS provides video tutorials:
 ### SkyCMS Resources
 - **Code Editor Documentation** - [../CodeEditor/README.md](../CodeEditor/README.md)
 - **Live Editor Documentation** - [../LiveEditor/README.md](../LiveEditor/README.md)
-- **SkyCMS GitHub** - [https://github.com/MoonriseSoftwareCalifornia/SkyCMS](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
+- **SkyCMS GitHub** - [https://github.com/CWALabs/SkyCMS](https://github.com/CWALabs/SkyCMS)
 
 ### Community
 - **SkyCMS Slack** - [Join for community support](https://Sky-cms.slack.com/)
-- **GitHub Issues** - [Report bugs or request features](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues)
+- **GitHub Issues** - [Report bugs or request features](https://github.com/CWALabs/SkyCMS/issues)
 - **YouTube Channel** - [@Sky-cms](https://www.youtube.com/@Sky-cms)
 
 ## Conclusion

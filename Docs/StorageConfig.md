@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Storage Configuration
 
 SkyCMS stores static web assets (images, CSS/JS, downloads) in cloud object storage. It automatically selects a storage driver based on the connection string configured under:

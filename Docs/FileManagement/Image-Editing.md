@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Image Editing Guide
 
 SkyCMS includes a powerful integrated image editor powered by Filerobot. This guide covers all the image editing capabilities available in the File Manager.

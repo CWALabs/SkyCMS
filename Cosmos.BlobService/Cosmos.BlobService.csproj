@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
@@ -10,7 +10,7 @@
 		<Company>Moonrise Software LLC</Company>
 		<Description>Manages BLOB objects in Azure.</Description>
 		<Copyright>Moonrise Software LLC</Copyright>
-		<PackageProjectUrl>https://cosmos.moonrise.net</PackageProjectUrl>
+		<PackageProjectUrl>https://sky-cms.com</PackageProjectUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReleaseNotes></PackageReleaseNotes>
@@ -27,7 +27,7 @@
 	<PropertyGroup>
 		<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 		<PackageIcon>B2C_BrandIcon_Black.png</PackageIcon>
-		<RepositoryUrl>https://github.com/MoonriseSoftwareCalifornia/Cosmos.BlobService</RepositoryUrl>
+		<RepositoryUrl>https://github.com/CWALabs/Cosmos.BlobService</RepositoryUrl>
 		<PackageTags>Azure Storage;Azure Blob Storage;Blob Storage</PackageTags>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<IncludeSymbols>True</IncludeSymbols>

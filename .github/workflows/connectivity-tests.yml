@@ -1,4 +1,4 @@
-﻿name: Connectivity Tests
+name: Connectivity Tests
 
 # This workflow runs only when manually triggered
 on:

@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Database Configuration
 
 SkyCMS supports Azure Cosmos DB, MS SQL (including Azure SQL), MySQL, and SQLite to store users, settings, page edits, and other CMS data. Sky automatically selects the correct EF Core provider based on the connection string configured under the key:

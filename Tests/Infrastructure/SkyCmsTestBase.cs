@@ -1,4 +1,4 @@
-﻿using Cosmos.BlobService;
+using Cosmos.BlobService;
 using Cosmos.Cms.Common.Services.Configurations;
 using Cosmos.Common.Data;
 using Cosmos.DynamicConfig;

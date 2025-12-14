@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # File Management in SkyCMS
 
 The SkyCMS File Manager provides a comprehensive web-based interface for managing your website's files and folders. This powerful tool allows you to upload, organize, edit, and manage all your website assets including images, HTML files, CSS, JavaScript, and other web resources.
@@ -630,4 +632,4 @@ If you continue experiencing issues:
 
 ---
 
-This documentation is maintained as part of the SkyCMS project. For updates and additional information, please visit the [SkyCMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS).
+This documentation is maintained as part of the SkyCMS project. For updates and additional information, please visit the [SkyCMS GitHub repository](https://github.com/CWALabs/SkyCMS).

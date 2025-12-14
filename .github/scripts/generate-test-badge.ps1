@@ -13,9 +13,9 @@ $coverage = 0
 # Parse test results
 if ($trxFile) {
     [xml]$xml = Get-Content $trxFile.FullName
-    $passed = [int]($xml.TestRun.ResultSummary.Counters.passed ?? 0)
-    $failed = [int]($xml.TestRun.ResultSummary.Counters.failed ?? 0)
-    $skipped = [int]($xml.TestRun.ResultSummary.Counters.skipped ?? 0)
+    $passed = [int]($xml.TestRun.ResultSummary.Counters.passed | Select-Object -DefaultValue 0)
+    $failed = [int]($xml.TestRun.ResultSummary.Counters.failed | Select-Object -DefaultValue 0)
+    $skipped = [int]($xml.TestRun.ResultSummary.Counters.skipped | Select-Object -DefaultValue 0)
     Write-Host "Test Results: $passed passed, $failed failed, $skipped skipped"
 } else {
     Write-Host "No TRX file found"
@@ -31,15 +31,15 @@ if ($coverageJson) {
     Write-Host "No coverage report found"
 }
 
-# Determine badge color based on results and coverage
+# Determine badge color based on results
 $badgeColor = if ($failed -gt 0) {
-    "orange"  # Orange when tests fail
+    "red"  # Red when tests fail
 } else {
-    "brightgreen"  # Green when all tests pass
+    "green"  # Green when all tests pass
 }
 
-# Create comprehensive badge text showing Pass/Fail/Skipped counts
-$badgeText = "Pass: $passed Fail: $failed Skip: $skipped | Cov: $coverage%"
+# Create comprehensive badge text showing Passing/Failing counts
+$badgeText = "Passing: $passed Failing: $failed | Cov: $coverage%"
 
 # Create badge SVG
 $badgeSvg = @"
@@ -69,7 +69,7 @@ $badgeSvg = @"
 
 # Save badge
 $badgeSvg | Out-File -FilePath "./test-badge.svg" -Encoding UTF8
-Write-Host "✓ Badge generated successfully (color: $badgeColor)"
+Write-Host "[OK] Badge generated successfully (color: $badgeColor)"
 
 # Save metrics to GitHub environment
 if ($env:GITHUB_ENV) {

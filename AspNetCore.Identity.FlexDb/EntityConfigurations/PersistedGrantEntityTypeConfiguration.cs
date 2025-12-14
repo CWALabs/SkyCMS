@@ -1,4 +1,4 @@
-﻿
+
 using Duende.IdentityServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

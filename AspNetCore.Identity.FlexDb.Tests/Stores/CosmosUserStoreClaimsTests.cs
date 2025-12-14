@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 
 namespace AspNetCore.Identity.CosmosDb.Tests.Net9.Stores
 {

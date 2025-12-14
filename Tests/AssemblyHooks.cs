@@ -1,4 +1,4 @@
-﻿using Cosmos.BlobService;
+using Cosmos.BlobService;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;

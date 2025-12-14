@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Code Editor
 
 The Code Editor in SkyCMS is a powerful, Monaco-based code editing environment that provides a professional development experience for editing HTML, CSS, and JavaScript directly within the CMS. This editor is used for working with **Layouts**, **Templates**, and **Articles** when you need precise control over the source code.

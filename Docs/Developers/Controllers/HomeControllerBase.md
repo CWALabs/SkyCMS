@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # HomeControllerBase Developer Documentation
 
 Location: `Common/HomeControllerBase.cs`

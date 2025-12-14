@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Live Editor Visual Guide
 
 This guide provides descriptions of the Live Editor's visual elements to help you identify and use various interface components.

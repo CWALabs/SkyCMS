@@ -1,4 +1,6 @@
-﻿# SkyCMS Blog Post Lifecycle (Current Implementation)
+{% include nav.html %}
+
+# SkyCMS Blog Post Lifecycle (Current Implementation)
 
 ## Status
 There is no distinct “Blog” module yet. A blog post is an `Article` whose `ArticleType` is set to the enum value representing a blog (e.g. `BlogPost`). Listing, category pages, and RSS are not yet implemented—only the underlying article infrastructure exists.

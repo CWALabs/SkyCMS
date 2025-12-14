@@ -1,4 +1,4 @@
-﻿name: Sky.Tests
+name: Sky.Tests
 
 # This workflow runs only when manually triggered
 on:

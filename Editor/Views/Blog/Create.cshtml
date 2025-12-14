@@ -24,7 +24,7 @@
                 <form asp-action="Create" method="post" id="createBlogForm" novalidate enctype="multipart/form-data">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                    @* Hidden fields (no user entry for BlogKey; it’s derived from Title) *@
+                    @* Hidden fields (no user entry for BlogKey; itï¿½s derived from Title) *@
                     <input type="hidden" asp-for="BlogKey" />
                     @Html.HiddenFor(m => m.HeroImage)
 

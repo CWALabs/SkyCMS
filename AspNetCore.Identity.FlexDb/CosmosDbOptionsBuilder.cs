@@ -1,4 +1,4 @@
-﻿using AspNetCore.Identity.FlexDb.Strategies;
+using AspNetCore.Identity.FlexDb.Strategies;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

@@ -9,7 +9,7 @@
   "settings": {
     "documentationRules": {
       "companyName": "Moonrise Software, LLC",
-      "copyrightText": "Copyright (c) {companyName}. All rights reserved.\nLicensed under the {licenseName} ({licenseFile})\nSee https://github.com/MoonriseSoftwareCalifornia/SkyCMS\nfor more information concerning the license and the contributors participating to this project.",
+      "copyrightText": "Copyright (c) {companyName}. All rights reserved.\nLicensed under the {licenseName} ({licenseFile})\nSee https://github.com/CWALabs/SkyCMS\nfor more information concerning the license and the contributors participating to this project.",
       "variables": {
         "licenseName": "MIT License",
         "licenseFile": "https://opensource.org/licenses/MIT"

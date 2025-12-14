@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Cosmos CMS Forms Helpers
 
 Small helpers for posting forms with the Cosmos antiforgery token and basic element checks.

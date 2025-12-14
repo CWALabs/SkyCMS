@@ -1,4 +1,4 @@
-﻿name: Advanced Connectivity Tests
+name: Advanced Connectivity Tests
 
 on:
   workflow_dispatch:

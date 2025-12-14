@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS Competitors
 
 This document outlines the most frequently reported issues and pain points with SkyCMS's direct competitors, based on user feedback, GitHub issues, community discussions, and product reviews.

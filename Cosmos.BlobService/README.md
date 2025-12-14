@@ -3,13 +3,13 @@ README.md
 
 **Version:** 9.2.0.2  
 **License:** MIT  
-**Repository:** [https://github.com/MoonriseSoftwareCalifornia/Cosmos.BlobService](https://github.com/MoonriseSoftwareCalifornia/Cosmos.BlobService)
+**Repository:** [https://github.com/CWALabs/Cosmos.BlobService](https://github.com/CWALabs/Cosmos.BlobService)
 
 ## Overview
 
 Cosmos.BlobService is a comprehensive multi-cloud blob storage abstraction layer that provides a unified interface for managing files across different cloud storage providers. It supports Azure Blob Storage, Amazon S3, and Cloudflare R2 (S3-compatible), allowing applications to seamlessly switch between providers or use multiple providers simultaneously.
 
-This library is part of the [Sky CMS ecosystem](https://cosmos.moonrise.net) and is built on .NET 9.0.
+This library is part of the [Sky CMS ecosystem](https://sky-cms.com) and is built on .NET 9.0.
 
 ## Features
 
@@ -73,7 +73,7 @@ The service uses automatic driver selection based on connection string format:
 
 ### From Source
 
-This package can be obtained by cloning the [Sky CMS GitHub repository](https://github.com/MoonriseSoftwareCalifornia/SkyCMS):
+This package can be obtained by cloning the [Sky CMS GitHub repository](https://github.com/CWALabs/SkyCMS):
 
 ### NuGet Package
 
@@ -484,8 +484,8 @@ The service provides a unified approach to cloud storage with several benefits:
 ## See Also
 
 ### Related Documentation
-- [Storage Configuration Guide](../Docs/StorageConfig.md) - Detailed storage provider setup instructions
-- [Azure Installation Guide](../Docs/AzureInstall.md) - Azure deployment and configuration
+- [Storage Configuration Guide](https://cwalabs.github.io/SkyCMS/StorageConfig.html) - Detailed storage provider setup instructions
+- [Azure Installation Guide](https://cwalabs.github.io/SkyCMS/AzureInstall.html) - Azure deployment and configuration
 - [Editor Documentation](../Editor/README.md) - Content management interface using Blob Service
 - [Publisher Documentation](../Publisher/README.md) - Public website using Blob Service
 - [Common Library](../Common/README.md) - Shared utilities and models
@@ -503,8 +503,8 @@ The service provides a unified approach to cloud storage with several benefits:
 ## Contributing
 
 This project is part of the Sky CMS ecosystem. For contribution guidelines and more information, visit:
-- **Sky CMS Repository**: [https://github.com/MoonriseSoftwareCalifornia/SkyCMS](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
-- **Project Website**: [https://cosmos.moonrise.net](https://cosmos.moonrise.net)
+- **Sky CMS Repository**: [https://github.com/CWALabs/SkyCMS](https://github.com/CWALabs/SkyCMS)
+- **Project Website**: [https://sky-cms.com](https://sky-cms.com)
 
 ## License
 

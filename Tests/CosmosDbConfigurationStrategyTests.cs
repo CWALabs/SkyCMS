@@ -1,4 +1,4 @@
-﻿namespace Sky.Tests.FlexDb
+namespace Sky.Tests.FlexDb
 {
     using global::AspNetCore.Identity.FlexDb.Strategies;
     using Microsoft.EntityFrameworkCore;

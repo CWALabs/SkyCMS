@@ -1,4 +1,4 @@
-﻿using AspNetCore.Identity.FlexDb;
+using AspNetCore.Identity.FlexDb;
 using AspNetCore.Identity.FlexDb.Stores;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

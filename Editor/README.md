@@ -110,7 +110,7 @@ The main controller handling content editing operations:
 1. **Clone and Navigate**
 
    ```bash
-   git clone https://github.com/MoonriseSoftwareCalifornia/SkyCMS.git
+   git clone https://github.com/CWALabs/SkyCMS.git
    cd SkyCMS/Editor
    ```
 
@@ -372,17 +372,17 @@ app.MapHealthChecks("/health");
 
 ### Getting Help
 
-- Review [Storage Configuration](../Docs/StorageConfig.md) for detailed setup
-- Check [Database Configuration](../Docs/DatabaseConfig.md) for provider-specific guidance
-- Search [GitHub Issues](https://github.com/MoonriseSoftwareCalifornia/SkyCMS/issues)
+- Review [Storage Configuration](https://cwalabs.github.io/SkyCMS/StorageConfig.html) for detailed setup
+- Check [Database Configuration](https://cwalabs.github.io/SkyCMS/DatabaseConfig.html) for provider-specific guidance
+- Search [GitHub Issues](https://github.com/CWALabs/SkyCMS/issues)
 
 ---
 
 ## See Also
 
 **Configuration Guides:**
-- [Storage Configuration](../Docs/StorageConfig.md) - Azure Blob, S3, R2 setup
-- [Database Configuration](../Docs/DatabaseConfig.md) - Cosmos DB, SQL Server, MySQL setup
+- [Storage Configuration](https://cwalabs.github.io/SkyCMS/StorageConfig.html) - Azure Blob, S3, R2 setup
+- [Database Configuration](https://cwalabs.github.io/SkyCMS/DatabaseConfig.html) - Cosmos DB, SQL Server, MySQL setup
 - [Dynamic Configuration](../Cosmos.ConnectionStrings/README.md) - Multi-tenant configuration
 
 **Related Components:**
@@ -392,8 +392,8 @@ app.MapHealthChecks("/health");
 - [AspNetCore.Identity.FlexDb](../AspNetCore.Identity.FlexDb/README.md) - Multi-database identity
 
 **Documentation:**
-- [Main Documentation Hub](../Docs/README.md) - Browse all documentation
+- [Main Documentation Hub](https://cwalabs.github.io/SkyCMS/README.html) - Browse all documentation
 - [Editor Services Documentation](./Services/README.md) - Service layer reference
-- [Page Scheduling Guide](../Docs/Editors/PageScheduling.md) - Automated publishing
+- [Page Scheduling Guide](https://cwalabs.github.io/SkyCMS/Editors/PageScheduling.html) - Automated publishing
 
 

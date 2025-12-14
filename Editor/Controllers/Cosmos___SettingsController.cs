@@ -1,7 +1,7 @@
-﻿// <copyright file="Cosmos___SettingsController.cs" company="Moonrise Software, LLC">
+// <copyright file="Cosmos___SettingsController.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
-// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// See https://github.com/CWALabs/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -13,6 +13,7 @@ namespace Sky.Editor.Controllers
     using System.Threading.Tasks;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
@@ -126,6 +127,7 @@ namespace Sky.Editor.Controllers
 
             await AddCdnSettingIfValidAsync(model.AzureCdn);
             await AddCdnSettingIfValidAsync(model.Cloudflare);
+            await AddCdnSettingIfValidAsync(model.CloudFront);
             await AddCdnSettingIfValidAsync(model.Sucuri);
 
             await dbContext.SaveChangesAsync();
@@ -194,6 +196,9 @@ namespace Sky.Editor.Controllers
                         case CdnProviderEnum.Cloudflare:
                             model.Cloudflare = JsonConvert.DeserializeObject<CloudflareCdnConfig>(cdnSetting.Value) ?? new CloudflareCdnConfig();
                             break;
+                        case CdnProviderEnum.CloudFront:
+                            model.CloudFront = JsonConvert.DeserializeObject<CloudFrontCdnConfig>(cdnSetting.Value) ?? new CloudFrontCdnConfig();
+                            break;
                         case CdnProviderEnum.Sucuri:
                             model.Sucuri = JsonConvert.DeserializeObject<SucuriCdnConfig>(cdnSetting.Value) ?? new SucuriCdnConfig();
                             break;
@@ -252,6 +257,22 @@ namespace Sky.Editor.Controllers
             await Task.CompletedTask;
         }
 
+        private async Task AddCdnSettingIfValidAsync(CloudFrontCdnConfig config)
+        {
+            if (string.IsNullOrEmpty(config?.DistributionId))
+            {
+                return;
+            }
+
+            var setting = CreateCdnSetting(
+                CdnProviderEnum.CloudFront,
+                config,
+                "Amazon CloudFront CDN configuration.");
+
+            dbContext.Settings.Add(setting);
+            await Task.CompletedTask;
+        }
+
         private async Task AddCdnSettingIfValidAsync(SucuriCdnConfig config)
         {
             if (string.IsNullOrEmpty(config?.ApiKey))
@@ -294,13 +315,13 @@ namespace Sky.Editor.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error testing CDN connection.");
-                return new List<CdnResult> 
-                { 
-                    new CdnResult 
-                    { 
-                        IsSuccessStatusCode = false, 
-                        Message = ex.Message 
-                    } 
+                return new List<CdnResult>
+                {
+                    new CdnResult
+                    {
+                        IsSuccessStatusCode = false,
+                        Message = ex.Message
+                    }
                 };
             }
         }

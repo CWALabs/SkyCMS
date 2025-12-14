@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # SkyCMS Layouts - User Guide
 
 ## Table of Contents
@@ -581,7 +583,7 @@ If you encounter issues not covered here:
 - **File Manager** - Understanding asset management for layouts
 - **CSS Frameworks** - Popular frameworks compatible with SkyCMS layouts
 - **JavaScript Integration** - Adding interactivity to your layouts
-- **GitHub Repository** - [https://github.com/MoonriseSoftwareCalifornia/SkyCMS](https://github.com/MoonriseSoftwareCalifornia/SkyCMS)
+- **GitHub Repository** - [https://github.com/CWALabs/SkyCMS](https://github.com/CWALabs/SkyCMS)
 
 ---
 

@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Widgets
 
 Developer docs for SkyCMS widgets. Each widget provides focused, reusable UI behavior used by the Editor and runtime views.

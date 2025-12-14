@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Cosmos CMS Crypto Widget (AES helpers)
 
 Lightweight client-side helpers for encrypting and decrypting short strings in the Editor UI or custom pages. Uses CryptoJS AES-128/CBC/PKCS7 with Base64 output.

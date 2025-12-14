@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Cosmos CMS Image Widget (Developer Notes)
 
 The Image Widget powers inline image upload and management within the Editor. It integrates FilePond for uploads and exposes a small set of per‑widget attributes and a global configuration.

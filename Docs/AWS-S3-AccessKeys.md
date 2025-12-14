@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # AWS S3 access keys for SkyCMS (quick guide)
 
 Use this guide to create an AWS access key pair (Access Key ID and Secret Access Key) with least‑privilege permissions for a single S3 bucket used by SkyCMS.

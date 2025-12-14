@@ -1,4 +1,4 @@
-﻿# Services Documentation
+# Services Documentation
 
 This document provides an overview of all service classes contained in the `Editor\Services` folder and its subdirectories.
 
@@ -393,7 +393,7 @@ Implementation of article scheduling for timed content publication using Hangfir
 
 **Related Documentation:**
 
-- [Page Scheduling Guide](../../Docs/Editors/PageScheduling.md) - Complete user and developer documentation
+- [Page Scheduling Guide](https://cwalabs.github.io/SkyCMS/Editors/PageScheduling.html) - Complete user and developer documentation
 - [Hangfire Dashboard](https://docs.hangfire.io/) - Background job monitoring
 
 ### HangfireAuthorizationFilter

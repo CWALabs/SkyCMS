@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Quick Start Guide - File Manager
 
 This quick start guide will help you get up and running with the SkyCMS File Manager in just a few minutes.

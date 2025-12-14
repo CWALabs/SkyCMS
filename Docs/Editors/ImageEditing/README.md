@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Image Editor User Guide
 
 The SkyCMS Image Editor provides a powerful, browser-based tool for editing images directly within the CMS. Built on the Filerobot Image Editor, it offers professional-grade image manipulation capabilities without requiring external software.

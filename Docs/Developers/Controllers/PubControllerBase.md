@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # PubControllerBase Developer Documentation
 
 Location: `Common/PubControllerBase.cs`

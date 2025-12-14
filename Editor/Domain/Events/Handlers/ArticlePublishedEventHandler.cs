@@ -1,7 +1,7 @@
 // <copyright file="ArticlePublishedEventHandler.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
-// See https://github.com/MoonriseSoftwareCalifornia/SkyCMS
+// See https://github.com/CWALabs/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
@@ -20,7 +20,7 @@ namespace Sky.Editor.Domain.Events.Handlers
     /// This makes the handler naturally idempotent and safe to invoke multiple times
     /// (e.g., in replay or retry scenarios) because it only emits a log line.
     /// <para>
-    /// Extend this handler if additional post–publish processes are required
+    /// Extend this handler if additional postï¿½publish processes are required
     /// (e.g., cache invalidation, search indexing, web hook dispatch, etc.).
     /// For more complex or multi-step operations prefer making those operations
     /// resilient (idempotent) and consider offloading to background processing (queue)

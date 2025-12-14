@@ -2153,16 +2153,16 @@
           "AWSSDK.S3": "[4.0.14.1, )",
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.1, 2.0.0)",
           "Azure.Storage.Files.Shares": "[12.24.0, 13.0.0)",
-          "Cosmos.DynamicConfig": "[9.2.3.1, )"
+          "Cosmos.DynamicConfig": "[9.2.3.4, )"
         }
       },
       "cosmos.common": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.2.2, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.3.4, )",
           "Azure.Monitor.Query": "[1.5.0, )",
-          "Cosmos.BlobService": "[9.2.3.1, )",
-          "Cosmos.DynamicConfig": "[9.2.3.1, )",
+          "Cosmos.BlobService": "[9.2.3.4, )",
+          "Cosmos.DynamicConfig": "[9.2.3.4, )",
           "MailChimp.Net.V3": "[5.8.2, 6.0.0)",
           "Microsoft.AspNetCore.DataProtection.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Otp.NET": "[1.4.1, )",
@@ -2172,7 +2172,7 @@
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.2.2, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.3.4, )",
           "Microsoft.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.10, 10.0.0)"
         }

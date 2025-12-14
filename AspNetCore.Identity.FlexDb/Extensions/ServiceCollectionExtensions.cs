@@ -1,4 +1,4 @@
-﻿using AspNetCore.Identity.FlexDb.Contracts;
+using AspNetCore.Identity.FlexDb.Contracts;
 using AspNetCore.Identity.FlexDb.Repositories;
 using AspNetCore.Identity.FlexDb.Stores;
 using Microsoft.AspNetCore.Authentication.Cookies;

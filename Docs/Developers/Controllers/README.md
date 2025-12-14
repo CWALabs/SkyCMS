@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Controllers Documentation
 
 This section contains developer documentation for core controllers shared across SkyCMS applications.

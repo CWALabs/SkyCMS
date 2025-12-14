@@ -1,4 +1,4 @@
-﻿@using Cosmos.Editor.Services
+@using Cosmos.Editor.Services
 @using Sky.Editor.Controllers
 @using Sky.Editor.Models
 @using Sky.Editor.Services.CDN
@@ -105,6 +105,61 @@
                                 <span asp-validation-for="Sucuri.ApiSecret" class="text-danger"></span>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Amazon CloudFront Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cloud"></i> Amazon CloudFront CDN
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="CloudFront.DistributionId">Distribution ID</label>
+                        <input asp-for="CloudFront.DistributionId" class="form-control" placeholder="E1234567890ABC" />
+                        <small class="form-text text-muted">Your CloudFront distribution ID (found in AWS Console)</small>
+                        <span asp-validation-for="CloudFront.DistributionId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="CloudFront.AccessKeyId">AWS Access Key ID</label>
+                        <input asp-for="CloudFront.AccessKeyId" class="form-control" placeholder="AKIAIOSFODNN7EXAMPLE" />
+                        <small class="form-text text-muted">AWS IAM user access key with CloudFront permissions</small>
+                        <span asp-validation-for="CloudFront.AccessKeyId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="CloudFront.SecretAccessKey">AWS Secret Access Key</label>
+                        <input asp-for="CloudFront.SecretAccessKey" type="password" class="form-control" placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" />
+                        <small class="form-text text-muted">AWS secret access key (keep this secure)</small>
+                        <span asp-validation-for="CloudFront.SecretAccessKey" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="CloudFront.Region">AWS Region</label>
+                        <select asp-for="CloudFront.Region" class="form-control">
+                            <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
+                            <option value="us-east-2">US East (Ohio) - us-east-2</option>
+                            <option value="us-west-1">US West (N. California) - us-west-1</option>
+                            <option value="us-west-2">US West (Oregon) - us-west-2</option>
+                            <option value="eu-west-1">EU (Ireland) - eu-west-1</option>
+                            <option value="eu-central-1">EU (Frankfurt) - eu-central-1</option>
+                            <option value="ap-southeast-1">Asia Pacific (Singapore) - ap-southeast-1</option>
+                            <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
+                        </select>
+                        <small class="form-text text-muted">AWS region where your IAM credentials are configured</small>
+                        <span asp-validation-for="CloudFront.Region" class="text-danger"></span>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>IAM Permissions Required:</strong> Your AWS IAM user needs the following permissions:
+                        <ul class="mb-0 mt-2">
+                            <li><code>cloudfront:CreateInvalidation</code></li>
+                            <li><code>cloudfront:GetInvalidation</code></li>
+                        </ul>
                     </div>
                 </div>
             </div>

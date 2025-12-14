@@ -1,3 +1,5 @@
+{% include nav.html %}
+
 # Cosmos CMS Image Widget
 
 Interactive image upload and management widget used by the Sky Editor. It provides drag‑and‑drop uploads (via FilePond), an image library picker, in-place replacement, and an alt-text editor, then saves the widget’s HTML back to the editor region.
