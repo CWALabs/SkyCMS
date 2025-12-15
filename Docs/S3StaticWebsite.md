@@ -65,7 +65,7 @@ Amazon S3 can host static websites that include HTML, CSS, JavaScript, and other
 5. SkyCMS will handle the upload and synchronization of your static files
 
 For more information on configuring Sky storage, see 
-[this documentation](StorageConfig.md).
+[Storage configuration reference](./Configuration/Storage-Configuration-Reference.md).
 
 ## CloudFormation Templates
 

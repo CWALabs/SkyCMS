@@ -1,6 +1,6 @@
 # SkyCMS: The Edge-Native CMS
 
-![SkyCMS Logo](/Editor/wwwroot/images/skycms/SkyCMSLogoNoWiTextDarkTransparent30h.png)
+![SkyCMS Logo](./Editor/wwwroot/images/skycms/SkyCMSLogoNoWiTextDarkTransparent30h.png)
 
 [![CodeQL](https://github.com/CWALabs/SkyCMS/actions/workflows/codeql.yml/badge.svg)](https://github.com/CWALabs/SkyCMS/actions/workflows/codeql.yml)
 [![Publish Docker Images CI](https://github.com/CWALabs/SkyCMS/actions/workflows/docker-image.yml/badge.svg)](https://github.com/CWALabs/SkyCMS/actions/workflows/docker-image.yml)
@@ -319,7 +319,7 @@ Modern file upload interface with drag-and-drop, image previews, and file valida
 ## Project Structure
 
 SkyCMS/
-├── ArmTemplates/ # Azure Resource Manager deployment templates
+├── ArmTemplates/ # ARM templates coming soon
 ├── Common/                 # Shared libraries and utilities
 ├── Cosmos.BlobService/     # File storage service layer
 ├── Cosmos.ConnectionStrings/ # Dynamic configuration management
@@ -336,7 +336,7 @@ Each component has detailed documentation explaining its purpose, configuration,
 
 ### Infrastructure & Deployment
 
-- **[ARM Templates](./ArmTemplates/README.md)** - Azure deployment templates and infrastructure setup
+- **ARM Templates** _(coming soon)_ - Azure deployment templates and infrastructure setup
   - Complete Azure Resource Manager templates
   - One-click deployment configuration
   - Email service integration (Azure Communication Services, SendGrid, SMTP)
@@ -420,7 +420,7 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/CWALabs/
 #### Getting Started
 
 - **[Quick Start Guide](https://cwalabs.github.io/SkyCMS/QuickStart.html)** - Get up and running quickly
-- **[Azure Installation](https://cwalabs.github.io/SkyCMS/AzureInstall.html)** - Deploy to Microsoft Azure
+- **[Azure Installation](./Docs/Installation/AzureInstall.md)** - Deploy to Microsoft Azure
 - **[AWS Deployment](https://cwalabs.github.io/SkyCMS/S3StaticWebsite.html)** - Deploy using S3 static hosting (CloudFormation/ECS guide coming soon)
 
 #### Configuration
@@ -464,6 +464,8 @@ We welcome contributions! Please see our contributing guidelines and:
 4. Add tests if applicable
 5. Submit a pull request
 
+For documentation updates, follow the pattern in [Docs/CONTRIBUTING.md](./Docs/CONTRIBUTING.md): keep overviews focused on what/why, put detailed settings and defaults in configuration references, and start from the templates in [Docs/_templates](./Docs/_templates).
+
 ## Email Configuration
 
 SkyCMS supports multiple email providers:
@@ -472,7 +474,7 @@ SkyCMS supports multiple email providers:
 - **SendGrid**
 - **Any SMTP**
 
-See the [deployment documentation](./ArmTemplates/README.md) for configuration details.
+See the [Azure installation guide](./Docs/Installation/AzureInstall.md) for configuration details.
 
 ---
 

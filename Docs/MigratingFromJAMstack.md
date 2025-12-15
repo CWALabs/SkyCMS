@@ -34,9 +34,9 @@
     - Or deploy to cloud with ARM templates / container orchestrator (see `ArmTemplates/README.md`)
 3. Configure storage and CDN
 
-    - Choose Azure Blob, AWS S3, or Cloudflare R2; see `Docs/StorageConfig.md`
+    - Choose Azure Blob, AWS S3, or Cloudflare R2; see `Docs/Configuration/Storage-Configuration-Reference.md`
 
-    - If you want origin-less edge hosting, follow `Docs/CloudflareEdgeHosting.md`
+    - If you want origin-less edge hosting, follow `Docs/Installation/CloudflareEdgeHosting.md`
 4. Import content into the Editor
 
     - Bulk import Markdown or HTML pages using the Editor import tools or a one-off script
@@ -84,9 +84,9 @@
 
 ### Useful Links
 
-- Storage & Deployment: `Docs/StorageConfig.md`
+- Storage & Deployment: `Docs/Configuration/Storage-Configuration-Reference.md`
 
-- Edge Hosting (Cloudflare): `Docs/CloudflareEdgeHosting.md`
+- Edge Hosting (Cloudflare): `Docs/Installation/CloudflareEdgeHosting.md`
 
 - Publishing & Templates: `Publisher/README.md`
 

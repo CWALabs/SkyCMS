@@ -123,8 +123,8 @@ builder.Services.AddCosmosCmsDataProtection(builder.Configuration, new DefaultAz
 
 ## Related Documentation
 
-- [Storage Configuration Guide](../StorageConfig.md)
-- [Azure Installation Guide](../AzureInstall.md)
+- [Storage Configuration Guide](../Configuration/Storage-Configuration-Reference.md)
+- [Azure Installation Guide](../Installation/AzureInstall.md)
 - [Editor Documentation](../../Editor/README.md)
 - [Publisher Documentation](../../Publisher/README.md)
 - [Common Library](../Components/Cosmos.Common.md)

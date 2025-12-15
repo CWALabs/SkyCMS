@@ -46,7 +46,7 @@ SkyCMS automatically detects and configures the appropriate database provider ba
 - **SQL Server**: `Server=...` or `Data Source=...`
 - **MySQL**: `server=...` (lowercase)
 
-See [DatabaseConfig.md](../DatabaseConfig.md) for detailed configuration.
+See [Database configuration reference](../Configuration/Database-Configuration-Reference.md) for detailed settings and connection strings.
 
 ### Multi-Cloud Storage
 
@@ -56,7 +56,7 @@ The Cosmos.BlobService provides a unified interface for multiple storage provide
 - **Amazon S3**: `Bucket=...;Region=...;KeyId=...;Key=...`
 - **Cloudflare R2**: `AccountId=...;Bucket=...;KeyId=...;Key=...`
 
-See [StorageConfig.md](../StorageConfig.md) for detailed configuration.
+See [Storage configuration reference](../Configuration/Storage-Configuration-Reference.md) for detailed settings and connection strings.
 
 ### Multi-Tenancy
 
@@ -331,8 +331,8 @@ sum(skycms_cdn_cache_hits) / sum(skycms_cdn_total_requests)
 ## Related Documentation
 
 - **Project READMEs**: Each project has detailed documentation in its folder
-- **Configuration Guides**: [Database](../DatabaseConfig.md) | [Storage](../StorageConfig.md)
-- **Deployment**: [Azure Installation](../AzureInstall.md) | [AWS CloudFormation](../../AWS/README.md)
+- **Configuration Guides**: [Database](../Configuration/Database-Configuration-Reference.md) | [Storage](../Configuration/Storage-Configuration-Reference.md)
+- **Deployment**: [Azure Installation](../Installation/AzureInstall.md) | [AWS S3 Static Hosting](../S3StaticWebsite.md)
 - **User Guides**: [Templates](../Templates/Readme.md) | [Editors](../Editors/) | [File Management](../FileManagement/)
 
 > Tip: If you introduce new shared services or base classes, add corresponding docs here to keep the codebase discoverable.

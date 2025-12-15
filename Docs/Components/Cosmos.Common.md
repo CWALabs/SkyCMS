@@ -127,10 +127,10 @@ SkyCMS registers `ApplicationDbContext` in the host app. In the provided templat
 
 ## Related Documentation
 
-- [Storage Configuration](../StorageConfig.md)
-  - [AWS S3 Keys](../AWS-S3-AccessKeys.md)
-  - [Cloudflare R2 Keys](../Cloudflare-R2-AccessKeys.md)
-- [Database Configuration](../DatabaseConfig.md)
+- [Storage Configuration](../Configuration/Storage-Configuration-Reference.md)
+  - [AWS S3 Keys](../Configuration/AWS-S3-AccessKeys.md)
+  - [Cloudflare R2 Keys](../Configuration/Cloudflare-R2-AccessKeys.md)
+- [Database Configuration](../Configuration/Database-Configuration-Reference.md)
 
 ## License
 

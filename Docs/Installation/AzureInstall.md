@@ -31,7 +31,7 @@ The easiest way to install SkyCMS is using the Deploy button located in the main
     - Choose locally or geographically redundant storage.
     - Click "Review + create."
 
-![Azure deploy dialog](./AzureDiaglog.png)
+![Azure deploy dialog](../AzureDiaglog.png)
 
 1. **Deploy**
     - Review your configuration settings
@@ -56,11 +56,15 @@ After successful deployment:
 
 ### Related Documentation
 
-- **[Storage Configuration](./StorageConfig.md)** - Configure Azure Blob, AWS S3, or Cloudflare R2 storage
-- **[Database Configuration](./DatabaseConfig.md)** - Database provider setup (Cosmos DB, SQL Server, MySQL)
+- **[Installation Overview](./README.md)** - Choose your deployment platform
+- **[Minimum Required Settings](./MinimumRequiredSettings.md)** - Configuration essentials
+- **[Storage Configuration](../Configuration/Storage-Overview.md)** - Configure Azure Blob, AWS S3, or Cloudflare R2 storage
+- **[Storage Config Reference](../Configuration/Storage-Configuration-Reference.md)** - Settings, defaults, and examples
+- **[Database Configuration](../Configuration/Database-Overview.md)** - Database provider setup (Cosmos DB, SQL Server, MySQL)
+- **[Database Config Reference](../Configuration/Database-Configuration-Reference.md)** - Connection strings and provider options
 - **[Cloudflare Edge Hosting](./CloudflareEdgeHosting.md)** - Deploy origin-less static sites with Cloudflare R2
-- **[Quick Start Guide](./QuickStart.md)** - Get started quickly
-- **[Main Documentation Hub](./README.md)** - Browse all SkyCMS documentation
+- **[Quick Start Guide](../QuickStart.md)** - Get started quickly
+- **[Main Documentation Hub](../README.md)** - Browse all SkyCMS documentation
 
 ### Clean Up
 

@@ -400,7 +400,7 @@ public interface IArticleScheduler
 ### Further Reading
 
 - [Hangfire Documentation](https://docs.hangfire.io/)
-- [ArticleEditLogic Documentation](../Editor/Services/README.md)
+- ArticleEditLogic source (Editor/Services)
 - [Multi-Tenant Configuration](../../Cosmos.ConnectionStrings/README.md)
 - [SkyCMS Architecture](../../README.md#architecture--technology-stack)
 
@@ -409,5 +409,5 @@ public interface IArticleScheduler
 ## Related Documentation
 
 - [Content Editing](./LiveEditor/README.md)
-- [Version Control](../Editors/README.md) (Coming Soon)
-- [Publishing Workflows](../Publishers/README.md) (Coming Soon)
+- Version Control (coming soon)
+- [Publishing Workflows](../Publishing-Overview.md)

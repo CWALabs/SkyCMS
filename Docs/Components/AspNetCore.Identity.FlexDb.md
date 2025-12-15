@@ -3,7 +3,7 @@
 
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![NuGet](https://img.shields.io/nuget/v/AspNetCore.Identity.FlexDb.svg)](https://www.nuget.org/packages/AspNetCore.Identity.FlexDb/)
+[NuGet package listing coming soon]
 
 A flexible, multi-database implementation of ASP.NET Core Identity that **automatically selects the appropriate database provider** based on your connection string. Supports Azure Cosmos DB, SQL Server, and MySQL with seamless switching between providers.
 
@@ -11,20 +11,20 @@ A flexible, multi-database implementation of ASP.NET Core Identity that **automa
 
 ## Table of Contents
 
-- [What's New](#-whats-new)
-- [Overview](#-overview)
-- [Supported Database Providers](#️-supported-database-providers)
-- [Quick Start](#-quick-start)
-- [Architecture](#️-architecture)
-- [Configuration](#-configuration)
-- [Security Features](#-security-features)
-- [Advanced Usage](#️-advanced-usage)
-- [Extending FlexDb](#-extending-flexdb)
-- [Performance](#-performance)
-- [Migration Guide](#-migration-guide)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [What's New](#whats-new)
+- [Overview](#overview)
+- [Supported Database Providers](#supported-database-providers)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Configuration](#configuration)
+- [Security Features](#security-features)
+- [Advanced Usage](#advanced-usage)
+- [Extending FlexDb](#extending-flexdb)
+- [Performance](#performance-and-scaling)
+- [Migration Guide](#migration-guide)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
@@ -69,7 +69,7 @@ AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database p
 
 ---
 
-## 🗄️ Supported Database Providers
+## Supported Database Providers
 
 ### Azure Cosmos DB
 
@@ -160,7 +160,7 @@ public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, Identi
 
 ---
 
-## 🔐 Security Features
+## Security Features
 
 ### Data Protection
 
@@ -182,7 +182,11 @@ public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, Identi
 
 ---
 
-## NuGet Package Information
+## Architecture
+
+FlexDb uses a **Strategy Pattern** to choose the database provider at runtime. Each provider implements `IDatabaseConfigurationStrategy`, ensuring consistent behavior while allowing provider-specific optimizations.
+
+## Configuration
 
 - **Package ID**: `AspNetCore.Identity.FlexDb`
 - **Target Framework**: .NET 9.0
@@ -194,9 +198,38 @@ public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, Identi
   - Microsoft.EntityFrameworkCore.SqlServer
   - MySql.EntityFrameworkCore
 
+## Advanced Usage
+
+- Override default strategies by implementing `IDatabaseConfigurationStrategy`.
+- Use separate connection strings per environment to change providers without code changes.
+
+## Extending FlexDb
+
+- Add a new provider by creating a strategy that inspects the connection string and configures Entity Framework accordingly.
+- Register the custom strategy via dependency injection so it participates in provider selection.
+
+## Performance and Scaling
+
+- Keep connection strings specific to workloads to avoid hot partitions (for Cosmos DB).
+- Use async APIs for higher throughput and enable connection pooling where applicable.
+
+## Migration Guide
+
+- Replace provider-specific services with FlexDb registration.
+- Move connection strings to configuration and validate provider detection in lower environments first.
+
+## Troubleshooting
+
+- Enable logging for `CosmosDbOptionsBuilder` and `IDatabaseConfigurationStrategy` selections to verify provider detection.
+- Verify the connection string matches expected patterns for the intended provider.
+
+## Contributing
+
+- Contributions are welcome. Please open an issue to discuss proposed changes before submitting a PR.
+
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License. See the license file for details.
 

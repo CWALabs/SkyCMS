@@ -304,8 +304,8 @@ Other elements with `contenteditable` will work in the editor but may not be pro
 ## Additional Resources
 
 - [Creating Content](../README.md)
-- [Live Editor Guide](./LiveEditor.md) *(if available)*
-- [Layouts Documentation](./Layouts.md) *(if available)*
+- [Live Editor Guide](../Editors/LiveEditor/README.md)
+- [Layouts Documentation](../Layouts/Readme.md)
 - [SkyCMS Documentation](https://www.moonrise.net/cosmos/documentation/)
 
 ## Support

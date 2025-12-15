@@ -10,20 +10,20 @@ A flexible, multi-database implementation of ASP.NET Core Identity that **automa
 
 ## Table of Contents
 
-- [What's New](#-whats-new)
-- [Overview](#-overview)
-- [Supported Database Providers](#️-supported-database-providers)
-- [Quick Start](#-quick-start)
-- [Architecture](#️-architecture)
-- [Configuration](#-configuration)
-- [Security Features](#-security-features)
-- [Advanced Usage](#️-advanced-usage)
-- [Extending FlexDb](#-extending-flexdb)
-- [Performance](#-performance)
-- [Migration Guide](#-migration-guide)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [What's New](#whats-new)
+- [Overview](#overview)
+- [Supported Database Providers](#supported-database-providers)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Configuration Options](#configuration-options)
+- [Security Features](#security-features)
+- [Database Migration](#database-migration)
+- [Performance Considerations](#performance-considerations)
+- [Advanced Usage](#advanced-usage)
+- [NuGet Package Information](#nuget-package-information)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
@@ -68,7 +68,7 @@ AspNetCore.Identity.FlexDb **eliminates the need to choose a specific database p
 
 ---
 
-## 🗄️ Supported Database Providers
+## Supported Database Providers
 
 ### Azure Cosmos DB
 
@@ -635,7 +635,7 @@ services.Configure<IdentityOptions>(options =>
 services.AddSingleton<IPersonalDataProtector, MyPersonalDataProtector>();
 ```
 
-## 🔐 Security Features
+## Security Features
 
 ### Data Protection
 
@@ -769,7 +769,7 @@ public class MultiTenantDbContext : CosmosIdentityDbContext<IdentityUser, Identi
   - Microsoft.EntityFrameworkCore.SqlServer
   - MySql.EntityFrameworkCore
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -815,7 +815,7 @@ public async Task MigrateFromCosmosToSql()
 - Use connection pooling
 - Consider read replicas for read-heavy workloads
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -829,7 +829,7 @@ public async Task MigrateFromCosmosToSql()
 - Update documentation for new features
 - Ensure backward compatibility
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License. See the license file for details.
 

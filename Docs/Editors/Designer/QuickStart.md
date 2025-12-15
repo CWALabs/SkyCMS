@@ -205,7 +205,7 @@ Default blocks include:
 
 ### Community
 - SkyCMS GitHub: [https://github.com/CWALabs/SkyCMS](https://github.com/CWALabs/SkyCMS)
-- Video tutorials: [YouTube @Sky-cms](https://www.youtube.com/@Sky-cms)
+- Video tutorials: YouTube playlist (coming soon)
 - Slack channel: [Sky-cms.slack.com](https://Sky-cms.slack.com/)
 
 ## Next Steps

@@ -19,15 +19,23 @@
 - [AWS S3 Static Website Hosting](./S3StaticWebsite.md)
 - [Cloudflare Edge Hosting](./CloudflareEdgeHosting.md)
 
-### 2.2 Access Keys
-
-- [AWS S3 Access Keys](./AWS-S3-AccessKeys.md)
-- [Cloudflare R2 Access Keys](./Cloudflare-R2-AccessKeys.md)
-
 ## 3. Configuration
 
-- [Database Configuration](./DatabaseConfig.md)
-- [Storage Configuration](./StorageConfig.md)
+- [Database Configuration Overview](./Database-Overview.md)
+  - [Azure Cosmos DB](./Database-CosmosDB.md)
+  - [MS SQL Server / Azure SQL](./Database-SQLServer.md)
+  - [MySQL](./Database-MySQL.md)
+  - [SQLite](./Database-SQLite.md)
+- [Storage Configuration Overview](./Storage-Overview.md)
+  - [Azure Blob Storage](./Storage-AzureBlob.md)
+  - [Amazon S3](./Storage-S3.md)
+  - [Cloudflare R2](./Storage-Cloudflare.md)
+  - [Google Cloud Storage](./Storage-GoogleCloud.md)
+- [CDN Integration Overview](./CDN-Overview.md)
+  - [Azure Front Door CDN](./CDN-AzureFrontDoor.md)
+  - [Cloudflare CDN](./CDN-Cloudflare.md)
+  - [Amazon CloudFront CDN](./CDN-CloudFront.md)
+  - [Sucuri CDN/WAF](./CDN-Sucuri.md)
 
 ## 4. Content Management
 
@@ -69,10 +77,6 @@
 ### 5.4 Image Editing (Filerobot)
 
 - [Overview](./Editors/ImageEditing/README.md)
-
-### 5.5 Scheduling & Publishing
-
-- [Page Scheduling](./Editors/PageScheduling.md)
 
 ## 6. Blogging
 
@@ -126,21 +130,21 @@
 
 - [Testing Overview](./Development/Testing/README.md)
 
-## 10. Release & Changelog
+## 10. Troubleshooting
+
+- [Troubleshooting Guide](./Troubleshooting.md)
+
+## 11. Release & Changelog
 
 - [Changelog](./CHANGELOG.md)
 
-## 10. Release & Changelog
-
-- [Changelog](./CHANGELOG.md)
-
-## 11. Marketing & Content Assets
+## 12. Marketing & Content Assets
 
 - [Homepage Content (HTML)](./SkyCMS-Homepage-Content.html)
 - [Homepage Content (Markdown)](./SkyCMS-Homepage-Content.md)
 - [Azure Marketplace Description](./AzureMarketplaceDescription.html)
 
-## 12. Licensing & Legal
+## 13. Licensing & Legal
 
 - [License Summary](./License.md)
 - [Third-Party Notices](../NOTICE.md)

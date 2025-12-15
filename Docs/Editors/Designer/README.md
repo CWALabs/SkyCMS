@@ -853,9 +853,9 @@ Creating accessible designs:
 For visual learners, SkyCMS provides video tutorials:
 
 - **GrapesJS Overview** - [Watch on YouTube](https://www.youtube.com/watch?v=mVGPlbnbC5c)
-- **Creating Layouts** - Check the SkyCMS YouTube channel
-- **Building Templates** - Check the SkyCMS YouTube channel
-- **Responsive Design** - Check the SkyCMS YouTube channel
+- **Creating Layouts** - Video walkthroughs (coming soon)
+- **Building Templates** - Video walkthroughs (coming soon)
+- **Responsive Design** - Video walkthroughs (coming soon)
 
 ## Additional Resources
 
@@ -872,7 +872,7 @@ For visual learners, SkyCMS provides video tutorials:
 ### Community
 - **SkyCMS Slack** - [Join for community support](https://Sky-cms.slack.com/)
 - **GitHub Issues** - [Report bugs or request features](https://github.com/CWALabs/SkyCMS/issues)
-- **YouTube Channel** - [@Sky-cms](https://www.youtube.com/@Sky-cms)
+- **YouTube Channel** - Video playlist (coming soon)
 
 ## Conclusion
 
