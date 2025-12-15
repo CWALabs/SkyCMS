@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Migrating from Git-Based Static Site Deployment to SkyCMS
 

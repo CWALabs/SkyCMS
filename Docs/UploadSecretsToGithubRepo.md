@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # UploadSecretsToGithubRepo.ps1 Documentation
 

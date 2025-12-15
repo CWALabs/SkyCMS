@@ -23,7 +23,7 @@ Choose your hosting model: [Static](https://cwalabs.github.io/SkyCMS/StorageConf
 
 Read the [About SkyCMS](https://cwalabs.github.io/SkyCMS/About.html) page for a concise overview.
 
-**[View the Master Table of Contents](https://cwalabs.github.io/SkyCMS/MASTER_TOC.html)** for complete documentation index and navigation.
+**[View the Master Table of Contents](https://cwalabs.github.io/SkyCMS/)** for complete documentation index and navigation.
 
 ---
 
@@ -412,7 +412,7 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/CWALabs/
 
 > **[Complete Documentation Index →](https://cwalabs.github.io/SkyCMS/README.html)**  
 > **Browse 40+ guides organized by topic** - installation, configuration, content management, development, and more
-> **[Master Table of Contents →](https://cwalabs.github.io/SkyCMS/MASTER_TOC.html)**  
+> **[Master Table of Contents →](https://cwalabs.github.io/SkyCMS/)**  
 > Exhaustive hierarchical index of all documentation files
 
 ### Quick Links

@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # 🎉 Your Documentation is Ready for GitHub Pages!
 
@@ -26,7 +25,7 @@ Docs/
 ├── GITHUB_PAGES_SETUP.md          ✨ NEW - Enable instructions
 ├── ORGANIZATION_SUMMARY.md        ✨ NEW - What was organized
 ├── CHANGELOG.md                   ✨ NEW - Moved from root
-├── MASTER_TOC.md                  ✏️  UPDATED - New structure
+├── index.md                       ✏️  UPDATED - New structure
 │
 ├── Components/                    ✨ NEW SECTION
 │   ├── AspNetCore.Identity.FlexDb.md    Quick reference for Identity library
@@ -133,7 +132,7 @@ https://github.com/CWALabs/SkyCMS/settings/pages
 ### For Your Team
 - **Share**: Documentation site URL with your team
 - **Update**: Edit `.md` files, push to main, auto-deploys
-- **Maintain**: Use `MASTER_TOC.md` to track new docs
+- **Maintain**: Use `index.md` to track new docs
 
 ---
 
@@ -150,7 +149,7 @@ https://github.com/CWALabs/SkyCMS/settings/pages
   - ✅ `Cosmos.BlobService.md` - Created
 - ✅ `Docs/Development/Testing/` - Directory created
   - ✅ `README.md` - Created
-- ✅ `Docs/MASTER_TOC.md` - Updated with new sections
+- ✅ `Docs/index.md` - Updated with new sections
 
 ---
 
@@ -163,7 +162,7 @@ https://github.com/CWALabs/SkyCMS/settings/pages
 | **Completion Checklist** | [SETUP_COMPLETE.md](./SETUP_COMPLETE.md) |
 | **What Changed** | [ORGANIZATION_SUMMARY.md](./ORGANIZATION_SUMMARY.md) |
 | **Documentation Home** | [README.md](./README.md) |
-| **Full TOC** | [MASTER_TOC.md](./MASTER_TOC.md) |
+| **Full TOC** | [index.md](./index.md) |
 
 ---
 

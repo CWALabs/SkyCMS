@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Cosmos.BlobService - Sky CMS Azure Storage Provider
 

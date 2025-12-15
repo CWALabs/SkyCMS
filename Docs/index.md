@@ -1,51 +1,165 @@
-<!-- Home page for SkyCMS GitHub Pages -->
 
-{% include nav.html %}
+# SkyCMS Documentation
 
-<p align="center">
-  <img src="assets/images/sky-logo.svg" alt="SkyCMS Logo" width="40" />
-</p>
+## 1. Getting Started
 
-<h1 align="center">SkyCMS Documentation</h1>
-<p align="center">Cloud-native CMS for teams who need flexible content, multi-cloud storage, and secure publishing.</p>
+- [Quick Start](./QuickStart.md)
+- [Developer Experience Overview](./DeveloperExperience.md)
+- [Cost Comparison](./CostComparison.md)
+- [SkyCMS vs Headless CMS](./CosmosVsHeadless.md)
+- [Migrating from JAMstack](./MigratingFromJAMstack.md)
+- [Competitors Analysis](./SkyCMS-Competitors.md)
 
-<div align="center">
-  <a href="QuickStart.md">Get Started</a> ·
-  <a href="MASTER_TOC.md">Full Table of Contents</a> ·
-  <a href="Components/Cosmos.Common.md">Core Library</a> ·
-  <a href="Components/Cosmos.BlobService.md">Storage</a> ·
-  <a href="Components/AspNetCore.Identity.FlexDb.md">Identity</a>
-</div>
+## 2. Installation & Deployment
 
-<hr />
+### 2.1 Cloud Platforms
 
-## Why SkyCMS
+- [Azure Installation](./AzureInstall.md)
+- [Azure ARM Templates](../ArmTemplates/README.md)
+- [AWS S3 Static Website Hosting](./S3StaticWebsite.md)
+- [Cloudflare Edge Hosting](./CloudflareEdgeHosting.md)
 
-- Multi-cloud ready: Azure, AWS S3, Cloudflare R2
-- Flexible data: Cosmos DB, SQL Server, MySQL
-- Built for teams: roles, workflows, publishing controls
-- Modern stack: .NET 9, CQRS/mediator, vertical slice architecture
+### 2.2 Access Keys
 
-## Start Here
+- [AWS S3 Access Keys](./AWS-S3-AccessKeys.md)
+- [Cloudflare R2 Access Keys](./Cloudflare-R2-AccessKeys.md)
 
-1) Read the five-minute [QuickStart](QuickStart.md) to deploy locally.  
-2) Follow [AzureInstall](AzureInstall.md) or [S3StaticWebsite](S3StaticWebsite.md) for hosting.  
-3) See [StorageConfig](StorageConfig.md) and [DatabaseConfig](DatabaseConfig.md) for runtime settings.
+## 3. Configuration
 
-## Deep Dives
+- [Database Configuration](./DatabaseConfig.md)
+- [Storage Configuration](./StorageConfig.md)
 
-- Architecture overview: [MASTER_TOC](MASTER_TOC.md)
-- Components: [Components index](Components/Cosmos.Common.md)
-- Developer guides: [Developers/README](Developers/README.md)
-- File management: [FileManagement/README](FileManagement/README.md)
-- Widgets: [Widgets/README](Widgets/README.md)
+## 4. Content Management
 
-## Release & Support
+### 4.1 Pages & Layouts
 
-- Changelog: [CHANGELOG](CHANGELOG.md)
-- Testing: [Development/Testing/README](Development/Testing/README.md)
-- Issues: open tickets on GitHub
+- [Layouts Guide](./Layouts/Readme.md)
+- [Templates Guide](./Templates/Readme.md)
+- [Page Scheduling](./Editors/PageScheduling.md)
+- [Migration: Save Article Pipeline](./MIGRATION-SAVE-ARTICLE.md)
+
+### 4.2 File & Media Management
+
+- [File Management Overview](./FileManagement/README.md)
+  - [Quick Start](./FileManagement/Quick-Start.md)
+  - [Code Editing Files](./FileManagement/Code-Editing.md)
+  - [Image Editing](./FileManagement/Image-Editing.md)
+  - [Index](./FileManagement/index.md)
+  - [Summary](./FileManagement/SUMMARY.md)
+
+## 5. Editing Tools
+
+### 5.1 Live Editor (CKEditor 5)
+
+- [Overview](./Editors/LiveEditor/README.md)
+  - [Quick Start](./Editors/LiveEditor/QuickStart.md)
+  - [Visual Guide](./Editors/LiveEditor/VisualGuide.md)
+  - [Technical Reference](./Editors/LiveEditor/TechnicalReference.md)
+  - [Index](./Editors/LiveEditor/index.md)
+
+### 5.2 Designer (GrapesJS)
+
+- [Overview](./Editors/Designer/README.md)
+  - [Quick Start](./Editors/Designer/QuickStart.md)
+
+### 5.3 Code Editor (Monaco)
+
+- [Overview](./Editors/CodeEditor/README.md)
+
+### 5.4 Image Editing (Filerobot)
+
+- [Overview](./Editors/ImageEditing/README.md)
+
+### 5.5 Scheduling & Publishing
+
+- [Page Scheduling](./Editors/PageScheduling.md)
+
+## 6. Blogging
+
+- [Blog Post Lifecycle](./blog/BlogPostLifecycle.md)
+- [Future Blog Enhancements](./blog/BlogFutureEnhancements.md)
+
+## 7. Developers
+
+### 7.1 Developer Hub
+
+- [Developer README](./Developers/README.md)
+
+### 7.2 Controllers & Base Classes
+
+- [Controllers Overview](./Developers/Controllers/README.md)
+  - [HomeControllerBase](./Developers/Controllers/HomeControllerBase.md)
+  - [PubControllerBase](./Developers/Controllers/PubControllerBase.md)
+
+### 7.3 Widgets
+
+- [Widgets Overview](./Widgets/README.md)
+  - [Image Widget](./Widgets/Image-Widget.md)
+  - [Crypto Widget](./Widgets/Crypto-Widget.md)
+  - [Crumbs Widget](./Widgets/Crumbs-Widget.md)
+  - [Forms Widget](./Widgets/Forms-Widget.md)
+  - [Nav Builder Widget](./Widgets/Nav-Builder-Widget.md)
+  - [Search Widget](./Widgets/Search-Widget.md)
+  - [ToC Widget](./Widgets/ToC-Widget.md)
+
+### 7.4 Deep Dives
+
+- [Image Widget Development](./Developers/ImageWidget.md)
+
+## 8. Architecture & Components
+
+### 8.1 Core Applications
+
+- [Editor Application](../Editor/README.md)
+- [Publisher Application](../Publisher/README.md)
+
+### 8.2 Component Libraries
+
+- [Common Library](./Components/Cosmos.Common.md) — Core CMS library ([full docs](../Common/README.md))
+- [Blob Service](./Components/Cosmos.BlobService.md) — Multi-cloud storage ([full docs](../Cosmos.BlobService/README.md))
+- [Identity Framework](./Components/AspNetCore.Identity.FlexDb.md) — Flexible database identity ([full docs](../AspNetCore.Identity.FlexDb/README.md))
+- [Dynamic Configuration](../Cosmos.ConnectionStrings/README.md)
+
+## 9. Development & Testing
+
+### 9.1 Testing Guide
+
+- [Testing Overview](./Development/Testing/README.md)
+
+## 10. Release & Changelog
+
+- [Changelog](./CHANGELOG.md)
+
+## 10. Release & Changelog
+
+- [Changelog](./CHANGELOG.md)
+
+## 11. Marketing & Content Assets
+
+- [Homepage Content (HTML)](./SkyCMS-Homepage-Content.html)
+- [Homepage Content (Markdown)](./SkyCMS-Homepage-Content.md)
+- [Azure Marketplace Description](./AzureMarketplaceDescription.html)
+
+## 12. Licensing & Legal
+
+- [License Summary](./License.md)
+- [Third-Party Notices](../NOTICE.md)
+- [GPL License](../LICENSE-GPL)
+- [MIT License](../LICENSE-MIT)
+
+## 13. Additional Reference
+
+- [Master Docs Index (Human-Friendly)](./README.md)
+- [Uploading Secrets to GitHub Repository](./UploadSecretsToGithubRepo.md)
 
 ---
 
-Need a custom section, new diagram, or tailored onboarding? Let me know and I’ll add it.
+## 14. How to Use This TOC
+
+- Use this file for exhaustive discovery.
+- Prefer the curated `README.md` for onboarding.
+- Contribute new docs by adding them under the appropriate section here and in the curated index if user-facing.
+
+---
+
+Last updated: December 2025

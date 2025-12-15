@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Developer Experience: Why Developers Choose SkyCMS
 

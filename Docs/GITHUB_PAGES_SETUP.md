@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # GitHub Pages Setup Instructions
 
@@ -37,7 +36,7 @@ Docs/
 ├── _config.yml              # GitHub Pages Jekyll configuration
 ├── CHANGELOG.md             # Moved from root
 ├── README.md                # Main documentation home
-├── MASTER_TOC.md            # Updated table of contents
+├── index.md                 # Updated table of contents
 ├── Components/
 │   ├── AspNetCore.Identity.FlexDb.md    # Identity library docs
 │   ├── Cosmos.Common.md                 # Core library docs

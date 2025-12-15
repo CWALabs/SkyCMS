@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Documentation Organization Summary
 
@@ -21,7 +20,7 @@ Docs/
 │   └── Testing/
 │       └── README.md                            [NEW] Testing guide
 ├── README.md                                     [UPDATED] Navigation
-├── MASTER_TOC.md                                [UPDATED] New section structure
+├── index.md                                     [UPDATED] New section structure
 ├── QuickStart.md
 ├── AzureInstall.md
 ├── [other existing documentation files...]

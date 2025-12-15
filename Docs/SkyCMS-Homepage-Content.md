@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # SkyCMS: The High-Performance CMS Built for the Cloud
 

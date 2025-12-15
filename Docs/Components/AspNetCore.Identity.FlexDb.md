@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # AspNetCore.Identity.FlexDb - Flexible Database Provider for ASP.NET Core Identity
 

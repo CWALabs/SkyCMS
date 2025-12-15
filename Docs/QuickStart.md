@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # 5-Minute Quick Start
 

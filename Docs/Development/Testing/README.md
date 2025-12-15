@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Sky.Tests — SkyCMS Test Suite
 

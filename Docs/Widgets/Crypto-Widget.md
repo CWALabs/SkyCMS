@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Cosmos CMS Crypto Widget (AES helpers)
 

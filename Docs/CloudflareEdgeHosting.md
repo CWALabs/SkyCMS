@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Cloudflare Edge Hosting: Origin-less Static Website Architecture
 

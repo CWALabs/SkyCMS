@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # SkyCMS Documentation
 

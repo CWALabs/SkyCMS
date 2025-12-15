@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # PubControllerBase Developer Documentation
 

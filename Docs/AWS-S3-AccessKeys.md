@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # AWS S3 access keys for SkyCMS (quick guide)
 

@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Quick Start Guide - File Manager
 

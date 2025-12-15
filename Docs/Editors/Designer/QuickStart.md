@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Design Editor Quick Start Guide
 

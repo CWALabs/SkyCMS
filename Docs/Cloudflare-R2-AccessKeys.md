@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Cloudflare R2 access keys for SkyCMS (quick guide)
 

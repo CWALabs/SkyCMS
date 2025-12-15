@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # Cosmos CMS Table of Contents (ToC) Widgets
 

@@ -1,6 +1,3 @@
-{% include nav.html %}
-
-
 # Installing SkyCMS on Azure
 
 The following describes how to install SkyCMS on Microsoft Azure.

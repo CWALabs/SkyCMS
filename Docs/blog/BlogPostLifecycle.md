@@ -1,4 +1,3 @@
-{% include nav.html %}
 
 # SkyCMS Blog Post Lifecycle (Current Implementation)
 
