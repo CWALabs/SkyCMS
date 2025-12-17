@@ -1,3 +1,7 @@
+---
+title: SkyCMS Cost Comparison
+layout: default
+---
 
 ### Monthly Cost Comparison (10,000 page views/month site)
 

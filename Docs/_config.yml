@@ -37,6 +37,7 @@ exclude:
 # Include items
 include:
   - _redirects
+  - _Marketing
 
 # Front matter defaults
 defaults:

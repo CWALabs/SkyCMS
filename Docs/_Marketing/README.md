@@ -1,3 +1,8 @@
+---
+title: Marketing & Sales Materials
+layout: default
+---
+
 # Marketing & Sales Materials
 
 This folder contains marketing content, competitive analysis, and sales materials for SkyCMS.

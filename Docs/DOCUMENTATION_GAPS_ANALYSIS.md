@@ -1,3 +1,8 @@
+---
+title: Documentation Gaps Analysis
+layout: default
+---
+
 # Documentation Gaps Analysis
 
 **Date**: December 17, 2025  

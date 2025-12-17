@@ -1,3 +1,7 @@
+---
+title: Documentation Changelog
+layout: default
+---
 
 ## [Unreleased]
 

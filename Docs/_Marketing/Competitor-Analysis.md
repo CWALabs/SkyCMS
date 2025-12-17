@@ -1,3 +1,7 @@
+---
+title: SkyCMS Competitors
+layout: default
+---
 
 # SkyCMS Competitors
 

@@ -1,3 +1,7 @@
+---
+title: Image Editor User Guide
+layout: default
+---
 
 # Image Editor User Guide
 
