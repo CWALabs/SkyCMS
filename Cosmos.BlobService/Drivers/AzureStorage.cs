@@ -34,9 +34,9 @@ namespace Cosmos.BlobService.Drivers
         /// Initializes a new instance of the <see cref="AzureStorage"/> class.
         /// </summary>
         /// <param name="connectionString">Connection string.</param>
-        /// <param name="defaultAzureCredential">Default azure credential.</param>
+        /// <param name="defaultAzureCredential">Default azure credential (optional for Azurite).</param>
         /// <param name="containerName">Name of container (default is $web).</param>
-        public AzureStorage(string connectionString, DefaultAzureCredential defaultAzureCredential, string containerName = "$web")
+        public AzureStorage(string connectionString, DefaultAzureCredential defaultAzureCredential = null, string containerName = "$web")
         {
             this.Initialize(containerName, connectionString, defaultAzureCredential);
         }

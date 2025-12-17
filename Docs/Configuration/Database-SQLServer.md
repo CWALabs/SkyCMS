@@ -1,3 +1,10 @@
+---
+title: SQL Server / Azure SQL Configuration
+description: Configure MS SQL Server or Azure SQL database with connection strings
+keywords: SQL-Server, Azure-SQL, database, configuration, relational, ACID
+audience: [developers, administrators]
+---
+
 # MS SQL Server / Azure SQL with SkyCMS
 
 MS SQL Server and Azure SQL are relational databases with strong ACID guarantees, rich query support, and enterprise tooling. Both work seamlessly with SkyCMS.

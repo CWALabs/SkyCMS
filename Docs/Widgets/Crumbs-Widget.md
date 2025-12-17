@@ -1,3 +1,9 @@
+---
+title: Crumbs Widget (Breadcrumbs)
+description: Breadcrumb navigation widget that builds navigation from page title and path segments
+keywords: widget, breadcrumbs, navigation, crumbs, path
+audience: [developers]
+---
 
 # Cosmos CMS Crumbs Widget (breadcrumbs)
 

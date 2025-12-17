@@ -1,3 +1,9 @@
+---
+title: Developer Experience
+description: Why developers choose SkyCMS - code-first tools, Monaco editor, Git integration, and API access
+keywords: developer-experience, Monaco, templates, Git, API, code-first
+audience: [developers]
+---
 
 # Developer Experience: Why Developers Choose SkyCMS
 

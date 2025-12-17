@@ -1,4 +1,9 @@
-
+---
+title: Blog Post Lifecycle
+description: Current implementation of blog post lifecycle and article infrastructure in SkyCMS
+keywords: blog, articles, lifecycle, implementation, content-management
+audience: [developers]
+---
 # SkyCMS Blog Post Lifecycle (Current Implementation)
 
 ## Status

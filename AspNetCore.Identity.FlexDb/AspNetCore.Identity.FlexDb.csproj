@@ -2,10 +2,10 @@
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
-		<Version>9.2.3.4</Version>
-		<AssemblyVersion>9.2.3.4</AssemblyVersion>
-		<FileVersion>9.2.3.4</FileVersion>
-		<PackageVersion>9.2.3.4</PackageVersion>
+		<Version>9.2.3.7</Version>
+		<AssemblyVersion>9.2.3.7</AssemblyVersion>
+		<FileVersion>9.2.3.7</FileVersion>
+		<PackageVersion>9.2.3.7</PackageVersion>
 		<Authors>toiyabe62</Authors>
 		<Nullable>enable</Nullable>
 		<RepositoryType>GitHub</RepositoryType>
@@ -36,8 +36,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
         <PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" />
-		<PackageReference Include="Microsoft.Data.Sqlite.Core" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
 		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
 	</ItemGroup>
@@ -46,6 +45,7 @@
 		<Content Include="B2C_BrandIcon_Black.png" />
 		<Content Include="_res\icons\B2C_BrandIcon_Black.png" />
 		<PackageReference Include="Duende.IdentityServer.EntityFramework.Storage" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" />
 	</ItemGroup>
 
 	<ItemGroup>

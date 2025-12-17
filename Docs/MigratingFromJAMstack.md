@@ -1,3 +1,9 @@
+---
+title: Migrating from JAMstack to SkyCMS
+description: Guide for migrating from Git-based static site workflows (Netlify, Vercel, GitHub Pages) to SkyCMS
+keywords: migration, JAMstack, Netlify, Vercel, GitHub-Pages, static-sites
+audience: [developers, decision-makers]
+---
 
 # Migrating from Git-Based Static Site Deployment to SkyCMS
 

@@ -1,3 +1,9 @@
+---
+title: Search Widget
+description: Client-side search form widget for SkyCMS search endpoint with result rendering
+keywords: widget, search, client-side, search-form, results
+audience: [developers]
+---
 
 # Cosmos CMS Search Widget
 

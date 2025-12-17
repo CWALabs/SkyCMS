@@ -365,3 +365,8 @@ FodyWeavers.xsd
 /WebApps/Editor/Cosmos.Editor/Cosmos.Editor.csproj
 /WebApps/Publisher.B2C/appsettings.json
 /secrets-hashes.json
+
+# Jekyll generated static site
+Docs/_site/
+.jekyll-cache/
+.jekyll-metadata

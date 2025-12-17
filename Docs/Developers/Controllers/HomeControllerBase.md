@@ -1,3 +1,9 @@
+---
+title: HomeControllerBase Developer Documentation
+description: Technical reference for the shared HomeControllerBase class providing common endpoints for Editor and Publisher
+keywords: HomeControllerBase, controller, API, developer-reference
+audience: [developers]
+---
 
 # HomeControllerBase Developer Documentation
 

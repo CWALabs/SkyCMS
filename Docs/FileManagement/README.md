@@ -1,3 +1,9 @@
+---
+title: File Management Guide
+description: Comprehensive web-based file manager for uploading, organizing, and managing website assets
+keywords: file-manager, upload, organize, assets, images, files
+audience: [developers, content-creators, administrators]
+---
 
 # File Management in SkyCMS
 

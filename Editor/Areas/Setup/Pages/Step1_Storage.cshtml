@@ -45,6 +45,9 @@
             </div>
 
             <div class="form-group mb-3">
+                <div id="storageConnectionStringAlert" class="alert alert-primary" role="alert" style="display:none;">
+                    Connection string already set and cannot be changed.
+                </div>
                 <label asp-for="StorageConnectionString" class="form-label">Connection String <span class="text-danger">*</span></label>
                 <input asp-for="StorageConnectionString" class="form-control font-monospace" required />
                 <span asp-validation-for="StorageConnectionString" class="text-danger"></span>
@@ -56,7 +59,7 @@
                     <code>DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=yourkey;EndpointSuffix=core.windows.net</code><br />
                     <small>Or use Managed Identity: <code>AccountName=youraccount;AccountKey=AccessToken</code></small>
                 </div>
-                <div class="form-group mb-3">
+                <div class="form-group mb-3" style="display:none;">
                     <label asp-for="ContainerName" class="form-label">Container Name</label>
                     <input asp-for="ContainerName" class="form-control" placeholder="$web" value="$web" />
                     <small class="form-text text-light">Default: $web (for static websites)</small>
@@ -78,6 +81,9 @@
             </div>
 
             <div class="form-group mb-3">
+                <div id="blobPublicUrlAlert" class="alert alert-primary" role="alert" style="display:none;">
+                    The public URL is already set and cannot be changed.
+                </div>
                 <label asp-for="BlobPublicUrl" class="form-label">Public URL (CDN Endpoint) <span class="text-danger">*</span></label>
                 <input asp-for="BlobPublicUrl" class="form-control" placeholder="https://cdn.example.com or /" value="/" required />
                 <span asp-validation-for="BlobPublicUrl" class="text-danger"></span>
@@ -102,9 +108,22 @@
 
 @section Scripts {
     <script>
+        var isPreConfigured = @Model.IsPreConfigured.ToString().ToLower();
+        var blobPublicUrlPreConfigured = @Model.BlobPublicUrlPreConfigured.ToString().ToLower();
+
         $(document).ready(function() {
             // Enable jQuery validation
             var form = $('#storageForm');
+
+            if (isPreConfigured) {
+                $('#StorageConnectionString').prop('disabled', true);
+                $('#storageConnectionStringAlert').show();
+            }
+
+            if (blobPublicUrlPreConfigured) {
+                $('#BlobPublicUrl').prop('disabled', true);
+                $('#blobPublicUrlAlert').show();
+            }
             
             // Configure validation
             $.validator.setDefaults({

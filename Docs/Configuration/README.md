@@ -1,3 +1,10 @@
+---
+title: Configuration Documentation
+description: Quick reference index for all SkyCMS configuration options including multi-tenant, database, storage, and CDN
+keywords: configuration, settings, multi-tenant, database, storage, CDN, email
+audience: [developers, administrators]
+---
+
 # Configuration Documentation
 
 Quick reference index for all SkyCMS configuration documentation.
@@ -6,8 +13,10 @@ Quick reference index for all SkyCMS configuration documentation.
 
 ## Quick Links
 
+- **[Multi-Tenant Configuration](./Multi-Tenant-Configuration.md)** ⭐ - Set up multiple independent sites on shared infrastructure
 - **[Database Configuration Overview](./Database-Overview.md)** - Supported providers and setup steps
 - **[Storage Configuration Overview](./Storage-Overview.md)** - File storage providers and setup
+- **[Email Configuration Overview](./Email-Overview.md)** - Transactional email providers and setup
 - **[CDN Configuration Overview](./CDN-Overview.md)** - Content delivery and performance optimization
 
 ---
@@ -49,6 +58,18 @@ Quick reference index for all SkyCMS configuration documentation.
 | Amazon CloudFront | [CDN-CloudFront.md](./CDN-CloudFront.md) |
 | Sucuri | [CDN-Sucuri.md](./CDN-Sucuri.md) |
 
+### Email Configuration
+
+| Topic | Link |
+|-------|------|
+| Overview & Comparison | [Email-Overview.md](./Email-Overview.md) |
+| Configuration Reference | [Email-Configuration-Reference.md](./Email-Configuration-Reference.md) |
+| **Providers:** | |
+| SendGrid | [Email-SendGrid.md](./Email-SendGrid.md) |
+| Azure Communication Services | [Email-AzureCommunicationServices.md](./Email-AzureCommunicationServices.md) |
+| SMTP | [Email-SMTP.md](./Email-SMTP.md) |
+| No-Op (Development) | [Email-None.md](./Email-None.md) |
+
 ---
 
 ## Documentation Structure
@@ -76,6 +97,9 @@ This structure helps you:
 - **Change storage provider** → See [Storage-Overview.md](./Storage-Overview.md)
 - **Set up file storage** → See [Storage-Configuration-Reference.md](./Storage-Configuration-Reference.md)
 - **Use Azure Blob Storage** → See [Storage-AzureBlob.md](./Storage-AzureBlob.md)
+- **Configure email sending** → See [Email-Overview.md](./Email-Overview.md)
+- **Set up SMTP email** → See [Email-SMTP.md](./Email-SMTP.md)
+- **Use SendGrid for email** → See [Email-SendGrid.md](./Email-SendGrid.md)
 - **Speed up my site with CDN** → See [CDN-Overview.md](./CDN-Overview.md)
 - **Configure Cloudflare** → See [CDN-Cloudflare.md](./CDN-Cloudflare.md)
 
@@ -96,7 +120,7 @@ CDN-Cloudflare.md
 
 ---
 
-**Last Updated:** December 15, 2025
+**Last Updated:** December 17, 2025
 
 ---
 

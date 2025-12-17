@@ -1,4 +1,4 @@
-// <copyright file="StorageContext.cs" company="Moonrise Software, LLC">
+﻿// <copyright file="StorageContext.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
 // See https://github.com/CWALabs/SkyCMS
@@ -61,11 +61,23 @@ namespace Cosmos.BlobService
             isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
             if (isMultiTenant)
             {
+                // ✅ Multi-tenant: Use dynamic configuration provider (resolved per request)
                 dynamicConfigurationProvider = serviceProvider.GetRequiredService<IDynamicConfigurationProvider>();
+                // DON'T set primaryDriver here - it's resolved per request in GetPrimaryDriver()
             }
             else
             {
-                var connectionString = configuration.GetConnectionString("StorageConnectionString") ?? configuration.GetConnectionString("AzureBlobStorageConnectionString");
+                // ✅ Single-tenant: Use storage configuration provider (resolved at construction time)
+                var configProvider = serviceProvider.GetService<IStorageConfigurationProvider>();
+                var connectionString = configProvider?.GetStorageConnectionString();
+
+                // ✅ Fallback to IConfiguration if provider not registered (backwards compatibility)
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    connectionString = configuration.GetConnectionString("StorageConnectionString")
+                        ?? configuration.GetConnectionString("AzureBlobStorageConnectionString");
+                }
+
                 primaryDriver = GetDriverFromConnectionString(connectionString);
             }
         }
@@ -135,7 +147,7 @@ namespace Cosmos.BlobService
         public async Task EnableAzureStaticWebsite()
         {
             var driver = this.GetPrimaryDriver();
-            if (driver.GetType() == typeof(AzureStorage))
+            if (driver != null && driver.GetType() == typeof(AzureStorage))
             {
                 var azureStorage = (AzureStorage)driver;
                 await azureStorage.EnableStaticWebsite();
@@ -149,7 +161,7 @@ namespace Cosmos.BlobService
         public async Task DisableAzureStaticWebsite()
         {
             var driver = this.GetPrimaryDriver();
-            if (driver.GetType() == typeof(AzureStorage))
+            if (driver != null && driver.GetType() == typeof(AzureStorage))
             {
                 var azureStorage = (AzureStorage)driver;
                 await azureStorage.DisableStaticWebsite();
@@ -427,9 +439,22 @@ namespace Cosmos.BlobService
         /// <returns>ICosmosStorage driver.</returns>
         private ICosmosStorage GetDriverFromConnectionString(string connectionString)
         {
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                return null;
+            }
+
             if (connectionString.StartsWith("DefaultEndpointsProtocol=", StringComparison.CurrentCultureIgnoreCase))
             {
-                return new AzureStorage(connectionString, new DefaultAzureCredential());
+                // Check if this is Azurite (local emulator)
+                bool isAzurite = connectionString.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                                connectionString.Contains("localhost", StringComparison.OrdinalIgnoreCase) ||
+                                connectionString.Contains("devstoreaccount1", StringComparison.OrdinalIgnoreCase);
+
+                // Azurite doesn't use Azure AD credentials, so we can skip DefaultAzureCredential
+                // Pass null for Azurite to avoid unnecessary credential initialization
+                var credential = isAzurite ? null : new DefaultAzureCredential();
+                return new AzureStorage(connectionString, credential);
             }
             else if (connectionString.Contains("accountid", StringComparison.CurrentCultureIgnoreCase))
             {

@@ -1,3 +1,10 @@
+---
+title: Cloudflare Edge Hosting Guide
+description: Origin-less static website architecture using Cloudflare R2 and edge rules
+keywords: Cloudflare, R2, edge-hosting, origin-less, CDN, static-website
+audience: [developers, devops]
+---
+
 # Cloudflare Edge Hosting: Origin-less Static Website Architecture
 
 This guide shows how to host a static site on Cloudflare using an origin-less (edge) pattern with R2 object storage and Cloudflare Rules for request handling at the edge. It also explains how to configure SkyCMS to deploy your build output to R2.

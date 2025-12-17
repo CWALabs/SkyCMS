@@ -1,3 +1,9 @@
+---
+title: SkyCMS Layouts User Guide
+description: Complete guide to creating and managing site-wide layouts in SkyCMS
+keywords: layouts, site-design, templates, structure, responsive
+audience: [developers, designers]
+---
 
 # SkyCMS Layouts - User Guide
 

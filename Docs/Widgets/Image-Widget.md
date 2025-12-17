@@ -1,4 +1,9 @@
-
+---
+title: Image Widget
+description: Interactive image upload and management widget with drag-and-drop, library picker, and alt-text editor
+keywords: widget, image, upload, FilePond, editor, drag-and-drop
+audience: [developers]
+---
 # Cosmos CMS Image Widget
 
 Interactive image upload and management widget used by the Sky Editor. It provides drag‑and‑drop uploads (via FilePond), an image library picker, in-place replacement, and an alt-text editor, then saves the widget’s HTML back to the editor region.

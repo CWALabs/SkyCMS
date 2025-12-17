@@ -1,3 +1,9 @@
+---
+title: SkyCMS Blog Feature - Proposed Enhancements
+description: Roadmap and proposed enhancements for SkyCMS blog functionality including listing, categories, and RSS feeds
+keywords: blog, enhancements, roadmap, features
+audience: [developers, administrators]
+---
 
 # SkyCMS Blog Feature � Proposed Enhancements
 

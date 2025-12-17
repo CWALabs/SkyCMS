@@ -1,3 +1,9 @@
+---
+title: Nav Builder Widget
+description: Navigation builder widget for creating link lists from child pages using ToC API
+keywords: widget, navigation, nav-builder, links, ToC-API
+audience: [developers]
+---
 
 # Cosmos CMS Nav Builder
 

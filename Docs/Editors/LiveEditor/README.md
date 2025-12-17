@@ -1,4 +1,9 @@
-
+---
+title: Live Editor Documentation
+description: Complete documentation for SkyCMS WYSIWYG Live Editor with CKEditor 5
+keywords: live-editor, CKEditor, WYSIWYG, editor, content-editing
+audience: [content-creators, developers]
+---
 
 # SkyCMS Live Editor Documentation (2025)
 

@@ -1,3 +1,9 @@
+---
+title: AWS S3 Access Keys Guide
+description: Quick guide to creating AWS access key pairs with least-privilege permissions for S3 bucket access
+keywords: AWS, S3, access-keys, IAM, permissions, security
+audience: [developers, administrators]
+---
 
 # AWS S3 access keys for SkyCMS (quick guide)
 

@@ -1,3 +1,9 @@
+---
+title: Table of Contents Widget
+description: Navigation list widget using SkyCMS Table of Contents API for automatic breadcrumbs
+keywords: widget, table-of-contents, ToC, navigation, API, breadcrumbs
+audience: [developers]
+---
 
 # Cosmos CMS Table of Contents (ToC) Widgets
 

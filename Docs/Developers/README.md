@@ -1,3 +1,9 @@
+---
+title: Developer Documentation
+description: Architecture, shared components, and extension points for SkyCMS development
+keywords: developers, architecture, components, extension-points, API
+audience: [developers, architects]
+---
 
 # SkyCMS Developer Documentation
 

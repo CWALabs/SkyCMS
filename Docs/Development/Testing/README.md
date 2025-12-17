@@ -1,3 +1,9 @@
+---
+title: Sky.Tests - SkyCMS Test Suite
+description: Comprehensive test suite documentation for SkyCMS covering Editor, security, authentication, and multi-database testing
+keywords: testing, test-suite, unit-tests, integration-tests, security-tests
+audience: [developers]
+---
 
 # Sky.Tests — SkyCMS Test Suite
 

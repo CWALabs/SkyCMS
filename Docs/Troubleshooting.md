@@ -1,3 +1,10 @@
+---
+title: Troubleshooting Guide
+description: Common issues and solutions for SkyCMS setup, configuration, and operation
+keywords: troubleshooting, errors, debugging, solutions, configuration, database
+audience: [developers, administrators]
+---
+
 # Troubleshooting Guide
 
 Common issues and solutions for SkyCMS setup, configuration, and operation.

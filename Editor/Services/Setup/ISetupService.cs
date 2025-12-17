@@ -19,8 +19,9 @@ namespace Sky.Editor.Services.Setup
         /// <summary>
         /// Initializes a new setup session.
         /// </summary>
+        /// <param name="deleteDatabase">Delete the config database to start a fresh install.</param>
         /// <returns>Setup configuration.</returns>
-        Task<SetupConfiguration> InitializeSetupAsync();
+        Task<SetupConfiguration> InitializeSetupAsync(bool deleteDatabase = false);
 
         /// <summary>
         /// Gets the current setup configuration.
@@ -184,6 +185,14 @@ namespace Sky.Editor.Services.Setup
         /// <param name="setupId">Setup session ID.</param>
         /// <returns>Completion result.</returns>
         Task<SetupCompletionResult> CompleteSetupAsync(Guid setupId);
+
+        /// <summary>
+        /// Checks if a specific step should be skipped based on pre-configuration.
+        /// </summary>
+        /// <param name="setupId">Setup session ID.</param>
+        /// <param name="stepNumber">Step number to check.</param>
+        /// <returns>True if step should be skipped.</returns>
+        Task<bool> ShouldSkipStepAsync(Guid setupId, int stepNumber);
     }
 
     /// <summary>

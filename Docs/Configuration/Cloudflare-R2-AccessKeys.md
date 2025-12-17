@@ -1,3 +1,10 @@
+---
+title: Cloudflare R2 Access Keys Guide
+description: Quick guide to creating Cloudflare R2 S3-compatible API tokens for SkyCMS
+keywords: Cloudflare-R2, access-keys, API-tokens, S3-compatible, configuration
+audience: [developers, administrators]
+---
+
 # Cloudflare R2 access keys for SkyCMS (quick guide)
 
 Cloudflare R2 is S3‑compatible. To connect programmatically you'll typically need your Account ID, the R2 bucket name, and an S3 API token consisting of an Access Key ID and Secret Access Key.

@@ -43,7 +43,7 @@ namespace Sky.Editor.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.TenantMode).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.PublisherUrl).IsRequired();
-                entity.Property(e => e.AdminEmail).IsRequired();
+                entity.Property(e => e.SenderEmail).IsRequired();
                 entity.Property(e => e.DatabaseConnectionString).IsRequired();
                 entity.Property(e => e.StorageConnectionString).IsRequired();
             });

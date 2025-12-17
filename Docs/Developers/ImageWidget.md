@@ -1,3 +1,9 @@
+---
+title: Image Widget Developer Notes
+description: Developer reference for the Cosmos CMS Image Widget with FilePond integration and alt/title editor
+keywords: image-widget, FilePond, alt-text, developer-reference
+audience: [developers]
+---
 
 # Cosmos CMS Image Widget (Developer Notes)
 

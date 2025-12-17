@@ -1,3 +1,9 @@
+---
+title: Image Editing Guide
+description: Powerful integrated image editor powered by Filerobot for file manager
+keywords: image-editing, Filerobot, editor, cropping, filters, effects
+audience: [content-creators, developers]
+---
 
 # Image Editing Guide
 

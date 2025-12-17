@@ -1,6 +1,21 @@
+---
+title: Minimum Required Settings
+description: Environment variable configuration guide for Docker, Kubernetes, and production deployments
+keywords: configuration, environment-variables, Docker, Kubernetes, production, settings
+audience: [developers, devops, administrators]
+---
+
 # SkyCMS Minimum Required Settings
 
-Get SkyCMS running with just the essential configuration. Choose your deployment model below.
+This guide covers **environment variable configuration** for SkyCMS. Use this when:
+- Pre-configuring settings for Docker/Kubernetes deployments
+- Setting up production environments
+- Configuring multi-tenant installations
+- Bypassing the Setup Wizard entirely
+
+> **New to SkyCMS?** Consider using the **[Setup Wizard](./SetupWizard.md)** instead for an interactive configuration experience.
+
+---
 
 ## Table of Contents
 
@@ -241,7 +256,109 @@ Manage tenants through the admin interface. Each tenant's database and storage s
 
 ---
 
-### Troubleshooting
+## Email Configuration (Optional)
+
+Email is **optional** in SkyCMS. Use it to send transactional emails like password resets and notifications.
+
+### Setup Wizard Method (Recommended)
+
+If `CosmosAllowSetup=true`, the setup wizard includes **Step 4: Email Configuration**:
+
+1. Choose a provider: **SendGrid**, **Azure Communication Services**, **SMTP**, or **None** (skip email)
+2. Enter provider-specific credentials
+3. Test the configuration
+4. Complete setup
+
+### Pre-Configuration Method (Manual)
+
+Configure email **before** starting the application via environment variables or `appsettings.json`.
+
+#### SMTP Example (Gmail, Office 365, etc.)
+
+**Environment Variables** (Windows PowerShell):
+
+```powershell
+$env:SmtpEmailProviderOptions__Host = "smtp.gmail.com"
+$env:SmtpEmailProviderOptions__Port = "587"
+$env:SmtpEmailProviderOptions__UserName = "your-email@gmail.com"
+$env:SmtpEmailProviderOptions__Password = "your-app-password"
+$env:AdminEmail = "your-email@gmail.com"
+```
+
+**appsettings.json**:
+
+```json
+{
+  "SmtpEmailProviderOptions": {
+    "Host": "smtp.gmail.com",
+    "Port": 587,
+    "UserName": "your-email@gmail.com",
+    "Password": "your-app-password",
+    "UsesSsl": false
+  },
+  "AdminEmail": "your-email@gmail.com"
+}
+```
+
+#### SendGrid Example
+
+**Environment Variables**:
+
+```powershell
+$env:CosmosSendGridApiKey = "SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+$env:AdminEmail = "noreply@yourdomain.com"
+```
+
+**appsettings.json**:
+
+```json
+{
+  "CosmosSendGridApiKey": "SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "AdminEmail": "noreply@yourdomain.com"
+}
+```
+
+#### Azure Communication Services Example
+
+**Environment Variables**:
+
+```powershell
+$env:ConnectionStrings__AzureCommunicationConnection = "endpoint=https://yourresource.communication.azure.com/;accesskey=xxxxx=="
+$env:AdminEmail = "DoNotReply@yourdomain.azurecomm.net"
+```
+
+**appsettings.json**:
+
+```json
+{
+  "ConnectionStrings": {
+    "AzureCommunicationConnection": "endpoint=https://yourresource.communication.azure.com/;accesskey=xxxxx=="
+  },
+  "AdminEmail": "DoNotReply@yourdomain.azurecomm.net"
+}
+```
+
+### Provider Priority
+
+If multiple providers are configured, SkyCMS uses this order:
+
+1. **SMTP** (if all fields present)
+2. **Azure Communication Services** (if connection string set)
+3. **SendGrid** (if API key set)
+4. **No-Op** (development only, emails logged but not sent)
+
+### Configuration Reference
+
+Complete email configuration documentation:
+
+- **[Email Overview](../Configuration/Email-Overview.md)** - Provider comparison and setup methods
+- **[Email Configuration Reference](../Configuration/Email-Configuration-Reference.md)** - All settings and formats
+- **[Email SendGrid Setup](../Configuration/Email-SendGrid.md)** - SendGrid-specific guide
+- **[Email Azure Communication Setup](../Configuration/Email-AzureCommunicationServices.md)** - Azure setup
+- **[Email SMTP Setup](../Configuration/Email-SMTP.md)** - SMTP provider guide (Gmail, Office 365, etc.)
+- **[Email No-Op Setup](../Configuration/Email-None.md)** - Development provider
+
+---
 
 ### Setup Wizard Not Appearing
 

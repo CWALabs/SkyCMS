@@ -1,3 +1,9 @@
+---
+title: Page Scheduling Guide
+description: Schedule page publishing and unpublishing with date/time controls
+keywords: scheduling, publishing, unpublishing, date-time, automation
+audience: [developers, content-creators, administrators]
+---
 
 # Page Scheduling
 

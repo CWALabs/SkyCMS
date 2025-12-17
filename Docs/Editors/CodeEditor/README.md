@@ -1,3 +1,9 @@
+---
+title: Code Editor
+description: Monaco-based code editing environment for editing HTML, CSS, and JavaScript in SkyCMS layouts, templates, and articles
+keywords: code-editor, Monaco-Editor, HTML, CSS, JavaScript
+audience: [developers, content-creators]
+---
 
 # Code Editor
 

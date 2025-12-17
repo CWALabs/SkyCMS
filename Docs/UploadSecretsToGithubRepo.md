@@ -1,3 +1,9 @@
+---
+title: UploadSecretsToGithubRepo Script
+description: PowerShell script documentation for automating GitHub repository secrets management
+keywords: PowerShell, GitHub, secrets, automation, CI-CD
+audience: [developers, devops]
+---
 
 # UploadSecretsToGithubRepo.ps1 Documentation
 

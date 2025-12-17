@@ -1,3 +1,9 @@
+---
+title: File Manager Quick Start
+description: Quick start guide to get up and running with SkyCMS File Manager in minutes
+keywords: file-manager, quick-start, tutorial, upload, organize
+audience: [content-creators, developers]
+---
 
 # Quick Start Guide - File Manager
 

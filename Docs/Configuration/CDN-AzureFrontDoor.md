@@ -1,3 +1,10 @@
+---
+title: Azure Front Door CDN Configuration
+description: Configure Azure Front Door or Azure CDN cache purging
+keywords: Azure-Front-Door, Azure-CDN, cache-purging, configuration
+audience: [developers, devops]
+---
+
 # Azure Front Door CDN with SkyCMS
 
 SkyCMS can purge Azure Front Door (Standard/Premium) or Azure CDN endpoints after publishing.

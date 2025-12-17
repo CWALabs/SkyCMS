@@ -1,0 +1,31 @@
+# robots.txt
+# SkyCMS Documentation - Allow search engines and AI crawlers
+
+# Allow all crawlers by default
+User-agent: *
+Allow: /
+
+# Allow specific AI crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Crawl delay (optional; most modern crawlers ignore but good practice)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://cwalabs.github.io/SkyCMS/sitemap.xml

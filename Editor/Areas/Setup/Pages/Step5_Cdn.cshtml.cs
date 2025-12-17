@@ -116,6 +116,11 @@ namespace Sky.Editor.Areas.Setup.Pages
         public string SuccessMessage { get; set; }
 
         /// <summary>
+        /// Gets a value indicating whether the CDN configuration is pre-configured.
+        /// </summary>
+        public bool IsPreConfigured { get; private set; }
+
+        /// <summary>
         /// Handles GET requests.
         /// </summary>
         /// <returns>Page result.</returns>

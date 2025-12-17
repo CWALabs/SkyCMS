@@ -1,3 +1,9 @@
+---
+title: Widgets Documentation
+description: Developer documentation for SkyCMS reusable UI widgets and components
+keywords: widgets, components, UI, editor, runtime, reusable
+audience: [developers]
+---
 
 # Widgets
 

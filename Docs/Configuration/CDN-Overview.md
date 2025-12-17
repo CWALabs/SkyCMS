@@ -1,3 +1,10 @@
+---
+title: CDN Integration Overview
+description: CDN cache purging configuration for Azure Front Door, CloudFront, Cloudflare, and Sucuri
+keywords: CDN, cache-purging, Azure-Front-Door, CloudFront, Cloudflare, Sucuri
+audience: [developers, devops]
+---
+
 # CDN Integration Overview
 
 SkyCMS can purge CDN caches after publish so fresh content appears immediately. Supported providers:

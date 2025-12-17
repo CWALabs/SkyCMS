@@ -1,3 +1,10 @@
+---
+title: Sucuri CDN/WAF Configuration
+description: Configure Sucuri CDN and WAF cache purging
+keywords: Sucuri, CDN, WAF, cache-purging, security, configuration
+audience: [developers, devops]
+---
+
 # Sucuri CDN/WAF with SkyCMS
 
 SkyCMS can trigger cache purge on Sucuri after publish.

@@ -1,3 +1,9 @@
+---
+title: Storage Configuration Reference
+description: Complete reference for cloud storage configuration with S3, Azure Blob, Cloudflare R2, and Google Cloud
+keywords: storage, configuration-reference, S3, Azure-Blob, Cloudflare-R2, Google-Cloud
+audience: [developers, administrators]
+---
 
 # Storage Configuration
 

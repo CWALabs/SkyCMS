@@ -1,3 +1,9 @@
+---
+title: AspNetCore.Identity.FlexDb Component
+description: Flexible database provider for ASP.NET Core Identity supporting multiple database backends
+keywords: ASP.NET-Core, Identity, database, provider, component, authentication
+audience: [developers, architects]
+---
 
 # AspNetCore.Identity.FlexDb - Flexible Database Provider for ASP.NET Core Identity
 

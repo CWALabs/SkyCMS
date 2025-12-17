@@ -1,0 +1,133 @@
+// <copyright file="EmailConfigurationService.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
+// </copyright>
+
+using Cosmos.Common.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Sky.Editor.Services.Email
+{
+    /// <summary>
+    /// Service for retrieving email configuration from environment variables or database.
+    /// </summary>
+    public class EmailConfigurationService : IEmailConfigurationService
+    {
+        private readonly IConfiguration configuration;
+        private readonly ApplicationDbContext dbContext;
+        private readonly ILogger<EmailConfigurationService> logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EmailConfigurationService"/> class.
+        /// </summary>
+        /// <param name="configuration">Configuration.</param>
+        /// <param name="dbContext">Database context.</param>
+        /// <param name="logger">Logger.</param>
+        public EmailConfigurationService(
+            IConfiguration configuration,
+            ApplicationDbContext dbContext,
+            ILogger<EmailConfigurationService> logger)
+        {
+            this.configuration = configuration;
+            this.dbContext = dbContext;
+            this.logger = logger;
+        }
+
+        /// <inheritdoc/>
+        public async Task<EmailSettings> GetEmailSettingsAsync()
+        {
+            var settings = new EmailSettings();
+
+            try
+            {
+                // Try environment variables first (highest priority)
+                settings.SendGridApiKey = configuration["SendGridApiKey"];
+                settings.AzureEmailConnectionString = configuration["AzureEmailConnectionString"];
+                settings.SmtpHost = configuration["SmtpHost"];
+                settings.SmtpPort = int.TryParse(configuration["SmtpPort"], out var port) ? port : 587;
+                settings.SmtpUsername = configuration["SmtpUsername"];
+                settings.SmtpPassword = configuration["SmtpPassword"];
+                settings.SenderEmail = configuration["SenderEmail"] ?? configuration["AdminEmail"];
+
+                // If not found in environment, try database settings
+                if (string.IsNullOrEmpty(settings.SendGridApiKey) &&
+                    string.IsNullOrEmpty(settings.AzureEmailConnectionString) &&
+                    string.IsNullOrEmpty(settings.SmtpHost))
+                {
+                    logger.LogInformation("Email settings not found in environment variables, checking database");
+                    
+                    var dbSettings = await dbContext.Settings
+                        .Where(s => s.Group == "EMAIL")
+                        .ToListAsync();
+
+                    foreach (var setting in dbSettings)
+                    {
+                        switch (setting.Name)
+                        {
+                            case "SendGridApiKey":
+                                settings.SendGridApiKey = setting.Value;
+                                break;
+                            case "AzureEmailConnectionString":
+                                settings.AzureEmailConnectionString = setting.Value;
+                                break;
+                            case "SmtpHost":
+                                settings.SmtpHost = setting.Value;
+                                break;
+                            case "SmtpPort":
+                                settings.SmtpPort = int.TryParse(setting.Value, out var dbPort) ? dbPort : 587;
+                                break;
+                            case "SmtpUsername":
+                                settings.SmtpUsername = setting.Value;
+                                break;
+                            case "SmtpPassword":
+                                settings.SmtpPassword = setting.Value;
+                                break;
+                            case "AdminEmail":
+                                settings.SenderEmail = setting.Value;
+                                break;
+                        }
+                    }
+                }
+
+                // Determine provider
+                settings.Provider = DetermineProvider(settings);
+                settings.IsConfigured = !string.IsNullOrEmpty(settings.Provider);
+
+                return settings;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to load email settings");
+                return settings; // Return empty settings rather than throw
+            }
+        }
+
+        /// <summary>
+        /// Determines the email provider based on available settings.
+        /// </summary>
+        private string DetermineProvider(EmailSettings settings)
+        {
+            if (!string.IsNullOrEmpty(settings.SendGridApiKey))
+            {
+                return "SendGrid";
+            }
+
+            if (!string.IsNullOrEmpty(settings.AzureEmailConnectionString))
+            {
+                return "AzureCommunication";
+            }
+
+            if (!string.IsNullOrEmpty(settings.SmtpHost))
+            {
+                return "SMTP";
+            }
+
+            return null;
+        }
+    }
+}

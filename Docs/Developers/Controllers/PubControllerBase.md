@@ -1,3 +1,9 @@
+---
+title: PubControllerBase Developer Documentation
+description: Technical reference for the PubControllerBase class providing secure file serving for Publisher application
+keywords: PubControllerBase, controller, file-serving, developer-reference
+audience: [developers]
+---
 
 # PubControllerBase Developer Documentation
 

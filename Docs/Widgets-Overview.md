@@ -1,8 +1,8 @@
 ---
-Owner: @toiyabe
-Last Reviewed: 2025-12-15
-Status: Current
-Related Docs: [Widgets/README.md](./Widgets/README.md), [LEARNING_PATHS.md](./LEARNING_PATHS.md)
+title: Widgets Overview
+description: Reusable UI components and functionality for content creators and developers
+keywords: widgets, components, UI, reusable, custom-widgets
+audience: [developers, content-creators]
 ---
 
 # Widgets in SkyCMS
@@ -434,5 +434,5 @@ public class MyWidgetConfiguration
 
 ---
 
-**Last Updated:** December 15, 2025  
+**Last Updated:** December 17, 2025  
 **Owner:** @toiyabe

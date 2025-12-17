@@ -1,3 +1,9 @@
+---
+title: File Management Index
+description: Navigation hub for SkyCMS File Manager documentation and guides
+keywords: file-manager, index, navigation, documentation
+audience: [all]
+---
 
 # File Management Documentation
 

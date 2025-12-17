@@ -1,3 +1,9 @@
+---
+title: Live Editor Technical Reference
+description: Technical reference for Live Editor architecture, API, and customization
+keywords: live-editor, technical-reference, API, architecture, customization
+audience: [developers]
+---
 
 # Live Editor Technical Reference
 

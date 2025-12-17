@@ -1,3 +1,10 @@
+---
+title: Documentation Contribution Guide
+description: Guidelines for organizing, maintaining, and improving SkyCMS documentation
+keywords: contributing, documentation, guidelines, maintenance, ownership
+audience: [developers, technical-writers]
+---
+
 # Documentation Contribution Guide
 
 Welcome to the SkyCMS documentation. This guide outlines how documentation is organized, maintained, and improved.

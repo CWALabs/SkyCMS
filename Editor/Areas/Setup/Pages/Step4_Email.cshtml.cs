@@ -101,6 +101,16 @@ namespace Sky.Editor.Areas.Setup.Pages
         public string SuccessMessage { get; set; }
 
         /// <summary>
+        /// Gets a value indicating whether the email configuration is pre-configured.
+        /// </summary>
+        public bool IsPreConfigured { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the system email is pre-configured.
+        /// </summary>
+        public bool SystemEmailPreConfigured { get; private set; }
+
+        /// <summary>
         /// Handles GET requests.
         /// </summary>
         /// <returns>Page result.</returns>
@@ -119,6 +129,9 @@ namespace Sky.Editor.Areas.Setup.Pages
             SmtpPort = config.SmtpPort;
             SmtpUsername = config.SmtpUsername;
             SmtpPassword = config.SmtpPassword;
+            IsPreConfigured = config.EmailProviderPreConfigured;
+            SenderEmail = config.SenderEmail;
+            SystemEmailPreConfigured = config.SenderEmailPreConfigured;
 
             // Infer email provider
             if (!string.IsNullOrWhiteSpace(SendGridApiKey))
@@ -193,7 +206,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                     SmtpUsername,
                     SmtpPassword,
                     SenderEmail,
-                    config.AdminEmail); // Send to admin email
+                    config.SenderEmail); // Send to admin email
 
                 if (TestResult.Success)
                 {

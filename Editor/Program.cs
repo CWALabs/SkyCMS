@@ -62,6 +62,8 @@ using System.Threading.Tasks;
 using System.Web;
 using Sky.Editor.Middleware;
 using Sky.Editor.Services.Layouts;
+using Sky.Editor.Services.Email;
+using Sky.Editor.Services.Storage;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -137,6 +139,15 @@ builder.Services.AddTransient<ISlugService, SlugService>();
 builder.Services.AddTransient<IViewRenderService, ViewRenderService>();
 builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IBlogRenderingService, BlogRenderingService>();
+builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
+builder.Services.AddTransient<IEmailConfigurationService, EmailConfigurationService>();
+
+// Register StorageConfigurationProvider for single-tenant database fallback
+if (!isMultiTenantEditor)
+{
+    builder.Services.AddScoped<IStorageConfigurationProvider, StorageConfigurationProvider>();
+}
+
 builder.Services.AddTransient<StorageContext>();
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
@@ -149,7 +160,6 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IMediator, Mediator>();
 builder.Services.AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>, CreateArticleHandler>();
 builder.Services.AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>, SaveArticleHandler>();
-builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
 
 // ---------------------------------------------------------------
 // Continue registering services common to both single-tenant and multi-tenant modes
@@ -158,7 +168,6 @@ builder.Services.AddHangFireScheduling(builder.Configuration); // Add Hangfire s
 
 // Add logging to see Hangfire queries
 builder.Logging.AddFilter("Hangfire", LogLevel.Debug);
-builder.Services.AddCosmosEmailServices(builder.Configuration); // Add Email services
 builder.Services.AddFlexDbDataProtection(builder.Configuration); // Add shared data protection here
 builder.Services.AddSignalR(); // Add SignalR services
 
@@ -387,6 +396,8 @@ builder.Services.AddRateLimiter(_ => _
         options.QueueLimit = 2;
     }));
 
+builder.Services.AddHostedService<PostSetupInitializationService>();
+
 var app = builder.Build();
 
 if (isMultiTenantEditor)
@@ -439,6 +450,10 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 app.UseRouting();
+
+// Add the post-setup initialization middleware
+app.UseMiddleware<PostSetupInitializationMiddleware>();
+
 app.UseCors();
 app.UseResponseCaching(); // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/middleware?view=aspnetcore-3.1
 app.UseAuthentication();

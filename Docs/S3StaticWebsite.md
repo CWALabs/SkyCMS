@@ -1,4 +1,9 @@
-
+---
+title: Hosting Static Website on AWS S3
+description: Step-by-step guide for hosting a static website using Amazon S3 with CloudFormation templates
+keywords: AWS, S3, static-website, CloudFormation, hosting, deployment
+audience: [developers, devops]
+---
 
 # Hosting a Static Website on AWS S3
 

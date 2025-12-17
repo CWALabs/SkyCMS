@@ -1,3 +1,10 @@
+---
+title: Azure Cosmos DB Configuration
+description: Configure Azure Cosmos DB NoSQL database for SkyCMS content, users, and metadata storage
+keywords: Cosmos-DB, Azure, NoSQL, database, configuration, serverless
+audience: [developers, administrators]
+---
+
 # Azure Cosmos DB with SkyCMS
 
 Azure Cosmos DB is a fully managed, serverless NoSQL database ideal for global, low-latency applications. SkyCMS integrates seamlessly with Cosmos DB for storing content, users, and metadata.

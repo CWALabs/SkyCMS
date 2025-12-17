@@ -77,7 +77,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                 return Page();
             }
 
-            if (string.IsNullOrEmpty(Config.AdminEmail) || string.IsNullOrEmpty(Config.AdminPassword))
+            if (string.IsNullOrEmpty(Config.SenderEmail) || string.IsNullOrEmpty(Config.AdminPassword))
             {
                 ErrorMessage = "Administrator account is incomplete. Please go back and create the admin account.";
                 return Page();

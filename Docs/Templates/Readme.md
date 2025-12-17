@@ -1,3 +1,9 @@
+---
+title: Page Templates Guide
+description: Complete guide to creating and managing page templates in SkyCMS
+keywords: templates, page-types, components, editable-regions
+audience: [developers]
+---
 
 # Page Templates Guide
 

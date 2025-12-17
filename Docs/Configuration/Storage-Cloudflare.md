@@ -1,3 +1,10 @@
+---
+title: Cloudflare R2 Storage Configuration
+description: Configure Cloudflare R2 S3-compatible object storage with no egress fees
+keywords: Cloudflare-R2, storage, S3-compatible, object-storage, configuration
+audience: [developers, administrators]
+---
+
 # Cloudflare R2 with SkyCMS
 
 Cloudflare R2 is an S3-compatible object storage service with no egress fees, making it cost-effective for static asset delivery. SkyCMS integrates seamlessly with R2.

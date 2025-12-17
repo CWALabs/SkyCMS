@@ -1,3 +1,9 @@
+---
+title: SkyCMS Documentation
+description: Complete documentation hub for SkyCMS - installation, configuration, development, and deployment guides
+keywords: documentation, index, guides, reference, installation, configuration
+audience: [all]
+---
 
 # SkyCMS Documentation
 
@@ -7,7 +13,7 @@ For a project overview and introduction to SkyCMS, see the [main README](../READ
 
 **Documentation Version:** 2.0 (December 2025)  
 **Compatible with:** SkyCMS v2.x  
-**Last Updated:** December 15, 2025
+**Last Updated:** December 17, 2025
 
 > **New to SkyCMS?** Check out our [**Learning Paths Guide**](./LEARNING_PATHS.md) for role-based documentation journeys!
 
@@ -50,14 +56,35 @@ See the complete [Learning Paths Guide](./LEARNING_PATHS.md) for detailed step-b
 
 Start here if you're new to SkyCMS.
 
-- **[About SkyCMS](./About.md)** - What SkyCMS is and who it's for
+- **Start with the [Learning Paths](./LEARNING_PATHS.md)** for a role-based guided journey
 - **[Quick Start Guide](./QuickStart.md)** - Get up and running quickly
+- **[About SkyCMS](./About.md)** - What SkyCMS is and who it's for
 - **[Developer Experience](./DeveloperExperience.md)** - Overview for developers
 - **[Migrating from JAMstack](./MigratingFromJAMstack.md)** - Moving from Git-based static site workflows
 
 ---
 
 ## Installation & Deployment
+
+### Getting Started with Installation
+
+Choose your configuration approach:
+- 🧙 **Setup Wizard (guided)** - Minimal pre-reqs; configure interactively; best for first-time and single-tenant setups
+- ⚙️ **Environment variables (automated)** - Pre-configure for Docker/Kubernetes/CI/CD; optionally run wizard for remaining settings
+- 🏢 **Multi-tenant** - Wizard not supported; follow [Multi-Tenant Configuration](./Configuration/Multi-Tenant-Configuration.md) for domain-based tenant setup
+
+- **[Installation Overview](./Installation/README.md)** - Choose your deployment platform
+- **[Minimum Required Settings](./Installation/MinimumRequiredSettings.md)** - Essential configuration before deployment
+- **[Setup Wizard Guide](./Installation/SetupWizard.md)** - Step-by-step interactive configuration
+  - [Welcome Screen](./Installation/SetupWizard-Welcome.md)
+  - [Step 1: Storage Configuration](./Installation/SetupWizard-Step1-Storage.md)
+  - [Step 2: Admin Account](./Installation/SetupWizard-Step2-Admin.md)
+  - [Step 3: Publisher Settings](./Installation/SetupWizard-Step3-Publisher.md)
+  - [Step 4: Email Configuration](./Installation/SetupWizard-Step4-Email.md)
+  - [Step 5: CDN Configuration](./Installation/SetupWizard-Step5-CDN.md)
+  - [Step 6: Review & Complete](./Installation/SetupWizard-Step6-Review.md)
+  - [Setup Complete](./Installation/SetupWizard-Complete.md)
+- **[Post-Installation Configuration](./Installation/Post-Installation.md)** ⭐ - After setup wizard completes
 
 ### Cloud Platform Guides
 
@@ -87,6 +114,16 @@ Essential configuration guides for databases, storage, and CDN.
   - [Cloudflare CDN](./Configuration/CDN-Cloudflare.md)
   - [Amazon CloudFront CDN](./Configuration/CDN-CloudFront.md)
   - [Sucuri CDN/WAF](./Configuration/CDN-Sucuri.md)
+- **[Email Configuration](./Configuration/Email-Overview.md)** - Email providers for transactional messages
+  - [SendGrid](./Configuration/Email-SendGrid.md)
+  - [Azure Communication Services](./Configuration/Email-AzureCommunicationServices.md)
+  - [SMTP](./Configuration/Email-SMTP.md)
+  - [No-Op (Development)](./Configuration/Email-None.md)
+- **Reference Guides**
+  - [Database Configuration Reference](./Configuration/Database-Configuration-Reference.md)
+  - [Storage Configuration Reference](./Configuration/Storage-Configuration-Reference.md)
+  - [Email Configuration Reference](./Configuration/Email-Configuration-Reference.md)
+  - [CDN Configuration Reference](./Configuration/CDN-Configuration-Reference.md)
 
 ---
 
@@ -100,6 +137,7 @@ Secure access and permission management for editors and users.
   - Azure B2C for consumer identity
   - OpenID Connect / OAuth 2.0 for custom providers
 - **[Identity Framework](./Components/AspNetCore.Identity.FlexDb.md)** - Flexible identity system for multiple databases
+- **[Role-Based Access Control (RBAC) & Authorization](./Administration/Roles-and-Permissions.md)** ⭐ - Role definitions, permission matrix, and authorization management
 
 ---
 
@@ -192,9 +230,55 @@ Reusable UI components for content and developers.
 
 ---
 
+## Developer Workflows
+
+Complete workflows and best practices for developers building and launching SkyCMS websites.
+
+### **Website Launch Workflow** ⭐
+
+**[Complete Website Launch Guide →](./Developer-Guides/Website-Launch-Workflow.md)**
+
+A comprehensive 6-phase roadmap for taking a fresh SkyCMS installation to a fully functional website ready for content creators:
+
+- **Phase 1:** Design & Planning - Site structure and architecture
+- **Phase 2:** Creating Layouts - Site-wide structure (header, footer, nav)
+- **Phase 3:** Creating Templates - Reusable page types
+- **Phase 4:** Building Home Page - First live page and publishing
+- **Phase 5:** Building Initial Pages - Content pages and navigation
+- **Phase 6:** Preparing for Handoff - Team setup and training
+
+**Supporting Resources:**
+- [Pre-Launch Checklist](./Developer-Guides/Checklists/Pre-Launch-Checklist.md) - Verification before launch
+- [Content Creator Onboarding](./Developer-Guides/Checklists/Content-Creator-Onboarding.md) - Team handoff
+- [Monthly Maintenance Tasks](./Checklists/Monthly-Maintenance.md) - Ongoing upkeep
+- [Style Guide Template](./Templates/Style-Guide-Template.md) - Brand guidelines
+- [Training Document Template](./Templates/Training-Document-Template.md) - Team training
+- [Content Workflow Template](./Templates/Content-Workflow-Template.md) - Approval processes
+
+> **SkyCMS & Modern Approach**
+>
+> SkyCMS promotes modern practices: componentized layouts/templates, content-first workflows (draft→review→publish), separation of concerns, and baked-in quality (accessibility, performance, SEO). See the deep-dive: [SkyCMS & Modern Approach](./Developer-Guides/SkyCMS-Modern-Approach.md).
+
+> **Comparisons**
+>
+> Evaluating SkyCMS against alternatives? See our comprehensive [Comparisons Matrix](./Comparisons.md) and [Developer Experience Comparison](./Developer-Experience-Comparison.md).
+
+**Time to complete:** 35-55 hours over 2-3 weeks
+
+**For Developers:** Full development workflow from scratch to handoff  
+**For Designers:** Site structure and template planning  
+**For Project Managers:** Timeline and milestone tracking
+
+---
+
 ## For Developers
 
 Technical documentation for customization and development.
+
+### Developer Guides & Workflows
+
+- **[Developer Guides Hub](./Developer-Guides/README.md)** - Overview of all developer workflows
+- **[Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.md)** - Complete 6-phase project workflow
 
 ### Controllers & Base Classes
 
@@ -223,6 +307,11 @@ Technical documentation for customization and development.
 
 Learn about SkyCMS's internal structure and libraries.
 
+### Application Architecture
+
+- **[Startup Lifecycle](./Architecture/Startup-Lifecycle.md)** ⭐ - Service registration, startup sequence, and initialization order
+- **[Middleware Pipeline](./Architecture/Middleware-Pipeline.md)** ⭐ - Request processing, middleware execution order, and custom middleware
+
 ### Core Applications
 
 - **[Editor Application](../Editor/README.md)** - Content management interface
@@ -243,8 +332,12 @@ Learn about SkyCMS's internal structure and libraries.
 
 ## Comparisons & Use Cases
 
-Understand how SkyCMS compares to other solutions.
+Understand how SkyCMS compares to other solutions and make informed decisions.
 
+- **[Comparisons Matrix](./Comparisons.md)** - Feature, cost, and workflow comparison with WordPress, Jekyll, Hugo, Gatsby, Contentful, Sanity, and more
+- **[Developer Experience Comparison](./Developer-Experience-Comparison.md)** - Detailed workflow and learning curve comparison
+- **[FAQ](./FAQ.md)** - Common questions about SkyCMS, comparisons, deployment, and team workflows
+- **[Quick Reference](./Quick-Reference.md)** - One-page visual summary and cheat sheet
 - **[SkyCMS vs Headless CMS](./CosmosVsHeadless.md)** - Understanding the edge-native CMS approach
 - **[Migrating from JAMstack](./MigratingFromJAMstack.md)** - Moving from Git-based static site workflows
 
@@ -262,11 +355,28 @@ For detailed competitive analysis and cost comparisons, see the [Marketing Mater
 
 ---
 
+## Documentation Review & Gaps
+
+- **[Documentation Gaps Analysis](./DOCUMENTATION_GAPS_ANALYSIS.md)** - Comprehensive review of documentation blind spots and missing topics
+  - High-priority gaps (Post-Installation, Multi-Tenant, Startup Lifecycle)
+  - Medium-priority gaps (Backup/Recovery, Monitoring, RBAC)
+  - Architecture and API documentation gaps
+  - Recommendations for documentation priorities
+
+---
+
 ## Additional Resources
+
+### Discovery & Analytics
+
+- **[Sitemap](./sitemap.xml)** - XML sitemap for search engine crawlers
+- **[Analytics Setup](./Analytics-Setup.md)** - Recommendations for tracking documentation engagement and user metrics
+- **[JSON Feed](./docs-index.json)** - Machine-readable documentation index for AI crawlers and programmatic access
 
 ### Release Information
 
-- **[Changelog](./CHANGELOG.md)** - Version history and release notes
+- **[Documentation Changelog](./CHANGELOG.md)** - Documentation updates and new content
+- **[Version History](./CHANGELOG.md)** - SkyCMS release notes and version history
 
 ### Marketing & Sales Materials
 
@@ -391,7 +501,7 @@ Want to improve these docs? See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for:
 
 ---
 
-**Last Updated:** December 15, 2025  
+**Last Updated:** December 17, 2025  
 **Maintained by:** Moonrise Software, LLC  
 **License:** See [LICENSE-GPL](../LICENSE-GPL) and [LICENSE-MIT](../LICENSE-MIT)
 

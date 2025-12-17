@@ -1,3 +1,10 @@
+---
+title: SQLite Database Configuration
+description: Configure SQLite file-based database for development and testing
+keywords: SQLite, database, file-based, development, testing, configuration
+audience: [developers]
+---
+
 # SQLite with SkyCMS
 
 SQLite is a lightweight, file-based SQL database ideal for **development, testing, and small single-instance deployments**. No server required—the database is a single file on disk.

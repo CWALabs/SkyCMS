@@ -1,3 +1,10 @@
+---
+title: Google Cloud Storage Configuration
+description: Configure Google Cloud Storage via S3-compatible API
+keywords: Google-Cloud-Storage, GCS, storage, S3-compatible, configuration
+audience: [developers, administrators]
+---
+
 # Google Cloud Storage (S3-compatible) with SkyCMS
 
 Google Cloud Storage (GCS) is a scalable, durable object storage service. SkyCMS can integrate via GCS's S3-compatible API.

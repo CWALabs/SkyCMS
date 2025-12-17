@@ -1,3 +1,9 @@
+---
+title: Code Editing Guide
+description: Code editor guide using Monaco Editor for HTML, CSS, JavaScript, and more
+keywords: code-editor, Monaco, VS-Code, syntax-highlighting, intellisense
+audience: [developers]
+---
 
 # Code Editing Guide
 

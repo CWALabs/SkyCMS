@@ -1,3 +1,10 @@
+---
+title: Cloudflare CDN Configuration
+description: Configure Cloudflare cache purging with API tokens
+keywords: Cloudflare, CDN, cache-purging, API, configuration
+audience: [developers, devops]
+---
+
 # Cloudflare CDN with SkyCMS
 
 SkyCMS can purge Cloudflare cache after publish.

@@ -81,22 +81,24 @@ namespace Sky.Editor.Services.Setup
         }
 
         /// <inheritdoc/>
-        public async Task<SetupConfiguration> InitializeSetupAsync()
+        public async Task<SetupConfiguration> InitializeSetupAsync(bool deleteDatabase = false)
         {
             try
             {
-                using var context = CreateSetupContext();
+                using var context = CreateSetupContext(deleteDatabase);
                 await context.Database.EnsureCreatedAsync();
 
                 // Check if setup already in progress
                 var existing = await context.SetupConfigurations
                     .Where(s => s.IsComplete == false)
-                    .OrderByDescending(s => s.CreatedAt) // ✅ FIXED
+                    .OrderByDescending(s => s.CreatedAt)
                     .FirstOrDefaultAsync();
 
+                // Returns an existing setup session if found.
                 if (existing != null)
-                {
-                    logger.LogInformation("Resuming existing setup session {SetupId}", existing.Id);
+                { 
+                    // ✅ NEW: Pre-populate from environment variables - which override db settings.
+                    PopulateFromEnvironmentVariables(existing);
                     return existing;
                 }
 
@@ -109,6 +111,9 @@ namespace Sky.Editor.Services.Setup
                     CurrentStep = 1
                 };
 
+                // ✅ NEW: Pre-populate from environment variables
+                PopulateFromEnvironmentVariables(config);
+
                 context.SetupConfigurations.Add(config);
                 await context.SaveChangesAsync();
 
@@ -120,6 +125,79 @@ namespace Sky.Editor.Services.Setup
                 logger.LogError(ex, "Failed to initialize setup");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Populates setup configuration from environment variables and configuration.
+        /// </summary>
+        /// <param name="config">Setup configuration to populate.</param>
+        private void PopulateFromEnvironmentVariables(SetupConfiguration config)
+        {
+            // Storage Configuration
+            var storageConnectionString = configuration.GetConnectionString("StorageConnectionString");
+            var blobPublicUrl = configuration.GetValue<string>("AzureBlobStorageEndPoint") ?? configuration.GetValue<string>("BlobPublicUrl");
+
+            // Storage connection.
+            if (!string.IsNullOrEmpty(storageConnectionString))
+            {
+                config.StorageConnectionString = storageConnectionString;
+                config.StoragePreConfigured = true;
+            }
+
+            if (!string.IsNullOrEmpty(blobPublicUrl))
+            {
+                config.BlobPublicUrl = blobPublicUrl;
+                config.BlobPublicUrlPreConfigured = true;
+            }
+
+            // Publisher Configuration
+            var publisherUrl = configuration["CosmosPublisherUrl"];
+            var staticWebPages = configuration["CosmosStaticWebPages"];
+
+            if (!string.IsNullOrEmpty(publisherUrl))
+            {
+                config.PublisherUrl = publisherUrl;
+                config.PublisherPreConfigured = true;
+
+                if (bool.TryParse(staticWebPages, out var isStatic))
+                {
+                    config.StaticWebPages = isStatic;
+                }
+
+                logger.LogInformation("Publisher configuration loaded from environment variables");
+            }
+
+            // Admin Configuration
+            var senderEmail = configuration["AdminEmail"] ?? configuration["SenderEmail"];
+            if (!string.IsNullOrEmpty(senderEmail))
+            {
+                config.SenderEmail = senderEmail;
+                config.SenderEmailPreConfigured = true;
+                logger.LogInformation("Sender email loaded from environment variables");
+            }
+
+            // Database Configuration (optional - usually in appsettings.json)
+            var dbConnectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
+            if (!string.IsNullOrEmpty(dbConnectionString))
+            {
+                config.DatabaseConnectionString = dbConnectionString;
+                logger.LogInformation("Database configuration loaded from environment variables");
+            }
+
+            // Detect if one of an Email provider is preconfigured.
+            var sendGridApiKey = configuration["CosmosSendGridApiKey"];
+            var smtpHost = configuration["SmtpEmailProviderOptions:Host"]
+                  ?? configuration["SmtpEmailProviderOptions__Host"];
+            var azureEmailConnectionString = configuration.GetConnectionString("AzureCommunicationConnection");
+
+            if (!string.IsNullOrEmpty(sendGridApiKey)
+                || !string.IsNullOrEmpty(smtpHost)
+                || !string.IsNullOrEmpty(azureEmailConnectionString))
+            {
+                config.EmailProviderPreConfigured = true;
+                logger.LogInformation("Email configuration loaded from environment variables");
+            }
+
         }
 
         /// <inheritdoc/>
@@ -316,7 +394,7 @@ namespace Sky.Editor.Services.Setup
                     throw new InvalidOperationException($"Setup configuration {setupId} not found");
                 }
 
-                config.AdminEmail = email;
+                config.SenderEmail = email;
                 config.AdminPassword = password; // Will be hashed during completion
                 await context.SaveChangesAsync();
 
@@ -378,12 +456,34 @@ namespace Sky.Editor.Services.Setup
         /// <summary>
         /// Creates a setup database context.
         /// </summary>
+        /// <param name="deleteDatabase">Indicates if the database should be deleted and we should start over.</param>
         /// <returns>Setup database context.</returns>
-        private SetupDbContext CreateSetupContext()
+        private SetupDbContext CreateSetupContext(bool deleteDatabase = false)
         {
             var optionsBuilder = new DbContextOptionsBuilder<SetupDbContext>();
             optionsBuilder.UseSqlite($"Data Source={setupDbPath}");
-            return new SetupDbContext(optionsBuilder.Options);
+
+            var context = new SetupDbContext(optionsBuilder.Options);
+
+            if (deleteDatabase)
+            {
+                try
+                {
+                    // Drop all tables instead of deleting the file
+                    context.Database.EnsureDeleted();
+                    logger.LogInformation("Dropped all tables from setup database");
+
+                    // Recreate the schema
+                    context.Database.EnsureCreated();
+                    logger.LogInformation("Recreated setup database schema");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to drop setup database tables, will try to recreate anyway");
+                }
+            }
+
+            return context;
         }
 
         /// <inheritdoc/>
@@ -616,21 +716,6 @@ namespace Sky.Editor.Services.Setup
 
                 using var setupContext = CreateSetupContext();
 
-                // Ensure the setup database exists before querying
-                try
-                {
-                    await setupContext.Database.EnsureCreatedAsync();
-                }
-                catch (Exception dbEx)
-                {
-                    logger.LogError(dbEx, "Failed to ensure setup database exists");
-                    return new SetupCompletionResult
-                    {
-                        Success = false,
-                        Message = "Setup database could not be initialized"
-                    };
-                }
-
                 var config = await setupContext.SetupConfigurations.FindAsync(setupId);
 
                 if (config == null)
@@ -665,8 +750,8 @@ namespace Sky.Editor.Services.Setup
                 using var mainDbContext = new ApplicationDbContext(mainDbConnectionString);
 
                 // Step 1: Ensure database exists and is initialized
-                logger.LogInformation("Ensuring database exists and is initialized");
-                await EnsureDatabaseInitializedAsync(mainDbContext);
+                //logger.LogInformation("Ensuring database exists and is initialized");
+                //await EnsureDatabaseInitializedAsync(mainDbContext);
 
                 // Step 2: Create administrator account--if one does not exist yet.
                 var adminAccounts = await userManager.GetUsersInRoleAsync(RequiredIdentityRoles.Administrators);
@@ -713,7 +798,7 @@ namespace Sky.Editor.Services.Setup
                 {
                     if (File.Exists(setupDbPath))
                     {
-                        File.Delete(setupDbPath);
+                        setupContext.Database.EnsureDeleted();
                         logger.LogInformation("Setup database deleted successfully");
                     }
                 }
@@ -788,6 +873,35 @@ namespace Sky.Editor.Services.Setup
             }
         }
 
+        /// <inheritdoc/>
+        public async Task<bool> ShouldSkipStepAsync(Guid setupId, int stepNumber)
+        {
+            try
+            {
+                using var context = CreateSetupContext();
+                var config = await context.SetupConfigurations.FindAsync(setupId);
+
+                if (config == null)
+                {
+                    return false;
+                }
+
+                return stepNumber switch
+                {
+                    1 => config.StoragePreConfigured, // Skip Step 1 (Storage) if pre-configured
+                    2 => !string.IsNullOrEmpty(config.DatabaseConnectionString), // Skip Step 2 (Database) if pre-configured
+                    3 => config.SenderEmailPreConfigured, // Skip Step 3 (Admin) if pre-configured
+                    4 => config.PublisherPreConfigured, // Skip Step 4 (Publisher) if pre-configured
+                    _ => false // Never skip email, CDN, or completion steps
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to check if step should be skipped");
+                return false;
+            }
+        }
+
         /// <summary>
         /// Validates setup configuration.
         /// </summary>
@@ -802,7 +916,7 @@ namespace Sky.Editor.Services.Setup
                 };
             }
 
-            if (string.IsNullOrEmpty(config.AdminEmail))
+            if (string.IsNullOrEmpty(config.SenderEmail))
             {
                 return new SetupCompletionResult
                 {
@@ -852,11 +966,52 @@ namespace Sky.Editor.Services.Setup
                 }
                 else
                 {
-                    await context.Database.EnsureCreatedAsync();
+                    // Check if schema already exists before calling EnsureCreated
+                    var schemaExists = await DatabaseSchemaExistsAsync(context);
+                    if (!schemaExists)
+                    {
+                        await context.Database.EnsureCreatedAsync();
+                        logger.LogInformation("Database schema created successfully");
+                    }
+                    else
+                    {
+                        logger.LogInformation("Database schema already exists, skipping creation");
+                    }
                 }
             }
 
             logger.LogInformation("Database initialized successfully");
+        }
+
+        /// <summary>
+        /// Checks if the database schema already exists.
+        /// </summary>
+        /// <param name="context">The database context to check.</param>
+        /// <returns>True if the schema exists, false otherwise.</returns>
+        private async Task<bool> DatabaseSchemaExistsAsync(ApplicationDbContext context)
+        {
+            try
+            {
+                // Try to query a core table - if it succeeds, schema exists
+                await context.Articles.AnyAsync();
+                return true;
+            }
+            catch (Exception ex) when (
+                ex is Microsoft.Data.Sqlite.SqliteException ||
+                ex is Microsoft.Data.SqlClient.SqlException ||
+                ex is MySqlConnector.MySqlException ||
+                ex is Microsoft.Azure.Cosmos.CosmosException)
+            {
+                // Database provider-specific exception indicating table/container doesn't exist
+                logger.LogDebug(ex, "Database schema does not exist yet");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                // Unexpected error - log as warning
+                logger.LogWarning(ex, "Unexpected error checking database schema existence");
+                return false;
+            }
         }
 
         /// <summary>
@@ -869,8 +1024,8 @@ namespace Sky.Editor.Services.Setup
                 // Create user
                 var user = new IdentityUser
                 {
-                    UserName = config.AdminEmail,
-                    Email = config.AdminEmail,
+                    UserName = config.SenderEmail,
+                    Email = config.SenderEmail,
                     EmailConfirmed = true // Auto-confirm for first admin
                 };
 
@@ -899,7 +1054,7 @@ namespace Sky.Editor.Services.Setup
                 }
                 else
                 {
-                    logger.LogInformation("Admin user {Email} assigned to Administrators role", config.AdminEmail);
+                    logger.LogInformation("Admin user {Email} assigned to Administrators role", config.SenderEmail);
                 }
 
                 // Add user to Administrators role
@@ -910,7 +1065,7 @@ namespace Sky.Editor.Services.Setup
                     logger.LogWarning("Failed to add user to Administrators role");
                 }
 
-                logger.LogInformation("Admin user {Email} added to Administrators role", config.AdminEmail);
+                logger.LogInformation("Admin user {Email} added to Administrators role", config.SenderEmail);
 
                 return new SetupCompletionResult
                 {
@@ -936,6 +1091,14 @@ namespace Sky.Editor.Services.Setup
         {
             try
             {
+                // ✅ NEW: Save AdminEmail for email services
+                await SaveOrUpdateSettingAsync(
+                    context,
+                    "EMAIL",
+                    "AdminEmail",
+                    config.SenderEmail,
+                    "Administrator email address for system emails");
+
                 // Save storage connection string
                 await SaveOrUpdateSettingAsync(
                     context,
@@ -1242,45 +1405,46 @@ namespace Sky.Editor.Services.Setup
                     dbContext.Templates.AddRange(communityPages);
                     await dbContext.SaveChangesAsync();
 
-                    // Create initial home page
+                    // Save metadata for home page creation after restart
+                    await SaveOrUpdateSettingAsync(
+                        dbContext,
+                        "SETUP",
+                        "PendingHomePageCreation",
+                        "true",
+                        "Indicates that home page creation is pending after restart");
+
+                    await SaveOrUpdateSettingAsync(
+                        dbContext,
+                        "SETUP",
+                        "HomePageUserId",
+                        userId,
+                        "User ID for home page creation");
+
+                    await SaveOrUpdateSettingAsync(
+                        dbContext,
+                        "SETUP",
+                        "HomePageTitle",
+                        config.WebsiteTitle,
+                        "Title for home page");
+
                     var template = await dbContext.Templates.FirstOrDefaultAsync(f => f.Title.ToLower() == "home page");
-                    var model = await articleLogic.CreateArticle(config.WebsiteTitle, Guid.Parse(userId), template.Id);
-
-                    model.Published = DateTimeOffset.UtcNow;
-                    model.StatusCode = (int)StatusCodeEnum.Active;
-                    model.Content = template.Content;
-                    model.UrlPath = "root";
-                    model.Title = config.WebsiteTitle;
-                    model.ArticleNumber = 1;
-                    model.VersionNumber = 1;
-                    model.Updated = DateTimeOffset.UtcNow;
-                    model.ArticleType = ArticleType.General;
-
-                    // NEW: Use SaveArticle command
-                    var command = new SaveArticleCommand
+                    if (template != null)
                     {
-                        ArticleNumber = model.ArticleNumber,
-                        Title = model.Title,
-                        Content = model.Content,
-                        HeadJavaScript = model.HeadJavaScript,
-                        FooterJavaScript = model.FooterJavaScript,
-                        BannerImage = model.BannerImage,
-                        ArticleType = model.ArticleType,
-                        Category = model.Category,
-                        Introduction = model.Introduction,
-                        UrlPath = model.UrlPath,
-                        Published = model.Published,
-                        UserId = Guid.Parse(userId)
-                    };
+                        await SaveOrUpdateSettingAsync(
+                            dbContext,
+                            "SETUP",
+                            "HomePageTemplateId",
+                            template.Id.ToString(),
+                            "Template ID for home page");
+                    }
 
-                    var result = await mediator.SendAsync(command);
-
-                    logger.LogInformation($"Using site design: '{layout.LayoutName}'");
+                    logger.LogInformation($"Using site design: '{layout.LayoutName}'. Home page will be created on first startup.");
                 }
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to create default layout");
+
                 // Don't throw - this is not critical for setup completion
             }
         }

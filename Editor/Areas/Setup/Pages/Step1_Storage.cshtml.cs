@@ -22,7 +22,7 @@ namespace Sky.Editor.Areas.Setup.Pages
         private readonly ISetupService setupService;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Step2_StorageModel"/> class.
+        /// Initializes a new instance of the <see cref="Step1_Storage"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
         public Step1_Storage(ISetupService setupService)
@@ -73,6 +73,16 @@ namespace Sky.Editor.Areas.Setup.Pages
         public string SuccessMessage { get; set; }
 
         /// <summary>
+        /// Gets a value indicating whether storage is pre-configured.
+        /// </summary>
+        public bool IsPreConfigured { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether blob public URL is pre-configured.
+        /// </summary>
+        public bool BlobPublicUrlPreConfigured { get; private set; }
+
+        /// <summary>
         /// Handles GET requests.
         /// </summary>
         /// <returns>Page result.</returns>
@@ -85,8 +95,10 @@ namespace Sky.Editor.Areas.Setup.Pages
             }
 
             SetupId = config.Id;
-            StorageConnectionString = config.StorageConnectionString;
+            StorageConnectionString = config.StoragePreConfigured ? "**********************" : config.StorageConnectionString;
             BlobPublicUrl = config.BlobPublicUrl;
+            IsPreConfigured = config.StoragePreConfigured;
+            BlobPublicUrlPreConfigured = config.BlobPublicUrlPreConfigured;
 
             // Infer storage type from connection string
             if (!string.IsNullOrEmpty(StorageConnectionString))

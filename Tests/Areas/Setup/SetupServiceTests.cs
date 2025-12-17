@@ -373,7 +373,7 @@ namespace Sky.Tests.Areas.Setup
 
             // Assert
             var result = await setupService.GetCurrentSetupAsync();
-            Assert.AreEqual(email, result.AdminEmail);
+            Assert.AreEqual(email, result.SenderEmail);
             Assert.IsFalse(string.IsNullOrEmpty(result.AdminPassword));
         }
 

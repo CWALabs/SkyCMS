@@ -1,3 +1,9 @@
+---
+title: Cosmos.Common Component
+description: SkyCMS core library providing shared functionality for Editor and Publisher applications
+keywords: component, common, core-library, shared, utilities
+audience: [developers, architects]
+---
 
 # Cosmos.Common - SkyCMS Core Library
 

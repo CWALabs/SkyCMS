@@ -1,8 +1,8 @@
 ---
-Owner: @toiyabe
-Last Reviewed: 2025-12-15
-Status: Current
-Related Docs: [Components/AspNetCore.Identity.FlexDb.md](./Components/AspNetCore.Identity.FlexDb.md), [LEARNING_PATHS.md#developer](./LEARNING_PATHS.md#developer)
+title: Authentication & Authorization Overview
+description: Flexible authentication system with ASP.NET Core Identity, Azure AD, and Azure B2C support
+keywords: authentication, authorization, identity, Azure-AD, B2C, roles, permissions
+audience: [developers, administrators]
 ---
 
 # Authentication & Authorization in SkyCMS
@@ -462,5 +462,5 @@ dotnet user-secrets set "AzureAD:ClientSecret" "your-secret"
 
 ---
 
-**Last Updated:** December 15, 2025  
+**Last Updated:** December 17, 2025  
 **Owner:** @toiyabe

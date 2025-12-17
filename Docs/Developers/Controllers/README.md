@@ -1,3 +1,9 @@
+---
+title: Controllers Documentation
+description: Developer documentation for core controllers shared across SkyCMS applications
+keywords: controllers, ASP.NET-Core, MVC, API, architecture
+audience: [developers]
+---
 
 # Controllers Documentation
 

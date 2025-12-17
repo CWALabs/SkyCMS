@@ -27,31 +27,18 @@ namespace Sky.Editor.Areas.Setup.Pages
     {
         private readonly ISetupService setupService;
         private readonly IServiceProvider services;
-        private readonly ICosmosEmailSender emailSender;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Step3_AdminAccountModel"/> class.
+        /// Initializes a new instance of the <see cref="Step2_AdminAccount"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
         /// <param name="services">App services.</param>
-        /// <param name="emailSender">Email sender service.</param>
         public Step2_AdminAccount(
             ISetupService setupService,
-            IServiceProvider services,
-            IEmailSender emailSender)
+            IServiceProvider services)
         {
             this.setupService = setupService;
             this.services = services;
-            this.emailSender = (ICosmosEmailSender)emailSender;
-        }
-
-        private SignInManager<IdentityUser> SignInManager
-        {
-            get
-            {
-                var manager = services.GetService<SignInManager<IdentityUser>>();
-                return manager;
-            }
         }
 
         private UserManager<IdentityUser> UserManager
@@ -59,24 +46,6 @@ namespace Sky.Editor.Areas.Setup.Pages
             get
             {
                 var manager = services.GetService<UserManager<IdentityUser>>();
-                return manager;
-            }
-        }
-
-        private RoleManager<IdentityRole> RoleManager
-        {
-            get
-            {
-                var manager = services.GetService<RoleManager<IdentityRole>>();
-                return manager;
-            }
-        }
-
-        private ApplicationDbContext DbContext
-        {
-            get
-            {
-                var manager = services.GetService<ApplicationDbContext>();
                 return manager;
             }
         }
@@ -151,7 +120,7 @@ namespace Sky.Editor.Areas.Setup.Pages
 
             SetupId = config.Id;
             AdminEmail = config.AdminEmail;
-            
+
             return Page();
         }
 

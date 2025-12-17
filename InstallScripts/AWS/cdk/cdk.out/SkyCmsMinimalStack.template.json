@@ -1,0 +1,888 @@
+{
+ "Resources": {
+  "Vpc8378EB38": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/Resource"
+   }
+  },
+  "VpcPublicSubnet1Subnet5C2D37C4": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/PublicSubnet1/Subnet"
+   }
+  },
+  "VpcPublicSubnet1RouteTable6C95E38E": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/PublicSubnet1/RouteTable"
+   }
+  },
+  "VpcPublicSubnet1RouteTableAssociation97140677": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "VpcPublicSubnet1RouteTable6C95E38E"
+    },
+    "SubnetId": {
+     "Ref": "VpcPublicSubnet1Subnet5C2D37C4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "VpcPublicSubnet1DefaultRoute3DA9E72A": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "VpcIGWD7BA715C"
+    },
+    "RouteTableId": {
+     "Ref": "VpcPublicSubnet1RouteTable6C95E38E"
+    }
+   },
+   "DependsOn": [
+    "VpcVPCGWBF912B6E"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "VpcPublicSubnet2Subnet691E08A3": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/PublicSubnet2/Subnet"
+   }
+  },
+  "VpcPublicSubnet2RouteTable94F7E489": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/PublicSubnet2/RouteTable"
+   }
+  },
+  "VpcPublicSubnet2RouteTableAssociationDD5762D8": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "VpcPublicSubnet2RouteTable94F7E489"
+    },
+    "SubnetId": {
+     "Ref": "VpcPublicSubnet2Subnet691E08A3"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "VpcPublicSubnet2DefaultRoute97F91067": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "VpcIGWD7BA715C"
+    },
+    "RouteTableId": {
+     "Ref": "VpcPublicSubnet2RouteTable94F7E489"
+    }
+   },
+   "DependsOn": [
+    "VpcVPCGWBF912B6E"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "VpcIsolatedSubnet1SubnetE48C5737": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc/IsolatedSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/IsolatedSubnet1/Subnet"
+   }
+  },
+  "VpcIsolatedSubnet1RouteTable4771E3E5": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc/IsolatedSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/IsolatedSubnet1/RouteTable"
+   }
+  },
+  "VpcIsolatedSubnet1RouteTableAssociationD300FCBB": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "VpcIsolatedSubnet1RouteTable4771E3E5"
+    },
+    "SubnetId": {
+     "Ref": "VpcIsolatedSubnet1SubnetE48C5737"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/IsolatedSubnet1/RouteTableAssociation"
+   }
+  },
+  "VpcIsolatedSubnet2Subnet16364B91": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.3.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc/IsolatedSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/IsolatedSubnet2/Subnet"
+   }
+  },
+  "VpcIsolatedSubnet2RouteTable1D30AF7D": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc/IsolatedSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/IsolatedSubnet2/RouteTable"
+   }
+  },
+  "VpcIsolatedSubnet2RouteTableAssociationF7B18CCA": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "VpcIsolatedSubnet2RouteTable1D30AF7D"
+    },
+    "SubnetId": {
+     "Ref": "VpcIsolatedSubnet2Subnet16364B91"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/IsolatedSubnet2/RouteTableAssociation"
+   }
+  },
+  "VpcIGWD7BA715C": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCmsMinimalStack/Vpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/IGW"
+   }
+  },
+  "VpcVPCGWBF912B6E": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "VpcIGWD7BA715C"
+    },
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Vpc/VPCGW"
+   }
+  },
+  "ClusterEB0386A7": {
+   "Type": "AWS::ECS::Cluster",
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Cluster/Resource"
+   }
+  },
+  "DbParameterGroupD5340A4D": {
+   "Type": "AWS::RDS::DBParameterGroup",
+   "Properties": {
+    "Description": "Parameter group for mysql8.0",
+    "Family": "mysql8.0",
+    "Parameters": {
+     "require_secure_transport": "1"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/DbParameterGroup/Resource"
+   }
+  },
+  "DbCredentials798065DE": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludePunctuation": true,
+     "GenerateStringKey": "password",
+     "IncludeSpace": false,
+     "PasswordLength": 16,
+     "SecretStringTemplate": "{\"username\":\"admin\"}"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/DbCredentials/Resource"
+   }
+  },
+  "DbCredentialsAttachmentD2151D4F": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "DbCredentials798065DE"
+    },
+    "TargetId": {
+     "Ref": "DatabaseB269D8BB"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/DbCredentials/Attachment/Resource"
+   }
+  },
+  "DbSg495F8305": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "RDS MySQL Security Group",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Temporary: Allow MySQL from anywhere for development",
+      "FromPort": 3306,
+      "IpProtocol": "tcp",
+      "ToPort": 3306
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/DbSg/Resource"
+   }
+  },
+  "DbSgfromSkyCmsMinimalStackServiceSg86C7FC5C3306DE0E8288": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow MySQL from ECS",
+    "FromPort": 3306,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "DbSg495F8305",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ServiceSg2632F788",
+      "GroupId"
+     ]
+    },
+    "ToPort": 3306
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/DbSg/from SkyCmsMinimalStackServiceSg86C7FC5C:3306"
+   }
+  },
+  "DatabaseSubnetGroup7D60F180": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for Database database",
+    "SubnetIds": [
+     {
+      "Ref": "VpcIsolatedSubnet1SubnetE48C5737"
+     },
+     {
+      "Ref": "VpcIsolatedSubnet2Subnet16364B91"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Database/SubnetGroup/Default"
+   }
+  },
+  "DatabaseB269D8BB": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "20",
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t4g.micro",
+    "DBName": "skycms",
+    "DBParameterGroupName": {
+     "Ref": "DbParameterGroupD5340A4D"
+    },
+    "DBSubnetGroupName": {
+     "Ref": "DatabaseSubnetGroup7D60F180"
+    },
+    "DeletionProtection": false,
+    "Engine": "mysql",
+    "EngineVersion": "8.0",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DbCredentials798065DE"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DbCredentials798065DE"
+       },
+       ":SecretString:username::}}"
+      ]
+     ]
+    },
+    "MaxAllocatedStorage": 100,
+    "MultiAZ": false,
+    "PubliclyAccessible": false,
+    "StorageType": "gp2",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "DbSg495F8305",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Database/Resource"
+   }
+  },
+  "TaskDefTaskRole1EDB4A67": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/TaskDef/TaskRole/Resource"
+   }
+  },
+  "TaskDef54694570": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "CosmosAllowSetup",
+        "Value": "true"
+       },
+       {
+        "Name": "MultiTenantEditor",
+        "Value": "false"
+       },
+       {
+        "Name": "ASPNETCORE_ENVIRONMENT",
+        "Value": "Production"
+       },
+       {
+        "Name": "DB_HOST",
+        "Value": {
+         "Fn::GetAtt": [
+          "DatabaseB269D8BB",
+          "Endpoint.Address"
+         ]
+        }
+       },
+       {
+        "Name": "DB_PORT",
+        "Value": "3306"
+       },
+       {
+        "Name": "DB_NAME",
+        "Value": "skycms"
+       },
+       {
+        "Name": "DB_USER",
+        "Value": "admin"
+       },
+       {
+        "Name": "ConnectionStrings__ApplicationDbContextConnection",
+        "Value": {
+         "Fn::Join": [
+          "",
+          [
+           "Server=",
+           {
+            "Fn::GetAtt": [
+             "DatabaseB269D8BB",
+             "Endpoint.Address"
+            ]
+           },
+           ";Port=3306;Database=skycms;Uid=admin;Pwd={{resolve:secretsmanager:",
+           {
+            "Ref": "DbCredentials798065DE"
+           },
+           ":SecretString:password::}};SslMode=Required"
+          ]
+         ]
+        }
+       }
+      ],
+      "Essential": true,
+      "Image": "toiyabe/sky-editor:latest",
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "LogGroupF5B46931"
+        },
+        "awslogs-stream-prefix": "SkyCMS",
+        "awslogs-region": "us-east-1"
+       }
+      },
+      "Name": "web",
+      "PortMappings": [
+       {
+        "ContainerPort": 80,
+        "Protocol": "tcp"
+       }
+      ],
+      "Secrets": [
+       {
+        "Name": "DB_PASSWORD",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "DbCredentials798065DE"
+           },
+           ":password::"
+          ]
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "Cpu": "512",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "TaskDefExecutionRoleB4775C97",
+      "Arn"
+     ]
+    },
+    "Family": "SkyCmsMinimalStackTaskDef3BE9451F",
+    "Memory": "1024",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "TaskDefTaskRole1EDB4A67",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/TaskDef/Resource"
+   }
+  },
+  "TaskDefExecutionRoleB4775C97": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/TaskDef/ExecutionRole/Resource"
+   }
+  },
+  "TaskDefExecutionRoleDefaultPolicy0DBB737A": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "LogGroupF5B46931",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "DbCredentials798065DE"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "TaskDefExecutionRoleDefaultPolicy0DBB737A",
+    "Roles": [
+     {
+      "Ref": "TaskDefExecutionRoleB4775C97"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/TaskDef/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "LogGroupF5B46931": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/LogGroup/Resource"
+   }
+  },
+  "ServiceSg2632F788": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "ECS Service Security Group",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTP from anywhere",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/ServiceSg/Resource"
+   }
+  },
+  "ServiceD69D759B": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "ClusterEB0386A7"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "LaunchType": "FARGATE",
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "ENABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "ServiceSg2632F788",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "VpcPublicSubnet1Subnet5C2D37C4"
+       },
+       {
+        "Ref": "VpcPublicSubnet2Subnet691E08A3"
+       }
+      ]
+     }
+    },
+    "TaskDefinition": {
+     "Ref": "TaskDef54694570"
+    }
+   },
+   "DependsOn": [
+    "TaskDefTaskRole1EDB4A67"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/Service/Service"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31RXW/CMAz8LbyHbOv2BxhoCGnSqhbxOrnBdIE2QbYDQlX/+9RvxKQ9+XI5x5dzpKPXSEczuPLc7E/zwma6SgXMScGVvys0ka52Z6OWB7eLlyoOWWFNGjKH0nATSnwQ3EJW4MRP3ILZGwtivRvFKiZ7AcHpjY0TJIeyBsEr3Pqh/WkhAuanRCcqRRPIym1NPpzbcf8SG5cTMtcKDetqWQQWpEY1wA+gHBqnfFrhwTo7+HxkvBOwDumO63tTpIs13d87WCvas65iIChRkEZvq/cHbgUCGTBuHAs4g6pL5K7hDzFIa8VoCIVLcJAj6Sptz30GDerKFihHuctwFDze1MpCqavEd5tsa+wLa9p9dKhWhc9ZV58+H00NuK5VguwDdWl8BTkHqZXze9RHfrpEb/ol0s+zI1s7p+DElqiTrv4CRGqJoo8CAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "ClusterName": {
+   "Description": "ECS Cluster Name",
+   "Value": {
+    "Ref": "ClusterEB0386A7"
+   }
+  },
+  "ServiceName": {
+   "Description": "ECS Service Name",
+   "Value": {
+    "Fn::GetAtt": [
+     "ServiceD69D759B",
+     "Name"
+    ]
+   }
+  },
+  "LogGroupName": {
+   "Description": "CloudWatch Log Group",
+   "Value": {
+    "Ref": "LogGroupF5B46931"
+   }
+  },
+  "Region": {
+   "Description": "AWS Region",
+   "Value": {
+    "Ref": "AWS::Region"
+   }
+  },
+  "DatabaseEndpoint": {
+   "Description": "RDS MySQL Endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "DatabaseB269D8BB",
+     "Endpoint.Address"
+    ]
+   }
+  },
+  "DatabaseName": {
+   "Description": "Database Name",
+   "Value": "skycms"
+  },
+  "DatabaseCredentialsSecret": {
+   "Description": "Database Credentials Secret ARN",
+   "Value": {
+    "Ref": "DbCredentials798065DE"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

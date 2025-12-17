@@ -1,3 +1,9 @@
+---
+title: Cosmos.BlobService Component
+description: Azure Storage Provider component for SkyCMS blob storage management
+keywords: component, blob-service, Azure-Storage, storage-provider, library
+audience: [developers, architects]
+---
 
 # Cosmos.BlobService - Sky CMS Azure Storage Provider
 

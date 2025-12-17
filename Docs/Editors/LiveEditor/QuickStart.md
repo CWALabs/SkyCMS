@@ -1,3 +1,9 @@
+---
+title: Live Editor Quick Start
+description: 5-minute quick start guide for using the SkyCMS Live Editor
+keywords: live-editor, quick-start, tutorial, getting-started, CKEditor
+audience: [content-creators]
+---
 
 # Live Editor Quick Start Guide
 

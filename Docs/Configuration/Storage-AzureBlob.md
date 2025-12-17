@@ -1,3 +1,10 @@
+---
+title: Azure Blob Storage Configuration
+description: Configure Azure Blob Storage for SkyCMS static assets with connection strings and container setup
+keywords: Azure-Blob, storage, configuration, Azure, object-storage, static-assets
+audience: [developers, administrators]
+---
+
 # Azure Blob Storage with SkyCMS
 
 Azure Blob Storage is a fully managed, scalable cloud object storage service. SkyCMS integrates seamlessly for storing and serving static assets.

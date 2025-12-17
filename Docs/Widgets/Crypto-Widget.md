@@ -1,3 +1,9 @@
+---
+title: Crypto Widget (AES Helpers)
+description: Client-side encryption/decryption helpers using CryptoJS AES-128 for Editor UI
+keywords: widget, crypto, encryption, AES, CryptoJS, security
+audience: [developers]
+---
 
 # Cosmos CMS Crypto Widget (AES helpers)
 

@@ -1,3 +1,9 @@
+---
+title: Forms Helpers Widget
+description: Form submission helpers with antiforgery token support and element validation
+keywords: widget, forms, antiforgery, validation, helpers
+audience: [developers]
+---
 
 # Cosmos CMS Forms Helpers
 

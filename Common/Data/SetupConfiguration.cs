@@ -68,6 +68,14 @@ namespace Cosmos.Common.Data
         public string MicrosoftAppId { get; set; } = string.Empty;
 
         /// <summary>
+        /// Gets or sets the email address used for system emails.
+        /// </summary>
+        [Required]
+        [EmailAddress]
+        [Display(Name = "System Email")]
+        public string SenderEmail { get; set; } = string.Empty;
+
+        /// <summary>
         /// Gets or sets the administrator email address.
         /// </summary>
         [Required]
@@ -223,5 +231,30 @@ namespace Cosmos.Common.Data
         /// Gets or sets the website title.
         /// </summary>
         public string WebsiteTitle { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether storage was pre-configured via environment variables.
+        /// </summary>
+        public bool StoragePreConfigured { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether publisher URL were pre-configured via environment variables.
+        /// </summary>
+        public bool PublisherPreConfigured { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether system sender email account was pre-configured via environment variables.
+        /// </summary>
+        public bool SenderEmailPreConfigured { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether email provider was pre-configured via environment variables.
+        /// </summary>
+        public bool EmailProviderPreConfigured { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether blob public URL was pre-configured via environment variables.
+        /// </summary>
+        public bool BlobPublicUrlPreConfigured { get; set; } = false;
     }
 }

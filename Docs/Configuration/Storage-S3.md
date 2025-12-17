@@ -1,3 +1,10 @@
+---
+title: Amazon S3 Storage Configuration
+description: Configure Amazon S3 object storage for SkyCMS static assets with access keys and bucket setup
+keywords: S3, AWS, storage, configuration, object-storage, static-assets
+audience: [developers, administrators]
+---
+
 # Amazon S3 with SkyCMS
 
 Amazon S3 is a highly scalable object storage service widely available across AWS regions. SkyCMS integrates seamlessly with S3 for storing and serving static assets.

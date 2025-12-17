@@ -1,3 +1,9 @@
+---
+title: Live Editor Visual Guide
+description: Visual reference guide for Live Editor interface elements and components
+keywords: live-editor, visual-guide, interface, UI
+audience: [content-creators, developers]
+---
 
 # Live Editor Visual Guide
 

@@ -28,6 +28,14 @@ namespace Sky.Cms.Models
         public string AdminEmail { get; set; }
 
         /// <summary>
+        /// Gets or sets the email address used by the system to send email.
+        /// </summary>
+        [Display(Name = "Email Address for System Messages Sent")]
+        [EmailAddress]
+        [DataType(DataType.EmailAddress)]
+        public string SenderEmail { get; set; }
+
+        /// <summary>
         /// Gets or sets password.
         /// </summary>
         [Display(Name = "Password")]

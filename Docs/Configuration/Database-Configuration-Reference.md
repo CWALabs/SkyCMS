@@ -1,3 +1,9 @@
+---
+title: Database Configuration Reference
+description: Complete reference for database configuration with Cosmos DB, SQL Server, MySQL, and SQLite
+keywords: database, configuration-reference, connection-strings, EF-Core, providers
+audience: [developers, administrators]
+---
 
 # Database Configuration
 

@@ -31,6 +31,9 @@
         </div>
         <div class="card-body">
             <div class="form-group mb-3">
+                <div id="publisherUrlAlert" class="alert alert-primary" role="alert" style="display:none;">
+                    Publisher URL is already set and cannot be changed.
+                </div>
                 <label asp-for="PublisherUrl" class="form-label">Website URL <span class="text-danger">*</span></label>
                 <input asp-for="PublisherUrl" type="url" class="form-control" placeholder="https://www.example.com" required />
                 <span asp-validation-for="PublisherUrl" class="text-danger"></span>
@@ -181,8 +184,17 @@
 
 @section Scripts {
     <script>
+
+        var isPreConfigured = @Model.IsPreConfigured.ToString().ToLower();
+
         $(document).ready(function() {
             var form = $('#publisherForm');
+
+            if (isPreConfigured) {
+                // Disable PublisherUrl input and show alert
+                $('#PublisherUrl').prop('disabled', true);
+                $('#publisherUrlAlert').show();
+            }
             
             // Configure validation
             $.validator.setDefaults({

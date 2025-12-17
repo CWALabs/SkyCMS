@@ -1,3 +1,9 @@
+---
+title: SkyCMS vs Headless CMS
+description: Understanding SkyCMS's traditional CMS architecture with JAMstack performance benefits
+keywords: architecture, headless-cms, JAMstack, traditional-cms, performance, comparison
+audience: [developers, architects, decision-makers]
+---
 
 # SkyCMS - Traditional CMS Architecture with Modern Performance
 

@@ -1,0 +1,21 @@
+{
+  "version": "48.0.0",
+  "files": {
+    "0c46833d03e898532bc0b14c3569befd010f9c8e6cba8e4a31410c91c5464510": {
+      "displayName": "SkyCmsMinimalStack Template",
+      "source": {
+        "path": "SkyCmsMinimalStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "873764251532-us-east-1-fa14b056": {
+          "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
+          "objectKey": "0c46833d03e898532bc0b14c3569befd010f9c8e6cba8e4a31410c91c5464510.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

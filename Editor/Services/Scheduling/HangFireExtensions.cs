@@ -7,19 +7,16 @@
 
 namespace Sky.Editor.Services.Scheduling
 {
+    using System;
+    using System.Linq;
     using AspNetCore.Identity.FlexDb;
     using AspNetCore.Identity.FlexDb.Strategies;
-    using CsvHelper;
     using Hangfire;
     using Hangfire.MySql;
-    using Hangfire.Storage.SQLite;
     using Microsoft.Azure.Cosmos;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using SQLitePCL;
-    using System;
-    using System.Linq;
 
     /// <summary>
     ///  HangFire extensions for service collection.

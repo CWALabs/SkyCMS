@@ -25,6 +25,16 @@ Read the [About SkyCMS](https://cwalabs.github.io/SkyCMS/About.html) page for a 
 
 **[View the Master Table of Contents](https://cwalabs.github.io/SkyCMS/)** for complete documentation index and navigation.
 
+## SkyCMS & Modern Approach (Overview)
+
+SkyCMS is designed around modern web practices: componentized layouts/templates, content-first workflows (draft→review→publish), clear separation of concerns, and built-in quality guardrails (accessibility, performance, SEO, link validation). For a deeper look at how these principles are enabled in SkyCMS, see [SkyCMS & Modern Approach (Deep Dive)](Docs/Developer-Guides/SkyCMS-Modern-Approach.md).
+
+## How SkyCMS Compares
+
+Evaluating SkyCMS against alternatives?
+- **[Comprehensive Comparison Matrix](Docs/Comparisons.md)** — SkyCMS vs. WordPress, Jekyll, Hugo, Gatsby, Contentful, Sanity (features, cost, workflow)
+- **[Developer Experience Comparison](Docs/Developer-Experience-Comparison.md)** — Learning curves, daily workflows, deployment complexity
+
 ---
 
 ## What is an Edge-Native CMS?

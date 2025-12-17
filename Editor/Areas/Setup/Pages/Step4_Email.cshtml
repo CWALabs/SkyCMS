@@ -39,10 +39,24 @@
             <h5>Email Provider</h5>
         </div>
         <div class="card-body">
+
+            <div class="form-group mb-3">
+                <div id="senderEmailAlert" class="alert alert-primary" role="alert" style="display:none;">
+                    The email address used to send system emails is already set and cannot be changed.
+                </div>
+                <label asp-for="SenderEmail" class="form-label">Sender Email Address <span class="text-danger provider-required">*</span></label>
+                <input asp-for="SenderEmail" type="email" class="form-control" />
+                <span asp-validation-for="SenderEmail" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <div id="emailProviderAlert" class="alert alert-primary" role="alert" style="display:none;">
+                Email provider settings already set and cannot be changed.
+                </div>
+            </div>
             <div class="form-group mb-3">
                 <label class="form-label">Select Email Provider</label>
                 <select asp-for="EmailProvider" class="form-select" id="emailProviderSelect">
-                    <option value="none">-- Skip Email Configuration --</option>
+                    <option value="none">-- Skip Email Configuration (not for production) --</option>
                     <option value="SendGrid">SendGrid</option>
                     <option value="AzureCommunication">Azure Communication Services</option>
                     <option value="SMTP">SMTP Server</option>
@@ -60,12 +74,6 @@
                     <input asp-for="SendGridApiKey" type="password" class="form-control font-monospace" />
                     <span asp-validation-for="SendGridApiKey" class="text-danger"></span>
                 </div>
-                <div class="form-group mb-3">
-                    <label asp-for="SenderEmail" class="form-label">Sender Email Address <span class="text-danger provider-required">*</span></label>
-                    <input asp-for="SenderEmail" type="email" class="form-control" placeholder="noreply@example.com" />
-                    <span asp-validation-for="SenderEmail" class="text-danger"></span>
-                    <small class="form-text text-light">Must be a verified sender in SendGrid</small>
-                </div>
             </div>
 
             <!-- Azure Communication Services Options -->
@@ -80,11 +88,6 @@
                     <label asp-for="AzureEmailConnectionString" class="form-label">Connection String <span class="text-danger provider-required">*</span></label>
                     <textarea asp-for="AzureEmailConnectionString" class="form-control font-monospace" rows="2"></textarea>
                     <span asp-validation-for="AzureEmailConnectionString" class="text-danger"></span>
-                </div>
-                <div class="form-group mb-3">
-                    <label asp-for="SenderEmail" class="form-label">Sender Email Address <span class="text-danger provider-required">*</span></label>
-                    <input asp-for="SenderEmail" type="email" class="form-control" placeholder="noreply@example.com" />
-                    <span asp-validation-for="SenderEmail" class="text-danger"></span>
                 </div>
             </div>
 
@@ -113,11 +116,6 @@
                     <label asp-for="SmtpPassword" class="form-label">Password <span class="text-danger provider-required">*</span></label>
                     <input asp-for="SmtpPassword" type="password" class="form-control" />
                     <span asp-validation-for="SmtpPassword" class="text-danger"></span>
-                </div>
-                <div class="form-group mb-3">
-                    <label asp-for="SenderEmail" class="form-label">Sender Email Address <span class="text-danger provider-required">*</span></label>
-                    <input asp-for="SenderEmail" type="email" class="form-control" />
-                    <span asp-validation-for="SenderEmail" class="text-danger"></span>
                 </div>
             </div>
 
@@ -160,6 +158,19 @@
     <script>
         $(document).ready(function() {
             var form = $('#emailForm');
+
+            var isPreConfigured = @Model.IsPreConfigured.ToString().ToLower();
+            var isSenderEmailPreConfigured = @Model.SystemEmailPreConfigured.ToString().ToLower();
+
+            if (isSenderEmailPreConfigured) {
+                $('#SenderEmail').prop('disabled', true);
+                $('#senderEmailAlert').show();
+            }
+
+            if (isPreConfigured) {
+                $('#sendGridOptions input, #sendGridOptions textarea, #azureCommOptions input, #azureCommOptions textarea, #smtpOptions input, #smtpOptions textarea, #emailProviderSelect').prop('disabled', true);
+                $('#emailProviderAlert').show();
+            }
 
             // Configure validation
             $.validator.setDefaults({

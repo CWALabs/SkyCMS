@@ -1,3 +1,10 @@
+---
+title: Installing SkyCMS on Azure
+description: Complete guide for deploying SkyCMS on Microsoft Azure with Deploy button
+keywords: Azure, installation, deployment, setup, App-Service
+audience: [developers, devops]
+---
+
 # Installing SkyCMS on Azure
 
 The following describes how to install SkyCMS on Microsoft Azure.

@@ -295,7 +295,7 @@ namespace Sky.Editor.Services.EditorSettings
             return new ConfigurationSource
             {
                 AllowSetup = configuration.GetValue<bool?>("CosmosAllowSetup"),
-                BlobPublicUrl = configuration.GetValue<string>("AzureBlobStorageEndPoint"),
+                BlobPublicUrl = configuration.GetValue<string>("AzureBlobStorageEndPoint") ?? configuration.GetValue<string>("BlobPublicUrl") ?? "/",
                 CosmosRequiresAuthentication = configuration.GetValue<bool?>("CosmosRequiresAuthentication"),
                 MicrosoftAppId = configuration.GetValue<string>("MicrosoftAppId"),
                 PublisherUrl = configuration.GetValue<string>("CosmosPublisherUrl"),

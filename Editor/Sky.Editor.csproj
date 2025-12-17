@@ -7,9 +7,9 @@
 		<EnableNETAnalyzers>false</EnableNETAnalyzers>
 		<RepositoryUrl>https://github.com/CosmosSoftware/CosmosCms</RepositoryUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<Version>9.2.3.4</Version>
-		<AssemblyVersion>9.2.3.4</AssemblyVersion>
-		<FileVersion>9.2.3.4</FileVersion>
+		<Version>9.2.3.7</Version>
+		<AssemblyVersion>9.2.3.7</AssemblyVersion>
+		<FileVersion>9.2.3.7</FileVersion>
 		<RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
 		<Authors></Authors>
 		<ApplicationInsightsResourceId>/subscriptions/9bdb8e29-156f-4fc9-a1fe-1bb6a915a4f0/resourceGroups/CosmosCMS/providers/microsoft.insights/components/edit-cosmos-cms202107021426</ApplicationInsightsResourceId>
@@ -95,7 +95,6 @@
 		<PackageReference Include="Hangfire.InMemory" />
 		<PackageReference Include="Hangfire.MySqlStorage" />
 		<PackageReference Include="Hangfire.SqlServer" />
-		<PackageReference Include="Hangfire.Storage.SQLite" />
 		<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
@@ -140,6 +139,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Include="Models\InstallationViewModel.BAK" />
 	  <Compile Include="Models\LayoutEditViewModel.cs.BAK" />
 	</ItemGroup>
 

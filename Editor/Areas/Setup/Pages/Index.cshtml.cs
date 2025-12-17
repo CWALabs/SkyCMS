@@ -92,7 +92,8 @@ namespace Sky.Editor.Areas.Setup.Pages
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Failed to initialize setup: {ex.Message}";
+                ErrorMessage = $"There was an error initializing the setup, restarting.";
+                await setupService.InitializeSetupAsync(true);
                 return Page();
             }
         }

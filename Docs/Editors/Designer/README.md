@@ -1,3 +1,9 @@
+---
+title: Design Editor (GrapesJS)
+description: Visual drag-and-drop editor built on GrapesJS for creating web layouts and templates
+keywords: designer, GrapesJS, visual-editor, drag-and-drop, templates
+audience: [content-creators, designers, developers]
+---
 
 # Design Editor (GrapesJS)
 

@@ -1,3 +1,9 @@
+---
+title: Design Editor Quick Start Guide
+description: Quick reference for getting started with the Design Editor (GrapesJS) in SkyCMS
+keywords: design-editor, GrapesJS, quick-start, visual-editor
+audience: [content-creators]
+---
 
 # Design Editor Quick Start Guide
 

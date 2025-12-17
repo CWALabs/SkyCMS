@@ -99,6 +99,11 @@ namespace Sky.Editor.Areas.Setup.Pages
         public string SiteDesignId { get; set; }
 
         /// <summary>
+        /// Gets a value indicating whether the publisher URL is pre-configured.
+        /// </summary>
+        public bool IsPreConfigured { get; private set; }
+
+        /// <summary>
         /// Handles GET requests.
         /// </summary>
         /// <returns>Page result.</returns>
@@ -119,6 +124,7 @@ namespace Sky.Editor.Areas.Setup.Pages
             CosmosRequiresAuthentication = config.CosmosRequiresAuthentication;
             MicrosoftAppId = config.MicrosoftAppId;
             WebsiteTitle = config.WebsiteTitle;
+            IsPreConfigured = config.PublisherPreConfigured;
 
             return Page();
         }

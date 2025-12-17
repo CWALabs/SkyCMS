@@ -1,3 +1,9 @@
+---
+title: About SkyCMS
+description: Learn about SkyCMS, an edge-native CMS that combines traditional editor usability with static site generation speed
+keywords: about, overview, edge-native, CMS, Docker, multi-cloud
+audiencе: [decision-makers, developers, content-creators]
+---
 
 # About SkyCMS
 

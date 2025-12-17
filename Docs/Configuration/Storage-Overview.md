@@ -1,3 +1,10 @@
+---
+title: Storage Configuration Overview
+description: Cloud object storage configuration for static assets including Azure Blob, S3, Cloudflare R2, and Google Cloud
+keywords: storage, configuration, Azure-Blob, S3, Cloudflare-R2, Google-Cloud, object-storage
+audience: [developers, administrators]
+---
+
 # Storage Configuration Overview
 
 SkyCMS stores static web assets (images, CSS/JS, downloads) in cloud object storage. Supported providers:

@@ -1,3 +1,9 @@
+---
+title: 5-Minute Quick Start
+description: Get SkyCMS up and running quickly with the setup wizard for single-tenant installations
+keywords: quickstart, setup, wizard, installation, Docker, getting-started
+audience: [developers, administrators]
+---
 
 # 5-Minute Quick Start
 

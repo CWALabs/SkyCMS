@@ -1,8 +1,8 @@
 ---
-Owner: @toiyabe
-Last Reviewed: 2025-12-15
-Status: Current
-Related Docs: [blog/BlogPostLifecycle.md](./blog/BlogPostLifecycle.md), [QuickStart.md](./QuickStart.md)
+title: Publishing Overview
+description: Publishing modes and workflows for making content live on your SkyCMS website
+keywords: publishing, workflow, deployment, content-lifecycle, versioning
+audience: [developers, content-creators, administrators]
 ---
 
 # Publishing in SkyCMS
@@ -562,5 +562,5 @@ When replacing or removing pages, set up redirects:
 
 ---
 
-**Last Updated:** December 15, 2025  
+**Last Updated:** December 17, 2025  
 **Owner:** @toiyabe

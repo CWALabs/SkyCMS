@@ -1,3 +1,10 @@
+---
+title: SkyCMS Learning Paths
+description: Role-based documentation journeys for content editors, developers, DevOps, and decision makers
+keywords: learning-paths, guides, tutorials, getting-started, role-based
+audience: [all]
+---
+
 # SkyCMS Learning Paths
 
 **Not sure where to start?** Choose your role below and follow a curated documentation journey designed for your needs.
@@ -177,16 +184,24 @@
   - [Amazon CloudFront](./Configuration/CDN-CloudFront.md)
   - [Sucuri CDN/WAF](./Configuration/CDN-Sucuri.md)
 
-### Step 6: Deploy & Verify (30 min)
+### Step 6: Configuration & Setup (45 min)
+⚙️ **Initial Configuration:**
+- **[Minimum Required Settings](./Installation/MinimumRequiredSettings.md)** - Essential environment variables
+- **[Setup Wizard Guide](./Installation/SetupWizard.md)** - Interactive configuration walkthrough
+  - Choose between full wizard or pre-configured approach
+  - Step-by-step documentation for each wizard screen
+- **[Email Configuration](./Configuration/Email-Overview.md)** (Optional) - Transactional email setup
+
+### Step 7: Deploy & Verify (30 min)
 🚀 **Deployment:**
 - Follow platform-specific deployment guide
-- Run setup wizard or manual configuration
+- Run setup wizard or configure via environment variables
 - Verify database connectivity
 - Verify storage access
 - Test CDN integration
 - Create admin account
 
-### Step 7: Keep Handy (Bookmark These)
+### Step 8: Keep Handy (Bookmark These)
 🔖 **Essential Resources:**
 - **[Troubleshooting Guide](./Troubleshooting.md)** - First stop for issues
 - **[Changelog](./CHANGELOG.md)** - Track updates and breaking changes
@@ -312,5 +327,5 @@
 
 ---
 
-**Last Updated:** December 15, 2025  
+**Last Updated:** December 17, 2025  
 **Feedback Welcome:** Help us improve these learning paths by [opening an issue](https://github.com/CWALabs/SkyCMS/issues)

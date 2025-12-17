@@ -1,3 +1,10 @@
+---
+title: MySQL Database Configuration
+description: Configure MySQL database for SkyCMS with connection strings and setup instructions
+keywords: MySQL, database, configuration, connection-string, relational
+audience: [developers, administrators]
+---
+
 # MySQL with SkyCMS
 
 MySQL is a popular open-source relational database, widely available on shared hosting and cloud platforms. SkyCMS works seamlessly with MySQL.

@@ -1,0 +1,21 @@
+{
+  "version": "48.0.0",
+  "files": {
+    "b7a9602726138b4559fa113b1b025924ae17e3897375a426bc2d40d9434186e3": {
+      "displayName": "SkyCmsEditorStack Template",
+      "source": {
+        "path": "SkyCmsEditorStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "873764251532-us-east-1-197bb333": {
+          "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
+          "objectKey": "b7a9602726138b4559fa113b1b025924ae17e3897375a426bc2d40d9434186e3.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

@@ -1,10 +1,31 @@
+---
+title: Installation Guide
+description: Complete installation guide for SkyCMS including wizard setup and manual configuration options
+keywords: installation, setup, Docker, AWS, Azure, configuration, wizard
+audience: [developers, administrators]
+---
+
 # SkyCMS Installation Guide
 
-Choose your deployment platform below. All deployments follow the same core setup process:
+## Choose Your Configuration Approach
 
-1. **Configure minimum required settings** (database, storage connection strings)
-2. **Run the setup wizard** (single-tenant) or configure tenants (multi-tenant)
-3. **Create content and publish**
+SkyCMS offers two ways to configure your installation:
+
+### 🧙 **Interactive Wizard (Recommended for New Users)**
+- Minimal pre-configuration (just database + enable wizard)
+- Step-by-step guided setup through web UI
+- Configure storage, admin account, publisher, email, CDN interactively
+- **Best for**: First-time installations, development, testing
+- **Start here**: [Setup Wizard Guide](./SetupWizard.md)
+
+### ⚙️ **Environment Variables (Recommended for Production)**
+- Pre-configure all settings via environment variables
+- Optional: use wizard to configure remaining settings interactively
+- Settings are read-only/hidden in wizard when pre-configured
+- **Best for**: Docker/Kubernetes, CI/CD pipelines, production deployments
+- **Start here**: [Minimum Required Settings](./MinimumRequiredSettings.md)
+
+> **You can mix both approaches**: Pre-configure sensitive settings (database, storage credentials) via environment variables, then use the wizard for remaining settings (admin account, publisher URL, etc.).
 
 ---
 
@@ -17,6 +38,15 @@ Before deploying to any platform, review the [Minimum Required Settings](./Minim
 - Configuration examples
 
 **Start here** if you're setting up SkyCMS for the first time or need to understand the configuration options.
+
+### After Installation Completes
+
+Once setup is finished, follow the **[Post-Installation Configuration Guide](./Post-Installation.md)** to:
+- Verify your installation is fully operational
+- Create and publish your first page
+- Configure security and access control
+- Test email and CDN integration
+- Set up user accounts for your team
 
 ---
 
@@ -76,13 +106,17 @@ Deploy SkyCMS on AWS with flexible hosting options. This guide covers:
 ## Next Steps After Installation
 
 1. Access your SkyCMS Editor instance
-2. Run the setup wizard (single-tenant) to configure:
+2. Run the **[Setup Wizard](./SetupWizard.md)** (single-tenant) to configure:
    - Database connection
-   - Storage provider (Azure Blob, S3, or Cloudflare R2)
+   - Storage provider (Azure Blob, S3, R2, or Google Cloud Storage)
    - Administrator account
    - Publisher settings
+   - Email configuration (optional)
+   - CDN configuration (optional)
 3. Create your first page and publish content
 4. Configure your custom domain
 5. Set up CDN for optimal performance (optional)
+
+See the **[Setup Wizard Guide](./SetupWizard.md)** for step-by-step instructions with dedicated pages for each wizard step.
 
 For more details, see [About SkyCMS](../About.md) and the [Complete Documentation Index](../).

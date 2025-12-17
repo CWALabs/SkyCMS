@@ -1,3 +1,10 @@
+---
+title: Database Configuration Overview
+description: Overview of supported database providers including Cosmos DB, SQL Server, MySQL, and SQLite
+keywords: database, configuration, Cosmos-DB, SQL-Server, MySQL, SQLite
+audience: [developers, administrators]
+---
+
 # Database Configuration Overview
 
 SkyCMS stores CMS data (users, content, settings) in a relational or document database. Supported providers:

@@ -1,3 +1,10 @@
+---
+title: AWS Installation Guide
+description: Deploy SkyCMS on AWS using S3 for static website hosting and blob storage
+keywords: AWS, installation, S3, deployment, setup
+audience: [developers, devops]
+---
+
 # AWS Installation Guide
 
 Deploy SkyCMS on AWS using S3 for static website hosting or as your blob storage provider.
