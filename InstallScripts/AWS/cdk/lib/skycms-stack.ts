@@ -85,6 +85,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
           SKYCMS_DB_PASSWORD: dbPassword.unsafeUnwrap(),
           SKYCMS_DB_SSL: 'true',
           SKYCMS_DB_SSL_MODE: 'Required',
+          AdminEmail: 'admin@example.com',
         },
       },
       publicLoadBalancer: true,
