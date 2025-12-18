@@ -71,11 +71,6 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 // Register Setup Wizard Services (before single/multi-tenant configuration)
 // ---------------------------------------------------------------
 builder.Services.AddScoped<ISetupService, SetupService>();
-builder.Services.AddDbContext<SetupDbContext>(options =>
-{
-    var setupDbPath = Path.Combine(Path.GetTempPath(), "skycms-setup.db");
-    options.UseSqlite($"Data Source={setupDbPath}");
-});
 
 var isMultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
 var versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();

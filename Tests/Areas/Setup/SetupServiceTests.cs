@@ -50,7 +50,6 @@ namespace Sky.Tests.Areas.Setup
         private ISetupService setupService;
         private Mock<ILogger<SetupService>> mockLogger;
         private Mock<ILayoutImportService> mockLayoutImportService;
-        private SetupDbContext setupDbContext;
         private IConfiguration testConfiguration;
         private string uniqueSetupDbPath;
 
@@ -97,12 +96,6 @@ namespace Sky.Tests.Areas.Setup
                 }
             }
 
-            var setupDbOptions = new DbContextOptionsBuilder<SetupDbContext>()
-                .UseInMemoryDatabase($"SetupDb_{Guid.NewGuid()}")
-                .Options;
-
-            setupDbContext = new SetupDbContext(setupDbOptions);
-
             var configBuilder = new ConfigurationBuilder();
             configBuilder.AddInMemoryCollection(
                 new Dictionary<string, string>()
@@ -124,6 +117,7 @@ namespace Sky.Tests.Areas.Setup
                 Cache,
                 UserManager,
                 RoleManager,
+                Db,
                 layoutImportService,
                 Logic,
                 Mediator);
@@ -140,8 +134,6 @@ namespace Sky.Tests.Areas.Setup
         [TestCleanup]
         public async Task Cleanup()
         {
-            setupDbContext?.Dispose();
-
             // ✅ Clean up the UNIQUE SQLite database for this test
             if (!string.IsNullOrEmpty(uniqueSetupDbPath) && File.Exists(uniqueSetupDbPath))
             {
@@ -160,26 +152,7 @@ namespace Sky.Tests.Areas.Setup
             var testDbConnectionString = testConfiguration?.GetConnectionString("ApplicationDbContextConnection");
             if (!string.IsNullOrEmpty(testDbConnectionString))
             {
-                // Extract the file path from "Data Source=path"
-                var match = System.Text.RegularExpressions.Regex.Match(
-                    testDbConnectionString,
-                    @"Data Source=([^;]+)");
-
-                if (match.Success)
-                {
-                    var dbPath = match.Groups[1].Value;
-                    if (File.Exists(dbPath))
-                    {
-                        try
-                        {
-                            File.Delete(dbPath);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Failed to delete test database {dbPath}: {ex.Message}");
-                        }
-                    }
-                }
+               
             }
 
             await DisposeAsync();

@@ -193,6 +193,13 @@ namespace Sky.Editor.Services.Setup
         /// <param name="stepNumber">Step number to check.</param>
         /// <returns>True if step should be skipped.</returns>
         Task<bool> ShouldSkipStepAsync(Guid setupId, int stepNumber);
+
+        /// <summary>
+        /// Marks that the restart has been triggered for this setup to prevent multiple restart attempts.
+        /// </summary>
+        /// <param name="setupId">Setup configuration ID.</param>
+        /// <returns>Task.</returns>
+        Task MarkRestartTriggeredAsync(Guid setupId);
     }
 
     /// <summary>

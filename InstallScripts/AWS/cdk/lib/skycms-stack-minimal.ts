@@ -123,7 +123,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
     // MySQL format: Server=<server>;Port=3306;Uid=<user>;Pwd=<password>;Database=<database>;
     const container = taskDefinition.addContainer('web', {
       image: ecs.ContainerImage.fromRegistry(props.image),
-      portMappings: [{ containerPort: 80 }],
+      portMappings: [{ containerPort: 8080 }],
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'SkyCMS',
         logGroup,
@@ -184,7 +184,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
 
     // Add service as target (HTTP listener)
     const targetGroup = listener.addTargets('EcsTarget', {
-      port: 80,
+      port: 8080,
       targets: [service],
       healthCheck: {
         path: '/healthz',
@@ -223,11 +223,11 @@ export class SkyCmsEditorStack extends cdk.Stack {
       'Temporary: Allow MySQL from anywhere for development'
     );
 
-    // Allow ALB to reach ECS tasks
+    // Allow ALB to reach ECS tasks on port 8080
     securityGroup.addIngressRule(
       ec2.Peer.securityGroupId(albSg.securityGroupId),
-      ec2.Port.tcp(80),
-      'Allow HTTP from ALB'
+      ec2.Port.tcp(8080),
+      'Allow HTTP from ALB to container port 8080'
     );
 
     // CloudFront Distribution with HTTPS (auto-generated SSL certificate)

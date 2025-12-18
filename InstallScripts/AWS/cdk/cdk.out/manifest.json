@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-deploy-role-873764251532-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-cfn-exec-role-873764251532-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/49024ea24dd7a095852257b626a398109236f09229194f0b51dcce9c97b09289.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/1c4aeee985a7cbdd39319099153a22c60b80108731e0dad4ebf5c1810ad41d80.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -226,10 +226,10 @@
             "data": "ServiceSg2632F788"
           }
         ],
-        "/SkyCmsMinimalStack/ServiceSg/from SkyCmsMinimalStackALBSecurityGroup4F443D2C:80": [
+        "/SkyCmsMinimalStack/ServiceSg/from SkyCmsMinimalStackALBSecurityGroup4F443D2C:8080": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "ServiceSgfromSkyCmsMinimalStackALBSecurityGroup4F443D2C80635D0CCA"
+            "data": "ServiceSgfromSkyCmsMinimalStackALBSecurityGroup4F443D2C80801EBB5C69"
           }
         ],
         "/SkyCmsMinimalStack/ALB/Resource": [
@@ -244,10 +244,10 @@
             "data": "ALBSecurityGroup8B8624F8"
           }
         ],
-        "/SkyCmsMinimalStack/ALB/SecurityGroup/to SkyCmsMinimalStackServiceSg86C7FC5C:80": [
+        "/SkyCmsMinimalStack/ALB/SecurityGroup/to SkyCmsMinimalStackServiceSg86C7FC5C:8080": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "ALBSecurityGrouptoSkyCmsMinimalStackServiceSg86C7FC5C8088D660B3"
+            "data": "ALBSecurityGrouptoSkyCmsMinimalStackServiceSg86C7FC5C80803326BC00"
           }
         ],
         "/SkyCmsMinimalStack/ALB/HttpListener/Resource": [
@@ -273,7 +273,7 @@
               "new FargateService2 (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\fargate\\fargate-service.js:1:6318)",
               "new FargateService2 (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
               "new SkyCmsEditorStack (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\lib\\skycms-stack-minimal.ts:175:21)",
-              "Object.<anonymous> (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\bin\\skycms.ts:12:1)",
+              "Object.<anonymous> (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\bin\\skycms.ts:13:1)",
               "Module._compile (node:internal/modules/cjs/loader:1761:14)",
               "Module.m._compile (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\ts-node\\src\\index.ts:1618:23)",
               "node:internal/modules/cjs/loader:1893:10",

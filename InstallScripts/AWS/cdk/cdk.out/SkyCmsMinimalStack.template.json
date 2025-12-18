@@ -590,7 +590,7 @@
       "Name": "web",
       "PortMappings": [
        {
-        "ContainerPort": 80,
+        "ContainerPort": 8080,
         "Protocol": "tcp"
        }
       ],
@@ -745,8 +745,8 @@
       "ToPort": 80
      },
      {
-      "Description": "Allow HTTP from ALB",
-      "FromPort": 80,
+      "Description": "Allow HTTP from ALB to container port 8080",
+      "FromPort": 8080,
       "IpProtocol": "tcp",
       "SourceSecurityGroupId": {
        "Fn::GetAtt": [
@@ -754,7 +754,7 @@
         "GroupId"
        ]
       },
-      "ToPort": 80
+      "ToPort": 8080
      }
     ],
     "VpcId": {
@@ -765,11 +765,11 @@
     "aws:cdk:path": "SkyCmsMinimalStack/ServiceSg/Resource"
    }
   },
-  "ServiceSgfromSkyCmsMinimalStackALBSecurityGroup4F443D2C80635D0CCA": {
+  "ServiceSgfromSkyCmsMinimalStackALBSecurityGroup4F443D2C80801EBB5C69": {
    "Type": "AWS::EC2::SecurityGroupIngress",
    "Properties": {
     "Description": "Load balancer to target",
-    "FromPort": 80,
+    "FromPort": 8080,
     "GroupId": {
      "Fn::GetAtt": [
       "ServiceSg2632F788",
@@ -783,10 +783,10 @@
       "GroupId"
      ]
     },
-    "ToPort": 80
+    "ToPort": 8080
    },
    "Metadata": {
-    "aws:cdk:path": "SkyCmsMinimalStack/ServiceSg/from SkyCmsMinimalStackALBSecurityGroup4F443D2C:80"
+    "aws:cdk:path": "SkyCmsMinimalStack/ServiceSg/from SkyCmsMinimalStackALBSecurityGroup4F443D2C:8080"
    }
   },
   "ALBAEE750D2": {
@@ -848,7 +848,7 @@
     "aws:cdk:path": "SkyCmsMinimalStack/ALB/SecurityGroup/Resource"
    }
   },
-  "ALBSecurityGrouptoSkyCmsMinimalStackServiceSg86C7FC5C8088D660B3": {
+  "ALBSecurityGrouptoSkyCmsMinimalStackServiceSg86C7FC5C80803326BC00": {
    "Type": "AWS::EC2::SecurityGroupEgress",
    "Properties": {
     "Description": "Load balancer to target",
@@ -858,7 +858,7 @@
       "GroupId"
      ]
     },
-    "FromPort": 80,
+    "FromPort": 8080,
     "GroupId": {
      "Fn::GetAtt": [
       "ALBSecurityGroup8B8624F8",
@@ -866,10 +866,10 @@
      ]
     },
     "IpProtocol": "tcp",
-    "ToPort": 80
+    "ToPort": 8080
    },
    "Metadata": {
-    "aws:cdk:path": "SkyCmsMinimalStack/ALB/SecurityGroup/to SkyCmsMinimalStackServiceSg86C7FC5C:80"
+    "aws:cdk:path": "SkyCmsMinimalStack/ALB/SecurityGroup/to SkyCmsMinimalStackServiceSg86C7FC5C:8080"
    }
   },
   "ALBHttpListener04CE8CD0": {
@@ -896,9 +896,14 @@
   "ALBHttpListenerEcsTargetGroupEC97BED8": {
    "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
    "Properties": {
-    "HealthCheckIntervalSeconds": 60,
-    "HealthCheckPath": "/",
-    "Port": 80,
+    "HealthCheckIntervalSeconds": 15,
+    "HealthCheckPath": "/healthz",
+    "HealthCheckTimeoutSeconds": 5,
+    "HealthyThresholdCount": 2,
+    "Matcher": {
+     "HttpCode": "200-399"
+    },
+    "Port": 8080,
     "Protocol": "HTTP",
     "TargetGroupAttributes": [
      {
@@ -907,6 +912,7 @@
      }
     ],
     "TargetType": "ip",
+    "UnhealthyThresholdCount": 2,
     "VpcId": {
      "Ref": "Vpc8378EB38"
     }
@@ -932,12 +938,12 @@
     },
     "DesiredCount": 1,
     "EnableECSManagedTags": false,
-    "HealthCheckGracePeriodSeconds": 60,
+    "HealthCheckGracePeriodSeconds": 120,
     "LaunchType": "FARGATE",
     "LoadBalancers": [
      {
       "ContainerName": "web",
-      "ContainerPort": 80,
+      "ContainerPort": 8080,
       "TargetGroupArn": {
        "Ref": "ALBHttpListenerEcsTargetGroupEC97BED8"
       }

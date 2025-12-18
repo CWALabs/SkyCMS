@@ -256,5 +256,10 @@ namespace Cosmos.Common.Data
         /// Gets or sets a value indicating whether blob public URL was pre-configured via environment variables.
         /// </summary>
         public bool BlobPublicUrlPreConfigured { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether restart has been triggered.
+        /// </summary>
+        public bool RestartTriggered { get; set; }
     }
 }

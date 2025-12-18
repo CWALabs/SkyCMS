@@ -2,7 +2,8 @@ param(
   [string]$Region = "us-east-1",
   [string]$Image = "toiyabe/sky-editor:latest",
   [int]$DesiredCount = 1,
-  [string]$DbName = "skycms"
+  [string]$DbName = "skycms",
+  [string]$StackName = "SkyCmsMinimalStack"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,6 +20,7 @@ Write-Host "  Region:       $Region"
 Write-Host "  Image:        $Image"
 Write-Host "  DesiredCount: $DesiredCount"
 Write-Host "  DbName:       $DbName"
+Write-Host "  StackName:    $StackName"
 Write-Host ""
 Write-Host "STACK: VPC + ECS + RDS MySQL with TLS" -ForegroundColor Magenta
 Write-Host "No ALB, No CloudFront - testing database connection" -ForegroundColor Magenta
@@ -44,24 +46,24 @@ try {
   
   Write-Host ""
   Write-Host "Step 2: Bootstrapping CDK (if needed) ..." -ForegroundColor Yellow
-  node $cdkBin bootstrap "aws://$accountId/$Region" --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName
+  node $cdkBin bootstrap "aws://$accountId/$Region" --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName --context stackName=$StackName
   if ($LASTEXITCODE -ne 0) { throw "cdk bootstrap failed" }
 
   Write-Host ""
   Write-Host "Step 3: Synthesizing CloudFormation template ..." -ForegroundColor Yellow
-  node $cdkBin synth --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName
+  node $cdkBin synth --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName --context stackName=$StackName
   if ($LASTEXITCODE -ne 0) { throw "cdk synth failed" }
 
   Write-Host ""
-  Write-Host "Step 4: Deploying SkyCmsMinimalStack (ECS + RDS) ..." -ForegroundColor Yellow
+  Write-Host "Step 4: Deploying $StackName (ECS + RDS) ..." -ForegroundColor Yellow
   Write-Host "This will take 5-10 minutes for VPC + ECS + RDS MySQL." -ForegroundColor Gray
   Write-Host ""
-  node $cdkBin deploy SkyCmsMinimalStack --require-approval never --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName
+  node $cdkBin deploy $StackName --require-approval never --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName --context stackName=$StackName
   if ($LASTEXITCODE -ne 0) { throw "cdk deploy failed" }
 
   Write-Host ""
   Write-Host "========================================" -ForegroundColor Green
-  Write-Host "✅ SkyCmsMinimalStack Deployed!" -ForegroundColor Green
+  Write-Host "✅ $StackName Deployed!" -ForegroundColor Green
   Write-Host "========================================" -ForegroundColor Green
   Write-Host ""
   Write-Host "Stack Outputs (Cluster, Service, Database, LogGroup) are shown above." -ForegroundColor Cyan
@@ -69,7 +71,7 @@ try {
   Write-Host "To get the task public IP and test the container:" -ForegroundColor Yellow
   Write-Host ""
   Write-Host "⏳ Extraction CloudFront URL from outputs..." -ForegroundColor Yellow
-  $stackOutputs = aws cloudformation describe-stacks --stack-name SkyCmsMinimalStack --region $Region --query "Stacks[0].Outputs" --output json | ConvertFrom-Json
+  $stackOutputs = aws cloudformation describe-stacks --stack-name $StackName --region $Region --query "Stacks[0].Outputs" --output json | ConvertFrom-Json
   $cloudFrontUrl = ($stackOutputs | Where-Object { $_.OutputKey -eq "CloudFrontURL" }).OutputValue
   $dbEndpoint     = ($stackOutputs | Where-Object { $_.OutputKey -eq "DatabaseEndpoint" }).OutputValue
   $dbNameOut      = ($stackOutputs | Where-Object { $_.OutputKey -eq "DatabaseName" }).OutputValue

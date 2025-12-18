@@ -58,16 +58,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 ```csharp
 builder.Services.AddScoped<ISetupService, SetupService>();
-builder.Services.AddDbContext<SetupDbContext>(options =>
-{
-    var setupDbPath = Path.Combine(Path.GetTempPath(), "skycms-setup.db");
-    options.UseSqlite($"Data Source={setupDbPath}");
-});
 ```
 
 **Purpose:**
-- Register setup wizard database separately from main database
-- Allow first-time configuration before main app starts
+- Register setup wizard service
+- Setup state now persists to the main ApplicationDbContext using the Settings table
+- Setup configuration serialized as JSON in Settings (group="SYSTEM", name="SETUP_WIZARD_STATE")
+- This approach ensures setup state is shared across multiple instances for scalable deployments
 - Temporary SQLite database for setup state
 
 ### Phase 3: Base Services Registration
