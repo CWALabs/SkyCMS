@@ -4,8 +4,11 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecs_patterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as rds from 'aws-cdk-lib/aws-rds';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import { ApplicationProtocol } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 
 export interface SkyCmsProps extends cdk.StackProps {
   image: string;
@@ -44,6 +47,11 @@ export class SkyCmsEditorStack extends cdk.Stack {
     
     // Generate a fixed password for RDS (dev-only)
     const dbPassword = cdk.SecretValue.unsafePlainText('SkyCMS2025!Temp');
+
+    const certificateArn = this.node.tryGetContext('certificateArn') as string | undefined;
+    const certificate = certificateArn
+      ? acm.Certificate.fromCertificateArn(this, 'AlbCert', certificateArn)
+      : undefined;
     
     const db = new rds.DatabaseInstance(this, 'MySql', {
       engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0 }),
@@ -62,6 +70,17 @@ export class SkyCmsEditorStack extends cdk.Stack {
       parameterGroup: parameterGroup,
     });
 
+    const connectionStringSecret = new secretsmanager.Secret(
+      this,
+      'DbConnectionStringSecret',
+      {
+        secretStringValue: cdk.SecretValue.unsafePlainText(
+          'Server=cosmos-cms-mysql-dev.mysql.database.azure.com;Port=3306;Uid=toiyabe;Pwd=ga5H#7g7hQ@!vzCnq4Pb;Database=cosmoscms;'
+        ),
+        description: 'MySQL connection string (provided) ending with semicolon',
+      }
+    );
+
     // Fargate Service with ALB
     const fargate = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'EditorService', {
       cluster,
@@ -69,6 +88,9 @@ export class SkyCmsEditorStack extends cdk.Stack {
       cpu: 512,
       memoryLimitMiB: 1024,
       desiredCount: props.desiredCount ?? 1,
+      protocol: certificate ? ApplicationProtocol.HTTPS : ApplicationProtocol.HTTP,
+      certificate,
+      redirectHTTP: certificate ? true : undefined,
       taskImageOptions: {
         image: ecs.ContainerImage.fromRegistry(props.image),
         containerPort: 80,
@@ -82,15 +104,14 @@ export class SkyCmsEditorStack extends cdk.Stack {
           SKYCMS_DB_HOST: db.instanceEndpoint.hostname,
           SKYCMS_DB_USER: 'skycms_admin',
           SKYCMS_DB_NAME: props.dbName,
-          SKYCMS_DB_PASSWORD: dbPassword.unsafeUnwrap(),
           SKYCMS_DB_SSL: 'true',
           SKYCMS_DB_SSL_MODE: 'Required',
           AdminEmail: 'admin@example.com',
         },
-      },
-      publicLoadBalancer: true,
-    });
-
+            secrets: {
+              ConnectionStrings__ApplicationDbContextConnection:
+                ecs.Secret.fromSecretsManager(connectionStringSecret),
+            },
     // Allow access from ECS tasks to RDS
     dbSg.addIngressRule(ec2.Peer.securityGroupId(fargate.service.connections.securityGroups[0].securityGroupId), ec2.Port.tcp(3306), 'ECS tasks to MySQL');
     
@@ -124,7 +145,12 @@ export class SkyCmsEditorStack extends cdk.Stack {
     const dist = new cloudfront.Distribution(this, 'EditorCdn', {
       defaultBehavior: {
         origin: new origins.LoadBalancerV2Origin(fargate.loadBalancer, {
-          protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          protocolPolicy: certificate
+            ? cloudfront.OriginProtocolPolicy.HTTPS_ONLY
+            : cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          httpsPort: 443,
+          httpPort: 80,
+          originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
         }),
         cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
         originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
@@ -164,10 +190,9 @@ export class SkyCmsEditorStack extends cdk.Stack {
       description: 'Default database created in RDS',
     });
 
-    const mysqlConnectionString = `Server=${db.instanceEndpoint.hostname};Port=3306;Database=${props.dbName};Uid=skycms_admin;Pwd=${dbPassword.unsafeUnwrap()};SslMode=Required;`;
-    new cdk.CfnOutput(this, 'MySqlConnectionString', {
-      value: mysqlConnectionString,
-      description: '✅ MySQL Connection String for MySQL Workbench or other tools (dev-only, includes TLS)',
+    new cdk.CfnOutput(this, 'ConnectionStringSecret', {
+      value: connectionStringSecret.secretArn,
+      description: '✅ MySQL Connection String Secret ARN (provided)',
     });
 
     new cdk.CfnOutput(this, 'S3BucketName', {

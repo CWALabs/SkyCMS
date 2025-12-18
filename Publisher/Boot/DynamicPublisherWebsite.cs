@@ -292,6 +292,9 @@ namespace Cosmos.Publisher.Boot
                 return Results.Ok();
             });
 
+            // Lightweight liveness/readiness endpoint for load balancer health checks
+            app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
+
             app.MapControllerRoute(
                 name: "pub",
                 pattern: "pub/{*index}",

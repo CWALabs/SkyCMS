@@ -499,6 +499,18 @@
     "aws:cdk:path": "SkyCmsMinimalStack/Database/Resource"
    }
   },
+  "DbConnectionStringSecret21A439BA": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "MySQL connection string (provided) ending with semicolon",
+    "SecretString": "Server=cosmos-cms-mysql-dev.mysql.database.azure.com;Port=3306;Uid=toiyabe;Pwd=ga5H#7g7hQ@!vzCnq4Pb;Database=cosmoscms;"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/DbConnectionStringSecret/Resource"
+   }
+  },
   "TaskDefTaskRole1EDB4A67": {
    "Type": "AWS::IAM::Role",
    "Properties": {
@@ -538,6 +550,10 @@
         "Value": "Production"
        },
        {
+        "Name": "AdminEmail",
+        "Value": "admin@example.com"
+       },
+       {
         "Name": "DB_HOST",
         "Value": {
          "Fn::GetAtt": [
@@ -557,28 +573,6 @@
        {
         "Name": "DB_USER",
         "Value": "admin"
-       },
-       {
-        "Name": "ConnectionStrings__ApplicationDbContextConnection",
-        "Value": {
-         "Fn::Join": [
-          "",
-          [
-           "Server=",
-           {
-            "Fn::GetAtt": [
-             "DatabaseB269D8BB",
-             "Endpoint.Address"
-            ]
-           },
-           ";Port=3306;Database=skycms;Uid=admin;Pwd={{resolve:secretsmanager:",
-           {
-            "Ref": "DbCredentials798065DE"
-           },
-           ":SecretString:password::}};SslMode=Required"
-          ]
-         ]
-        }
        }
       ],
       "Essential": true,
@@ -613,6 +607,12 @@
            ":password::"
           ]
          ]
+        }
+       },
+       {
+        "Name": "ConnectionStrings__ApplicationDbContextConnection",
+        "ValueFrom": {
+         "Ref": "DbConnectionStringSecret21A439BA"
         }
        }
       ]
@@ -689,6 +689,16 @@
        "Resource": {
         "Ref": "DbCredentials798065DE"
        }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "DbConnectionStringSecret21A439BA"
+       }
       }
      ],
      "Version": "2012-10-17"
@@ -733,6 +743,18 @@
       "FromPort": 80,
       "IpProtocol": "tcp",
       "ToPort": 80
+     },
+     {
+      "Description": "Allow HTTP from ALB",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "SourceSecurityGroupId": {
+       "Fn::GetAtt": [
+        "ALBSecurityGroup8B8624F8",
+        "GroupId"
+       ]
+      },
+      "ToPort": 80
      }
     ],
     "VpcId": {
@@ -741,6 +763,156 @@
    },
    "Metadata": {
     "aws:cdk:path": "SkyCmsMinimalStack/ServiceSg/Resource"
+   }
+  },
+  "ServiceSgfromSkyCmsMinimalStackALBSecurityGroup4F443D2C80635D0CCA": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 80,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ServiceSg2632F788",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ALBSecurityGroup8B8624F8",
+      "GroupId"
+     ]
+    },
+    "ToPort": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/ServiceSg/from SkyCmsMinimalStackALBSecurityGroup4F443D2C:80"
+   }
+  },
+  "ALBAEE750D2": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ALBSecurityGroup8B8624F8",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "VpcPublicSubnet1Subnet5C2D37C4"
+     },
+     {
+      "Ref": "VpcPublicSubnet2Subnet691E08A3"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "VpcPublicSubnet1DefaultRoute3DA9E72A",
+    "VpcPublicSubnet1RouteTableAssociation97140677",
+    "VpcPublicSubnet2DefaultRoute97F91067",
+    "VpcPublicSubnet2RouteTableAssociationDD5762D8"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/ALB/Resource"
+   }
+  },
+  "ALBSecurityGroup8B8624F8": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB SkyCmsMinimalStackALBB3E2C305",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/ALB/SecurityGroup/Resource"
+   }
+  },
+  "ALBSecurityGrouptoSkyCmsMinimalStackServiceSg86C7FC5C8088D660B3": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ServiceSg2632F788",
+      "GroupId"
+     ]
+    },
+    "FromPort": 80,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ALBSecurityGroup8B8624F8",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/ALB/SecurityGroup/to SkyCmsMinimalStackServiceSg86C7FC5C:80"
+   }
+  },
+  "ALBHttpListener04CE8CD0": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "ALBHttpListenerEcsTargetGroupEC97BED8"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "ALBAEE750D2"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/ALB/HttpListener/Resource"
+   }
+  },
+  "ALBHttpListenerEcsTargetGroupEC97BED8": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckIntervalSeconds": 60,
+    "HealthCheckPath": "/",
+    "Port": 80,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/ALB/HttpListener/EcsTargetGroup/Resource"
    }
   },
   "ServiceD69D759B": {
@@ -760,7 +932,17 @@
     },
     "DesiredCount": 1,
     "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
     "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "web",
+      "ContainerPort": 80,
+      "TargetGroupArn": {
+       "Ref": "ALBHttpListenerEcsTargetGroupEC97BED8"
+      }
+     }
+    ],
     "NetworkConfiguration": {
      "AwsvpcConfiguration": {
       "AssignPublicIp": "ENABLED",
@@ -787,16 +969,66 @@
     }
    },
    "DependsOn": [
+    "ALBHttpListenerEcsTargetGroupEC97BED8",
+    "ALBHttpListener04CE8CD0",
     "TaskDefTaskRole1EDB4A67"
    ],
    "Metadata": {
     "aws:cdk:path": "SkyCmsMinimalStack/Service/Service"
    }
   },
+  "CloudFrontDist239A6E31": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Comment": "SkyCMS Editor Distribution",
+     "DefaultCacheBehavior": {
+      "AllowedMethods": [
+       "GET",
+       "HEAD",
+       "OPTIONS",
+       "PUT",
+       "PATCH",
+       "POST",
+       "DELETE"
+      ],
+      "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+      "Compress": true,
+      "TargetOriginId": "SkyCmsMinimalStackCloudFrontDistOrigin14D18358A",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "CustomOriginConfig": {
+        "HTTPPort": 80,
+        "HTTPSPort": 443,
+        "OriginProtocolPolicy": "http-only",
+        "OriginSSLProtocols": [
+         "TLSv1.2"
+        ]
+       },
+       "DomainName": {
+        "Fn::GetAtt": [
+         "ALBAEE750D2",
+         "DNSName"
+        ]
+       },
+       "Id": "SkyCmsMinimalStackCloudFrontDistOrigin14D18358A"
+      }
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/CloudFrontDist/Resource"
+   }
+  },
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31RXW/CMAz8LbyHbOv2BxhoCGnSqhbxOrnBdIE2QbYDQlX/+9RvxKQ9+XI5x5dzpKPXSEczuPLc7E/zwma6SgXMScGVvys0ka52Z6OWB7eLlyoOWWFNGjKH0nATSnwQ3EJW4MRP3ILZGwtivRvFKiZ7AcHpjY0TJIeyBsEr3Pqh/WkhAuanRCcqRRPIym1NPpzbcf8SG5cTMtcKDetqWQQWpEY1wA+gHBqnfFrhwTo7+HxkvBOwDumO63tTpIs13d87WCvas65iIChRkEZvq/cHbgUCGTBuHAs4g6pL5K7hDzFIa8VoCIVLcJAj6Sptz30GDerKFihHuctwFDze1MpCqavEd5tsa+wLa9p9dKhWhc9ZV58+H00NuK5VguwDdWl8BTkHqZXze9RHfrpEb/ol0s+zI1s7p+DElqiTrv4CRGqJoo8CAAA="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S0W7bMAz8lr4r2ubtB9JkKwIUmBEXfR1omfHYyJIhUgkKQ/8+xLITLwX6xLvjSTqTLnTxvdDFA5x5ZZrjylKth0rAHBWc+c+AptDDa2/U5uBey40qY23JVLF2KBfthvY+Cr5AbfGm37Q1szcEQt5dzaoMdALB2x07JxgcyhMInuF9enRiaxEwfzt0oio0MZC8PwUf+/G5T4WdawMyf9B/jnJSaFgPGxtZMFxMM/wFoYXLB/BxiwdyNMe/V7wTIIdhoU1nKwwnMnkkGSYVGtZDCQE6FAzXyNvHO20LAjUw7hwLOIMqD2px4IMwW5NiNAGFO3DQYtBDNfJpBBeUywuEFmUx2qvhvpMUQaeHvc8LHmvpLZlxTRklZX3Lenj27TXUjJNCCyxkrIemBgvOkGtPhR7WfW/JjP/Gs4fmcezlTfzHlz5iQTd5Zrzo5/DXDAualLE+NofgnehhSyyB6jgvdslTUntkH0Ne3+8ofZSknG9Qv/GXU/FDfyv014c3JlqF6IQ61Ptc/wFhK/jLVwMAAA=="
    },
    "Metadata": {
     "aws:cdk:path": "SkyCmsMinimalStack/CDKMetadata/Default"
@@ -848,6 +1080,69 @@
    "Description": "Database Credentials Secret ARN",
    "Value": {
     "Ref": "DbCredentials798065DE"
+   }
+  },
+  "ConnectionStringSecret": {
+   "Description": "MySQL Connection String Secret ARN (provided)",
+   "Value": {
+    "Ref": "DbConnectionStringSecret21A439BA"
+   }
+  },
+  "MySqlConnectionString": {
+   "Description": "✅ MySQL Connection String for validation and MySQL Workbench (dev-only)",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "Server=",
+      {
+       "Fn::GetAtt": [
+        "DatabaseB269D8BB",
+        "Endpoint.Address"
+       ]
+      },
+      ";Port=3306;Uid=admin;Pwd={{resolve:secretsmanager:",
+      {
+       "Ref": "DbCredentials798065DE"
+      },
+      ":SecretString:password::}};Database=skycms;"
+     ]
+    ]
+   }
+  },
+  "DbSecurityGroupId": {
+   "Description": "RDS MySQL Security Group ID (for IP allow-listing)",
+   "Value": {
+    "Fn::GetAtt": [
+     "DbSg495F8305",
+     "GroupId"
+    ]
+   }
+  },
+  "CloudFrontURL": {
+   "Description": "SkyCMS Editor URL (CloudFront with TLS)",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Fn::GetAtt": [
+        "CloudFrontDist239A6E31",
+        "DomainName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "ALBDomainName": {
+   "Description": "ALB DNS Name (for debugging)",
+   "Value": {
+    "Fn::GetAtt": [
+     "ALBAEE750D2",
+     "DNSName"
+    ]
    }
   }
  },

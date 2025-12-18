@@ -68,14 +68,64 @@ try {
   Write-Host ""
   Write-Host "To get the task public IP and test the container:" -ForegroundColor Yellow
   Write-Host ""
-  Write-Host "`$cluster = 'ClusterName from outputs above'" -ForegroundColor Gray
-  Write-Host "`$region = '$Region'" -ForegroundColor Gray
-  Write-Host "`$taskArn = aws ecs list-tasks --cluster `$cluster --region `$region --query 'taskArns[0]' -o text" -ForegroundColor Gray
-  Write-Host "`$eni = aws ecs describe-tasks --cluster `$cluster --tasks `$taskArn --region `$region --query 'tasks[0].attachments[0].details[?name==``networkInterfaceId``].value' -o text" -ForegroundColor Gray
-  Write-Host "aws ec2 describe-network-interfaces --network-interface-ids `$eni --region `$region --query 'NetworkInterfaces[0].Association.PublicIp' -o text" -ForegroundColor Gray
-  Write-Host ""
-  Write-Host "Then visit: http://<PUBLIC-IP>" -ForegroundColor Yellow
-  Write-Host ""
+  Write-Host "⏳ Extraction CloudFront URL from outputs..." -ForegroundColor Yellow
+  $stackOutputs = aws cloudformation describe-stacks --stack-name SkyCmsMinimalStack --region $Region --query "Stacks[0].Outputs" --output json | ConvertFrom-Json
+  $cloudFrontUrl = ($stackOutputs | Where-Object { $_.OutputKey -eq "CloudFrontURL" }).OutputValue
+  $dbEndpoint     = ($stackOutputs | Where-Object { $_.OutputKey -eq "DatabaseEndpoint" }).OutputValue
+  $dbNameOut      = ($stackOutputs | Where-Object { $_.OutputKey -eq "DatabaseName" }).OutputValue
+  $dbSecretArn    = ($stackOutputs | Where-Object { $_.OutputKey -eq "DatabaseCredentialsSecret" }).OutputValue
+  $dbSgId         = ($stackOutputs | Where-Object { $_.OutputKey -eq "DbSecurityGroupId" }).OutputValue
+  $mysqlConnOut   = ($stackOutputs | Where-Object { $_.OutputKey -eq "MySqlConnectionString" }).OutputValue
+  
+  if ($cloudFrontUrl) {
+    Write-Host ""
+    Write-Host "✅ DEPLOYMENT COMPLETE!" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "🌐 SkyCMS Editor URL:" -ForegroundColor Cyan
+    Write-Host "   $cloudFrontUrl" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "📝 Note: CloudFront may take 1-2 minutes to propagate. TLS certificate is auto-generated." -ForegroundColor Gray
+    Write-Host ""
+  } else {
+    Write-Host "⚠️  CloudFront URL not found in outputs. Check the stack manually." -ForegroundColor Yellow
+  }
+
+  # Echo MySQL connection string for validation and MySQL Workbench
+  try {
+    Write-Host ""; Write-Host "🔐 Retrieving database credentials from Secrets Manager..." -ForegroundColor Yellow
+    $secretVal = aws secretsmanager get-secret-value --secret-id $dbSecretArn --region $Region --query SecretString --output text
+    $secretObj = $secretVal | ConvertFrom-Json
+    $dbUser = $secretObj.username
+    $dbPwd  = $secretObj.password
+    $mysqlConn = "Server=$dbEndpoint;Port=3306;Uid=$dbUser;Pwd=$dbPwd;Database=$dbNameOut;"
+    $maskedConn = "Server=$dbEndpoint;Port=3306;Uid=$dbUser;Pwd=[REDACTED];Database=$dbNameOut;"
+    Write-Host ""; Write-Host "✅ MySQL Connection String (for validation):" -ForegroundColor Green
+    Write-Host "   $maskedConn" -ForegroundColor Cyan
+    Write-Host ""; Write-Host "📝 Full connection string with unmasked password:" -ForegroundColor Yellow
+    Write-Host "   (Copy from AWS Secrets Manager or use the script's stored value)" -ForegroundColor Gray
+  } catch {
+    if ($mysqlConnOut) {
+      Write-Host ""; Write-Host "✅ MySQL Connection String (from stack output):" -ForegroundColor Green
+      Write-Host "   $mysqlConnOut" -ForegroundColor Cyan
+    } else {
+      Write-Host "⚠️  Could not retrieve DB credentials; skipping echo of connection string." -ForegroundColor Yellow
+    }
+  }
+
+  # Allow-list current machine's public IP for MySQL (tcp/3306)
+  try {
+    Write-Host ""; Write-Host "🌍 Detecting your public IP for RDS allow-list..." -ForegroundColor Yellow
+    $myIp = (Invoke-WebRequest -Uri 'https://checkip.amazonaws.com' -UseBasicParsing).Content.Trim()
+    if ($myIp -and $dbSgId) {
+      Write-Host "Adding ingress rule to $dbSgId for $myIp/32 on 3306..." -ForegroundColor Yellow
+      aws ec2 authorize-security-group-ingress --group-id $dbSgId --protocol tcp --port 3306 --cidr "$myIp/32" --region $Region | Out-Null
+      Write-Host "✅ RDS MySQL now accessible from this computer ($myIp)." -ForegroundColor Green
+    } else {
+      Write-Host "⚠️  Missing Security Group ID or public IP; skipped allow-listing." -ForegroundColor Yellow
+    }
+  } catch {
+    Write-Host "⚠️  Failed to add ingress rule: $_" -ForegroundColor Yellow
+  }
 }
 catch {
   Write-Host ""

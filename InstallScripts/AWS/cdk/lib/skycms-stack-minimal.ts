@@ -5,6 +5,10 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
 export interface SkyCmsProps extends cdk.StackProps {
   image: string;
@@ -18,6 +22,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
 
     const desiredCount = props.desiredCount || 1;
     const dbName = props.dbName || 'skycms';
+    const certificateArn = this.node.tryGetContext('certificateArn') as string | undefined;
 
     // VPC with 2 AZs, public subnets for ECS, isolated subnets for RDS
     const vpc = new ec2.Vpc(this, 'Vpc', {
@@ -91,6 +96,17 @@ export class SkyCmsEditorStack extends cdk.Stack {
       deletionProtection: false,
     });
 
+    const connectionStringSecret = new secretsmanager.Secret(
+      this,
+      'DbConnectionStringSecret',
+      {
+        secretStringValue: cdk.SecretValue.unsafePlainText(
+          'Server=cosmos-cms-mysql-dev.mysql.database.azure.com;Port=3306;Uid=toiyabe;Pwd=ga5H#7g7hQ@!vzCnq4Pb;Database=cosmoscms;'
+        ),
+        description: 'MySQL connection string (provided) ending with semicolon',
+      }
+    );
+
     // Task Definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       cpu: 512,
@@ -103,8 +119,8 @@ export class SkyCmsEditorStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // Container - connection string as environment variable with password from secret
-    // MySQL format: Server=<host>;Database=<db>;Uid=<user>;Pwd=<password>;SslMode=Required
+    // Container
+    // MySQL format: Server=<server>;Port=3306;Uid=<user>;Pwd=<password>;Database=<database>;
     const container = taskDefinition.addContainer('web', {
       image: ecs.ContainerImage.fromRegistry(props.image),
       portMappings: [{ containerPort: 80 }],
@@ -116,6 +132,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
         CosmosAllowSetup: 'true',
         MultiTenantEditor: 'false',
         ASPNETCORE_ENVIRONMENT: 'Production',
+        AdminEmail: 'admin@example.com',
         DB_HOST: database.dbInstanceEndpointAddress,
         DB_PORT: '3306',
         DB_NAME: dbName,
@@ -123,15 +140,10 @@ export class SkyCmsEditorStack extends cdk.Stack {
       },
       secrets: {
         DB_PASSWORD: ecs.Secret.fromSecretsManager(dbCredentials, 'password'),
+        ConnectionStrings__ApplicationDbContextConnection:
+          ecs.Secret.fromSecretsManager(connectionStringSecret),
       },
     });
-    
-    // Manually set the connection string environment variable that combines the parts
-    // ECS will inject DB_PASSWORD secret before this runs
-    container.addEnvironment(
-      'ConnectionStrings__ApplicationDbContextConnection',
-      `Server=${database.dbInstanceEndpointAddress};Port=3306;Database=${dbName};Uid=admin;Pwd=${dbCredentials.secretValueFromJson('password').unsafeUnwrap()};SslMode=Required`
-    );
 
     // Security Group
     const securityGroup = new ec2.SecurityGroup(this, 'ServiceSg', {
@@ -146,15 +158,56 @@ export class SkyCmsEditorStack extends cdk.Stack {
       'Allow HTTP from anywhere'
     );
 
+    // Application Load Balancer
+    const alb = new elbv2.ApplicationLoadBalancer(this, 'ALB', {
+      vpc,
+      internetFacing: true,
+    });
+
+    const albSg = alb.connections.securityGroups[0];
+
+    const listener = alb.addListener('HttpListener', {
+      port: 80,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+    });
+
     // ECS Service
     const service = new ecs.FargateService(this, 'Service', {
       cluster,
       taskDefinition,
       desiredCount,
-      assignPublicIp: true,
+      assignPublicIp: true,  // Required to access Secrets Manager without NAT Gateway
       securityGroups: [securityGroup],
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      healthCheckGracePeriod: cdk.Duration.seconds(120),
     });
+
+    // Add service as target (HTTP listener)
+    const targetGroup = listener.addTargets('EcsTarget', {
+      port: 80,
+      targets: [service],
+      healthCheck: {
+        path: '/healthz',
+        healthyHttpCodes: '200-399',
+        timeout: cdk.Duration.seconds(5),
+        interval: cdk.Duration.seconds(15),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 2,
+      },
+    });
+
+    // Optional HTTPS listener if a certificate ARN is provided via context: certificateArn
+    if (certificateArn) {
+      const certificate = acm.Certificate.fromCertificateArn(this, 'AlbCert', certificateArn);
+      alb.addListener('HttpsListener', {
+        port: 443,
+        protocol: elbv2.ApplicationProtocol.HTTPS,
+        certificates: [certificate],
+        defaultAction: elbv2.ListenerAction.forward([targetGroup]),
+      });
+
+      albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Allow HTTPS from anywhere');
+    }
 
     // Allow ECS to connect to RDS
     dbSecurityGroup.addIngressRule(
@@ -169,6 +222,33 @@ export class SkyCmsEditorStack extends cdk.Stack {
       ec2.Port.tcp(3306),
       'Temporary: Allow MySQL from anywhere for development'
     );
+
+    // Allow ALB to reach ECS tasks
+    securityGroup.addIngressRule(
+      ec2.Peer.securityGroupId(albSg.securityGroupId),
+      ec2.Port.tcp(80),
+      'Allow HTTP from ALB'
+    );
+
+    // CloudFront Distribution with HTTPS (auto-generated SSL certificate)
+    const distribution = new cloudfront.Distribution(this, 'CloudFrontDist', {
+      defaultBehavior: {
+        origin: new origins.LoadBalancerV2Origin(alb, {
+          protocolPolicy: certificateArn
+            ? cloudfront.OriginProtocolPolicy.HTTPS_ONLY
+            : cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          httpsPort: 443,
+          httpPort: 80,
+          originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
+        }),
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        compress: true,
+      },
+      enabled: true,
+      comment: 'SkyCMS Editor Distribution',
+    });
 
     // Outputs
     new cdk.CfnOutput(this, 'ClusterName', {
@@ -204,6 +284,32 @@ export class SkyCmsEditorStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'DatabaseCredentialsSecret', {
       value: dbCredentials.secretArn,
       description: 'Database Credentials Secret ARN',
+    });
+
+    new cdk.CfnOutput(this, 'ConnectionStringSecret', {
+      value: connectionStringSecret.secretArn,
+      description: 'MySQL Connection String Secret ARN (provided)',
+    });
+
+    const mysqlConnectionString = `Server=${database.dbInstanceEndpointAddress};Port=3306;Uid=admin;Pwd=${dbCredentials.secretValueFromJson('password').unsafeUnwrap()};Database=${dbName};`;
+    new cdk.CfnOutput(this, 'MySqlConnectionString', {
+      value: mysqlConnectionString,
+      description: '✅ MySQL Connection String for validation and MySQL Workbench (dev-only)',
+    });
+
+    new cdk.CfnOutput(this, 'DbSecurityGroupId', {
+      value: dbSecurityGroup.securityGroupId,
+      description: 'RDS MySQL Security Group ID (for IP allow-listing)',
+    });
+
+    new cdk.CfnOutput(this, 'CloudFrontURL', {
+      value: `https://${distribution.domainName}`,
+      description: 'SkyCMS Editor URL (CloudFront with TLS)',
+    });
+
+    new cdk.CfnOutput(this, 'ALBDomainName', {
+      value: alb.loadBalancerDnsName,
+      description: 'ALB DNS Name (for debugging)',
     });
   }
 }

@@ -133,6 +133,9 @@ namespace Cosmos.Publisher.Boot
                 await next();
             });
 
+            // Lightweight liveness/readiness endpoint for load balancer health checks
+            app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
+
             app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext context) =>
             {
                 var tokens = forgeryService.GetAndStoreTokens(context);

@@ -359,10 +359,12 @@ namespace Cosmos.Common.Data
                         .HasIndex(a => a.ArticleNumber);
 
                     modelBuilder.Entity<PublishedPage>()
-                        .HasIndex(p => p.UrlPath);
+                        .HasIndex(p => p.UrlPath)
+                        .HasAnnotation("MySql:IndexPrefixLength", new[] { 768 }); // 768 * 4 = 3072 bytes max
 
                     modelBuilder.Entity<CatalogEntry>()
-                        .HasIndex(p => new { p.UrlPath });
+                        .HasIndex(p => p.UrlPath)
+                        .HasAnnotation("MySql:IndexPrefixLength", new[] { 768 }); // 768 * 4 = 3072 bytes max
                 }
 
                 // All SQL providers.

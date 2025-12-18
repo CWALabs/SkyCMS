@@ -466,6 +466,9 @@ app.UseHangfireDashboard("/Editor/CCMS___PageScheduler", new DashboardOptions()
     Authorization = new[] { new Sky.Editor.Services.Scheduling.HangfireAuthorizationFilter() },
 });
 
+// Lightweight liveness/readiness endpoint for load balancer health checks
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
+
 app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext context) =>
 {
     var tokens = forgeryService.GetAndStoreTokens(context);
