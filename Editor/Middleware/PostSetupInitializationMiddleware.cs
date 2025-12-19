@@ -1,26 +1,33 @@
-// <copyright file="PostSetupInitializationMiddleware.cs" company="Moonrise Software, LLC">
+﻿// <copyright file="PostSetupInitializationMiddleware.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
-// Licensed under the GNU Public License, Version 3.0 (https://www.gnu.org/licenses/gpl-3.0.html)
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/CWALabs/SkyCMS
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using System;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
+using Cosmos.Common.Data;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Sky.Editor.Data;
+using Sky.Editor.Data.Logic;
+using Sky.Editor.Services.Setup;
+
 namespace Sky.Editor.Middleware
 {
-    using System;
-    using System.Collections.Concurrent;
-    using System.Threading.Tasks;
-    using Cosmos.Common.Data;
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Logging;
-    using Sky.Editor.Data.Logic;
-
     /// <summary>
     /// Middleware that handles per-tenant post-setup initialization.
     /// </summary>
+    /// <remarks>
+    /// This middleware performs post-setup tasks such as creating the home page after
+    /// the application has restarted following setup completion. It does NOT initialize
+    /// the database - that is handled by the setup wizard.
+    /// </remarks>
     public class PostSetupInitializationMiddleware
     {
         private readonly RequestDelegate next;
@@ -82,6 +89,34 @@ namespace Sky.Editor.Middleware
 
         private async Task ProcessTenantSetupAsync(HttpContext context, string tenantId)
         {
+            // ✅ Resolve scoped services from the request scope
+            var dbInitService = context.RequestServices.GetRequiredService<IDatabaseInitializationService>();
+            var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+            var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
+
+            // ✅ VERIFY database is initialized - do NOT initialize during HTTP requests
+            // Database initialization should only happen during setup wizard completion
+            if (!await dbInitService.IsInitializedAsync(connectionString))
+            {
+                logger.LogWarning(
+                    "Database not initialized for tenant {TenantId}. Please complete setup wizard at /___setup",
+                    tenantId);
+
+                // Check if setup is allowed
+                var allowSetup = configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
+
+                if (allowSetup && !context.Request.Path.StartsWithSegments("/___setup"))
+                {
+                    // Redirect to setup wizard
+                    logger.LogInformation("Redirecting tenant {TenantId} to setup wizard", tenantId);
+                    context.Response.Redirect("/___setup");
+                    return;
+                }
+
+                // If setup not allowed or already on setup page, continue but log warning
+                return;
+            }
+
             var dbContext = context.RequestServices.GetRequiredService<ApplicationDbContext>();
 
             // Check if home page creation is pending

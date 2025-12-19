@@ -71,6 +71,7 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 // Register Setup Wizard Services (before single/multi-tenant configuration)
 // ---------------------------------------------------------------
 builder.Services.AddScoped<ISetupService, SetupService>();
+builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
 
 var isMultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
 var versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -463,6 +464,51 @@ app.UseHangfireDashboard("/Editor/CCMS___PageScheduler", new DashboardOptions()
 
 // Lightweight liveness/readiness endpoint for load balancer health checks
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
+
+// ✅ NEW: Database status endpoint for monitoring and debugging
+app.MapGet("/___dbstatus", async (IServiceProvider serviceProvider, IConfiguration configuration) =>
+{
+    try
+    {
+        // Create a scope to resolve the scoped service
+        using var scope = serviceProvider.CreateScope();
+        var dbInitService = scope.ServiceProvider.GetRequiredService<IDatabaseInitializationService>();
+        
+        var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
+        
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            return Results.Ok(new
+            {
+                initialized = false,
+                error = "Connection string not configured",
+                timestamp = DateTime.UtcNow
+            });
+        }
+
+        var isInitialized = await dbInitService.IsInitializedAsync(connectionString);
+        var providerType = dbInitService.GetProviderType(connectionString);
+
+        return Results.Ok(new
+        {
+            initialized = isInitialized,
+            provider = providerType.ToString(),
+            timestamp = DateTime.UtcNow,
+            message = isInitialized 
+                ? "Database is initialized and ready" 
+                : "Database not initialized - please run setup wizard"
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Ok(new
+        {
+            initialized = false,
+            error = ex.Message,
+            timestamp = DateTime.UtcNow
+        });
+    }
+}).AllowAnonymous();
 
 app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext context) =>
 {

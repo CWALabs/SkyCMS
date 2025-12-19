@@ -19,6 +19,7 @@ namespace Sky.Editor.Services.Setup
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Sky.Editor.Data.Logic;
@@ -42,6 +43,7 @@ namespace Sky.Editor.Services.Setup
         private readonly ILayoutImportService layoutImportService;
         private readonly IMediator mediator;
         private readonly ArticleEditLogic articleLogic;
+        private readonly IServiceProvider serviceProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupService"/> class.
@@ -55,6 +57,7 @@ namespace Sky.Editor.Services.Setup
         /// <param name="layoutImportService">Layout import service.</param>
         /// <param name="articleLogic">Article edit logic.</param>
         /// <param name="mediator">Mediator service.</param>
+        /// <param name="serviceProvider">Service provider.</param>
         public SetupService(
     IConfiguration configuration,
     ILogger<SetupService> logger,
@@ -64,7 +67,8 @@ namespace Sky.Editor.Services.Setup
     ApplicationDbContext applicationDbContext,
     ILayoutImportService layoutImportService,
     ArticleEditLogic articleLogic,
-    IMediator mediator)
+    IMediator mediator,
+    IServiceProvider serviceProvider)
         {
             this.configuration = configuration;
             this.logger = logger;
@@ -75,6 +79,7 @@ namespace Sky.Editor.Services.Setup
             this.layoutImportService = layoutImportService;
             this.articleLogic = articleLogic;
             this.mediator = mediator;
+            this.serviceProvider = serviceProvider;
         }
 
         /// <inheritdoc/>
@@ -630,25 +635,25 @@ namespace Sky.Editor.Services.Setup
         /// <summary>
         /// Tests Azure Communication Services email.
         /// </summary>
-        private async Task<TestResult> TestAzureEmailAsync(string connectionString, string senderEmail, string recipient)
+        private Task<TestResult> TestAzureEmailAsync(string connectionString, string senderEmail, string recipient)
         {
             try
             {
                 // Azure Communication Services email testing
                 // Note: This requires Azure.Communication.Email package
-                return new TestResult
+                return Task.FromResult(new TestResult
                 {
                     Success = true,
                     Message = "Azure Communication Services configuration saved (test email not implemented)"
-                };
+                });
             }
             catch (Exception ex)
             {
-                return new TestResult
+                return Task.FromResult(new TestResult
                 {
                     Success = false,
                     Message = $"Azure email test failed: {ex.Message}"
-                };
+                });
             }
         }
 
@@ -773,8 +778,26 @@ namespace Sky.Editor.Services.Setup
                 using var mainDbContext = new ApplicationDbContext(mainDbConnectionString);
 
                 // Step 1: Ensure database exists and is initialized
-                //logger.LogInformation("Ensuring database exists and is initialized");
-                //await EnsureDatabaseInitializedAsync(mainDbContext);
+                // logger.LogInformation("Ensuring database exists and is initialized");
+                // await EnsureDatabaseInitializedAsync(mainDbContext);
+
+                logger.LogInformation("Ensuring database exists and is initialized");
+                var dbInitService = serviceProvider.GetRequiredService<IDatabaseInitializationService>();
+                var dbInitResult = await dbInitService.InitializeAsync(mainDbConnectionString, forceInitialization: false);
+
+                if (!dbInitResult.Success)
+                {
+                    return new SetupCompletionResult
+                    {
+                        Success = false,
+                        Message = $"Database initialization failed: {dbInitResult.Message}"
+                    };
+                }
+
+                logger.LogInformation(
+                    "Database initialized - Provider: {Provider}, Schema Created: {SchemaCreated}",
+                    dbInitResult.ProviderType,
+                    dbInitResult.SchemaCreated);
 
                 // Step 2: Create administrator account--if one does not exist yet.
                 var adminAccounts = await userManager.GetUsersInRoleAsync(RequiredIdentityRoles.Administrators);

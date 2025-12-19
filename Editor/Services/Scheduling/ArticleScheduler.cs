@@ -1,4 +1,4 @@
-// <copyright file="ArticleScheduler.cs" company="Moonrise Software, LLC">
+﻿// <copyright file="ArticleScheduler.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/CWALabs/SkyCMS
@@ -19,11 +19,13 @@ namespace Sky.Editor.Services.Scheduling
     using Microsoft.AspNetCore.Identity;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.EditorSettings;
+    using Sky.Editor.Services.Setup;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -81,7 +83,7 @@ namespace Sky.Editor.Services.Scheduling
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "ArticleScheduler: Error processing schduler.");
+                    logger.LogError(ex, "ArticleScheduler: Error processing scheduler.");
                 }
 
                 return;
@@ -110,22 +112,43 @@ namespace Sky.Editor.Services.Scheduling
 
             try
             {
-                // These service need to be scoped to a particular domainName.
+                // These services need to be scoped to a particular domainName.
                 ApplicationDbContext dbContext;
                 StorageContext storageContext;
+                var dbInitService = scopedServices.GetService<IDatabaseInitializationService>();
 
                 if (settings.IsMultiTenantEditor)
                 {
                     // All services must be scoped to the tenant's connection
                     var connection = await configurationProvider.GetTenantConnectionAsync(domainName);
 
-                    // TODO: Create tenant-specific ApplicationDbContext using connection.PrimaryCloud or appropriate connection string
+                    if (connection == null)
+                    {
+                        logger.LogWarning("No connection configuration found for tenant {Domain}", domainName);
+                        return;
+                    }
+
+                    // ✅ Use helper method to verify database initialization
+                    if (!await EnsureDatabaseInitializedAsync(dbInitService, connection.DbConn, $"tenant {domainName}"))
+                    {
+                        return; // Skip this tenant if database not initialized
+                    }
+
                     dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
                     storageContext = new StorageContext(connection.StorageConn, memoryCache);
                 }
                 else
                 {
-                    // Use the scoped services from DI
+                    // ✅ Single-tenant mode: use the scoped services from DI
+                    var configuration = scopedServices.GetRequiredService<IConfiguration>();
+                    var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
+
+                    // ✅ Use helper method to verify database initialization
+                    if (!await EnsureDatabaseInitializedAsync(dbInitService, connectionString, "single-tenant instance"))
+                    {
+                        return; // Skip processing if database not initialized
+                    }
+
                     dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
                     storageContext = scopedServices.GetRequiredService<StorageContext>();
                 }
@@ -214,6 +237,12 @@ namespace Sky.Editor.Services.Scheduling
                     activeVersion.VersionNumber,
                     activeVersion.Published);
 
+                // ✅ Publish active version FIRST
+                var factory = scopedServices.GetRequiredService<ITenantArticleLogicFactory>();
+                var articleLogic = await factory.CreateForTenantAsync(domainName);
+                await articleLogic.PublishArticle(activeVersion.Id, activeVersion.Published);
+
+                // ✅ THEN unpublish old versions (after successful publication)
                 var oldVersions = versions.Where(v =>
                     v.Published < activeVersion.Published &&
                     v.Id != activeVersion.Id).ToList();
@@ -227,11 +256,6 @@ namespace Sky.Editor.Services.Scheduling
                 {
                     await dbContext.SaveChangesAsync();
                 }
-
-                var factory = scopedServices.GetRequiredService<ITenantArticleLogicFactory>();
-                var articleLogic = await factory.CreateForTenantAsync(domainName);
-
-                await articleLogic.PublishArticle(activeVersion.Id, activeVersion.Published);
 
                 // Send email notification to the author
                 await SendPublicationNotificationAsync(activeVersion, domainName, scopedServices, dbContext);
@@ -345,6 +369,44 @@ namespace Sky.Editor.Services.Scheduling
                     "Failed to send publication notification for article {ArticleNumber}",
                     article.ArticleNumber);
             }
+        }
+
+        /// <summary>
+        /// Ensures the database is initialized before processing.
+        /// This method only verifies - it does NOT initialize the database.
+        /// Database initialization should be done through the setup wizard.
+        /// </summary>
+        /// <param name="dbInitService">Database initialization service.</param>
+        /// <param name="connectionString">Database connection string.</param>
+        /// <param name="contextDescription">Context description for logging.</param>
+        /// <returns>True if database is initialized and ready, false otherwise.</returns>
+        private async Task<bool> EnsureDatabaseInitializedAsync(
+            IDatabaseInitializationService dbInitService,
+            string connectionString,
+            string contextDescription)
+        {
+            if (dbInitService == null)
+            {
+                logger.LogWarning("DatabaseInitializationService not available for {Context}", contextDescription);
+                return true; // Assume initialized if service not available (for backward compatibility)
+            }
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                logger.LogWarning("Connection string is null or empty for {Context}", contextDescription);
+                return false;
+            }
+
+            if (!await dbInitService.IsInitializedAsync(connectionString))
+            {
+                logger.LogWarning(
+                    "Database not initialized for {Context}. Skipping scheduled processing. " +
+                    "Please complete the setup wizard to initialize the database.",
+                    contextDescription);
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -57,7 +57,12 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
         {
             this.logger = logger;
             this.services = services;
-            this.emailSender = (ICosmosEmailSender)emailSender;
+            this.emailSender = emailSender as ICosmosEmailSender;
+
+            if (this.emailSender == null)
+            {
+                logger.LogWarning("Email service not configured (NoOpEmailSender detected). Email functionality will be limited.");
+            }
         }
 
         /// <summary>
@@ -170,20 +175,27 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
                     // If the user is a new administrator, don't do these things
                     if (!newAdministrator)
                     {
-                        foreach (var admin in admins)
+                        if (emailSender != null)
                         {
-                            await emailSender.SendEmailAsync(admin.Email, $"New account request for: {user.Email} requested an account.", $"{user.Email} requested a user account on publisher website: {Request.Host}.");
+                            foreach (var admin in admins)
+                            {
+                                await emailSender.SendEmailAsync(admin.Email, $"New account request for: {user.Email} requested an account.", $"{user.Email} requested a user account on publisher website: {Request.Host}.");
+                            }
+
+                            var homePage = await DbContext.Pages.Select(s => new { s.Title, s.UrlPath }).FirstOrDefaultAsync(f => f.UrlPath == "root");
+                            var websiteName = homePage.Title ?? Request.Host.Host;
+
+                            var emailHandler = new EmailHandler(emailSender, logger);
+                            await emailHandler.SendCallbackTemplateEmail(EmailHandler.CallbackTemplate.NewAccountConfirmEmail, callbackUrl, Request.Host.Host, Input.Email, websiteName);
+
+                            if (UserManager.Options.SignIn.RequireConfirmedAccount)
+                            {
+                                return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl });
+                            }
                         }
-
-                        var homePage = await DbContext.Pages.Select(s => new { s.Title, s.UrlPath }).FirstOrDefaultAsync(f => f.UrlPath == "root");
-                        var websiteName = homePage.Title ?? Request.Host.Host;
-
-                        var emailHandler = new EmailHandler(emailSender, logger);
-                        await emailHandler.SendCallbackTemplateEmail(EmailHandler.CallbackTemplate.NewAccountConfirmEmail, callbackUrl, Request.Host.Host, Input.Email, websiteName);
-
-                        if (UserManager.Options.SignIn.RequireConfirmedAccount)
+                        else
                         {
-                            return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl });
+                            logger.LogWarning("Email service not configured - skipping account confirmation email for {Email}", Input.Email);
                         }
                     }
 

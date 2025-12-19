@@ -1,0 +1,107 @@
+{
+  "containerDefinitions": [
+    {
+      "name": "web",
+      "image": "toiyabe/sky-editor:latest",
+      "cpu": 0,
+      "links": [],
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "entryPoint": [],
+      "command": [],
+      "environment": [
+        {
+          "name": "Logging__LogLevel__Microsoft.AspNetCore.Diagnostics",
+          "value": "Debug"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "skycms"
+        },
+        {
+          "name": "ASPNETCORE_ENVIRONMENT",
+          "value": "Development"
+        },
+        {
+          "name": "CosmosAllowSetup",
+          "value": "true"
+        },
+        {
+          "name": "MultiTenantEditor",
+          "value": "false"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "3306"
+        },
+        {
+          "name": "Logging__LogLevel__Microsoft.AspNetCore.Antiforgery",
+          "value": "Debug"
+        },
+        {
+          "name": "DB_HOST",
+          "value": "skycmsminimalstack-databaseb269d8bb-hcxtzwjjzutn.c0dkcwggiecf.us-east-1.rds.amazonaws.com"
+        },
+        {
+          "name": "Logging__LogLevel__Microsoft.AspNetCore",
+          "value": "Information"
+        },
+        {
+          "name": "AdminEmail",
+          "value": "admin@example.com"
+        },
+        {
+          "name": "DB_USER",
+          "value": "admin"
+        }
+      ],
+      "environmentFiles": [],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "secrets": [
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:873764251532:secret:DbCredentials798065DE-uiLbn2DgFzzB-O18h8K:password::"
+        },
+        {
+          "name": "ConnectionStrings__ApplicationDbContextConnection",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:873764251532:secret:DbConnectionStringSecret21A-A1zxD4J4Ic1g-s4KzEP"
+        }
+      ],
+      "dnsServers": [],
+      "dnsSearchDomains": [],
+      "extraHosts": [],
+      "dockerSecurityOptions": [],
+      "dockerLabels": {},
+      "ulimits": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "SkyCmsMinimalStack-LogGroupF5B46931-u52ih8w9wadq",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "SkyCMS"
+        },
+        "secretOptions": []
+      },
+      "systemControls": [],
+      "credentialSpecs": []
+    }
+  ],
+  "family": "SkyCmsMinimalStackTaskDef3BE9451F",
+  "taskRoleArn": "arn:aws:iam::873764251532:role/SkyCmsMinimalStack-TaskDefTaskRole1EDB4A67-OE3qgjHY34gh",
+  "executionRoleArn": "arn:aws:iam::873764251532:role/SkyCmsMinimalStack-TaskDefExecutionRoleB4775C97-xRFqfh0koisg",
+  "networkMode": "awsvpc",
+  "volumes": [],
+  "placementConstraints": [],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "512",
+  "memory": "1024"
+}

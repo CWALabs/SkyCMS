@@ -423,7 +423,8 @@ namespace Sky.Tests
 
         public virtual async ValueTask DisposeAsync()
         {
-            await Db.DisposeAsync();
+            if (Db != null)
+                await Db.DisposeAsync();
             Cache.Dispose();
         }
 

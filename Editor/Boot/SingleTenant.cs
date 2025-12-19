@@ -1,4 +1,4 @@
-// <copyright file="SingleTenant.cs" company="Moonrise Software, LLC">
+﻿// <copyright file="SingleTenant.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/CWALabs/SkyCMS
@@ -7,13 +7,16 @@
 
 namespace Sky.Editor.Boot
 {
+    using AspNetCore.Identity.FlexDb.Extensions;
+    using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.Common.Services;
     using Microsoft.AspNetCore.Builder;
-    using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Sky.Editor.Data;
+    using System;
 
     /// <summary>
     /// Boots up the single-tenant editor.
@@ -42,17 +45,22 @@ namespace Sky.Editor.Boot
             }
 
             // Read AllowSetup directly from configuration
-            // If this is set, the Cosmos identity provider will:
-            // 1. Create the database if it does not already exist.
-            // 2. Create the required containers if they do not already exist.
-            // IMPORTANT: Remove this variable after first run. It will improve startup performance.
+            // If this is set to true, the setup wizard will be accessible at /___setup
+            // IMPORTANT: The database will be initialized during setup wizard completion,
+            // NOT at application startup. This improves startup performance and ensures
+            // proper initialization through the IDatabaseInitializationService.
             var allowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
-            
-            if (allowSetup)
-            {
-                using var context = new ApplicationDbContext(connectionString);
-                context.Database.EnsureCreatedAsync().Wait();
-            }
+            System.Console.WriteLine(allowSetup 
+                ? "Setup mode enabled - database will be initialized during setup wizard completion" 
+                : "Setup mode disabled - database should already be initialized");
+
+            // ✅ Database initialization is now handled exclusively by:
+            //    SetupService.CompleteSetupAsync() -> IDatabaseInitializationService.InitializeAsync()
+            // This ensures:
+            // - Consistent initialization across all database providers
+            // - Proper error handling and logging
+            // - Non-blocking application startup
+            // - Idempotent initialization (won't re-initialize if already done)
 
             // Add the DB context using FlexDb auto-configuration
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
