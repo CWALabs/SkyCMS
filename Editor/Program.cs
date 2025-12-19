@@ -71,7 +71,6 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 // Register Setup Wizard Services (before single/multi-tenant configuration)
 // ---------------------------------------------------------------
 builder.Services.AddScoped<ISetupService, SetupService>();
-builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
 
 var isMultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
 var versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -106,6 +105,7 @@ if (microsoftAuth != null)
 
 // ---------------------------------------------------------------
 // Build the app based on single-tenant or multi-tenant mode
+// Schema initialization happens here synchronously during startup
 // ---------------------------------------------------------------
 if (isMultiTenantEditor)
 {
@@ -456,59 +456,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-app.UseHangfireDashboard("/Editor/CCMS___PageScheduler", new DashboardOptions()
-{
-    DashboardTitle = "SkyCMS - Page Scheduler",
-    Authorization = new[] { new Sky.Editor.Services.Scheduling.HangfireAuthorizationFilter() },
-});
+// Map Hangfire scheduling slice (only initializes dashboard if setup is complete)
+app.UseHangfireSchedulingSlice();
 
 // Lightweight liveness/readiness endpoint for load balancer health checks
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
-
-// ✅ NEW: Database status endpoint for monitoring and debugging
-app.MapGet("/___dbstatus", async (IServiceProvider serviceProvider, IConfiguration configuration) =>
-{
-    try
-    {
-        // Create a scope to resolve the scoped service
-        using var scope = serviceProvider.CreateScope();
-        var dbInitService = scope.ServiceProvider.GetRequiredService<IDatabaseInitializationService>();
-        
-        var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
-        
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            return Results.Ok(new
-            {
-                initialized = false,
-                error = "Connection string not configured",
-                timestamp = DateTime.UtcNow
-            });
-        }
-
-        var isInitialized = await dbInitService.IsInitializedAsync(connectionString);
-        var providerType = dbInitService.GetProviderType(connectionString);
-
-        return Results.Ok(new
-        {
-            initialized = isInitialized,
-            provider = providerType.ToString(),
-            timestamp = DateTime.UtcNow,
-            message = isInitialized 
-                ? "Database is initialized and ready" 
-                : "Database not initialized - please run setup wizard"
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.Ok(new
-        {
-            initialized = false,
-            error = ex.Message,
-            timestamp = DateTime.UtcNow
-        });
-    }
-}).AllowAnonymous();
 
 app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext context) =>
 {
@@ -538,15 +490,27 @@ app.MapFallbackToController("Index", "Home"); // Deep path
 
 app.MapRazorPages();
 
-using (var scope = app.Services.CreateScope())
+// Configure recurring jobs only if Hangfire was initialized
+try
 {
-    var recurring = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-
-    // For async method on a service type:
-    recurring.AddOrUpdate<ArticleScheduler>(
-        "article-version-publisher",
-        x => x.ExecuteAsync(),
-        Cron.MinuteInterval(10)); // Runs every 10 minutes
+    using (var scope = app.Services.CreateScope())
+    {
+        var recurring = scope.ServiceProvider.GetService<IRecurringJobManager>();
+        
+        if (recurring != null)
+        {
+            // For async method on a service type:
+            recurring.AddOrUpdate<ArticleScheduler>(
+                "article-version-publisher",
+                x => x.ExecuteAsync(),
+                Cron.MinuteInterval(10)); // Runs every 10 minutes
+        }
+    }
+}
+catch (Exception ex)
+{
+    // Hangfire not configured - this is expected during setup
+    app.Logger.LogInformation("Hangfire recurring jobs not configured: {Message}", ex.Message);
 }
 
 await app.RunAsync();

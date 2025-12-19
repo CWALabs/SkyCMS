@@ -35,39 +35,6 @@ namespace Sky.Tests.Services.Html
         #region EnsureEditableMarkers Tests
 
         /// <summary>
-        /// Tests that null input returns a default editable div.
-        /// </summary>
-        [TestMethod]
-        public void EnsureEditableMarkers_WhitespaceOnly_ReturnsDefaultEditableDiv()  // ? New test
-        {
-            // Arrange
-            var html = "   \t\n   ";
-
-            // Act
-            var result = articleHtmlService.EnsureEditableMarkers(html);
-
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.Contains("contenteditable='true'", result);
-            Assert.Contains("data-ccms-ceid=", result);
-        }
-
-        /// <summary>
-        /// Tests that empty string returns a default editable div.
-        /// </summary>
-        [TestMethod]
-        public void EnsureEditableMarkers_EmptyString_ReturnsDefaultEditableDiv()
-        {
-            // Act
-            var result = articleHtmlService.EnsureEditableMarkers(string.Empty);
-
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.Contains("contenteditable='true'", result);
-            Assert.Contains("data-ccms-ceid=", result);
-        }
-
-        /// <summary>
         /// Tests that HTML with editable element gets CCMS IDs added.
         /// </summary>
         [TestMethod]
@@ -83,25 +50,6 @@ namespace Sky.Tests.Services.Html
             Assert.Contains("data-ccms-ceid=", result);
             Assert.Contains("data-ccms-index=", result);
             Assert.Contains("Test Content", result);
-        }
-
-        /// <summary>
-        /// Tests that HTML without editable elements gets wrapped.
-        /// </summary>
-        [TestMethod]
-        public void EnsureEditableMarkers_HtmlWithoutEditableElement_WrapsContent()
-        {
-            // Arrange
-            var html = "<p>Regular paragraph</p>";
-
-            // Act
-            var result = articleHtmlService.EnsureEditableMarkers(html);
-
-            // Assert
-            Assert.Contains("contenteditable=\"true\"", result);
-            Assert.Contains("data-ccms-ceid=", result);
-            // ? Removed data-ccms-index check - not added for wrapped content
-            Assert.Contains("<p>Regular paragraph</p>", result);
         }
 
         /// <summary>

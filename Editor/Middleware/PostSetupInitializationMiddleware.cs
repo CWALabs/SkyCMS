@@ -90,32 +90,8 @@ namespace Sky.Editor.Middleware
         private async Task ProcessTenantSetupAsync(HttpContext context, string tenantId)
         {
             // ✅ Resolve scoped services from the request scope
-            var dbInitService = context.RequestServices.GetRequiredService<IDatabaseInitializationService>();
             var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
             var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
-
-            // ✅ VERIFY database is initialized - do NOT initialize during HTTP requests
-            // Database initialization should only happen during setup wizard completion
-            if (!await dbInitService.IsInitializedAsync(connectionString))
-            {
-                logger.LogWarning(
-                    "Database not initialized for tenant {TenantId}. Please complete setup wizard at /___setup",
-                    tenantId);
-
-                // Check if setup is allowed
-                var allowSetup = configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
-
-                if (allowSetup && !context.Request.Path.StartsWithSegments("/___setup"))
-                {
-                    // Redirect to setup wizard
-                    logger.LogInformation("Redirecting tenant {TenantId} to setup wizard", tenantId);
-                    context.Response.Redirect("/___setup");
-                    return;
-                }
-
-                // If setup not allowed or already on setup page, continue but log warning
-                return;
-            }
 
             var dbContext = context.RequestServices.GetRequiredService<ApplicationDbContext>();
 

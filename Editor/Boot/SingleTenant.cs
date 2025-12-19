@@ -7,66 +7,106 @@
 
 namespace Sky.Editor.Boot
 {
-    using AspNetCore.Identity.FlexDb.Extensions;
+    using System;
+    using System.Linq;
+    using AspNetCore.Identity.FlexDb;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
-    using Cosmos.Common.Services;
     using Microsoft.AspNetCore.Builder;
-    using Microsoft.Extensions.Caching.Memory;
+    using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using Sky.Editor.Data;
-    using System;
+    using Microsoft.Extensions.Logging;
 
     /// <summary>
-    /// Boots up the single-tenant editor.
+    /// Single-tenant configuration for the application.
     /// </summary>
-    internal static class SingleTenant
+    public static class SingleTenant
     {
         /// <summary>
-        /// Configures the single-tenant editor.
+        /// Configures services for single-tenant mode.
+        /// Ensures database schema exists before registering services.
         /// </summary>
         /// <param name="builder">Web application builder.</param>
-        internal static void Configure(WebApplicationBuilder builder)
+        public static void Configure(WebApplicationBuilder builder)
         {
-            // Database connection string
+            var logger = LoggerFactory.Create(config => config.AddConsole())
+                .CreateLogger("SingleTenant.Configure");
+
             var connectionString = builder.Configuration.GetConnectionString("ApplicationDbContextConnection");
+            var allowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
 
-            // Backup storage connection string
-            var backupConnectionString = builder.Configuration.GetConnectionString("BackupStorageConnectionString");
-
-            // If there is a backup connection string, then restore the database file now.
-            // Also, on shutdown of the application, upload the database file to storage.
-            if (!string.IsNullOrEmpty(backupConnectionString))
+            // If no connection string is provided, don't configure database yet
+            if (string.IsNullOrEmpty(connectionString))
             {
-                // Restore any files from blob storage to local file system.
-                var restoreService = new FileBackupRestoreService(builder.Configuration, new MemoryCache(new MemoryCacheOptions()));
-                restoreService.DownloadAsync(connectionString).Wait();
+                logger.LogWarning("No connection string configured - database will be configured during setup");
+                // Don't add DbContext here - it will be added after setup completes
+                return;
             }
 
-            // Read AllowSetup directly from configuration
-            // If this is set to true, the setup wizard will be accessible at /___setup
-            // IMPORTANT: The database will be initialized during setup wizard completion,
-            // NOT at application startup. This improves startup performance and ensures
-            // proper initialization through the IDatabaseInitializationService.
-            var allowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
-            System.Console.WriteLine(allowSetup 
-                ? "Setup mode enabled - database will be initialized during setup wizard completion" 
-                : "Setup mode disabled - database should already be initialized");
+            // Ensure database schema exists if setup is allowed
+            if (allowSetup)
+            {
+                try
+                {
+                    logger.LogInformation("Checking database schema for single-tenant mode...");
+                    EnsureDatabaseSchemaExists(connectionString, logger);
+                    logger.LogInformation("Database schema is ready");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Database schema initialization failed - application will continue but may have limited functionality");
+                }
+            }
 
-            // ✅ Database initialization is now handled exclusively by:
-            //    SetupService.CompleteSetupAsync() -> IDatabaseInitializationService.InitializeAsync()
-            // This ensures:
-            // - Consistent initialization across all database providers
-            // - Proper error handling and logging
-            // - Non-blocking application startup
-            // - Idempotent initialization (won't re-initialize if already done)
-
-            // Add the DB context using FlexDb auto-configuration
+            // Configure the ApplicationDbContext with the appropriate provider
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {
-                AspNetCore.Identity.FlexDb.CosmosDbOptionsBuilder.ConfigureDbOptions(options, connectionString);
+                CosmosDbOptionsBuilder.ConfigureDbOptions(options, connectionString);
             });
+
+            // Configure storage services
+            builder.Services.AddCosmosStorageContext(builder.Configuration);
+        }
+
+        /// <summary>
+        /// Ensures the database schema exists for the ApplicationDbContext.
+        /// </summary>
+        /// <param name="connectionString">Database connection string.</param>
+        /// <param name="logger">Logger instance.</param>
+        private static void EnsureDatabaseSchemaExists(string connectionString, ILogger logger)
+        {
+            try
+            {
+                using var dbContext = new ApplicationDbContext(CosmosDbOptionsBuilder.GetDbOptions<ApplicationDbContext>(connectionString));
+                
+                // Check if database is accessible
+                if (!dbContext.Database.CanConnect())
+                {
+                    logger.LogInformation("Database not accessible - creating database and schema");
+                    dbContext.Database.EnsureCreated();
+                    logger.LogInformation("Database and schema created successfully");
+                    return;
+                }
+
+                // Try to query a table to verify schema exists
+                try
+                {
+                    var testQuery = dbContext.Settings.FirstOrDefault();
+                    logger.LogInformation("Database schema verified - Settings table is accessible");
+                }
+                catch
+                {
+                    logger.LogInformation("Database schema incomplete or missing - creating schema");
+                    dbContext.Database.EnsureCreated();
+                    logger.LogInformation("Database schema created successfully");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to ensure database schema exists");
+                throw;
+            }
         }
     }
 }

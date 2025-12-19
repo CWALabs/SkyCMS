@@ -213,7 +213,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = createResult.Data!.ArticleNumber,
                 Title = "Test Article",
-                Content = "<div><h1>Test</h1></div>", // Without contenteditable
+                Content = "<div contenteditable=\"true\"><h1>Test</h1></div>", // With contenteditable
                 UserId = TestUserId,
                 ArticleType = ArticleType.General
             };
@@ -223,8 +223,10 @@ namespace Sky.Tests.Features.Articles.Save
 
             // Assert
             Assert.IsTrue(result.IsSuccess);
-            // Content should have been processed by ArticleHtmlService
+            // Content should have tracking markers added by ArticleHtmlService
             Assert.Contains("contenteditable", result.Data!.Model!.Content);
+            Assert.Contains("data-ccms-ceid", result.Data!.Model!.Content);
+            Assert.Contains("data-ccms-index", result.Data!.Model!.Content);
         }
 
         #endregion

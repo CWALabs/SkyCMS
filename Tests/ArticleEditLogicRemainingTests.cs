@@ -1,3 +1,4 @@
+using Cosmos.Common.Data;
 using Cosmos.Common.Data.Logic;
 using Microsoft.EntityFrameworkCore;
 using Sky.Cms.Models;
@@ -215,7 +216,7 @@ public class ArticleEditLogicRemainingTests : SkyCmsTestBase
         {
             ArticleNumber = vm.ArticleNumber,
             Title = "Renamed Title",
-            Content = vm.Content,
+            Content = string.IsNullOrWhiteSpace(vm.Content) ? "<p>Content</p>" : vm.Content,
             UserId = TestUserId,
             ArticleType = vm.ArticleType,
             Published = vm.Published

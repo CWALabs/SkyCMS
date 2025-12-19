@@ -749,14 +749,17 @@ namespace Sky.Cms.Controllers
             var originalEditableDivs = articleHtmlDoc.DocumentNode.SelectNodes("//*[@data-ccms-ceid]");
             var templateEditableDivs = templateHtmlDoc.DocumentNode.SelectNodes("//*[@data-ccms-ceid]");
 
-            // Find the region we are updating
-            foreach (var div in templateEditableDivs)
+            // Check for null before iterating
+            if (templateEditableDivs != null && originalEditableDivs != null)
             {
-                var original = originalEditableDivs.FirstOrDefault(w => w.Attributes["data-ccms-ceid"].Value == div.Attributes["data-ccms-ceid"].Value);
-                if (original != null)
+                foreach (var div in templateEditableDivs)
                 {
-                    // Update the region now
-                    div.InnerHtml = original.InnerHtml;
+                    var original = originalEditableDivs.FirstOrDefault(w => w.Attributes["data-ccms-ceid"].Value == div.Attributes["data-ccms-ceid"].Value);
+                    if (original != null)
+                    {
+                        // Update the region now
+                        div.InnerHtml = original.InnerHtml;
+                    }
                 }
             }
 

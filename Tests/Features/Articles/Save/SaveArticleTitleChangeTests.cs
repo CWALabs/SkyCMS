@@ -46,7 +46,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = article.ArticleNumber,
                 Title = "Completely New Title",
-                Content = article.Content ?? "<p>Content</p>",
+                Content = string.IsNullOrWhiteSpace(article.Content) ? "<p>Content</p>" : article.Content,
                 UserId = TestUserId,
                 ArticleType = ArticleType.General,
                 Published = savedArticle.Published
@@ -83,7 +83,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = article.ArticleNumber,
                 Title = "Special Chars and Symbols",  // Changed to avoid / which is preserved for hierarchical URLs
-                Content = article.Content ?? "<p>Content</p>",
+                Content = string.IsNullOrWhiteSpace(article.Content) ? "<p>Content</p>" : article.Content,
                 UserId = TestUserId,
                 ArticleType = ArticleType.General,
                 Published = savedArticle.Published
@@ -122,7 +122,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = article.ArticleNumber,
                 Title = "Original Title", // Only case changed
-                Content = article.Content ?? "<p>Content</p>",
+                Content = string.IsNullOrWhiteSpace(article.Content) ? "<p>Content</p>" : article.Content,
                 UserId = TestUserId,
                 ArticleType = ArticleType.General,
                 Published = savedArticle.Published
@@ -156,7 +156,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = article.ArticleNumber,
                 Title = "My   Article   With   Multiple   Spaces",
-                Content = article.Content ?? "<p>Content</p>",
+                Content = string.IsNullOrWhiteSpace(article.Content) ? "<p>Content</p>" : article.Content,
                 UserId = TestUserId,
                 ArticleType = ArticleType.General,
                 Published = savedArticle.Published
@@ -192,7 +192,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = article.ArticleNumber,
                 Title = longTitle.Substring(0, 254), // Stay within title length limit
-                Content = article.Content ?? "<p>Content</p>",
+                Content = string.IsNullOrWhiteSpace(article.Content) ? "<p>Content</p>" : article.Content,
                 UserId = TestUserId,
                 ArticleType = ArticleType.General,
                 Published = savedArticle.Published
@@ -227,7 +227,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = article.ArticleNumber,
                 Title = "   Trimmed Title   ",
-                Content = article.Content ?? "<p>Content</p>",
+                Content = string.IsNullOrWhiteSpace(article.Content) ? "<p>Content</p>" : article.Content,
                 UserId = TestUserId,
                 ArticleType = ArticleType.General,
                 Published = savedArticle.Published
@@ -268,7 +268,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = article.ArticleNumber,
                 Title = "Second Title",
-                Content = article.Content ?? "<p>Content</p>",
+                Content = string.IsNullOrWhiteSpace(article.Content) ? "<p>Content</p>" : article.Content,
                 UserId = TestUserId,
                 ArticleType = ArticleType.General,
                 Published = savedArticle.Published
@@ -280,7 +280,7 @@ namespace Sky.Tests.Features.Articles.Save
             {
                 ArticleNumber = article.ArticleNumber,
                 Title = "Third Title",
-                Content = article.Content ?? "<p>Content</p>",
+                Content = string.IsNullOrWhiteSpace(article.Content) ? "<p>Content</p>" : article.Content,
                 UserId = TestUserId,
                 ArticleType = ArticleType.General,
                 Published = savedArticle.Published

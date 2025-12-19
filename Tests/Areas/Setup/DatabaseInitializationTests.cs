@@ -480,9 +480,6 @@ namespace Sky.Tests.Areas.Setup
             services.AddLogging();
             services.AddMemoryCache();
 
-            // Add your IDatabaseInitializationService implementation
-            services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
-
             serviceProvider = services.BuildServiceProvider();
 
             var layoutImportService = new LayoutImportService(

@@ -8,6 +8,7 @@
 namespace Sky.Editor.Features.Articles.Save
 {
     using System;
+    using System.ComponentModel.DataAnnotations;
     using Cosmos.Common.Data;
     using Sky.Editor.Features.Shared;
 
@@ -29,6 +30,7 @@ namespace Sky.Editor.Features.Articles.Save
         /// <summary>
         /// Gets or sets the HTML content.
         /// </summary>
+        [Required(AllowEmptyStrings = true, ErrorMessage = "Content is required.")]
         public string Content { get; init; } = string.Empty;
 
         /// <summary>

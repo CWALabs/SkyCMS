@@ -777,29 +777,10 @@ namespace Sky.Editor.Services.Setup
                 // Create main database context
                 using var mainDbContext = new ApplicationDbContext(mainDbConnectionString);
 
-                // Step 1: Ensure database exists and is initialized
-                // logger.LogInformation("Ensuring database exists and is initialized");
-                // await EnsureDatabaseInitializedAsync(mainDbContext);
+                // Database schema is already initialized during application startup by SingleTenant.Configure() or MultiTenant.Configure()
+                logger.LogInformation("Database schema already initialized during application startup");
 
-                logger.LogInformation("Ensuring database exists and is initialized");
-                var dbInitService = serviceProvider.GetRequiredService<IDatabaseInitializationService>();
-                var dbInitResult = await dbInitService.InitializeAsync(mainDbConnectionString, forceInitialization: false);
-
-                if (!dbInitResult.Success)
-                {
-                    return new SetupCompletionResult
-                    {
-                        Success = false,
-                        Message = $"Database initialization failed: {dbInitResult.Message}"
-                    };
-                }
-
-                logger.LogInformation(
-                    "Database initialized - Provider: {Provider}, Schema Created: {SchemaCreated}",
-                    dbInitResult.ProviderType,
-                    dbInitResult.SchemaCreated);
-
-                // Step 2: Create administrator account--if one does not exist yet.
+                // Step 1: Create administrator account--if one does not exist yet.
                 var adminAccounts = await userManager.GetUsersInRoleAsync(RequiredIdentityRoles.Administrators);
 
                 if (!adminAccounts.Any())
@@ -816,15 +797,15 @@ namespace Sky.Editor.Services.Setup
                     logger.LogInformation("Administrator account already exists, skipping creation");
                 }
 
-                // Step 3: Save settings to main database
+                // Step 2: Save settings to main database
                 logger.LogInformation("Saving settings to database");
                 await SaveSettingsToDatabaseAsync(mainDbContext, config);
 
-                // Step 4: Create default layout if none exists
+                // Step 3: Create default layout if none exists
                 logger.LogInformation("Ensuring default layout exists");
                 await EnsureDefaultLayoutAndHomePageExistsAsync(mainDbContext, config);
 
-                // Step 5: Mark setup as complete
+                // Step 4: Mark setup as complete
                 config.IsComplete = true;
                 config.CompletedAt = DateTime.UtcNow;
 
@@ -973,74 +954,6 @@ namespace Sky.Editor.Services.Setup
             }
 
             return new SetupCompletionResult { Success = true };
-        }
-
-        /// <summary>
-        /// Ensures database is initialized.
-        /// </summary>
-        private async Task EnsureDatabaseInitializedAsync(ApplicationDbContext context)
-        {
-            if (context.Database.IsCosmos())
-            {
-                // For Cosmos DB, use EnsureCreated
-                await context.Database.EnsureCreatedAsync();
-            }
-            else
-            {
-                // For relational databases, apply migrations or ensure created
-                var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-                if (pendingMigrations.Any())
-                {
-                    await context.Database.MigrateAsync();
-                }
-                else
-                {
-                    // Check if schema already exists before calling EnsureCreated
-                    var schemaExists = await DatabaseSchemaExistsAsync(context);
-                    if (!schemaExists)
-                    {
-                        await context.Database.EnsureCreatedAsync();
-                        logger.LogInformation("Database schema created successfully");
-                    }
-                    else
-                    {
-                        logger.LogInformation("Database schema already exists, skipping creation");
-                    }
-                }
-            }
-
-            logger.LogInformation("Database initialized successfully");
-        }
-
-        /// <summary>
-        /// Checks if the database schema already exists.
-        /// </summary>
-        /// <param name="context">The database context to check.</param>
-        /// <returns>True if the schema exists, false otherwise.</returns>
-        private async Task<bool> DatabaseSchemaExistsAsync(ApplicationDbContext context)
-        {
-            try
-            {
-                // Try to query a core table - if it succeeds, schema exists
-                await context.Articles.AnyAsync();
-                return true;
-            }
-            catch (Exception ex) when (
-                ex is Microsoft.Data.Sqlite.SqliteException ||
-                ex is Microsoft.Data.SqlClient.SqlException ||
-                ex is MySqlConnector.MySqlException ||
-                ex is Microsoft.Azure.Cosmos.CosmosException)
-            {
-                // Database provider-specific exception indicating table/container doesn't exist
-                logger.LogDebug(ex, "Database schema does not exist yet");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                // Unexpected error - log as warning
-                logger.LogWarning(ex, "Unexpected error checking database schema existence");
-                return false;
-            }
         }
 
         /// <summary>

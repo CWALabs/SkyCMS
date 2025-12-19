@@ -12,7 +12,6 @@ namespace Sky.Editor.Services.Scheduling
     using System.Linq;
     using System.Threading.Tasks;
     using Cosmos.BlobService;
-    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.DynamicConfig;
     using Cosmos.EmailServices;
@@ -115,7 +114,6 @@ namespace Sky.Editor.Services.Scheduling
                 // These services need to be scoped to a particular domainName.
                 ApplicationDbContext dbContext;
                 StorageContext storageContext;
-                var dbInitService = scopedServices.GetService<IDatabaseInitializationService>();
 
                 if (settings.IsMultiTenantEditor)
                 {
@@ -128,12 +126,6 @@ namespace Sky.Editor.Services.Scheduling
                         return;
                     }
 
-                    // ✅ Use helper method to verify database initialization
-                    if (!await EnsureDatabaseInitializedAsync(dbInitService, connection.DbConn, $"tenant {domainName}"))
-                    {
-                        return; // Skip this tenant if database not initialized
-                    }
-
                     dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
                     storageContext = new StorageContext(connection.StorageConn, memoryCache);
                 }
@@ -142,12 +134,6 @@ namespace Sky.Editor.Services.Scheduling
                     // ✅ Single-tenant mode: use the scoped services from DI
                     var configuration = scopedServices.GetRequiredService<IConfiguration>();
                     var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
-
-                    // ✅ Use helper method to verify database initialization
-                    if (!await EnsureDatabaseInitializedAsync(dbInitService, connectionString, "single-tenant instance"))
-                    {
-                        return; // Skip processing if database not initialized
-                    }
 
                     dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
                     storageContext = scopedServices.GetRequiredService<StorageContext>();
@@ -369,44 +355,6 @@ namespace Sky.Editor.Services.Scheduling
                     "Failed to send publication notification for article {ArticleNumber}",
                     article.ArticleNumber);
             }
-        }
-
-        /// <summary>
-        /// Ensures the database is initialized before processing.
-        /// This method only verifies - it does NOT initialize the database.
-        /// Database initialization should be done through the setup wizard.
-        /// </summary>
-        /// <param name="dbInitService">Database initialization service.</param>
-        /// <param name="connectionString">Database connection string.</param>
-        /// <param name="contextDescription">Context description for logging.</param>
-        /// <returns>True if database is initialized and ready, false otherwise.</returns>
-        private async Task<bool> EnsureDatabaseInitializedAsync(
-            IDatabaseInitializationService dbInitService,
-            string connectionString,
-            string contextDescription)
-        {
-            if (dbInitService == null)
-            {
-                logger.LogWarning("DatabaseInitializationService not available for {Context}", contextDescription);
-                return true; // Assume initialized if service not available (for backward compatibility)
-            }
-
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                logger.LogWarning("Connection string is null or empty for {Context}", contextDescription);
-                return false;
-            }
-
-            if (!await dbInitService.IsInitializedAsync(connectionString))
-            {
-                logger.LogWarning(
-                    "Database not initialized for {Context}. Skipping scheduled processing. " +
-                    "Please complete the setup wizard to initialize the database.",
-                    contextDescription);
-                return false;
-            }
-
-            return true;
         }
     }
 }

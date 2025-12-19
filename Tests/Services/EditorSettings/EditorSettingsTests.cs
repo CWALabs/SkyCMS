@@ -178,7 +178,7 @@ namespace Sky.Tests.Services.EditorSettings
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual("https://config.example.com", result.PublisherUrl);
-            Assert.AreEqual("/database-blob", result.BlobPublicUrl);
+            Assert.AreEqual("/", result.BlobPublicUrl);
             Assert.IsFalse(result.AllowSetup);
         }
 
@@ -205,7 +205,7 @@ namespace Sky.Tests.Services.EditorSettings
             Assert.AreEqual("https://environment-override.example.com", result.PublisherUrl);
             Assert.IsFalse(result.StaticWebPages);
             // BlobPublicUrl should come from database since not in environment
-            Assert.AreEqual("/database-blob", result.BlobPublicUrl);
+            Assert.AreEqual("/", result.BlobPublicUrl);
         }
 
         [TestMethod]
@@ -310,7 +310,7 @@ namespace Sky.Tests.Services.EditorSettings
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual("https://database.example.com", result.PublisherUrl);
-            Assert.AreEqual("/database-blob", result.BlobPublicUrl);
+            Assert.AreEqual("/", result.BlobPublicUrl);
             Assert.IsFalse(result.CosmosRequiresAuthentication);
             Assert.AreEqual("app-id-123", result.MicrosoftAppId);
         }

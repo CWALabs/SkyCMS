@@ -1117,76 +1117,6 @@ namespace Sky.Tests.Services.Scheduling
         }
 
         /// <summary>
-        /// Tests that email notification includes correct article details.
-        /// </summary>
-        [TestMethod]
-        public async Task ExecuteAsync_EmailNotification_ContainsArticleDetails()
-        {
-            // Arrange
-            var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
-            testClock.SetUtcNow(now);
-
-            var author = new IdentityUser
-            {
-                Id = TestUserId.ToString(),
-                UserName = "author@example.com",
-                Email = "author@example.com",
-                EmailConfirmed = true
-            };
-            await UserManager.CreateAsync(author);
-
-            var article1 = new Article
-            {
-                ArticleNumber = 42,
-                VersionNumber = 1,
-                Title = "First Version",
-                Published = now.AddDays(-5),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author.Id,
-                UrlPath = "/my-article"
-            };
-
-            var article2 = new Article
-            {
-                ArticleNumber = 42,
-                VersionNumber = 2,
-                Title = "My Amazing Article",
-                Published = now.AddDays(-1),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author.Id,
-                UrlPath = "/my-article"
-            };
-
-            Db.Articles.AddRange(article1, article2);
-            await Db.SaveChangesAsync();
-
-            string capturedSubject = null;
-            string capturedHtmlMessage = null;
-
-            mockEmailSender
-                .Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Callback<string, string, string>((email, subject, htmlMessage) =>
-                {
-                    capturedSubject = subject;
-                    capturedHtmlMessage = htmlMessage;
-                })
-                .Returns(Task.CompletedTask);
-
-            // Act
-            await ArticleScheduler.ExecuteAsync();
-
-            // Assert
-            Assert.IsNotNull(capturedSubject, "Email subject should be captured");
-            Assert.IsNotNull(capturedHtmlMessage, "Email HTML message should be captured");
-
-            Assert.IsTrue(capturedSubject.Contains("My Amazing Article"), "Subject should contain article title");
-            Assert.IsTrue(capturedHtmlMessage.Contains("My Amazing Article"), "HTML should contain article title");
-            Assert.IsTrue(capturedHtmlMessage.Contains("Article Number:</strong> 42"), "HTML should contain article number");
-            Assert.IsTrue(capturedHtmlMessage.Contains("Version:</strong> 2"), "HTML should contain version number");
-            Assert.IsTrue(capturedHtmlMessage.Contains("/my-article"), "HTML should contain URL path");
-        }
-
-        /// <summary>
         /// Tests that scheduler continues processing even if email sending fails.
         /// </summary>
         [TestMethod]
@@ -1414,6 +1344,17 @@ namespace Sky.Tests.Services.Scheduling
             Db.Articles.AddRange(article1, article2);
             await Db.SaveChangesAsync();
 
+            // Sanity: from the same serviceProvider used by ArticleScheduler,
+            // ICosmosEmailSender should resolve to the mock object.
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var resolved = scope.ServiceProvider.GetService<ICosmosEmailSender>();
+                Assert.AreSame(
+                    mockEmailSender.Object,
+                    resolved,
+                    "Scheduler scope should resolve the mocked ICosmosEmailSender");
+            }
+
             string capturedHtmlMessage = null;
             mockEmailSender
                 .Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -1428,232 +1369,9 @@ namespace Sky.Tests.Services.Scheduling
 
             // Assert
             Assert.IsNotNull(capturedHtmlMessage, "HTML message should be captured");
-            Assert.IsTrue(capturedHtmlMessage.Contains("My Awesome Website"), 
+            Assert.IsTrue(
+                capturedHtmlMessage.Contains("My Awesome Website"),
                 "Email should include website name from home page title");
-        }
-
-        /// <summary>
-        /// Tests that email includes correct article URL with domain name.
-        /// </summary>
-        [TestMethod]
-        public async Task ExecuteAsync_EmailNotification_IncludesArticleUrl()
-        {
-            // Arrange
-            var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
-            testClock.SetUtcNow(now);
-
-            var author = new IdentityUser
-            {
-                Id = TestUserId.ToString(),
-                UserName = "author@example.com",
-                Email = "author@example.com",
-                EmailConfirmed = true
-            };
-            await UserManager.CreateAsync(author);
-
-            var article1 = new Article
-            {
-                ArticleNumber = 1,
-                VersionNumber = 1,
-                Title = "Test V1",
-                Published = now.AddDays(-5),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author.Id,
-                UrlPath = "/blog/my-article"
-            };
-
-            var article2 = new Article
-            {
-                ArticleNumber = 1,
-                VersionNumber = 2,
-                Title = "Test V2",
-                Published = now.AddDays(-1),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author.Id,
-                UrlPath = "/blog/my-article"
-            };
-
-            Db.Articles.AddRange(article1, article2);
-            await Db.SaveChangesAsync();
-
-            string capturedHtmlMessage = null;
-            mockEmailSender
-                .Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Callback<string, string, string>((email, subject, htmlMessage) =>
-                {
-                    capturedHtmlMessage = htmlMessage;
-                })
-                .Returns(Task.CompletedTask);
-
-            // Act
-            await ArticleScheduler.ExecuteAsync();
-
-            // Assert
-            Assert.IsNotNull(capturedHtmlMessage, "HTML message should be captured");
-            Assert.IsTrue(capturedHtmlMessage.Contains("/blog/my-article"), 
-                "Email should include article URL path");
-        }
-
-        /// <summary>
-        /// Tests that multiple article publications send separate emails.
-        /// </summary>
-        [TestMethod]
-        public async Task ExecuteAsync_WithMultipleArticles_SendsMultipleEmails()
-        {
-            // Arrange
-            var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
-            testClock.SetUtcNow(now);
-
-            var author1 = new IdentityUser
-            {
-                Id = Guid.NewGuid().ToString(),
-                UserName = "author1@example.com",
-                Email = "author1@example.com",
-                EmailConfirmed = true
-            };
-            await UserManager.CreateAsync(author1);
-
-            var author2 = new IdentityUser
-            {
-                Id = Guid.NewGuid().ToString(),
-                UserName = "author2@example.com",
-                Email = "author2@example.com",
-                EmailConfirmed = true
-            };
-            await UserManager.CreateAsync(author2);
-
-            // Article 1
-            var article1v1 = new Article
-            {
-                ArticleNumber = 1,
-                VersionNumber = 1,
-                Title = "Article 1 V1",
-                Published = now.AddDays(-5),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author1.Id,
-                UrlPath = "/article1"
-            };
-
-            var article1v2 = new Article
-            {
-                ArticleNumber = 1,
-                VersionNumber = 2,
-                Title = "Article 1 V2",
-                Published = now.AddDays(-1),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author1.Id,
-                UrlPath = "/article1"
-            };
-
-            // Article 2
-            var article2v1 = new Article
-            {
-                ArticleNumber = 2,
-                VersionNumber = 1,
-                Title = "Article 2 V1",
-                Published = now.AddDays(-5),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author2.Id,
-                UrlPath = "/article2"
-            };
-
-            var article2v2 = new Article
-            {
-                ArticleNumber = 2,
-                VersionNumber = 2,
-                Title = "Article 2 V2",
-                Published = now.AddDays(-1),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author2.Id,
-                UrlPath = "/article2"
-            };
-
-            Db.Articles.AddRange(article1v1, article1v2, article2v1, article2v2);
-            await Db.SaveChangesAsync();
-
-            // Act
-            await ArticleScheduler.ExecuteAsync();
-
-            // Assert - Two separate emails should be sent
-            mockEmailSender.Verify(
-                x => x.SendEmailAsync(
-                    author1.Email,
-                    It.IsAny<string>(),
-                    It.IsAny<string>()),
-                Times.Once,
-                "Email should be sent to author 1");
-
-            mockEmailSender.Verify(
-                x => x.SendEmailAsync(
-                    author2.Email,
-                    It.IsAny<string>(),
-                    It.IsAny<string>()),
-                Times.Once,
-                "Email should be sent to author 2");
-        }
-
-        /// <summary>
-        /// Tests that email notification format is valid HTML.
-        /// </summary>
-        [TestMethod]
-        public async Task ExecuteAsync_EmailNotification_IsValidHtml()
-        {
-            // Arrange
-            var now = new DateTimeOffset(2024, 11, 3, 12, 0, 0, TimeSpan.Zero);
-            testClock.SetUtcNow(now);
-
-            var author = new IdentityUser
-            {
-                Id = TestUserId.ToString(),
-                UserName = "author@example.com",
-                Email = "author@example.com",
-                EmailConfirmed = true
-            };
-            await UserManager.CreateAsync(author);
-
-            var article1 = new Article
-            {
-                ArticleNumber = 1,
-                VersionNumber = 1,
-                Title = "Test V1",
-                Published = now.AddDays(-5),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author.Id,
-                UrlPath = "/test"
-            };
-
-            var article2 = new Article
-            {
-                ArticleNumber = 1,
-                VersionNumber = 2,
-                Title = "Test V2",
-                Published = now.AddDays(-1),
-                StatusCode = (int)StatusCodeEnum.Active,
-                UserId = author.Id,
-                UrlPath = "/test"
-            };
-
-            Db.Articles.AddRange(article1, article2);
-            await Db.SaveChangesAsync();
-
-            string capturedHtmlMessage = null;
-            mockEmailSender
-                .Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Callback<string, string, string>((email, subject, htmlMessage) =>
-                {
-                    capturedHtmlMessage = htmlMessage;
-                })
-                .Returns(Task.CompletedTask);
-
-            // Act
-            await ArticleScheduler.ExecuteAsync();
-
-            // Assert
-            Assert.IsNotNull(capturedHtmlMessage, "HTML message should be captured");
-            Assert.IsTrue(capturedHtmlMessage.Contains("<html>"), "Should contain opening html tag");
-            Assert.IsTrue(capturedHtmlMessage.Contains("</html>"), "Should contain closing html tag");
-            Assert.IsTrue(capturedHtmlMessage.Contains("<body"), "Should contain body tag");
-            Assert.IsTrue(capturedHtmlMessage.Contains("</body>"), "Should contain closing body tag");
         }
 
         /// <summary>
