@@ -40,9 +40,6 @@ namespace Sky.Editor.Services.Setup
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly ApplicationDbContext applicationDbContext;
         private readonly ILayoutImportService layoutImportService;
-        private readonly IMediator mediator;
-        private readonly ArticleEditLogic articleLogic;
-        private readonly IServiceProvider serviceProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupService"/> class.
@@ -54,20 +51,14 @@ namespace Sky.Editor.Services.Setup
         /// <param name="roleManager">Role manager.</param>
         /// <param name="applicationDbContext">Database context.</param>
         /// <param name="layoutImportService">Layout import service.</param>
-        /// <param name="articleLogic">Article edit logic.</param>
-        /// <param name="mediator">Mediator service.</param>
-        /// <param name="serviceProvider">Service provider.</param>
         public SetupService(
-    IConfiguration configuration,
-    ILogger<SetupService> logger,
-    IMemoryCache memoryCache,
-    UserManager<IdentityUser> userManager,
-    RoleManager<IdentityRole> roleManager,
-    ApplicationDbContext applicationDbContext,
-    ILayoutImportService layoutImportService,
-    ArticleEditLogic articleLogic,
-    IMediator mediator,
-    IServiceProvider serviceProvider)
+            IConfiguration configuration,
+            ILogger<SetupService> logger,
+            IMemoryCache memoryCache,
+            UserManager<IdentityUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            ApplicationDbContext applicationDbContext,
+            ILayoutImportService layoutImportService)
         {
             this.configuration = configuration;
             this.logger = logger;
@@ -76,9 +67,6 @@ namespace Sky.Editor.Services.Setup
             this.roleManager = roleManager;
             this.applicationDbContext = applicationDbContext;
             this.layoutImportService = layoutImportService;
-            this.articleLogic = articleLogic;
-            this.mediator = mediator;
-            this.serviceProvider = serviceProvider;
         }
 
         /// <inheritdoc/>
@@ -121,85 +109,15 @@ namespace Sky.Editor.Services.Setup
             }
         }
 
-        /// <summary>
-        /// Populates setup configuration from environment variables and configuration.
-        /// </summary>
-        /// <param name="config">Setup configuration to populate.</param>
-        private void PopulateFromEnvironmentVariables(SetupConfiguration config)
-        {
-            // Storage Configuration
-            var storageConnectionString = configuration.GetConnectionString("StorageConnectionString");
-            var blobPublicUrl = configuration.GetValue<string>("AzureBlobStorageEndPoint") ?? configuration.GetValue<string>("BlobPublicUrl");
-
-            // Storage connection.
-            if (!string.IsNullOrEmpty(storageConnectionString))
-            {
-                config.StorageConnectionString = storageConnectionString;
-                config.StoragePreConfigured = true;
-            }
-
-            if (!string.IsNullOrEmpty(blobPublicUrl))
-            {
-                config.BlobPublicUrl = blobPublicUrl;
-                config.BlobPublicUrlPreConfigured = true;
-            }
-
-            // Publisher Configuration
-            var publisherUrl = configuration["CosmosPublisherUrl"];
-            var staticWebPages = configuration["CosmosStaticWebPages"];
-
-            if (!string.IsNullOrEmpty(publisherUrl))
-            {
-                config.PublisherUrl = publisherUrl;
-                config.PublisherPreConfigured = true;
-
-                if (bool.TryParse(staticWebPages, out var isStatic))
-                {
-                    config.StaticWebPages = isStatic;
-                }
-
-                logger.LogInformation("Publisher configuration loaded from environment variables");
-            }
-
-            // Admin Configuration
-            var senderEmail = configuration["AdminEmail"] ?? configuration["SenderEmail"];
-            if (!string.IsNullOrEmpty(senderEmail))
-            {
-                config.SenderEmail = senderEmail;
-                config.SenderEmailPreConfigured = true;
-                logger.LogInformation("Sender email loaded from environment variables");
-            }
-
-            // Database Configuration (optional - usually in appsettings.json)
-            var dbConnectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
-            if (!string.IsNullOrEmpty(dbConnectionString))
-            {
-                config.DatabaseConnectionString = dbConnectionString;
-                logger.LogInformation("Database configuration loaded from environment variables");
-            }
-
-            // Detect if one of an Email provider is preconfigured.
-            var sendGridApiKey = configuration["CosmosSendGridApiKey"];
-            var smtpHost = configuration["SmtpEmailProviderOptions:Host"]
-                  ?? configuration["SmtpEmailProviderOptions__Host"];
-            var azureEmailConnectionString = configuration.GetConnectionString("AzureCommunicationConnection");
-
-            if (!string.IsNullOrEmpty(sendGridApiKey)
-                || !string.IsNullOrEmpty(smtpHost)
-                || !string.IsNullOrEmpty(azureEmailConnectionString))
-            {
-                config.EmailProviderPreConfigured = true;
-                logger.LogInformation("Email configuration loaded from environment variables");
-            }
-
-        }
-
         /// <inheritdoc/>
         public async Task<SetupConfiguration> GetCurrentSetupAsync()
         {
             try
             {
                 var config = await GetSetupStateAsync();
+
+                PopulateFromEnvironmentVariables(config);
+
                 if (config != null && !config.IsComplete)
                 {
                     return config;
@@ -424,6 +342,104 @@ namespace Sky.Editor.Services.Setup
                 logger.LogError(ex, "Failed to update publisher configuration");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Populates setup configuration from environment variables and configuration.
+        /// </summary>
+        /// <param name="config">Setup configuration to populate.</param>
+        private void PopulateFromEnvironmentVariables(SetupConfiguration config)
+        {
+            // Storage Configuration
+            var storageConnectionString = configuration.GetConnectionString("StorageConnectionString");
+            var blobPublicUrl = configuration.GetValue<string>("AzureBlobStorageEndPoint") ?? configuration.GetValue<string>("BlobPublicUrl");
+
+            // Storage connection.
+            if (!string.IsNullOrEmpty(storageConnectionString))
+            {
+                config.StorageConnectionString = storageConnectionString;
+                config.StoragePreConfigured = true;
+            }
+
+            if (!string.IsNullOrEmpty(blobPublicUrl))
+            {
+                config.BlobPublicUrl = blobPublicUrl;
+                config.BlobPublicUrlPreConfigured = true;
+            }
+
+            // Publisher Configuration
+            var publisherUrl = configuration["CosmosPublisherUrl"];
+            var staticWebPages = configuration["CosmosStaticWebPages"];
+            var cosmosRequiresAuth = configuration["CosmosRequiresAuthentication"];
+            var microsoftAppId = configuration["MicrosoftAppId"];
+            var allowedFileTypes = configuration["AllowedFileTypes"];
+
+            if (!string.IsNullOrEmpty(publisherUrl))
+            {
+                config.PublisherUrl = publisherUrl;
+                config.PublisherPreConfigured = true;
+            }
+
+            if (!string.IsNullOrEmpty(staticWebPages) && bool.TryParse(staticWebPages, out var isStatic))
+            {
+                config.StaticWebPages = isStatic;
+                config.StaticWebPagesPreConfigured = true;
+            }
+
+            if (!string.IsNullOrEmpty(cosmosRequiresAuth) && bool.TryParse(cosmosRequiresAuth, out var requiresAuth))
+            {
+                config.CosmosRequiresAuthentication = requiresAuth;
+                config.CosmosRequiresAuthenticationPreConfigured = true;
+            }
+
+            if (!string.IsNullOrEmpty(microsoftAppId))
+            {
+                config.MicrosoftAppId = microsoftAppId;
+                config.MicrosoftAppIdPreConfigured = true;
+            }
+
+            if (!string.IsNullOrEmpty(allowedFileTypes))
+            {
+                config.AllowedFileTypes = allowedFileTypes;
+                config.AllowedFileTypesPreConfigured = true;
+            }
+
+            if (!string.IsNullOrEmpty(publisherUrl))
+            {
+                logger.LogInformation("Publisher configuration loaded from environment variables");
+            }
+
+            // Admin Configuration
+            var senderEmail = configuration["AdminEmail"] ?? configuration["SenderEmail"];
+            if (!string.IsNullOrEmpty(senderEmail))
+            {
+                config.SenderEmail = senderEmail;
+                config.SenderEmailPreConfigured = true;
+                logger.LogInformation("Sender email loaded from environment variables");
+            }
+
+            // Database Configuration (optional - usually in appsettings.json)
+            var dbConnectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
+            if (!string.IsNullOrEmpty(dbConnectionString))
+            {
+                config.DatabaseConnectionString = dbConnectionString;
+                logger.LogInformation("Database configuration loaded from environment variables");
+            }
+
+            // Detect if one of an Email provider is preconfigured.
+            var sendGridApiKey = configuration["CosmosSendGridApiKey"];
+            var smtpHost = configuration["SmtpEmailProviderOptions:Host"]
+                  ?? configuration["SmtpEmailProviderOptions__Host"];
+            var azureEmailConnectionString = configuration.GetConnectionString("AzureCommunicationConnection");
+
+            if (!string.IsNullOrEmpty(sendGridApiKey)
+                || !string.IsNullOrEmpty(smtpHost)
+                || !string.IsNullOrEmpty(azureEmailConnectionString))
+            {
+                config.EmailProviderPreConfigured = true;
+                logger.LogInformation("Email configuration loaded from environment variables");
+            }
+
         }
 
         /// <summary>
@@ -1032,12 +1048,15 @@ namespace Sky.Editor.Services.Setup
                     "Administrator email address for system emails");
 
                 // Save storage connection string
-                await SaveOrUpdateSettingAsync(
-                    context,
-                    "STORAGE",
-                    "StorageConnectionString",
-                    config.StorageConnectionString,
-                    "Cloud storage connection string");
+                if (!config.StoragePreConfigured)
+                {
+                    await SaveOrUpdateSettingAsync(
+                        context,
+                        "STORAGE",
+                        "StorageConnectionString",
+                        config.StorageConnectionString,
+                        "Cloud storage connection string");
+                }
 
                 // Save blob public URL
                 await SaveOrUpdateSettingAsync(

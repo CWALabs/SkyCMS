@@ -104,6 +104,26 @@ namespace Sky.Editor.Areas.Setup.Pages
         public bool IsPreConfigured { get; private set; }
 
         /// <summary>
+        /// Gets a value indicating whether CosmosRequiresAuthentication is pre-configured.
+        /// </summary>
+        public bool CosmosRequiresAuthenticationPreConfigured { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether MicrosoftAppId is pre-configured.
+        /// </summary>
+        public bool MicrosoftAppIdPreConfigured { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether StaticWebPages is pre-configured.
+        /// </summary>
+        public bool StaticWebPagesPreConfigured { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether AllowedFileTypes is pre-configured.
+        /// </summary>
+        public bool AllowedFileTypesPreConfigured { get; private set; }
+
+        /// <summary>
         /// Handles GET requests.
         /// </summary>
         /// <returns>Page result.</returns>
@@ -125,6 +145,10 @@ namespace Sky.Editor.Areas.Setup.Pages
             MicrosoftAppId = config.MicrosoftAppId;
             WebsiteTitle = config.WebsiteTitle;
             IsPreConfigured = config.PublisherPreConfigured;
+            CosmosRequiresAuthenticationPreConfigured = config.CosmosRequiresAuthenticationPreConfigured;
+            MicrosoftAppIdPreConfigured = config.MicrosoftAppIdPreConfigured;
+            StaticWebPagesPreConfigured = config.StaticWebPagesPreConfigured;
+            AllowedFileTypesPreConfigured = config.AllowedFileTypesPreConfigured;
 
             return Page();
         }
@@ -143,16 +167,32 @@ namespace Sky.Editor.Areas.Setup.Pages
 
             try
             {
-                // Remove trailing slash from URL
-                PublisherUrl = PublisherUrl.TrimEnd('/');
+                var config = await setupService.GetCurrentSetupAsync();
+                
+                // Use config values if pre-configured, otherwise use form values
+                var publisherUrlToSave = config.PublisherPreConfigured 
+                    ? config.PublisherUrl 
+                    : PublisherUrl?.TrimEnd('/');
+                    
+                var cosmosRequiresAuthToSave = config.CosmosRequiresAuthenticationPreConfigured 
+                    ? config.CosmosRequiresAuthentication 
+                    : CosmosRequiresAuthentication;
+                    
+                var allowedFileTypesToSave = config.AllowedFileTypesPreConfigured 
+                    ? config.AllowedFileTypes 
+                    : AllowedFileTypes;
+                    
+                var microsoftAppIdToSave = config.MicrosoftAppIdPreConfigured 
+                    ? config.MicrosoftAppId 
+                    : MicrosoftAppId;
 
                 await setupService.UpdatePublisherConfigAsync(
                     SetupId, 
-                    PublisherUrl, 
+                    publisherUrlToSave, 
                     true, 
-                    CosmosRequiresAuthentication, 
-                    AllowedFileTypes,
-                    MicrosoftAppId,
+                    cosmosRequiresAuthToSave, 
+                    allowedFileTypesToSave,
+                    microsoftAppIdToSave,
                     SiteDesignId,
                     WebsiteTitle);
                 

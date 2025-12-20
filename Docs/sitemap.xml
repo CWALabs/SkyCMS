@@ -6,7 +6,7 @@
   <!-- Main Documentation Index -->
   <url>
     <loc>https://cwalabs.github.io/SkyCMS/Docs/index.md</loc>
-    <lastmod>2025-12-17</lastmod>
+    <lastmod>2025-12-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -155,21 +155,21 @@
 
   <url>
     <loc>https://cwalabs.github.io/SkyCMS/Docs/Publishing-Overview.md</loc>
-    <lastmod>2025-12-17</lastmod>
+    <lastmod>2025-12-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
 
   <url>
     <loc>https://cwalabs.github.io/SkyCMS/Docs/Authentication-Overview.md</loc>
-    <lastmod>2025-12-17</lastmod>
+    <lastmod>2025-12-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
 
   <url>
     <loc>https://cwalabs.github.io/SkyCMS/Docs/Configuration/README.md</loc>
-    <lastmod>2025-12-17</lastmod>
+    <lastmod>2025-12-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
@@ -186,6 +186,34 @@
     <lastmod>2025-12-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://cwalabs.github.io/SkyCMS/Docs/QuickStart.md</loc>
+    <lastmod>2025-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://cwalabs.github.io/SkyCMS/Docs/Troubleshooting.md</loc>
+    <lastmod>2025-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://cwalabs.github.io/SkyCMS/Docs/Installation/README.md</loc>
+    <lastmod>2025-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://cwalabs.github.io/SkyCMS/Docs/AI-SEO-Content-Standards.md</loc>
+    <lastmod>2025-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.60</priority>
   </url>
 
 </urlset>

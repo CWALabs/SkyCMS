@@ -258,6 +258,26 @@ namespace Cosmos.Common.Data
         public bool BlobPublicUrlPreConfigured { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets a value indicating whether CosmosRequiresAuthentication was pre-configured via environment variables.
+        /// </summary>
+        public bool CosmosRequiresAuthenticationPreConfigured { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether MicrosoftAppId was pre-configured via environment variables.
+        /// </summary>
+        public bool MicrosoftAppIdPreConfigured { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether StaticWebPages was pre-configured via environment variables.
+        /// </summary>
+        public bool StaticWebPagesPreConfigured { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether AllowedFileTypes was pre-configured via environment variables.
+        /// </summary>
+        public bool AllowedFileTypesPreConfigured { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets a value indicating whether restart has been triggered.
         /// </summary>
         public bool RestartTriggered { get; set; }

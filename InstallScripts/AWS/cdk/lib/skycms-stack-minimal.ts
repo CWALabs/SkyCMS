@@ -10,11 +10,15 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import { AccessKeyGenerator } from './access-key-generator';
 
 export interface SkyCmsProps extends cdk.StackProps {
   image: string;
   desiredCount?: number;
   dbName?: string;
+  deployPublisher?: boolean;
 }
 
 export class SkyCmsEditorStack extends cdk.Stack {
@@ -23,10 +27,111 @@ export class SkyCmsEditorStack extends cdk.Stack {
 
     const desiredCount = props.desiredCount || 1;
     const dbName = props.dbName || 'skycms';
+    const deployPublisher = props.deployPublisher !== undefined ? props.deployPublisher : false;
     const certificateArn = this.node.tryGetContext('certificateArn') as string | undefined;
     const domainName = this.node.tryGetContext('domainName') as string | undefined;
     const hostedZoneId = this.node.tryGetContext('hostedZoneId') as string | undefined;
     const hostedZoneName = this.node.tryGetContext('hostedZoneName') as string | undefined;
+    const publisherDomainName = this.node.tryGetContext('publisherDomainName') as string | undefined;
+    const publisherCertificateArn = this.node.tryGetContext('publisherCertificateArn') as string | undefined;
+
+    // ============================================
+    // PUBLISHER RESOURCES (S3 + CloudFront)
+    // ============================================
+
+    let storageSecret: secretsmanager.ISecret | undefined;
+    let publisherBucket: s3.Bucket | undefined;
+    let publisherDistribution: cloudfront.Distribution | undefined;
+
+    if (deployPublisher) {
+      // S3 Bucket for static website
+      publisherBucket = new s3.Bucket(this, 'PublisherBucket', {
+        websiteIndexDocument: 'index.html',
+        websiteErrorDocument: 'error.html',
+        publicReadAccess: false,
+        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        autoDeleteObjects: true,
+      });
+
+      // Origin Access Identity for CloudFront
+      const oai = new cloudfront.OriginAccessIdentity(this, 'PublisherOAI', {
+        comment: `OAI for ${this.stackName} Publisher`,
+      });
+
+      // Grant CloudFront read access to bucket
+      publisherBucket.grantRead(oai);
+
+      // CloudFront distribution for Publisher
+      publisherDistribution = new cloudfront.Distribution(this, 'PublisherDistribution', {
+        defaultBehavior: {
+          origin: new origins.S3Origin(publisherBucket, {
+            originAccessIdentity: oai,
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+          cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+          compress: true,
+          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        },
+        defaultRootObject: 'index.html',
+        priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+        domainNames: publisherDomainName ? [publisherDomainName] : undefined,
+        certificate: publisherCertificateArn
+          ? acm.Certificate.fromCertificateArn(this, 'PublisherCert', publisherCertificateArn)
+          : undefined,
+        minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+      });
+
+      // IAM User for S3 access (unique per stack to avoid collisions)
+      const iamUserName = `skycms-s3-publisher-user-${this.stackName}`;
+      const s3User = new iam.User(this, 'S3PublisherUser', {
+        userName: iamUserName,
+      });
+
+      // Grant S3 permissions to user
+      s3User.addToPolicy(
+        new iam.PolicyStatement({
+          actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
+          resources: [publisherBucket.bucketArn, `${publisherBucket.bucketArn}/*`],
+        })
+      );
+
+      // Generate access keys using custom resource
+      const accessKeys = new AccessKeyGenerator(this, 'AccessKeys', {
+        userName: s3User.userName,
+      });
+
+      // Create storage connection string and store in Secrets Manager
+      const connectionString = `Bucket=${publisherBucket.bucketName};Region=${this.region};KeyId=${accessKeys.accessKeyId};Key=${accessKeys.secretAccessKey};`;
+      
+      storageSecret = new secretsmanager.Secret(this, 'StorageSecret', {
+        secretName: `SkyCms-StorageConnectionString-${this.stackName}`,
+        description: 'S3 storage connection string for SkyCMS',
+        secretStringValue: cdk.SecretValue.unsafePlainText(connectionString),
+      });
+
+      // Outputs for Publisher
+      new cdk.CfnOutput(this, 'PublisherBucketName', {
+        value: publisherBucket.bucketName,
+        description: 'S3 bucket for Publisher static files',
+      });
+
+      new cdk.CfnOutput(this, 'PublisherCloudFrontURL', {
+        value: `https://${publisherDistribution.distributionDomainName}`,
+        description: 'Publisher CloudFront distribution URL',
+      });
+
+      new cdk.CfnOutput(this, 'StorageSecretArn', {
+        value: storageSecret.secretArn,
+        description: 'ARN of storage connection string secret',
+      });
+    }
+
+    // ============================================
+    // EDITOR RESOURCES (ECS + RDS + CloudFront)
+    // ============================================
+
 
     // VPC with 2 AZs, public subnets for ECS, isolated subnets for RDS
     const vpc = new ec2.Vpc(this, 'Vpc', {
@@ -128,6 +233,38 @@ export class SkyCmsEditorStack extends cdk.Stack {
 
     // Container
     // MySQL format: Server=<server>;Port=3306;Uid=<user>;Pwd=<password>;Database=<database>;
+    const containerSecrets: { [key: string]: ecs.Secret } = {
+      DB_PASSWORD: ecs.Secret.fromSecretsManager(dbCredentials, 'password'),
+      ConnectionStrings__ApplicationDbContextConnection:
+        ecs.Secret.fromSecretsManager(connectionStringSecret),
+    };
+
+    // Add StorageConnectionString if Publisher is deployed
+    if (storageSecret) {
+      containerSecrets.ConnectionStrings__StorageConnectionString = 
+        ecs.Secret.fromSecretsManager(storageSecret);
+    }
+
+    // Build environment variables for container
+    const containerEnvironment: { [key: string]: string } = {
+      CosmosAllowSetup: 'true',
+      MultiTenantEditor: 'false',
+      ASPNETCORE_ENVIRONMENT: 'Development',
+      AdminEmail: 'admin@example.com',
+      DB_HOST: database.dbInstanceEndpointAddress,
+      DB_PORT: '3306',
+      DB_NAME: dbName,
+      DB_USER: 'admin',
+    };
+
+    // Add CosmosPublisherUrl if Publisher is deployed
+    if (deployPublisher && publisherDistribution) {
+      const publisherUrl = publisherDomainName 
+        ? `https://${publisherDomainName}`
+        : `https://${publisherDistribution.distributionDomainName}`;
+      containerEnvironment.CosmosPublisherUrl = publisherUrl;
+    }
+
     const container = taskDefinition.addContainer('web', {
       image: ecs.ContainerImage.fromRegistry(props.image),
       portMappings: [{ containerPort: 8080 }],
@@ -135,21 +272,8 @@ export class SkyCmsEditorStack extends cdk.Stack {
         streamPrefix: 'SkyCMS',
         logGroup,
       }),
-      environment: {
-        CosmosAllowSetup: 'true',
-        MultiTenantEditor: 'false',
-        ASPNETCORE_ENVIRONMENT: 'Development',
-        AdminEmail: 'admin@example.com',
-        DB_HOST: database.dbInstanceEndpointAddress,
-        DB_PORT: '3306',
-        DB_NAME: dbName,
-        DB_USER: 'admin',
-      },
-      secrets: {
-        DB_PASSWORD: ecs.Secret.fromSecretsManager(dbCredentials, 'password'),
-        ConnectionStrings__ApplicationDbContextConnection:
-          ecs.Secret.fromSecretsManager(connectionStringSecret),
-      },
+      environment: containerEnvironment,
+      secrets: containerSecrets,
     });
 
     // Security Group

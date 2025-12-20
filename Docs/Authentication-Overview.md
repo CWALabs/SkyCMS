@@ -1,8 +1,18 @@
 ---
+audience: [developers, administrators]
 title: Authentication & Authorization Overview
 description: Flexible authentication system with ASP.NET Core Identity, Azure AD, and Azure B2C support
 keywords: authentication, authorization, identity, Azure-AD, B2C, roles, permissions
 audience: [developers, administrators]
+version: 2.0
+updated: 2025-12-20
+canonical: /Authentication-Overview.html
+aliases: []
+scope:
+  platforms: [azure, local, other-oidc]
+  tenancy: [single, multi]
+status: stable
+chunk_hint: 360
 ---
 
 # Authentication & Authorization in SkyCMS
@@ -11,7 +21,14 @@ SkyCMS uses a flexible authentication system built on ASP.NET Core Identity, sup
 
 ---
 
-## Table of Contents
+## Key facts {#key-facts}
+
+- Supports local auth, Azure AD, Azure B2C, and generic OpenID Connect/OAuth 2.0.
+- Editor app requires authentication; Publisher can be public or gated per page.
+- Claims-based RBAC with customizable roles; tokens for API, sessions for browser.
+- Use managed identity or app registrations for Azure providers; never store secrets in repo.
+
+## Table of Contents {#table-of-contents}
 
 - [Overview](#overview)
 - [Authentication Methods](#authentication-methods)
@@ -24,7 +41,7 @@ SkyCMS uses a flexible authentication system built on ASP.NET Core Identity, sup
 
 ---
 
-## Overview
+## Overview {#overview}
 
 Authentication ensures users are who they claim to be. Authorization ensures authenticated users can only access resources they're permitted to use.
 
@@ -36,9 +53,9 @@ SkyCMS separates authentication into:
 
 ---
 
-## Authentication Methods
+## Authentication Methods {#authentication-methods}
 
-### 1. Local Authentication (Built-in)
+### 1. Local Authentication (Built-in) {#local-authentication}
 
 Traditional username and password authentication managed by SkyCMS.
 
@@ -67,7 +84,7 @@ Traditional username and password authentication managed by SkyCMS.
 
 ---
 
-### 2. Azure Active Directory (Azure AD)
+### 2. Azure Active Directory (Azure AD) {#azure-ad}
 
 Enterprise identity provider for organizations using Microsoft cloud services.
 
@@ -96,7 +113,7 @@ Enterprise identity provider for organizations using Microsoft cloud services.
 
 ---
 
-### 3. Azure B2C
+### 3. Azure B2C {#azure-b2c}
 
 Consumer identity provider for public-facing applications.
 
@@ -127,7 +144,7 @@ Consumer identity provider for public-facing applications.
 
 ---
 
-### 4. OpenID Connect / OAuth 2.0
+### 4. OpenID Connect / OAuth 2.0 {#openidconnect}
 
 Generic protocol-based authentication for integrating with other identity providers.
 
@@ -146,9 +163,9 @@ Generic protocol-based authentication for integrating with other identity provid
 
 ---
 
-## Key Concepts
+## Key Concepts {#key-concepts}
 
-### Authentication vs. Authorization
+### Authentication vs. Authorization {#authentication-vs-authorization}
 
 | Aspect | Authentication | Authorization |
 |--------|-----------------|-----------------|
@@ -157,7 +174,7 @@ Generic protocol-based authentication for integrating with other identity provid
 | **Examples** | Login credentials, MFA | Admin access, view specific pages |
 | **In SkyCMS** | Logging in to editor | Role-based page/section access |
 
-### Roles & Permissions
+### Roles & Permissions {#roles-and-permissions}
 
 SkyCMS uses role-based access control (RBAC):
 
@@ -168,7 +185,7 @@ SkyCMS uses role-based access control (RBAC):
 
 Custom roles can be created for specific needs.
 
-### Claims & Tokens
+### Claims & Tokens {#claims-and-tokens}
 
 When a user authenticates, they receive claims (assertions about their identity):
 
@@ -182,7 +199,7 @@ Claims Example:
 
 These claims are packaged into a security token (usually a JWT) that proves authentication.
 
-### Sessions vs. Tokens
+### Sessions vs. Tokens {#sessions-vs-tokens}
 
 - **Sessions** (traditional) - Server stores user state; browser stores session ID
 - **Tokens** (modern) - Token contains user state; client stores token
@@ -190,9 +207,9 @@ These claims are packaged into a security token (usually a JWT) that proves auth
 
 ---
 
-## Getting Started
+## Getting Started {#getting-started}
 
-### For New Users
+### For New Users {#for-new-users}
 
 When signing into the SkyCMS editor for the first time:
 
@@ -203,7 +220,7 @@ When signing into the SkyCMS editor for the first time:
 3. **Grant Permissions** - Review and grant requested permissions
 4. **You're Logged In** - Start creating and editing content
 
-### For Site Administrators
+### For Site Administrators {#for-site-administrators}
 
 To set up authentication:
 
@@ -215,15 +232,15 @@ To set up authentication:
 4. **Assign Roles** - Set permissions for each user
 5. **Test** - Verify login works correctly
 
-### For DevOps / Deployment
+### For DevOps / Deployment {#for-devops}
 
 See [Configuration](#configuration) section below for environment variables and connection string setup.
 
 ---
 
-## For Users
+## For Users {#for-users}
 
-### How to Log In
+### How to Log In {#how-to-log-in}
 
 1. Navigate to your SkyCMS editor URL: `https://yourdomain.com/editor`
 2. Click "Sign In"
@@ -231,7 +248,7 @@ See [Configuration](#configuration) section below for environment variables and 
 4. If using Azure AD or B2C, follow your organization's MFA process if required
 5. You're logged into the SkyCMS editor
 
-### Resetting Your Password
+### Resetting Your Password {#resetting-password}
 
 **Local Authentication:**
 1. Click "Forgot Password" on login screen
@@ -244,7 +261,7 @@ See [Configuration](#configuration) section below for environment variables and 
 - Use your organization's standard password reset process
 - This is typically managed outside SkyCMS
 
-### Session Timeout
+### Session Timeout {#session-timeout}
 
 - Editor sessions timeout after 30 days of inactivity (configurable)
 - You'll be returned to login screen
@@ -252,9 +269,9 @@ See [Configuration](#configuration) section below for environment variables and 
 
 ---
 
-## For Developers
+## For Developers {#for-developers}
 
-### Authentication Architecture
+### Authentication Architecture {#authentication-architecture}
 
 SkyCMS uses ASP.NET Core Identity with pluggable provider support:
 
@@ -268,14 +285,14 @@ Check Claims/Roles
 Access Granted/Denied
 ```
 
-### Available Libraries
+### Available Libraries {#available-libraries}
 
 - **[AspNetCore.Identity.FlexDb](./Components/AspNetCore.Identity.FlexDb.md)** - Flexible identity framework supporting multiple database providers
 - **Microsoft.AspNetCore.Authentication** - ASP.NET Core authentication
 - **Microsoft.AspNetCore.Authentication.AzureAD.UI** - Azure AD integration
 - **IdentityModel** - OIDC/OAuth 2.0 helpers
 
-### Customizing Claims & Roles
+### Customizing Claims & Roles {#customizing-claims-roles}
 
 To add custom claims or roles:
 
@@ -293,7 +310,7 @@ public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
 }
 ```
 
-### Custom Authorization Policies
+### Custom Authorization Policies {#custom-authorization-policies}
 
 Define policies for specific access patterns:
 
@@ -308,7 +325,7 @@ services.AddAuthorization(options =>
 });
 ```
 
-### Integrating Custom Identity Providers
+### Integrating Custom Identity Providers {#integrating-custom-providers}
 
 1. Create authentication handler for your provider
 2. Register in `Program.cs`
@@ -319,9 +336,9 @@ See [Identity Framework Documentation](./Components/AspNetCore.Identity.FlexDb.m
 
 ---
 
-## Configuration
+## Configuration {#configuration}
 
-### Environment Variables
+### Environment Variables {#environment-variables}
 
 Configure authentication in `appsettings.json` or environment variables:
 
@@ -342,7 +359,7 @@ Configure authentication in `appsettings.json` or environment variables:
 }
 ```
 
-### Supported Configuration Values
+### Supported Configuration Values {#supported-config-values}
 
 | Setting | Values | Default | Purpose |
 |---------|--------|---------|---------|
@@ -351,7 +368,7 @@ Configure authentication in `appsettings.json` or environment variables:
 | `RequireMfa` | `true`, `false` | `false` | Require multi-factor authentication |
 | `SessionTimeoutMinutes` | 1-525600 | 43200 (30 days) | How long sessions last |
 
-### Securing Secrets
+### Securing Secrets {#securing-secrets}
 
 Never commit secrets to version control:
 
@@ -365,7 +382,25 @@ dotnet user-secrets set "AzureAD:ClientSecret" "your-secret"
 
 ---
 
-## Troubleshooting
+## Troubleshooting {#troubleshooting}
+
+## FAQ {#faq}
+
+- **When should I choose Azure AD vs Azure B2C?** Use Azure AD for workforce/enterprise SSO; use Azure B2C for public/external users and social logins.
+- **Can I keep local auth enabled alongside Azure AD?** Yes; set `AllowLocalAuth=true` if you want a fallback local admin, otherwise set it to false.
+- **How do I enforce MFA?** Enforce via your IdP (Azure AD Conditional Access/B2C policies); SkyCMS consumes the IdP’s MFA result.
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "When should I choose Azure AD vs Azure B2C?", "acceptedAnswer": {"@type": "Answer", "text": "Use Azure AD for workforce SSO and enterprise policies. Use Azure B2C for public or external users and social logins."}},
+    {"@type": "Question", "name": "Can I keep local auth enabled alongside Azure AD?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Set AllowLocalAuth=true if you want a fallback local admin account; set it to false to require Azure AD only."}},
+    {"@type": "Question", "name": "How do I enforce MFA?", "acceptedAnswer": {"@type": "Answer", "text": "Enforce MFA in your identity provider (Azure AD Conditional Access or B2C policies). SkyCMS honors the IdP's MFA result."}}
+  ]
+}
+</script>
 
 ### "Invalid Credentials" Error
 

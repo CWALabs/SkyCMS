@@ -39,8 +39,12 @@ const ec2 = __importStar(require("aws-cdk-lib/aws-ec2"));
 const ecs = __importStar(require("aws-cdk-lib/aws-ecs"));
 const ecs_patterns = __importStar(require("aws-cdk-lib/aws-ecs-patterns"));
 const rds = __importStar(require("aws-cdk-lib/aws-rds"));
+const secretsmanager = __importStar(require("aws-cdk-lib/aws-secretsmanager"));
 const cloudfront = __importStar(require("aws-cdk-lib/aws-cloudfront"));
 const origins = __importStar(require("aws-cdk-lib/aws-cloudfront-origins"));
+const acm = __importStar(require("aws-cdk-lib/aws-certificatemanager"));
+const route53 = __importStar(require("aws-cdk-lib/aws-route53"));
+const aws_elasticloadbalancingv2_1 = require("aws-cdk-lib/aws-elasticloadbalancingv2");
 class SkyCmsEditorStack extends cdk.Stack {
     constructor(scope, id, props) {
         super(scope, id, props);
@@ -66,6 +70,25 @@ class SkyCmsEditorStack extends cdk.Stack {
         });
         // Generate a fixed password for RDS (dev-only)
         const dbPassword = cdk.SecretValue.unsafePlainText('SkyCMS2025!Temp');
+        const certificateArn = this.node.tryGetContext('certificateArn');
+        const domainName = this.node.tryGetContext('domainName');
+        const hostedZoneId = this.node.tryGetContext('hostedZoneId');
+        const hostedZoneName = this.node.tryGetContext('hostedZoneName');
+        let certificate = undefined;
+        if (certificateArn) {
+            certificate = acm.Certificate.fromCertificateArn(this, 'AlbCert', certificateArn);
+        }
+        else if (domainName && (hostedZoneId && hostedZoneName)) {
+            const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+                hostedZoneId,
+                zoneName: hostedZoneName,
+            });
+            certificate = new acm.DnsValidatedCertificate(this, 'AlbCertAuto', {
+                domainName,
+                hostedZone: zone,
+                region: cdk.Aws.REGION,
+            });
+        }
         const db = new rds.DatabaseInstance(this, 'MySql', {
             engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0 }),
             vpc,
@@ -82,6 +105,13 @@ class SkyCmsEditorStack extends cdk.Stack {
             publiclyAccessible: false,
             parameterGroup: parameterGroup,
         });
+        // Construct connection string from RDS database endpoint and credentials
+        const dbUser = 'skycms_admin';
+        const connectionString = `Server=${db.dbInstanceEndpointAddress};Port=3306;Uid=${dbUser};Pwd=SkyCMS2025!Temp;Database=${props.dbName};`;
+        const connectionStringSecret = new secretsmanager.Secret(this, 'DbConnectionStringSecret', {
+            secretStringValue: cdk.SecretValue.unsafePlainText(connectionString),
+            description: 'MySQL connection string (dynamically constructed from RDS) ending with semicolon',
+        });
         // Fargate Service with ALB
         const fargate = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'EditorService', {
             cluster,
@@ -89,25 +119,30 @@ class SkyCmsEditorStack extends cdk.Stack {
             cpu: 512,
             memoryLimitMiB: 1024,
             desiredCount: props.desiredCount ?? 1,
+            protocol: certificate ? aws_elasticloadbalancingv2_1.ApplicationProtocol.HTTPS : aws_elasticloadbalancingv2_1.ApplicationProtocol.HTTP,
+            certificate,
+            redirectHTTP: certificate ? true : undefined,
             taskImageOptions: {
                 image: ecs.ContainerImage.fromRegistry(props.image),
                 containerPort: 80,
                 environment: {
                     CosmosAllowSetup: 'true',
                     MultiTenantEditor: 'false',
-                    ASPNETCORE_ENVIRONMENT: 'Production',
+                    ASPNETCORE_ENVIRONMENT: 'Development',
                     BlobServiceProvider: 'Amazon',
                     AmazonS3BucketName: props.bucketName || '',
                     AmazonS3Region: cdk.Aws.REGION,
                     SKYCMS_DB_HOST: db.instanceEndpoint.hostname,
                     SKYCMS_DB_USER: 'skycms_admin',
                     SKYCMS_DB_NAME: props.dbName,
-                    SKYCMS_DB_PASSWORD: dbPassword.unsafeUnwrap(),
                     SKYCMS_DB_SSL: 'true',
                     SKYCMS_DB_SSL_MODE: 'Required',
+                    AdminEmail: 'admin@example.com',
+                },
+                secrets: {
+                    ConnectionStrings__ApplicationDbContextConnection: ecs.Secret.fromSecretsManager(connectionStringSecret),
                 },
             },
-            publicLoadBalancer: true,
         });
         // Allow access from ECS tasks to RDS
         dbSg.addIngressRule(ec2.Peer.securityGroupId(fargate.service.connections.securityGroups[0].securityGroupId), ec2.Port.tcp(3306), 'ECS tasks to MySQL');
@@ -136,7 +171,12 @@ class SkyCmsEditorStack extends cdk.Stack {
         const dist = new cloudfront.Distribution(this, 'EditorCdn', {
             defaultBehavior: {
                 origin: new origins.LoadBalancerV2Origin(fargate.loadBalancer, {
-                    protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+                    protocolPolicy: certificate
+                        ? cloudfront.OriginProtocolPolicy.HTTPS_ONLY
+                        : cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+                    httpsPort: 443,
+                    httpPort: 80,
+                    originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
                 }),
                 cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
                 originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
@@ -169,10 +209,9 @@ class SkyCmsEditorStack extends cdk.Stack {
             value: props.dbName,
             description: 'Default database created in RDS',
         });
-        const mysqlConnectionString = `Server=${db.instanceEndpoint.hostname};Port=3306;Database=${props.dbName};Uid=skycms_admin;Pwd=${dbPassword.unsafeUnwrap()};SslMode=Required;`;
-        new cdk.CfnOutput(this, 'MySqlConnectionString', {
-            value: mysqlConnectionString,
-            description: '✅ MySQL Connection String for MySQL Workbench or other tools (dev-only, includes TLS)',
+        new cdk.CfnOutput(this, 'ConnectionStringSecret', {
+            value: connectionStringSecret.secretArn,
+            description: '✅ MySQL Connection String Secret ARN (provided)',
         });
         new cdk.CfnOutput(this, 'S3BucketName', {
             value: props.bucketName || '(not provided)',

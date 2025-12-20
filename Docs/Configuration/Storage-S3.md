@@ -2,7 +2,7 @@
 title: Amazon S3 Storage Configuration
 description: Configure Amazon S3 object storage for SkyCMS static assets with access keys and bucket setup
 keywords: S3, AWS, storage, configuration, object-storage, static-assets
-audience: [developers, administrators]
+audience: {developers, administrators}
 ---
 
 # Amazon S3 with SkyCMS
@@ -34,21 +34,21 @@ Amazon S3 is a highly scalable object storage service widely available across AW
    ```json
    {
      "Version": "2012-10-17",
-     "Statement": [
+     "Statement": {
        {
          "Effect": "Allow",
-         "Action": [
+         "Action": {
            "s3:GetObject",
            "s3:PutObject",
            "s3:DeleteObject",
            "s3:ListBucket"
-         ],
-         "Resource": [
+         },
+         "Resource": {
            "arn:aws:s3:::your-bucket-name",
            "arn:aws:s3:::your-bucket-name/*"
-         ]
+         }
        }
-     ]
+     }
    }
    ```
 4. Copy the **Access key ID** and **Secret access key** (visible only once).
@@ -76,7 +76,7 @@ Amazon S3 is a highly scalable object storage service widely available across AW
 ```json
 {
   "ConnectionStrings": {
-    "StorageConnectionString": "Bucket=your-bucket-name;Region=us-east-1;KeyId=AKIAIOSFODNN7EXAMPLE;Key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY;"
+    "StorageConnectionString": "Bucket={your-bucket-name};Region={your region};KeyId={Your KeyID};Key={Your secret};"
   }
 }
 ```
@@ -114,4 +114,4 @@ $env:ConnectionStrings__StorageConnectionString = "Bucket=your-bucket-name;Regio
 
 ## Further reading
 
-- [AWS S3 Access Keys Guide](./AWS-S3-AccessKeys.md) — Detailed step-by-step for obtaining credentials
+- {AWS S3 Access Keys Guide}(./AWS-S3-AccessKeys.md) — Detailed step-by-step for obtaining credentials

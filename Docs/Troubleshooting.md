@@ -1,15 +1,30 @@
----
 title: Troubleshooting Guide
 description: Common issues and solutions for SkyCMS setup, configuration, and operation
-keywords: troubleshooting, errors, debugging, solutions, configuration, database
+keywords: troubleshooting, errors, debugging, solutions, configuration, database, storage, cdn
 audience: [developers, administrators]
+version: 2.0
+updated: 2025-12-20
+canonical: /Troubleshooting.html
+aliases: []
+scope:
+  platforms: [azure, aws, cloudflare, local]
+  tenancy: [single, multi]
+status: stable
+chunk_hint: 360
 ---
 
 # Troubleshooting Guide
 
 Common issues and solutions for SkyCMS setup, configuration, and operation.
 
-## Database Configuration Issues
+## Key facts {#key-facts}
+
+- Diagnose by layer: database → storage → CDN → publishing → auth → platform.
+- Keep provider CLIs handy (az, aws, gcloud, cloudflare) to validate credentials and connectivity.
+- The setup wizard is for single-tenant; DynamicConfig for multi-tenant—misuse leads to wizard failures.
+- Most "cannot connect" issues are credentials, firewall, or missing roles; start there.
+
+## Database Configuration Issues {#database-issues}
 
 ### "Connection string validation failed" or "Cannot connect to database"
 
@@ -57,7 +72,7 @@ Common issues and solutions for SkyCMS setup, configuration, and operation.
 
 ---
 
-## Storage Configuration Issues
+## Storage Configuration Issues {#storage-issues}
 
 ### "Storage validation failed" or "Cannot write to storage"
 
@@ -102,7 +117,7 @@ Common issues and solutions for SkyCMS setup, configuration, and operation.
 
 ---
 
-## CDN Configuration Issues
+## CDN Configuration Issues {#cdn-issues}
 
 ### "CDN validation failed" or "Cannot purge cache"
 
@@ -150,7 +165,7 @@ Common issues and solutions for SkyCMS setup, configuration, and operation.
 
 ---
 
-## Publishing & Content Issues
+## Publishing & Content Issues {#publishing-issues}
 
 ### "Publish failed" or "Content not updating"
 
@@ -188,26 +203,32 @@ Common issues and solutions for SkyCMS setup, configuration, and operation.
 - Manually publish the page from the Editor
 - Configure a monitoring/alerting system to detect Publisher downtime
 
----
-### "Cannot reach database during wizard"
+### "Cannot reach database during wizard" {#wizard-db}
 
-  - [Azure Front Door](./Configuration/CDN-AzureFrontDoor.md)
-  - [Cloudflare CDN](./Configuration/CDN-Cloudflare.md)
-  - [Amazon CloudFront](./Configuration/CDN-CloudFront.md)
-  - [Sucuri](./Configuration/CDN-Sucuri.md)
-
-### "Wizard fails at the "Review" step"
-
-- Missing required data
+**Causes:**
+- Connection string incorrect or missing
+- Database firewall blocks the Editor app
+- Required provider client libraries not present
 
 **Solutions:**
-- Verify database and storage connectivity
-- Ensure the wizard has permission to create containers/buckets
-- Try again after fixing connectivity
+- Verify the connection string in environment variables before launching the wizard
+- For Azure SQL, allow the App Service outbound IPs or enable "Allow Azure services" temporarily
+- For local SQLite demos, ensure the volume path exists and is writable
+
+### "Wizard fails at the Review step" {#wizard-review}
+
+**Causes:**
+- Required fields missing (storage, admin, publisher URL)
+- Storage/CDN credentials invalid
+
+**Solutions:**
+- Re-enter storage/CDN credentials and verify permissions
+- Confirm all wizard steps show green check marks before Review
+- Restart the app after fixing inputs and rerun `/Setup`
 
 ---
 
-## Authentication & User Issues
+## Authentication & User Issues {#auth-issues}
 
 ### "Login fails with correct credentials"
 
@@ -235,7 +256,7 @@ Common issues and solutions for SkyCMS setup, configuration, and operation.
 
 ---
 
-## Performance Issues
+## Performance Issues {#performance-issues}
 
 ### "Slow page load" or "high CDN latency"
 
@@ -266,7 +287,7 @@ Common issues and solutions for SkyCMS setup, configuration, and operation.
 
 ---
 
-## Container & Deployment Issues
+## Container & Deployment Issues {#container-issues}
 
 ### "Container fails to start"
 
@@ -289,7 +310,25 @@ Common issues and solutions for SkyCMS setup, configuration, and operation.
 
 ---
 
-## Getting More Help
+## FAQ {#faq}
+
+- **What’s the most common cause of setup failures?** Misconfigured connection strings or firewall blocks for database/storage.
+- **Why does publishing succeed but CDN shows stale content?** CDN purge failed or is delayed; content is already in storage—retry purge or wait for TTL.
+- **Why does the wizard stop working after first run?** It disables itself; set `CosmosAllowSetup=true` temporarily only when you need to rerun it.
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "What’s the most common cause of setup failures?", "acceptedAnswer": {"@type": "Answer", "text": "Misconfigured connection strings or firewall blocks for database or storage."}},
+    {"@type": "Question", "name": "Why does publishing succeed but CDN shows stale content?", "acceptedAnswer": {"@type": "Answer", "text": "CDN purge failed or is delayed; the content is already in storage. Retry purge or wait for TTL."}},
+    {"@type": "Question", "name": "Why does the wizard stop working after first run?", "acceptedAnswer": {"@type": "Answer", "text": "The wizard disables itself after completion. Temporarily set CosmosAllowSetup=true, rerun /Setup, then set it back to false."}}
+  ]
+}
+</script>
+
+## Getting More Help {#getting-help}
 
 - **GitHub Issues**: [Report bugs or ask questions](https://github.com/CWALabs/SkyCMS/issues)
 - **Community Discussions**: [Engage with the community](https://github.com/CWALabs/SkyCMS/discussions)

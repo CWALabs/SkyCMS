@@ -496,10 +496,7 @@ namespace Sky.Tests.Areas.Setup
                 testUserManager,      // Use the SQLite-based UserManager
                 testRoleManager,      // Use the SQLite-based RoleManager
                 dbContext,            // Use the SQLite database context
-                layoutImportService,
-                Logic,
-                Mediator,
-                serviceProvider);
+                layoutImportService);
         }
 
         private async Task ConfigureMinimalSetup(

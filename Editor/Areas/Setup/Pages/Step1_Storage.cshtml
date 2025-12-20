@@ -116,6 +116,7 @@
             var form = $('#storageForm');
 
             if (isPreConfigured) {
+                $('#storageTypeSelect').prop('disabled', true);
                 $('#StorageConnectionString').prop('disabled', true);
                 $('#storageConnectionStringAlert').show();
             }

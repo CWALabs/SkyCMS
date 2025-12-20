@@ -372,6 +372,7 @@ For detailed competitive analysis and cost comparisons, see the [Marketing Mater
 - **[Sitemap](./sitemap.xml)** - XML sitemap for search engine crawlers
 - **[Analytics Setup](./Analytics-Setup.html)** - Recommendations for tracking documentation engagement and user metrics
 - **[JSON Feed](./docs-index.json)** - Machine-readable documentation index for AI crawlers and programmatic access
+- **[AI & SEO Content Standards](./AI-SEO-Content-Standards.html)** - Front matter, anchors, chunking, and JSON-LD conventions
 
 ### Release Information
 

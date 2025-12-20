@@ -46,7 +46,6 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// Gets or sets the storage connection string.
         /// </summary>
         [BindProperty]
-        [Required(AllowEmptyStrings = false, ErrorMessage = "Connection string is required")]
         public string StorageConnectionString { get; set; }
 
         /// <summary>
@@ -102,10 +101,14 @@ namespace Sky.Editor.Areas.Setup.Pages
                 IsPreConfigured = config.StoragePreConfigured;
                 BlobPublicUrlPreConfigured = config.BlobPublicUrlPreConfigured;
 
+                var testConnectionString = config.StoragePreConfigured
+                    ? config.StorageConnectionString
+                    : StorageConnectionString;
+
                 // Infer storage type from connection string
-                if (!string.IsNullOrEmpty(StorageConnectionString))
+                if (!string.IsNullOrEmpty(testConnectionString))
                 {
-                    StorageType = InferStorageType(StorageConnectionString);
+                    StorageType = InferStorageType(testConnectionString);
                 }
 
                 return Page();
@@ -131,9 +134,19 @@ namespace Sky.Editor.Areas.Setup.Pages
             var config = await setupService.GetCurrentSetupAsync();
             SetupId = config.Id;
 
+            if (!config.StoragePreConfigured && string.IsNullOrWhiteSpace(StorageConnectionString))
+            {
+                ModelState.AddModelError(nameof(StorageConnectionString), "Connection string is required.");
+                return Page();
+            }
+
             try
             {
-                var result = await setupService.TestStorageConnectionAsync(StorageConnectionString);
+                var testConnectionString = config.StoragePreConfigured
+                    ? config.StorageConnectionString
+                    : StorageConnectionString;
+
+                var result = await setupService.TestStorageConnectionAsync(testConnectionString);
                 if (!result.Success)
                 {
                     ErrorMessage = "Storage connection test failed. Please ensure the connection string is correct.";
@@ -148,10 +161,19 @@ namespace Sky.Editor.Areas.Setup.Pages
 
             try
             {
+                // Use config values if pre-configured, otherwise use form values
+                var connectionStringToSave = config.StoragePreConfigured 
+                    ? config.StorageConnectionString 
+                    : StorageConnectionString;
+                    
+                var blobPublicUrlToSave = config.BlobPublicUrlPreConfigured 
+                    ? config.BlobPublicUrl 
+                    : BlobPublicUrl;
+
                 await setupService.UpdateStorageConfigAsync(
                     SetupId,
-                    StorageConnectionString,
-                    BlobPublicUrl);
+                    connectionStringToSave,
+                    blobPublicUrlToSave);
 
                 await setupService.UpdateStepAsync(SetupId, 1);  // ✅ Changed back to 1
                 return RedirectToPage("./Step2_AdminAccount");

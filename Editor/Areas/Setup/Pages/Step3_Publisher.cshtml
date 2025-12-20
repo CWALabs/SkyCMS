@@ -122,6 +122,9 @@
             </div>
 
             <div class="form-check mb-3">
+                <div id="cosmosRequiresAuthenticationAlert" class="alert alert-primary" role="alert" style="display:none;">
+                    Authentication requirement is already set and cannot be changed.
+                </div>
                 <input asp-for="CosmosRequiresAuthentication" type="checkbox" class="form-check-input" id="requiresAuth" />
                 <label class="form-check-label" for="requiresAuth">
                     <strong>Require Authentication</strong>
@@ -132,6 +135,9 @@
             </div>
 
             <div class="form-group mb-3">
+                <div id="allowedFileTypesAlert" class="alert alert-primary" role="alert" style="display:none;">
+                    Allowed file types are already set and cannot be changed.
+                </div>
                 <label asp-for="AllowedFileTypes" class="form-label">Allowed File Types <span class="text-danger">*</span></label>
                 <input asp-for="AllowedFileTypes" type="text" class="form-control font-monospace" value="@Model.AllowedFileTypes" required />
                 <span asp-validation-for="AllowedFileTypes" class="text-danger"></span>
@@ -155,6 +161,9 @@
             </p>
 
             <div class="form-group mb-3">
+                <div id="microsoftAppIdAlert" class="alert alert-primary" role="alert" style="display:none;">
+                    Microsoft App ID is already set and cannot be changed.
+                </div>
                 <label asp-for="MicrosoftAppId" class="form-label">Microsoft Application (Client) ID</label>
                 <input asp-for="MicrosoftAppId" type="text" class="form-control font-monospace" placeholder="00000000-0000-0000-0000-000000000000" />
                 <span asp-validation-for="MicrosoftAppId" class="text-danger"></span>
@@ -186,14 +195,36 @@
     <script>
 
         var isPreConfigured = @Model.IsPreConfigured.ToString().ToLower();
+        var cosmosRequiresAuthenticationPreConfigured = @Model.CosmosRequiresAuthenticationPreConfigured.ToString().ToLower();
+        var microsoftAppIdPreConfigured = @Model.MicrosoftAppIdPreConfigured.ToString().ToLower();
+        var staticWebPagesPreConfigured = @Model.StaticWebPagesPreConfigured.ToString().ToLower();
+        var allowedFileTypesPreConfigured = @Model.AllowedFileTypesPreConfigured.ToString().ToLower();
 
         $(document).ready(function() {
             var form = $('#publisherForm');
 
             if (isPreConfigured) {
-                // Disable PublisherUrl input and show alert
                 $('#PublisherUrl').prop('disabled', true);
                 $('#publisherUrlAlert').show();
+            }
+            
+            if (cosmosRequiresAuthenticationPreConfigured) {
+                $('#requiresAuth').prop('disabled', true);
+                $('#cosmosRequiresAuthenticationAlert').show();
+            }
+            
+            if (microsoftAppIdPreConfigured) {
+                $('#MicrosoftAppId').prop('disabled', true);
+                $('#microsoftAppIdAlert').show();
+            }
+            
+            if (staticWebPagesPreConfigured) {
+                $('#staticWebPages').prop('disabled', true);
+            }
+            
+            if (allowedFileTypesPreConfigured) {
+                $('#AllowedFileTypes').prop('disabled', true);
+                $('#allowedFileTypesAlert').show();
             }
             
             // Configure validation

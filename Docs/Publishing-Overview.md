@@ -1,8 +1,18 @@
 ---
+audience: [developers, content-creators, administrators]
 title: Publishing Overview
 description: Publishing modes and workflows for making content live on your SkyCMS website
-keywords: publishing, workflow, deployment, content-lifecycle, versioning
+keywords: publishing, workflow, deployment, content-lifecycle, versioning, cdn
 audience: [developers, content-creators, administrators]
+version: 2.0
+updated: 2025-12-20
+canonical: /Publishing-Overview.html
+aliases: []
+scope:
+   platforms: [azure, aws, cloudflare, static]
+   tenancy: [single, multi]
+status: stable
+chunk_hint: 360
 ---
 
 # Publishing in SkyCMS
@@ -11,7 +21,14 @@ Publishing is the process of making content live on your website. SkyCMS support
 
 ---
 
-## Table of Contents
+## Key facts {#key-facts}
+
+- Publishing modes: Direct, Staged, Static Generation, and Git-Based—pick based on review needs and hosting model.
+- Staged/Git-based flows support approvals and rollback; Direct is fastest but riskiest.
+- CDN purge failures do not block publishing; content lands in storage, CDN may be stale until purged/TTL.
+- Keep environments clear: Editor↔Staging↔Production URLs distinct to avoid cross-environment confusion.
+
+## Table of Contents {#table-of-contents}
 
 - [Publishing Overview](#publishing-overview)
 - [Publishing Modes](#publishing-modes)
@@ -23,11 +40,11 @@ Publishing is the process of making content live on your website. SkyCMS support
 
 ---
 
-## Publishing Overview
+## Publishing Overview {#publishing-overview}
 
 Publishing makes content visible to your website visitors. Before publishing, content exists only in the SkyCMS editor.
 
-### Content States
+### Content States {#content-states}
 
 | State | Visibility | Audience | Can Edit |
 |-------|-----------|----------|----------|
@@ -36,7 +53,7 @@ Publishing makes content visible to your website visitors. Before publishing, co
 | **Published** | Public | All visitors | Depends |
 | **Archived** | Private | Editors only | No |
 
-### Publishing Modes
+### Publishing Modes {#publishing-modes}
 
 SkyCMS supports different publishing modes to accommodate various hosting and workflow needs:
 
@@ -47,9 +64,9 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-## Publishing Modes
+## Publishing Modes {#publishing-modes-detail}
 
-### 1. Direct Publishing
+### 1. Direct Publishing {#direct-publishing}
 
 **How it works:**
 - Content is published directly to live website
@@ -84,7 +101,7 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-### 2. Staged Publishing
+### 2. Staged Publishing {#staged-publishing}
 
 **How it works:**
 - Content published to staging environment first
@@ -138,7 +155,7 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-### 3. Static Generation
+### 3. Static Generation {#static-generation}
 
 **How it works:**
 - Content generates static HTML files
@@ -194,7 +211,7 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-### 4. Git-Based Publishing
+### 4. Git-Based Publishing {#git-based-publishing}
 
 **How it works:**
 - Content stored as files in Git repository
@@ -250,9 +267,9 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-## Publishing Workflows
+## Publishing Workflows {#publishing-workflows}
 
-### Simple Workflow (Small Teams)
+### Simple Workflow (Small Teams) {#simple-workflow}
 
 **For:** Single editor, rapid updates, no review needed
 
@@ -268,7 +285,7 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-### Editorial Workflow (Managed Teams)
+### Editorial Workflow (Managed Teams) {#editorial-workflow}
 
 **For:** Multiple editors, need review, want quality control
 
@@ -287,7 +304,7 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-### Complex Workflow (Large Organizations)
+### Complex Workflow (Large Organizations) {#complex-workflow}
 
 **For:** Large teams, complex dependencies, regulated environments
 
@@ -308,9 +325,9 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-## Publishing Steps
+## Publishing Steps {#publishing-steps}
 
-### Step-by-Step: Publishing Page Content
+### Step-by-Step: Publishing Page Content {#steps-page}
 
 1. **Edit Your Content**
    - Open page in Live Editor
@@ -349,7 +366,7 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
    - Verify all functionality works
    - Check social media preview (if applicable)
 
-### Step-by-Step: Publishing Blog Posts
+### Step-by-Step: Publishing Blog Posts {#steps-blog}
 
 1. **Write Your Post**
    - Create new blog post
@@ -392,11 +409,31 @@ SkyCMS supports different publishing modes to accommodate various hosting and wo
 
 ---
 
-## Scheduling & Automation
+## Scheduling & Automation {#scheduling-automation}
 
 ### Scheduled Publishing
 
 Publish content at a specific future date and time:
+
+---
+
+## FAQ {#faq}
+
+- **Which mode is best for fast edits?** Direct Publishing is fastest; pair with small teams and low risk content.
+- **How do I get approvals before go-live?** Use Staged Publishing or Git-Based workflows with review on staging before promoting to production.
+- **What if CDN purge fails?** Content is already in storage; retry purge or wait for TTL. Publishing isn’t blocked by purge failures.
+
+<script type="application/ld+json">
+{
+   "@context": "https://schema.org",
+   "@type": "FAQPage",
+   "mainEntity": [
+      {"@type": "Question", "name": "Which mode is best for fast edits?", "acceptedAnswer": {"@type": "Answer", "text": "Direct Publishing is fastest; use it for low-risk content with small trusted teams."}},
+      {"@type": "Question", "name": "How do I get approvals before go-live?", "acceptedAnswer": {"@type": "Answer", "text": "Use Staged Publishing or Git-Based workflows so reviewers can validate on staging before promoting to production."}},
+      {"@type": "Question", "name": "What if CDN purge fails?", "acceptedAnswer": {"@type": "Answer", "text": "Publishing still writes to storage. Retry the CDN purge or wait for TTL; the site will catch up once cache clears."}}
+   ]
+}
+</script>
 
 1. **Set Publish Date** - Choose when content should go live
 2. **Verify Timezone** - Ensure correct timezone selected

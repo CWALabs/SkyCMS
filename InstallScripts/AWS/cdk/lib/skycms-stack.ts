@@ -125,10 +125,13 @@ export class SkyCmsEditorStack extends cdk.Stack {
           SKYCMS_DB_SSL_MODE: 'Required',
           AdminEmail: 'admin@example.com',
         },
-            secrets: {
-              ConnectionStrings__ApplicationDbContextConnection:
-                ecs.Secret.fromSecretsManager(connectionStringSecret),
-            },
+        secrets: {
+          ConnectionStrings__ApplicationDbContextConnection:
+            ecs.Secret.fromSecretsManager(connectionStringSecret),
+        },
+      },
+    });
+
     // Allow access from ECS tasks to RDS
     dbSg.addIngressRule(ec2.Peer.securityGroupId(fargate.service.connections.securityGroups[0].securityGroupId), ec2.Port.tcp(3306), 'ECS tasks to MySQL');
     

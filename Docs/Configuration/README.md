@@ -1,8 +1,18 @@
 ---
+audience: [developers, administrators]
 title: Configuration Documentation
 description: Quick reference index for all SkyCMS configuration options including multi-tenant, database, storage, and CDN
 keywords: configuration, settings, multi-tenant, database, storage, CDN, email
 audience: [developers, administrators]
+version: 2.0
+updated: 2025-12-20
+canonical: /Configuration/README.html
+aliases: []
+scope:
+	platforms: [azure, aws, cloudflare, gcp, local]
+	tenancy: [single, multi]
+status: stable
+chunk_hint: 320
 ---
 
 # Configuration Documentation
@@ -11,7 +21,14 @@ Quick reference index for all SkyCMS configuration documentation.
 
 ---
 
-## Quick Links
+## Key facts {#key-facts}
+
+- Start with overviews, then provider-specific guides; references capture exact env vars and connection strings.
+- Multi-tenant setups require DynamicConfig and skip the setup wizard.
+- Each provider page lists required roles/permissions—verify before deployment to avoid connectivity errors.
+- Keep storage/CDN regions close to users and databases close to the Editor app.
+
+## Quick Links {#quick-links}
 
 - **[Multi-Tenant Configuration](./Multi-Tenant-Configuration.md)** ⭐ - Set up multiple independent sites on shared infrastructure
 - **[Database Configuration Overview](./Database-Overview.md)** - Supported providers and setup steps
@@ -21,9 +38,9 @@ Quick reference index for all SkyCMS configuration documentation.
 
 ---
 
-## By Topic
+## By Topic {#by-topic}
 
-### Database Configuration
+### Database Configuration {#database-configuration}
 
 | Topic | Link |
 |-------|------|
@@ -35,7 +52,7 @@ Quick reference index for all SkyCMS configuration documentation.
 | MySQL | [Database-MySQL.md](./Database-MySQL.md) |
 | SQLite | [Database-SQLite.md](./Database-SQLite.md) |
 
-### Storage Configuration
+### Storage Configuration {#storage-configuration}
 
 | Topic | Link |
 |-------|------|
@@ -47,7 +64,7 @@ Quick reference index for all SkyCMS configuration documentation.
 | Cloudflare R2 | [Storage-Cloudflare.md](./Storage-Cloudflare.md) |
 | Google Cloud Storage | [Storage-GoogleCloud.md](./Storage-GoogleCloud.md) |
 
-### CDN Configuration
+### CDN Configuration {#cdn-configuration}
 
 | Topic | Link |
 |-------|------|
@@ -58,7 +75,7 @@ Quick reference index for all SkyCMS configuration documentation.
 | Amazon CloudFront | [CDN-CloudFront.md](./CDN-CloudFront.md) |
 | Sucuri | [CDN-Sucuri.md](./CDN-Sucuri.md) |
 
-### Email Configuration
+### Email Configuration {#email-configuration}
 
 | Topic | Link |
 |-------|------|
@@ -72,7 +89,7 @@ Quick reference index for all SkyCMS configuration documentation.
 
 ---
 
-## Documentation Structure
+## Documentation Structure {#documentation-structure}
 
 Each configuration topic follows this pattern:
 
@@ -87,7 +104,7 @@ This structure helps you:
 
 ---
 
-## Finding Information
+## Finding Information {#finding-information}
 
 ### I want to...
 
@@ -105,7 +122,7 @@ This structure helps you:
 
 ---
 
-## File Naming Convention
+## File Naming Convention {#file-naming-convention}
 
 All configuration files follow **PascalCase-with-hyphens** format:
 
@@ -119,12 +136,27 @@ CDN-Cloudflare.md
 ```
 
 ---
+## FAQ {#faq}
 
-**Last Updated:** December 17, 2025
+- **Where do I start for a new deployment?** Begin with the overviews, then use the provider-specific guide and its reference table for exact connection strings and variables.
+- **Can I mix providers (e.g., Azure storage with AWS CDN)?** Yes. You can mix providers; ensure you grant the required roles/permissions listed on each page.
+- **Do I need the wizard for multi-tenant?** No. Multi-tenant uses DynamicConfig and should keep `CosmosAllowSetup=false`.
+
+<script type="application/ld+json">
+{
+	"@context": "https://schema.org",
+	"@type": "FAQPage",
+	"mainEntity": [
+		{"@type": "Question", "name": "Where do I start for a new deployment?", "acceptedAnswer": {"@type": "Answer", "text": "Begin with the configuration overviews, then use the provider-specific guide and its reference table for exact connection strings and variables."}},
+		{"@type": "Question", "name": "Can I mix providers?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. You can mix providers such as Azure storage with AWS CDN; make sure to grant the required roles/permissions on each provider."}},
+		{"@type": "Question", "name": "Do I need the wizard for multi-tenant?", "acceptedAnswer": {"@type": "Answer", "text": "No. Multi-tenant deployments use DynamicConfig and should keep CosmosAllowSetup=false."}}
+	]
+}
+</script>
 
 ---
 
-## Related Documentation
+## Related Documentation {#related-documentation}
 
 - **[Authentication Overview](../Authentication-Overview.md)** - User authentication and authorization
 - **[Publishing Overview](../Publishing-Overview.md)** - Publishing modes and workflows
