@@ -67,10 +67,6 @@ using Sky.Editor.Services.Storage;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
-// Announce the version of Sky we are booting up. Get this from the assembly.
-var version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-System.Console.WriteLine($"Sky CMS Editor v.{version} starting up...");
-
 // ---------------------------------------------------------------
 // Register Setup Wizard Services (before single/multi-tenant configuration)
 // ---------------------------------------------------------------
@@ -406,6 +402,27 @@ if (isMultiTenantEditor)
 }
 
 app.UseCosmosCmsDataProtection(); // Enable data protection services for Cosmos CMS.
+
+// Map CloudFront viewer protocol to X-Forwarded-Proto so ASP.NET Core recognizes HTTPS
+// CloudFront sets CloudFront-Forwarded-Proto (https when viewer uses HTTPS) but ASP.NET Core's
+// UseForwardedHeaders() middleware only reads X-Forwarded-Proto. Without this mapping, antiforgery
+// validation and OAuth redirects fail because the app sees the CloudFront→ALB protocol (http) instead
+// of the original viewer protocol (https).
+// References:
+// - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html
+// - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-request-policies.html
+app.Use(async (context, next) =>
+{
+    var headers = context.Request.Headers;
+    if (headers.TryGetValue("CloudFront-Forwarded-Proto", out var cfProto))
+    {
+        // Overwrite ALB-provided X-Forwarded-Proto (http) with CloudFront viewer protocol
+        headers["X-Forwarded-Proto"] = cfProto;
+    }
+
+    await next();
+});
+
 app.UseForwardedHeaders(); // https://seankilleen.com/2020/06/solved-net-core-azure-ad-in-docker-container-incorrectly-uses-an-non-https-redirect-uri/
 
 app.Use(async (context, next) =>

@@ -2,6 +2,13 @@
 
 This guide walks you through deploying SkyCMS Editor on AWS using AWS CDK. This is a **first-step, minimal configuration** focusing on getting a working deployment without complex security features yet.
 
+## December 2025 Update (Proxy Headers & Debug Mode)
+
+- CloudFront now forwards critical headers to ALB via a custom **Origin Request Policy** (Host, X-Forwarded-For, X-Forwarded-Proto). This fixes HTTP 400 errors on the setup wizard POST caused by antiforgery validation when the original HTTPS scheme was not preserved.
+- No teardown required; run the regular deployment to apply this change: `./cdk-deploy.ps1`.
+- For troubleshooting, the ECS containers are temporarily configured with `ASPNETCORE_ENVIRONMENT=Development`. Remember to revert to `Production` once debugging is complete.
+- The database connection string is now generated dynamically from the **RDS endpoint** and **Secrets Manager** credentials (no Azure endpoints or hardcoded strings).
+
 ## What Gets Deployed
 
 - ✅ **Docker Container**: `toiyabe/sky-editor:latest` from Docker Hub
@@ -230,6 +237,10 @@ The stack allows all IPs (0.0.0.0/0) to port 3306 for dev convenience. If you ca
   ```
 
 ### Deployment Hangs
+### HTTP 400 on Setup Wizard (POST)
+- **Cause**: ASP.NET Core antiforgery sees a scheme mismatch if `X-Forwarded-Proto` does not reflect the original HTTPS when traffic flows CloudFront (HTTPS) → ALB (HTTP) → ECS.
+- **Fix (already applied)**: CDK configures CloudFront with an **Origin Request Policy** that forwards `Host`, `X-Forwarded-For`, and `X-Forwarded-Proto` to ALB, preserving the original scheme for ASP.NET Core’s `UseForwardedHeaders()`.
+- **Action**: Redeploy with `./cdk-deploy.ps1`. No stack destroy is needed.
 - CDK can take a while on first deployment. Check CloudFormation events:
   ```powershell
   aws cloudformation describe-stack-events `

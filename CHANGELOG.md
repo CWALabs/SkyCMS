@@ -19,3 +19,16 @@
 - `EditorController` now uses mediator pattern for article saves
 - `BlogController` now uses mediator pattern for blog operations
 - Better separation of concerns in article editing workflow
+
+## [9.2.3.11] - 2025-12-20
+
+### Fixed
+- Setup wizard HTTP 400s (antiforgery) caused by proxy scheme mismatch. CloudFront now forwards `Host`, `X-Forwarded-For`, and `X-Forwarded-Proto` to ALB via a custom Origin Request Policy so ASP.NET Core recognizes original HTTPS.
+
+### Changed
+- ECS containers temporarily run with `ASPNETCORE_ENVIRONMENT=Development` to surface detailed errors during debugging. Revert to `Production` after verification.
+- Editor connection string is generated dynamically from the RDS endpoint and Secrets Manager credentials (removed hardcoded Azure connection string).
+
+### Notes
+- No stack teardown required; apply changes with a standard redeploy (`InstallScripts/AWS/cdk-deploy.ps1`).
+- Documentation updated: see [InstallScripts/AWS/CDK_DEPLOYMENT_GUIDE.md](InstallScripts/AWS/CDK_DEPLOYMENT_GUIDE.md) and [InstallScripts/AWS/README.md](InstallScripts/AWS/README.md).

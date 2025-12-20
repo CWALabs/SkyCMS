@@ -9,6 +9,7 @@ import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
 
 export interface SkyCmsProps extends cdk.StackProps {
   image: string;
@@ -23,6 +24,9 @@ export class SkyCmsEditorStack extends cdk.Stack {
     const desiredCount = props.desiredCount || 1;
     const dbName = props.dbName || 'skycms';
     const certificateArn = this.node.tryGetContext('certificateArn') as string | undefined;
+    const domainName = this.node.tryGetContext('domainName') as string | undefined;
+    const hostedZoneId = this.node.tryGetContext('hostedZoneId') as string | undefined;
+    const hostedZoneName = this.node.tryGetContext('hostedZoneName') as string | undefined;
 
     // VPC with 2 AZs, public subnets for ECS, isolated subnets for RDS
     const vpc = new ec2.Vpc(this, 'Vpc', {
@@ -199,16 +203,28 @@ export class SkyCmsEditorStack extends cdk.Stack {
       },
     });
 
-    // Optional HTTPS listener if a certificate ARN is provided via context: certificateArn
+    // Optional HTTPS listener: use provided certificateArn or auto-provision via Route 53 if domain/zone specified
+    let httpsCertificate: acm.ICertificate | undefined = undefined;
     if (certificateArn) {
-      const certificate = acm.Certificate.fromCertificateArn(this, 'AlbCert', certificateArn);
+      httpsCertificate = acm.Certificate.fromCertificateArn(this, 'AlbCert', certificateArn);
+    } else if (domainName && (hostedZoneId && hostedZoneName)) {
+      const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+        hostedZoneId,
+        zoneName: hostedZoneName,
+      });
+      httpsCertificate = new acm.DnsValidatedCertificate(this, 'AlbCertAuto', {
+        domainName,
+        hostedZone: zone,
+        region: cdk.Aws.REGION,
+      });
+    }
+    if (httpsCertificate) {
       alb.addListener('HttpsListener', {
         port: 443,
         protocol: elbv2.ApplicationProtocol.HTTPS,
-        certificates: [certificate],
+        certificates: [httpsCertificate],
         defaultAction: elbv2.ListenerAction.forward([targetGroup]),
       });
-
       albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Allow HTTPS from anywhere');
     }
 
@@ -236,10 +252,9 @@ export class SkyCmsEditorStack extends cdk.Stack {
     // CloudFront Distribution with HTTPS (auto-generated SSL certificate)
     // Create custom origin request policy to forward X-Forwarded-Proto and other headers for proxy awareness
     const originRequestPolicy = new cloudfront.OriginRequestPolicy(this, 'OriginRequestPolicy', {
-      headerBehavior: cloudfront.OriginRequestHeaderBehavior.whitelist(
+      headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList(
         'Host',
-        'X-Forwarded-For',
-        'X-Forwarded-Proto',
+        'CloudFront-Forwarded-Proto',
         'User-Agent'
       ),
       queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
@@ -249,7 +264,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
     const distribution = new cloudfront.Distribution(this, 'CloudFrontDist', {
       defaultBehavior: {
         origin: new origins.LoadBalancerV2Origin(alb, {
-          protocolPolicy: certificateArn
+          protocolPolicy: (httpsCertificate || certificateArn)
             ? cloudfront.OriginProtocolPolicy.HTTPS_ONLY
             : cloudfront.OriginProtocolPolicy.HTTP_ONLY,
           httpsPort: 443,

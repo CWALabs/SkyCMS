@@ -1005,6 +1005,33 @@
     "aws:cdk:path": "SkyCmsMinimalStack/Service/Service"
    }
   },
+  "OriginRequestPolicy3EFDB4FA": {
+   "Type": "AWS::CloudFront::OriginRequestPolicy",
+   "Properties": {
+    "OriginRequestPolicyConfig": {
+     "CookiesConfig": {
+      "CookieBehavior": "all"
+     },
+     "HeadersConfig": {
+      "HeaderBehavior": "whitelist",
+      "Headers": [
+       "Host",
+       "X-Forwarded-For",
+       "X-Forwarded-Proto",
+       "CloudFront-Forwarded-Proto",
+       "User-Agent"
+      ]
+     },
+     "Name": "SkyCmsMinimalStackOriginRequestPolicy67570AD6",
+     "QueryStringsConfig": {
+      "QueryStringBehavior": "all"
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCmsMinimalStack/OriginRequestPolicy/Resource"
+   }
+  },
   "CloudFrontDist239A6E31": {
    "Type": "AWS::CloudFront::Distribution",
    "Properties": {
@@ -1022,6 +1049,9 @@
       ],
       "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
       "Compress": true,
+      "OriginRequestPolicyId": {
+       "Ref": "OriginRequestPolicy3EFDB4FA"
+      },
       "TargetOriginId": "SkyCmsMinimalStackCloudFrontDistOrigin14D18358A",
       "ViewerProtocolPolicy": "redirect-to-https"
      },
@@ -1056,7 +1086,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S0W7bMAz8lr4r2ubtB9JkKwIUmBEXfR1omfHYyJIhUgkKQ/8+xLITLwX6xLvjSTqTLnTxvdDFA5x5ZZrjylKth0rAHBWc+c+AptDDa2/U5uBey40qY23JVLF2KBfthvY+Cr5AbfGm37Q1szcEQt5dzaoMdALB2x07JxgcyhMInuF9enRiaxEwfzt0oio0MZC8PwUf+/G5T4WdawMyf9B/jnJSaFgPGxtZMFxMM/wFoYXLB/BxiwdyNMe/V7wTIIdhoU1nKwwnMnkkGSYVGtZDCQE6FAzXyNvHO20LAjUw7hwLOIMqD2px4IMwW5NiNAGFO3DQYtBDNfJpBBeUywuEFmUx2qvhvpMUQaeHvc8LHmvpLZlxTRklZX3Lenj27TXUjJNCCyxkrIemBgvOkGtPhR7WfW/JjP/Gs4fmcezlTfzHlz5iQTd5Zrzo5/DXDAualLE+NofgnehhSyyB6jgvdslTUntkH0Ne3+8ofZSknG9Qv/GXU/FDfyv014c3JlqF6IQ61Ptc/wFhK/jLVwMAAA=="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/32S3W7bMAyFn6X3irp5fYE02YoABWrYRW8HWmY8NrLkiVSCwvC7D/H/0mFXOvx4JFGkEp18S3RyBxfemPK0sVToNhcwJwUX/tmiSXT71hi1O7q3dKfSWFgyeSwcypUtKvNR8BUKiwtf2JbZGwIh72azSgOdQXA54+AEg0N5AsELfIyXjtFWBMyvGp2oHE0MJB9Pwcemv+6/4OCqgMyf+PcedwoN63ZnIwuGq2mSPyBUcH0An/Z4JEdT+bfEOwFyGFZs3JtjOJMZWjLIToWSdZtCgBoFw1zy/vGG7UGgAMaDYwFnUA2NWm34BCZrpxhNQOEaHFQYdJv38diCqxqWVwgVyqq1s+E20ymCWreZHwbcr6m3ZPoxDapT1les22dfzUVNulNogYWM9VAWYMEZctU50e22aSyZ/m88eygf+9wwib/itY9Y0I2eSa/yQ/FzDauwU8b6WB6Dd6Lbl0AVuQx/R2RZXvMvvCeWQEWc/sA67jqVIfsYhkm/RGmidMr5EvU735+TB/010V/u3ploE6ITqlFnw/oHSuW3VIIDAAA="
    },
    "Metadata": {
     "aws:cdk:path": "SkyCmsMinimalStack/CDKMetadata/Default"

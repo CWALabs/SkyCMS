@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-deploy-role-873764251532-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-cfn-exec-role-873764251532-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/c7c128989b07534445fbdd8fb2ab08e3b6d09b2d7cfab7929a8a5a25590b52a8.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/82c36ef7c15fa0be1ea718168f0bd18d36f70ce4672d4959e1177327537583b7.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -302,6 +302,12 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "ServiceD69D759B"
+          }
+        ],
+        "/SkyCmsMinimalStack/OriginRequestPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OriginRequestPolicy3EFDB4FA"
           }
         ],
         "/SkyCmsMinimalStack/CloudFrontDist/Resource": [

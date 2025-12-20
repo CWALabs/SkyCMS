@@ -3,7 +3,11 @@ param(
   [string]$Image = "toiyabe/sky-editor:latest",
   [int]$DesiredCount = 1,
   [string]$DbName = "skycms",
-  [string]$StackName = "SkyCmsMinimalStack"
+  [string]$StackName = "SkyCmsMinimalStack",
+  [string]$CertificateArn = "",
+  [string]$DomainName = "",
+  [string]$HostedZoneId = "",
+  [string]$HostedZoneName = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,6 +25,10 @@ Write-Host "  Image:        $Image"
 Write-Host "  DesiredCount: $DesiredCount"
 Write-Host "  DbName:       $DbName"
 Write-Host "  StackName:    $StackName"
+if ($CertificateArn) { Write-Host "  CertificateArn: $CertificateArn" }
+if ($DomainName) { Write-Host "  DomainName: $DomainName" }
+if ($HostedZoneId) { Write-Host "  HostedZoneId: $HostedZoneId" }
+if ($HostedZoneName) { Write-Host "  HostedZoneName: $HostedZoneName" }
 Write-Host ""
 Write-Host "STACK: VPC + ECS + RDS MySQL with TLS" -ForegroundColor Magenta
 Write-Host "No ALB, No CloudFront - testing database connection" -ForegroundColor Magenta
@@ -46,19 +54,34 @@ try {
   
   Write-Host ""
   Write-Host "Step 2: Bootstrapping CDK (if needed) ..." -ForegroundColor Yellow
-  node $cdkBin bootstrap "aws://$accountId/$Region" --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName --context stackName=$StackName
+  $bootstrapCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName")
+  if ($CertificateArn) { $bootstrapCtx += @("--context", "certificateArn=$CertificateArn") }
+  if ($DomainName) { $bootstrapCtx += @("--context", "domainName=$DomainName") }
+  if ($HostedZoneId) { $bootstrapCtx += @("--context", "hostedZoneId=$HostedZoneId") }
+  if ($HostedZoneName) { $bootstrapCtx += @("--context", "hostedZoneName=$HostedZoneName") }
+  node $cdkBin bootstrap "aws://$accountId/$Region" $bootstrapCtx
   if ($LASTEXITCODE -ne 0) { throw "cdk bootstrap failed" }
 
   Write-Host ""
   Write-Host "Step 3: Synthesizing CloudFormation template ..." -ForegroundColor Yellow
-  node $cdkBin synth --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName --context stackName=$StackName
+  $synthCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName")
+  if ($CertificateArn) { $synthCtx += @("--context", "certificateArn=$CertificateArn") }
+  if ($DomainName) { $synthCtx += @("--context", "domainName=$DomainName") }
+  if ($HostedZoneId) { $synthCtx += @("--context", "hostedZoneId=$HostedZoneId") }
+  if ($HostedZoneName) { $synthCtx += @("--context", "hostedZoneName=$HostedZoneName") }
+  node $cdkBin synth $synthCtx
   if ($LASTEXITCODE -ne 0) { throw "cdk synth failed" }
 
   Write-Host ""
   Write-Host "Step 4: Deploying $StackName (ECS + RDS) ..." -ForegroundColor Yellow
   Write-Host "This will take 5-10 minutes for VPC + ECS + RDS MySQL." -ForegroundColor Gray
   Write-Host ""
-  node $cdkBin deploy $StackName --require-approval never --context image=$Image --context desiredCount=$DesiredCount --context dbName=$DbName --context stackName=$StackName
+  $deployCtx = @("--require-approval", "never", "--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName")
+  if ($CertificateArn) { $deployCtx += @("--context", "certificateArn=$CertificateArn") }
+  if ($DomainName) { $deployCtx += @("--context", "domainName=$DomainName") }
+  if ($HostedZoneId) { $deployCtx += @("--context", "hostedZoneId=$HostedZoneId") }
+  if ($HostedZoneName) { $deployCtx += @("--context", "hostedZoneName=$HostedZoneName") }
+  node $cdkBin deploy $StackName $deployCtx
   if ($LASTEXITCODE -ne 0) { throw "cdk deploy failed" }
 
   Write-Host ""

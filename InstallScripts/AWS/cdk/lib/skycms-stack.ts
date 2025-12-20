@@ -8,6 +8,7 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
 import { ApplicationProtocol } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 
 export interface SkyCmsProps extends cdk.StackProps {
@@ -49,9 +50,23 @@ export class SkyCmsEditorStack extends cdk.Stack {
     const dbPassword = cdk.SecretValue.unsafePlainText('SkyCMS2025!Temp');
 
     const certificateArn = this.node.tryGetContext('certificateArn') as string | undefined;
-    const certificate = certificateArn
-      ? acm.Certificate.fromCertificateArn(this, 'AlbCert', certificateArn)
-      : undefined;
+    const domainName = this.node.tryGetContext('domainName') as string | undefined;
+    const hostedZoneId = this.node.tryGetContext('hostedZoneId') as string | undefined;
+    const hostedZoneName = this.node.tryGetContext('hostedZoneName') as string | undefined;
+    let certificate: acm.ICertificate | undefined = undefined;
+    if (certificateArn) {
+      certificate = acm.Certificate.fromCertificateArn(this, 'AlbCert', certificateArn);
+    } else if (domainName && (hostedZoneId && hostedZoneName)) {
+      const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+        hostedZoneId,
+        zoneName: hostedZoneName,
+      });
+      certificate = new acm.DnsValidatedCertificate(this, 'AlbCertAuto', {
+        domainName,
+        hostedZone: zone,
+        region: cdk.Aws.REGION,
+      });
+    }
     
     const db = new rds.DatabaseInstance(this, 'MySql', {
       engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0 }),
