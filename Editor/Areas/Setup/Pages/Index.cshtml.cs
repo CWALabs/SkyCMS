@@ -58,22 +58,6 @@ namespace Sky.Editor.Areas.Setup.Pages
                 return RedirectToPage("/Index", new { area = "" });
             }
 
-            // ✅ Validate database connection FIRST
-            var dbConnectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
-            if (string.IsNullOrEmpty(dbConnectionString))
-            {
-                ErrorMessage = "Database connection string not found. Please configure 'ApplicationDbContextConnection' in appsettings.json or user secrets.";
-                return Page();
-            }
-
-            var testResult = await setupService.TestDatabaseConnectionAsync(dbConnectionString);
-            DbStatus = testResult.Status;
-            if (!testResult.Success)
-            {
-                ErrorMessage = $"Database connection failed: {testResult.Message}";
-                return Page();
-            }
-
             // Check if setup is already complete
             var existingConfig = await setupService.GetCurrentSetupAsync();
             if (existingConfig?.IsComplete == true)
@@ -97,13 +81,6 @@ namespace Sky.Editor.Areas.Setup.Pages
                 if (string.IsNullOrEmpty(dbConnectionString))
                 {
                     ErrorMessage = "Database connection string not found. Please configure 'ApplicationDbContextConnection' in appsettings.json or user secrets.";
-                    return Page();
-                }
-
-                var testResult = await setupService.TestDatabaseConnectionAsync(dbConnectionString);
-                if (!testResult.Success)
-                {
-                    ErrorMessage = $"Database connection failed: {testResult.Message}";
                     return Page();
                 }
 
