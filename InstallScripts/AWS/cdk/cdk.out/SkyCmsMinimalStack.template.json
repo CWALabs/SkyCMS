@@ -1016,8 +1016,6 @@
       "HeaderBehavior": "whitelist",
       "Headers": [
        "Host",
-       "X-Forwarded-For",
-       "X-Forwarded-Proto",
        "CloudFront-Forwarded-Proto",
        "User-Agent"
       ]

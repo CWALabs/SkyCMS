@@ -3,7 +3,9 @@
 Complete set of PowerShell scripts for deploying and managing SkyCMS on AWS.
 
 > December 2025 Update
-- CloudFront → ALB now forwards `Host`, `X-Forwarded-For`, and `X-Forwarded-Proto` via a custom **Origin Request Policy** to fix setup wizard HTTP 400s (antiforgery).
+- CloudFront → ALB now forwards `Host`, `CloudFront-Forwarded-Proto`, and `User-Agent` via a custom **Origin Request Policy** to fix setup wizard HTTP 400s (antiforgery).
+- Editor application includes middleware that maps `CloudFront-Forwarded-Proto` to `X-Forwarded-Proto` for ASP.NET Core's `UseForwardedHeaders()` middleware.
+- **Optional**: Enable end-to-end TLS by providing `-DomainName`, `-HostedZoneId`, `-HostedZoneName` (auto-provisions ACM cert) or `-CertificateArn` (uses existing cert).
 - ECS tasks temporarily run with `ASPNETCORE_ENVIRONMENT=Development` for debugging; revert to `Production` after verifying.
 - Connection string for the Editor is built dynamically from **RDS endpoint** + **Secrets Manager** credentials; no hardcoded Azure values.
 - Apply these changes with a normal redeploy: `./cdk-deploy.ps1` (no teardown needed).

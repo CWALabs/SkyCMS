@@ -4,7 +4,9 @@ This guide walks you through deploying SkyCMS Editor on AWS using AWS CDK. This 
 
 ## December 2025 Update (Proxy Headers & Debug Mode)
 
-- CloudFront now forwards critical headers to ALB via a custom **Origin Request Policy** (Host, X-Forwarded-For, X-Forwarded-Proto). This fixes HTTP 400 errors on the setup wizard POST caused by antiforgery validation when the original HTTPS scheme was not preserved.
+- CloudFront now forwards critical headers to ALB via a custom **Origin Request Policy** (`Host`, `CloudFront-Forwarded-Proto`, `User-Agent`). This fixes HTTP 400 errors on the setup wizard POST caused by antiforgery validation when the original HTTPS scheme was not preserved.
+- The Editor application includes middleware that maps `CloudFront-Forwarded-Proto` to `X-Forwarded-Proto` before `UseForwardedHeaders()` runs, ensuring ASP.NET Core sees the original HTTPS scheme even when CloudFront → ALB uses HTTP.
+- **Optional**: For end-to-end TLS, you can provide an ACM certificate ARN or auto-provision one via Route 53 using `-DomainName`, `-HostedZoneId`, and `-HostedZoneName` parameters. This enables HTTPS from CloudFront → ALB and removes the need for the header mapping middleware.
 - No teardown required; run the regular deployment to apply this change: `./cdk-deploy.ps1`.
 - For troubleshooting, the ECS containers are temporarily configured with `ASPNETCORE_ENVIRONMENT=Development`. Remember to revert to `Production` once debugging is complete.
 - The database connection string is now generated dynamically from the **RDS endpoint** and **Secrets Manager** credentials (no Azure endpoints or hardcoded strings).
@@ -239,8 +241,20 @@ The stack allows all IPs (0.0.0.0/0) to port 3306 for dev convenience. If you ca
 ### Deployment Hangs
 ### HTTP 400 on Setup Wizard (POST)
 - **Cause**: ASP.NET Core antiforgery sees a scheme mismatch if `X-Forwarded-Proto` does not reflect the original HTTPS when traffic flows CloudFront (HTTPS) → ALB (HTTP) → ECS.
-- **Fix (already applied)**: CDK configures CloudFront with an **Origin Request Policy** that forwards `Host`, `X-Forwarded-For`, and `X-Forwarded-Proto` to ALB, preserving the original scheme for ASP.NET Core’s `UseForwardedHeaders()`.
+- **Fix (already applied)**: 
+  - CDK configures CloudFront with an **Origin Request Policy** that forwards `Host`, `CloudFront-Forwarded-Proto`, and `User-Agent` to ALB.
+  - The Editor application includes middleware that copies `CloudFront-Forwarded-Proto` (set by CloudFront when viewer uses HTTPS) to `X-Forwarded-Proto` before `UseForwardedHeaders()` middleware runs.
+  - This ensures ASP.NET Core's antiforgery validation and OAuth redirects see the original HTTPS scheme.
+- **Optional end-to-end TLS**: Deploy with an ACM certificate to enable HTTPS from CloudFront → ALB, eliminating the need for header mapping:
+  ```powershell
+  ./cdk-deploy.ps1 -DomainName "editor.example.com" -HostedZoneName "example.com" -HostedZoneId "Z123456ABCDEFG"
+  ```
+  Or use an existing certificate:
+  ```powershell
+  ./cdk-deploy.ps1 -CertificateArn "arn:aws:acm:us-east-1:ACCOUNT:certificate/XXXXXXXX"
+  ```
 - **Action**: Redeploy with `./cdk-deploy.ps1`. No stack destroy is needed.
+- **References**: [AWS CloudFront Custom Headers](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html), [Origin Request Policies](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-request-policies.html)
 - CDK can take a while on first deployment. Check CloudFormation events:
   ```powershell
   aws cloudformation describe-stack-events `
