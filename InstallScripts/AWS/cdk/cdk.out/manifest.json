@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-deploy-role-873764251532-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-cfn-exec-role-873764251532-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/1c4aeee985a7cbdd39319099153a22c60b80108731e0dad4ebf5c1810ad41d80.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/c7c128989b07534445fbdd8fb2ab08e3b6d09b2d7cfab7929a8a5a25590b52a8.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -272,7 +272,7 @@
               "new BaseService (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\base\\base-service.js:1:8675)",
               "new FargateService2 (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\fargate\\fargate-service.js:1:6318)",
               "new FargateService2 (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
-              "new SkyCmsEditorStack (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\lib\\skycms-stack-minimal.ts:175:21)",
+              "new SkyCmsEditorStack (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\lib\\skycms-stack-minimal.ts:178:21)",
               "Object.<anonymous> (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\bin\\skycms.ts:13:1)",
               "Module._compile (node:internal/modules/cjs/loader:1761:14)",
               "Module.m._compile (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\ts-node\\src\\index.ts:1618:23)",

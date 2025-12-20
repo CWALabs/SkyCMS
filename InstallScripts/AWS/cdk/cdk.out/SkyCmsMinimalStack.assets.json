@@ -1,16 +1,16 @@
 {
   "version": "48.0.0",
   "files": {
-    "1c4aeee985a7cbdd39319099153a22c60b80108731e0dad4ebf5c1810ad41d80": {
+    "c7c128989b07534445fbdd8fb2ab08e3b6d09b2d7cfab7929a8a5a25590b52a8": {
       "displayName": "SkyCmsMinimalStack Template",
       "source": {
         "path": "SkyCmsMinimalStack.template.json",
         "packaging": "file"
       },
       "destinations": {
-        "873764251532-us-east-1-fcd925f3": {
+        "873764251532-us-east-1-f278e4c5": {
           "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
-          "objectKey": "1c4aeee985a7cbdd39319099153a22c60b80108731e0dad4ebf5c1810ad41d80.json",
+          "objectKey": "c7c128989b07534445fbdd8fb2ab08e3b6d09b2d7cfab7929a8a5a25590b52a8.json",
           "region": "us-east-1",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
         }

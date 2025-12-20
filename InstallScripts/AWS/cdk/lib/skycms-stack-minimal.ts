@@ -96,14 +96,17 @@ export class SkyCmsEditorStack extends cdk.Stack {
       deletionProtection: false,
     });
 
+    // Construct connection string from RDS database endpoint and credentials
+    const dbUser = dbCredentials.secretValueFromJson('username').toString();
+    const dbPassword = dbCredentials.secretValueFromJson('password').toString();
+    const connectionString = `Server=${database.dbInstanceEndpointAddress};Port=3306;Uid=${dbUser};Pwd=${dbPassword};Database=${dbName};`;
+
     const connectionStringSecret = new secretsmanager.Secret(
       this,
       'DbConnectionStringSecret',
       {
-        secretStringValue: cdk.SecretValue.unsafePlainText(
-          'Server=cosmos-cms-mysql-dev.mysql.database.azure.com;Port=3306;Uid=toiyabe;Pwd=ga5H#7g7hQ@!vzCnq4Pb;Database=cosmoscms;'
-        ),
-        description: 'MySQL connection string (provided) ending with semicolon',
+        secretStringValue: cdk.SecretValue.unsafePlainText(connectionString),
+        description: 'MySQL connection string (dynamically constructed from RDS) ending with semicolon',
       }
     );
 
@@ -131,7 +134,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
       environment: {
         CosmosAllowSetup: 'true',
         MultiTenantEditor: 'false',
-        ASPNETCORE_ENVIRONMENT: 'Production',
+        ASPNETCORE_ENVIRONMENT: 'Development',
         AdminEmail: 'admin@example.com',
         DB_HOST: database.dbInstanceEndpointAddress,
         DB_PORT: '3306',
@@ -231,6 +234,18 @@ export class SkyCmsEditorStack extends cdk.Stack {
     );
 
     // CloudFront Distribution with HTTPS (auto-generated SSL certificate)
+    // Create custom origin request policy to forward X-Forwarded-Proto and other headers for proxy awareness
+    const originRequestPolicy = new cloudfront.OriginRequestPolicy(this, 'OriginRequestPolicy', {
+      headerBehavior: cloudfront.OriginRequestHeaderBehavior.whitelist(
+        'Host',
+        'X-Forwarded-For',
+        'X-Forwarded-Proto',
+        'User-Agent'
+      ),
+      queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
+      cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
+    });
+
     const distribution = new cloudfront.Distribution(this, 'CloudFrontDist', {
       defaultBehavior: {
         origin: new origins.LoadBalancerV2Origin(alb, {
@@ -243,6 +258,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
         }),
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: originRequestPolicy,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         compress: true,
       },

@@ -67,6 +67,10 @@ using Sky.Editor.Services.Storage;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
+// Announce the version of Sky we are booting up. Get this from the assembly.
+var version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+System.Console.WriteLine($"Sky CMS Editor v.{version} starting up...");
+
 // ---------------------------------------------------------------
 // Register Setup Wizard Services (before single/multi-tenant configuration)
 // ---------------------------------------------------------------

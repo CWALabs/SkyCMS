@@ -502,8 +502,30 @@
   "DbConnectionStringSecret21A439BA": {
    "Type": "AWS::SecretsManager::Secret",
    "Properties": {
-    "Description": "MySQL connection string (provided) ending with semicolon",
-    "SecretString": "Server=cosmos-cms-mysql-dev.mysql.database.azure.com;Port=3306;Uid=toiyabe;Pwd=ga5H#7g7hQ@!vzCnq4Pb;Database=cosmoscms;"
+    "Description": "MySQL connection string (dynamically constructed from RDS) ending with semicolon",
+    "SecretString": {
+     "Fn::Join": [
+      "",
+      [
+       "Server=",
+       {
+        "Fn::GetAtt": [
+         "DatabaseB269D8BB",
+         "Endpoint.Address"
+        ]
+       },
+       ";Port=3306;Uid={{resolve:secretsmanager:",
+       {
+        "Ref": "DbCredentials798065DE"
+       },
+       ":SecretString:username::}};Pwd={{resolve:secretsmanager:",
+       {
+        "Ref": "DbCredentials798065DE"
+       },
+       ":SecretString:password::}};Database=skycms;"
+      ]
+     ]
+    }
    },
    "UpdateReplacePolicy": "Delete",
    "DeletionPolicy": "Delete",
@@ -547,7 +569,7 @@
        },
        {
         "Name": "ASPNETCORE_ENVIRONMENT",
-        "Value": "Production"
+        "Value": "Development"
        },
        {
         "Name": "AdminEmail",

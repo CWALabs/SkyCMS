@@ -6,6 +6,7 @@
 
 @await Html.PartialAsync("_SetupStepIndicator", 0) @* Current step number *@
 
+<div style="display:none">@Model.DbStatus.ToString()</div>
 <div class="text-center mb-5">
     <h2>Welcome to SkyCMS Setup Wizard</h2>
     <p class="lead">This wizard will guide you through the initial setup of your SkyCMS installation.</p>
@@ -38,9 +39,15 @@
         <strong>Error:</strong> @Model.ErrorMessage
     </div>
 }
+else
+{
+    <div class="alert alert-success">
+        <strong>Ready to proceed!</strong> Click "Start Setup" to continue to the next step.
+    </div>
+}
 
 <form method="post">
-    @Html.AntiForgeryToken()
+    @* @Html.AntiForgeryToken() *@
     <div class="d-flex justify-content-between mt-4">
         <a href="/" class="btn btn-secondary">Cancel</a>
         <button type="submit" class="btn btn-primary">Start Setup <i class="fas fa-arrow-right"></i></button>

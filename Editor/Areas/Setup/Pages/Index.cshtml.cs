@@ -9,6 +9,7 @@ namespace Sky.Editor.Areas.Setup.Pages
 {
     using System;
     using System.Threading.Tasks;
+    using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.RazorPages;
     using Microsoft.Extensions.Configuration;
@@ -39,6 +40,11 @@ namespace Sky.Editor.Areas.Setup.Pages
         public string ErrorMessage { get; set; }
 
         /// <summary>
+        /// Gets or sets the database status.
+        /// </summary>
+        public DbStatus? DbStatus { get; set; }
+
+        /// <summary>
         /// Handles GET requests.
         /// </summary>
         /// <returns>Page result or redirect.</returns>
@@ -50,6 +56,22 @@ namespace Sky.Editor.Areas.Setup.Pages
             if (!allowSetup)
             {
                 return RedirectToPage("/Index", new { area = "" });
+            }
+
+            // ✅ Validate database connection FIRST
+            var dbConnectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
+            if (string.IsNullOrEmpty(dbConnectionString))
+            {
+                ErrorMessage = "Database connection string not found. Please configure 'ApplicationDbContextConnection' in appsettings.json or user secrets.";
+                return Page();
+            }
+
+            var testResult = await setupService.TestDatabaseConnectionAsync(dbConnectionString);
+            DbStatus = testResult.Status;
+            if (!testResult.Success)
+            {
+                ErrorMessage = $"Database connection failed: {testResult.Message}";
+                return Page();
             }
 
             // Check if setup is already complete

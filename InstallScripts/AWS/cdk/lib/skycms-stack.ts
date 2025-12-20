@@ -70,14 +70,16 @@ export class SkyCmsEditorStack extends cdk.Stack {
       parameterGroup: parameterGroup,
     });
 
+    // Construct connection string from RDS database endpoint and credentials
+    const dbUser = 'skycms_admin';
+    const connectionString = `Server=${db.dbInstanceEndpointAddress};Port=3306;Uid=${dbUser};Pwd=SkyCMS2025!Temp;Database=${props.dbName};`;
+
     const connectionStringSecret = new secretsmanager.Secret(
       this,
       'DbConnectionStringSecret',
       {
-        secretStringValue: cdk.SecretValue.unsafePlainText(
-          'Server=cosmos-cms-mysql-dev.mysql.database.azure.com;Port=3306;Uid=toiyabe;Pwd=ga5H#7g7hQ@!vzCnq4Pb;Database=cosmoscms;'
-        ),
-        description: 'MySQL connection string (provided) ending with semicolon',
+        secretStringValue: cdk.SecretValue.unsafePlainText(connectionString),
+        description: 'MySQL connection string (dynamically constructed from RDS) ending with semicolon',
       }
     );
 
@@ -97,7 +99,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
         environment: {
           CosmosAllowSetup: 'true',
           MultiTenantEditor: 'false',
-          ASPNETCORE_ENVIRONMENT: 'Production',
+          ASPNETCORE_ENVIRONMENT: 'Development',
           BlobServiceProvider: 'Amazon',
           AmazonS3BucketName: props.bucketName || '',
           AmazonS3Region: cdk.Aws.REGION,

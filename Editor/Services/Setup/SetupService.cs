@@ -19,7 +19,6 @@ namespace Sky.Editor.Services.Setup
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Sky.Editor.Data.Logic;
@@ -255,24 +254,15 @@ namespace Sky.Editor.Services.Setup
                     };
                 }
 
-                // For Cosmos DB, check if database exists
-                if (context.Database.IsCosmos())
-                {
-                    var dbStatus = ApplicationDbContext.EnsureDatabaseExists(connectionString);
+                var dbStatus = ApplicationDbContext.EnsureDatabaseExists(connectionString);
 
-                    return new TestResult
-                    {
-                        Success = true,
-                        Message = $"Database connection successful. Status: {dbStatus}"
-                    };
-                }
-
-                // For relational databases
                 return new TestResult
                 {
-                    Success = true,
-                    Message = "Database connection successful"
+                    Success = dbStatus == DbStatus.ExistsWithNoUsers, // Expecting a new database with no users.
+                    Message = $"Database connection successful. Status: {dbStatus}",
+                    Status = dbStatus
                 };
+
             }
             catch (Exception ex)
             {

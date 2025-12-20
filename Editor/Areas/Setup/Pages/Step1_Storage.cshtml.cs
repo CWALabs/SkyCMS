@@ -88,25 +88,33 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Page result.</returns>
         public async Task<IActionResult> OnGetAsync()
         {
-            var config = await setupService.GetCurrentSetupAsync();
-            if (config == null)
+            try
             {
-                return RedirectToPage("./Index");
+                var config = await setupService.GetCurrentSetupAsync();
+                if (config == null)
+                {
+                    return RedirectToPage("./Index");
+                }
+
+                SetupId = config.Id;
+                StorageConnectionString = config.StoragePreConfigured ? "**********************" : config.StorageConnectionString;
+                BlobPublicUrl = config.BlobPublicUrl;
+                IsPreConfigured = config.StoragePreConfigured;
+                BlobPublicUrlPreConfigured = config.BlobPublicUrlPreConfigured;
+
+                // Infer storage type from connection string
+                if (!string.IsNullOrEmpty(StorageConnectionString))
+                {
+                    StorageType = InferStorageType(StorageConnectionString);
+                }
+
+                return Page();
             }
-
-            SetupId = config.Id;
-            StorageConnectionString = config.StoragePreConfigured ? "**********************" : config.StorageConnectionString;
-            BlobPublicUrl = config.BlobPublicUrl;
-            IsPreConfigured = config.StoragePreConfigured;
-            BlobPublicUrlPreConfigured = config.BlobPublicUrlPreConfigured;
-
-            // Infer storage type from connection string
-            if (!string.IsNullOrEmpty(StorageConnectionString))
+            catch (Exception ex)
             {
-                StorageType = InferStorageType(StorageConnectionString);
+                ErrorMessage = $"Error checking setup status: {ex.Message}";
+                return Page();
             }
-
-            return Page();
         }
 
         /// <summary>

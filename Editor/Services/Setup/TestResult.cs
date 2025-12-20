@@ -5,6 +5,8 @@
 // for more information concerning the license and the contributors participating to this project.
 // </copyright>
 
+using Cosmos.Common.Data;
+
 namespace Sky.Editor.Services.Setup
 {
     /// <summary>
@@ -21,5 +23,10 @@ namespace Sky.Editor.Services.Setup
         /// Gets or sets the test message.
         /// </summary>
         public string Message { get; set; }
+
+        /// <summary>
+        /// Gets or sets the database connection status.
+        /// </summary>
+        public DbStatus? Status { get; set; }
     }
 }
