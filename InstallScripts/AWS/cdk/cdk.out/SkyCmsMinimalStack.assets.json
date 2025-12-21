@@ -46,16 +46,16 @@
         }
       }
     },
-    "c4487eb9ebf69dc1ce325dc1dafdc8c99a2e5eb96bb7803bc9edb9dfca9266b5": {
+    "57d6b4ddfad4d29322c0f97a826bf68523cb746d3cbabacd0f17ff92493eb6d6": {
       "displayName": "SkyCmsMinimalStack Template",
       "source": {
         "path": "SkyCmsMinimalStack.template.json",
         "packaging": "file"
       },
       "destinations": {
-        "873764251532-us-east-1-c1063054": {
+        "873764251532-us-east-1-d25d1e75": {
           "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
-          "objectKey": "c4487eb9ebf69dc1ce325dc1dafdc8c99a2e5eb96bb7803bc9edb9dfca9266b5.json",
+          "objectKey": "57d6b4ddfad4d29322c0f97a826bf68523cb746d3cbabacd0f17ff92493eb6d6.json",
           "region": "us-east-1",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
         }

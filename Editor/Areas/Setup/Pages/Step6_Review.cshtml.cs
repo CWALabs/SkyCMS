@@ -22,16 +22,19 @@ namespace Sky.Editor.Areas.Setup.Pages
     {
         private readonly ISetupService setupService;
         private readonly ILogger<Step6_Review> logger;
+        private readonly ISetupCheckService setupCheckService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Step6_Review"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
         /// <param name="logger">Logger.</param>
-        public Step6_Review(ISetupService setupService, ILogger<Step6_Review> logger)
+        /// <param name="setupCheckService">Setup check service.</param>
+        public Step6_Review(ISetupService setupService, ILogger<Step6_Review> logger, ISetupCheckService setupCheckService)
         {
             this.setupService = setupService;
             this.logger = logger;
+            this.setupCheckService = setupCheckService;
         }
 
         /// <summary>
@@ -56,6 +59,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Page result.</returns>
         public async Task<IActionResult> OnGetAsync()
         {
+            // Check if setup has been completed
+            if (await setupCheckService.IsSetup())
+            {
+                // Redirect to setup page
+                Response.Redirect("/");
+            }
+
             Config = await setupService.GetCurrentSetupAsync();
             if (Config == null)
             {
@@ -98,6 +108,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to login page.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            // Check if setup has been completed
+            if (await setupCheckService.IsSetup())
+            {
+                // Redirect to setup page
+                Response.Redirect("/");
+            }
+
             try
             {
                 logger.LogInformation("Starting setup completion process for setup ID: {SetupId}", SetupId);

@@ -14,7 +14,6 @@ using Cosmos.Common.Data;
 using Cosmos.Common.Models;
 using Cosmos.Common.Services.Configurations;
 using Cosmos.DynamicConfig;
-using Cosmos.EmailServices;
 using Hangfire;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -23,7 +22,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -32,7 +30,6 @@ using Newtonsoft.Json.Serialization;
 using Sky.Cms.Hubs;
 using Sky.Cms.Services;
 using Sky.Editor.Boot;
-using Sky.Editor.Data;
 using Sky.Editor.Data.Logic;
 using Sky.Editor.Domain.Events;
 using Sky.Editor.Features.Articles.Create;
@@ -44,26 +41,24 @@ using Sky.Editor.Services.BlogPublishing;
 using Sky.Editor.Services.Catalog;
 using Sky.Editor.Services.CDN;
 using Sky.Editor.Services.EditorSettings;
+using Sky.Editor.Services.Email;
 using Sky.Editor.Services.Html;
+using Sky.Editor.Services.Layouts;
 using Sky.Editor.Services.Publishing;
 using Sky.Editor.Services.Redirects;
 using Sky.Editor.Services.ReservedPaths;
 using Sky.Editor.Services.Scheduling;
 using Sky.Editor.Services.Setup;
 using Sky.Editor.Services.Slugs;
+using Sky.Editor.Services.Storage;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
 using System;
-using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using System.Web;
-using Sky.Editor.Middleware;
-using Sky.Editor.Services.Layouts;
-using Sky.Editor.Services.Email;
-using Sky.Editor.Services.Storage;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -147,6 +142,7 @@ if (!isMultiTenantEditor)
 builder.Services.AddTransient<StorageContext>();
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
+builder.Services.AddTransient<ISetupCheckService, SetupCheckService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
@@ -392,7 +388,7 @@ builder.Services.AddRateLimiter(_ => _
         options.QueueLimit = 2;
     }));
 
-builder.Services.AddHostedService<PostSetupInitializationService>();
+// builder.Services.AddHostedService<PostSetupInitializationService>();
 
 var app = builder.Build();
 
@@ -443,7 +439,7 @@ app.Use(async (context, next) =>
 });
 
 // ✅ Add automatic setup detection middleware
-app.UseMiddleware<SetupRedirectMiddleware>();
+//app.UseMiddleware<SetupRedirectMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -467,9 +463,6 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 app.UseRouting();
-
-// Add the post-setup initialization middleware
-app.UseMiddleware<PostSetupInitializationMiddleware>();
 
 app.UseCors();
 app.UseResponseCaching(); // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/middleware?view=aspnetcore-3.1

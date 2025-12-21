@@ -10,6 +10,7 @@ namespace Sky.Editor.Areas.Setup.Pages
     using System;
     using System.ComponentModel.DataAnnotations;
     using System.Threading.Tasks;
+    using Azure.Storage.Blobs;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.RazorPages;
     using Sky.Editor.Services.Setup;
@@ -20,14 +21,17 @@ namespace Sky.Editor.Areas.Setup.Pages
     public class Step1_Storage : PageModel
     {
         private readonly ISetupService setupService;
+        private readonly ISetupCheckService setupCheckService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Step1_Storage"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
-        public Step1_Storage(ISetupService setupService)
+        /// <param name="setupCheckService">Setup check service.</param>
+        public Step1_Storage(ISetupService setupService, ISetupCheckService setupCheckService)
         {
             this.setupService = setupService;
+            this.setupCheckService = setupCheckService;
         }
 
         /// <summary>
@@ -87,6 +91,14 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Page result.</returns>
         public async Task<IActionResult> OnGetAsync()
         {
+
+            // Check if setup has been completed
+            if (await setupCheckService.IsSetup())
+            {
+                // Redirect to setup page
+                Response.Redirect("/");
+            }
+
             try
             {
                 var config = await setupService.GetCurrentSetupAsync();
@@ -126,6 +138,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to next step.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            // Check if setup has been completed
+            if (await setupCheckService.IsSetup())
+            {
+                // Redirect to setup page
+                Response.Redirect("/");
+            }
+
             if (!ModelState.IsValid)
             {
                 return Page();
@@ -161,6 +180,32 @@ namespace Sky.Editor.Areas.Setup.Pages
 
             try
             {
+
+                // If this is an Azure Blob Storage, ensure container name is set
+                var testConnectionString = config.StoragePreConfigured
+                    ? config.StorageConnectionString
+                    : StorageConnectionString;
+                var inferredType = InferStorageType(testConnectionString);
+                if (inferredType == "AzureBlob" && string.IsNullOrWhiteSpace(ContainerName))
+                {
+                    // Create default container.
+                    var blobClient = new BlobServiceClient(testConnectionString);
+                    var container = blobClient.GetBlobContainerClient("$web");
+                    await container.CreateIfNotExistsAsync();
+
+                    // Enable static website
+                    var serviceProperties = await blobClient.GetPropertiesAsync();
+
+                    if (!serviceProperties.Value.StaticWebsite.Enabled)
+                    {
+                        serviceProperties.Value.StaticWebsite.Enabled = true;
+                        serviceProperties.Value.StaticWebsite.IndexDocument = "index.html";
+                        serviceProperties.Value.StaticWebsite.ErrorDocument404Path = "404.html";
+
+                        await blobClient.SetPropertiesAsync(serviceProperties.Value);
+                    }
+                }
+
                 // Use config values if pre-configured, otherwise use form values
                 var connectionStringToSave = config.StoragePreConfigured 
                     ? config.StorageConnectionString 

@@ -118,7 +118,9 @@ namespace Sky.Tests.Areas.Setup
                 UserManager,
                 RoleManager,
                 Db,
-                layoutImportService); // <-- Add this argument for IServiceProvider
+                layoutImportService,
+                Logic,
+                Mediator);
 
             foreach (var role in RequiredIdentityRoles.Roles)
             {

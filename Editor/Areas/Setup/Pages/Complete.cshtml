@@ -37,43 +37,6 @@
     </div>
 </div>
 
-<div class="alert alert-warning">
-    <h5><i class="fas fa-exclamation-triangle"></i> Action Required: Restart Application</h5>
-    <p class="mb-2">
-        For all changes to take effect, you must <strong>restart the application</strong>.
-    </p>
-    
-    @if (Model.IsDocker)
-    {
-        <div class="mt-3">
-            <form method="post" asp-page-handler="Restart" id="restartForm">
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fas fa-sync-alt"></i>Restart web application to continue setup.
-                </button>
-            </form>
-            <p class="mt-3 mb-0"><small class="text-muted">Docker will automatically restart the container.</small></p>
-        </div>
-        <div class="mt-3">
-            <p><strong>Or manually restart using Docker:</strong></p>
-            <pre class="bg-dark text-white p-3 rounded"><code>docker restart skycms-editor</code></pre>
-        </div>
-    }
-    else
-    {
-        <div class="mt-3">
-            <form method="post" asp-page-handler="Restart" id="restartForm">
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fas fa-sync-alt"></i> Restart web application to continue setup.
-                </button>
-            </form>
-            <p class="mt-3 mb-2"><small class="text-muted">Or manually restart:</small></p>
-            <p><strong>IIS / Windows:</strong> Restart the application pool or stop/start the site</p>
-            <p><strong>Linux / systemd:</strong></p>
-            <pre class="bg-dark text-white p-3 rounded"><code>sudo systemctl restart skycms-editor</code></pre>
-        </div>
-    }
-</div>
-
 <div class="card mb-4 bg-secondary text-light">
     <div class="card-header">
         <h5 class="mb-0">Next Steps</h5>
@@ -81,16 +44,10 @@
     <div class="card-body">
         <ol>
             <li>
-                <strong>Restart the application</strong> (use button above or manual command)
-            </li>
-            <li>
                 <strong>Log in</strong> with your administrator account:
                 <div class="mt-2">
                     <code class="text-light">Email: @Model.AdminEmail</code>
                 </div>
-            </li>
-            <li>
-                <strong>Create your home page</strong> and start building your website
             </li>
             <li>
                 <strong>Configure additional settings</strong> in the admin panel (optional)
@@ -120,17 +77,4 @@
 </div>
 
 @section Scripts {
-    <script>
-        document.getElementById('restartForm').addEventListener('submit', function(e) {
-            const button = this.querySelector('button');
-            button.disabled = true;
-            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Restarting...';
-            
-            // Show message and redirect after delay
-            setTimeout(function() {
-                alert('Application is restarting. Please wait a moment and then log in.');
-                window.location.href = '/Identity/Account/Login';
-            }, 2000);
-        });
-    </script>
 }

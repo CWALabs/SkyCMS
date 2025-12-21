@@ -20,14 +20,17 @@ namespace Sky.Editor.Areas.Setup.Pages
     public class Step5_Cdn : PageModel
     {
         private readonly ISetupService setupService;
+        private readonly ISetupCheckService setupCheckService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Step5_Cdn"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
-        public Step5_Cdn(ISetupService setupService)
+        /// <param name="setupCheckService">Setup check service.</param>
+        public Step5_Cdn(ISetupService setupService, ISetupCheckService setupCheckService)
         {
             this.setupService = setupService;
+            this.setupCheckService = setupCheckService;
         }
 
         /// <summary>
@@ -126,6 +129,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Page result.</returns>
         public async Task<IActionResult> OnGetAsync()
         {
+            // Check if setup has been completed
+            if (await setupCheckService.IsSetup())
+            {
+                // Redirect to setup page
+                Response.Redirect("/");
+            }
+
             var config = await setupService.GetCurrentSetupAsync();
             if (config == null)
             {
@@ -169,6 +179,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to next step.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            // Check if setup has been completed
+            if (await setupCheckService.IsSetup())
+            {
+                // Redirect to setup page
+                Response.Redirect("/");
+            }
+
             try
             {
                 // Validate based on selected provider

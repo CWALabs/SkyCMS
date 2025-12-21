@@ -7,23 +7,27 @@
 
 namespace Sky.Editor.Services.Setup
 {
-    using System;
-    using System.Linq;
-    using System.Net.Mail;
-    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Cms.Data;
     using Cosmos.Common.Data;
+    using Cosmos.Common.Data.Logic;
     using Cosmos.Editor.Services;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Sky.Editor.Data.Logic;
+    using Sky.Editor.Features.Articles.Save;
     using Sky.Editor.Features.Shared;
     using Sky.Editor.Services.Layouts;
+    using System;
+    using System.Linq;
+    using System.Net.Mail;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Service for setup wizard operations.
@@ -40,6 +44,8 @@ namespace Sky.Editor.Services.Setup
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly ApplicationDbContext applicationDbContext;
         private readonly ILayoutImportService layoutImportService;
+        private readonly ArticleEditLogic articleEditLogic;
+        private readonly IMediator mediator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupService"/> class.
@@ -51,6 +57,8 @@ namespace Sky.Editor.Services.Setup
         /// <param name="roleManager">Role manager.</param>
         /// <param name="applicationDbContext">Database context.</param>
         /// <param name="layoutImportService">Layout import service.</param>
+        /// <param name="articleEditLogic">Article edit logic.</param>
+        /// <param name="mediator">Mediator.</param>
         public SetupService(
             IConfiguration configuration,
             ILogger<SetupService> logger,
@@ -58,7 +66,9 @@ namespace Sky.Editor.Services.Setup
             UserManager<IdentityUser> userManager,
             RoleManager<IdentityRole> roleManager,
             ApplicationDbContext applicationDbContext,
-            ILayoutImportService layoutImportService)
+            ILayoutImportService layoutImportService,
+            ArticleEditLogic articleEditLogic,
+            IMediator mediator)
         {
             this.configuration = configuration;
             this.logger = logger;
@@ -67,6 +77,8 @@ namespace Sky.Editor.Services.Setup
             this.roleManager = roleManager;
             this.applicationDbContext = applicationDbContext;
             this.layoutImportService = layoutImportService;
+            this.articleEditLogic = articleEditLogic;
+            this.mediator = mediator;
         }
 
         /// <inheritdoc/>
@@ -350,6 +362,11 @@ namespace Sky.Editor.Services.Setup
         /// <param name="config">Setup configuration to populate.</param>
         private void PopulateFromEnvironmentVariables(SetupConfiguration config)
         {
+            if (config == null)
+            {
+                return;
+            }
+
             // Storage Configuration
             var storageConnectionString = configuration.GetConnectionString("StorageConnectionString");
             var blobPublicUrl = configuration.GetValue<string>("AzureBlobStorageEndPoint") ?? configuration.GetValue<string>("BlobPublicUrl");
@@ -816,11 +833,12 @@ namespace Sky.Editor.Services.Setup
                 config.CompletedAt = DateTime.UtcNow;
 
                 // Clear sensitive data
-                config.AdminPassword = null;
-                config.SendGridApiKey = null;
-                config.AzureEmailConnectionString = null;
-                config.SmtpPassword = null;
-                config.SmtpUsername = null;
+                config.AdminPassword = string.Empty;
+                config.SendGridApiKey = string.Empty;
+                config.AzureEmailConnectionString = string.Empty;
+                config.SmtpPassword = string.Empty;
+                config.SmtpUsername = string.Empty;
+                config.StorageConnectionString = string.Empty;
 
                 await SaveSetupStateAsync(config);
 
@@ -829,7 +847,7 @@ namespace Sky.Editor.Services.Setup
                 return new SetupCompletionResult
                 {
                     Success = true,
-                    Message = "Setup completed successfully. Please restart the application for changes to take effect."
+                    Message = "Setup completed successfully. Please login."
                 };
             }
             catch (Exception ex)
@@ -915,6 +933,29 @@ namespace Sky.Editor.Services.Setup
             {
                 logger.LogError(ex, "Failed to check if step should be skipped");
                 return false;
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task MarkRestartTriggeredAsync(Guid setupId)
+        {
+            try
+            {
+                var config = await GetSetupStateAsync();
+                if (config?.Id != setupId)
+                {
+                    throw new InvalidOperationException($"Setup configuration {setupId} not found");
+                }
+
+                config.RestartTriggered = true;
+                await SaveSetupStateAsync(config);
+
+                logger.LogInformation("Marked restart as triggered for setup {SetupId}", setupId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to mark restart as triggered");
+                throw;
             }
         }
 
@@ -1356,28 +1397,6 @@ namespace Sky.Editor.Services.Setup
                     dbContext.Templates.AddRange(communityPages);
                     await dbContext.SaveChangesAsync();
 
-                    // Save metadata for home page creation after restart
-                    await SaveOrUpdateSettingAsync(
-                        dbContext,
-                        "SETUP",
-                        "PendingHomePageCreation",
-                        "true",
-                        "Indicates that home page creation is pending after restart");
-
-                    await SaveOrUpdateSettingAsync(
-                        dbContext,
-                        "SETUP",
-                        "HomePageUserId",
-                        userId,
-                        "User ID for home page creation");
-
-                    await SaveOrUpdateSettingAsync(
-                        dbContext,
-                        "SETUP",
-                        "HomePageTitle",
-                        config.WebsiteTitle,
-                        "Title for home page");
-
                     var template = await dbContext.Templates.FirstOrDefaultAsync(f => f.Title.ToLower() == "home page");
                     if (template != null)
                     {
@@ -1388,6 +1407,34 @@ namespace Sky.Editor.Services.Setup
                             template.Id.ToString(),
                             "Template ID for home page");
                     }
+
+                    // Create the home page
+                    var model = await articleEditLogic.CreateArticle(config.WebsiteTitle, Guid.Parse(userId), template.Id);
+
+                    model.Published = DateTimeOffset.UtcNow;
+                    model.UrlPath = "root"; // Ensure home page URL path is 'root'
+
+                    var saveArticleCommand = new SaveArticleCommand()
+                    {
+                        ArticleNumber = model.ArticleNumber,
+                        Title = model.Title,
+                        Content = model.Content,
+                        UrlPath = model.UrlPath,
+                        HeadJavaScript = model.HeadJavaScript,
+                        FooterJavaScript = model.FooterJavaScript,
+                        BannerImage = model.BannerImage,
+                        ArticleType = model.ArticleType,
+                        Category = model.Category,
+                        Introduction = model.Introduction,
+                        Published = model.Published,
+                        UserId = Guid.Parse(userId),
+                    };
+
+                    var result = await mediator.SendAsync(saveArticleCommand);
+
+                    await articleEditLogic.PublishArticle(result.Data.Model.Id, DateTimeOffset.UtcNow);
+
+                    logger.LogInformation("Home page created successfully with article number {ArticleNumber}", model.ArticleNumber);
 
                     logger.LogInformation($"Using site design: '{layout.LayoutName}'. Home page will be created on first startup.");
                 }
@@ -1400,26 +1447,97 @@ namespace Sky.Editor.Services.Setup
             }
         }
 
-        /// <inheritdoc/>
-        public async Task MarkRestartTriggeredAsync(Guid setupId)
+        private async Task DeployHomePage(CancellationToken cancellationToken)
         {
             try
             {
-                var config = await GetSetupStateAsync();
-                if (config?.Id != setupId)
+                // Check if this is multi-tenant mode
+                var isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+
+                if (isMultiTenant)
                 {
-                    throw new InvalidOperationException($"Setup configuration {setupId} not found");
+                    logger.LogInformation("Multi-tenant mode detected. Post-setup initialization will be handled per-tenant on first request.");
+                    // Don't process here - let middleware handle it per tenant
+                    return;
                 }
 
-                config.RestartTriggered = true;
-                await SaveSetupStateAsync(config);
+                // Single-tenant mode - process immediately
+                logger.LogInformation("Single-tenant mode detected. Processing post-setup initialization...");
 
-                logger.LogInformation("Marked restart as triggered for setup {SetupId}", setupId);
+                // Check if home page creation is pending
+                var pendingSetting = await applicationDbContext.Settings
+                    .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "PendingHomePageCreation", cancellationToken);
+
+                if (pendingSetting?.Value == "true")
+                {
+                    logger.LogInformation("Detected pending home page creation. Creating home page...");
+
+                    var userIdSetting = await applicationDbContext.Settings
+                        .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageUserId", cancellationToken);
+                    var titleSetting = await applicationDbContext.Settings
+                        .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageTitle", cancellationToken);
+                    var templateIdSetting = await applicationDbContext.Settings
+                        .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageTemplateId", cancellationToken);
+
+                    if (userIdSetting != null && titleSetting != null && Guid.TryParse(userIdSetting.Value, out var userId))
+                    {
+                        // Check if home page already exists
+                        var existingHomePage = await applicationDbContext.Articles
+                            .FirstOrDefaultAsync(a => a.ArticleNumber == 1 && a.UrlPath == "root", cancellationToken);
+
+                        if (existingHomePage == null)
+                        {
+                            Guid? templateId = null;
+                            if (templateIdSetting != null && Guid.TryParse(templateIdSetting.Value, out var parsedTemplateId))
+                            {
+                                templateId = parsedTemplateId;
+                            }
+
+                            // Create the home page
+                            var model = await articleEditLogic.CreateArticle(titleSetting.Value, userId, templateId);
+
+                            logger.LogInformation("Home page created successfully with article number {ArticleNumber}", model.ArticleNumber);
+                        }
+                        else
+                        {
+                            logger.LogInformation("Home page already exists, skipping creation");
+                        }
+
+                        // Clear the pending flags
+                        applicationDbContext.Settings.Remove(pendingSetting);
+                        if (userIdSetting != null)
+                        {
+                            applicationDbContext.Settings.Remove(userIdSetting);
+                        }
+
+                        if (titleSetting != null)
+                        {
+                            applicationDbContext.Settings.Remove(titleSetting);
+                        }
+
+                        if (templateIdSetting != null)
+                        {
+                            applicationDbContext.Settings.Remove(templateIdSetting);
+                        }
+
+                        await applicationDbContext.SaveChangesAsync(cancellationToken);
+
+                        logger.LogInformation("Post-setup initialization completed successfully");
+                    }
+                    else
+                    {
+                        logger.LogWarning("Missing or invalid settings for home page creation");
+                    }
+                }
+                else
+                {
+                    logger.LogInformation("No pending post-setup initialization tasks found");
+                }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to mark restart as triggered");
-                throw;
+                logger.LogError(ex, "Failed to complete post-setup initialization");
+                // Don't throw - this shouldn't prevent application startup
             }
         }
     }

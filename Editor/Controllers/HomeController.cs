@@ -13,7 +13,6 @@ namespace Sky.Cms.Controllers
     using System.Text;
     using System.Threading.Tasks;
     using Cosmos.BlobService;
-    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Common.Data;
     using Cosmos.Common.Models;
     using Microsoft.AspNetCore.Authorization;
@@ -28,6 +27,7 @@ namespace Sky.Cms.Controllers
     using Sky.Cms.Models;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Services.EditorSettings;
+    using Sky.Editor.Services.Setup;
 
     /// <summary>
     /// Home page controller.
@@ -42,12 +42,13 @@ namespace Sky.Cms.Controllers
         private readonly ApplicationDbContext dbContext;
         private readonly UserManager<IdentityUser> userManager;
         private readonly StorageContext storageContext;
+        private readonly ISetupCheckService setupCheckService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HomeController"/> class.
         /// </summary>
         /// <param name="logger">ILogger to use.</param>
-        /// <param name="options"><see cref="CosmosConfig">Cosmos configuration</see>.</param>
+        /// <param name="options">Cosmos configuration.</param>
         /// <param name="dbContext"><see cref="ApplicationDbContext">Database context</see>.</param>
         /// <param name="articleLogic"><see cref="ArticleEditLogic">Article edit logic.</see>.</param>
         /// <param name="userManager">User manager.</param>
@@ -56,6 +57,7 @@ namespace Sky.Cms.Controllers
         /// <param name="emailSender">Email service.</param>
         /// <param name="configuration">Website configuration.</param>
         /// <param name="services">Services provider.</param>
+        /// <param name="setupCheckService">Setup check service.</param>
         public HomeController(
             ILogger<HomeController> logger,
             IEditorSettings options,
@@ -66,7 +68,8 @@ namespace Sky.Cms.Controllers
             StorageContext storageContext,
             IEmailSender emailSender,
             IConfiguration configuration,
-            IServiceProvider services)
+            IServiceProvider services,
+            ISetupCheckService setupCheckService)
         {
             // This handles injection manually to make sure everything is setup.
             this.options = (EditorSettings)options;
@@ -74,6 +77,7 @@ namespace Sky.Cms.Controllers
             this.dbContext = dbContext;
             this.userManager = userManager;
             this.storageContext = storageContext;
+            this.setupCheckService = setupCheckService;
         }
 
         /// <summary>
@@ -167,6 +171,12 @@ namespace Sky.Cms.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index(string lang = "", string mode = "", Guid? layoutId = null, Guid? articleId = null, string previewType = "")
         {
+            // Check if setup is required.
+            if (!await setupCheckService.IsSetup())
+            {
+                return Redirect("~/Setup/Index");
+            }
+
             if (User.Identity?.IsAuthenticated == false)
             {
                 // If we require authentication, redirect to the login page.

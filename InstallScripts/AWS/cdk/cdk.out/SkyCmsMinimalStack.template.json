@@ -1351,6 +1351,23 @@
        {
         "Name": "DB_USER",
         "Value": "admin"
+       },
+       {
+        "Name": "CosmosPublisherUrl",
+        "Value": {
+         "Fn::Join": [
+          "",
+          [
+           "https://",
+           {
+            "Fn::GetAtt": [
+             "PublisherDistributionAE0015D7",
+             "DomainName"
+            ]
+           }
+          ]
+         ]
+        }
        }
       ],
       "Essential": true,

@@ -22,16 +22,19 @@ namespace Sky.Editor.Areas.Setup.Pages
     {
         private readonly ISetupService setupService;
         private readonly IConfiguration configuration;
+        private readonly ISetupCheckService setupCheckService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexModel"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
         /// <param name="configuration">Configuration.</param>
-        public IndexModel(ISetupService setupService, IConfiguration configuration)
+        /// <param name="setupCheckService">Setup check service.</param>
+        public IndexModel(ISetupService setupService, IConfiguration configuration, ISetupCheckService setupCheckService)
         {
             this.setupService = setupService;
             this.configuration = configuration;
+            this.setupCheckService = setupCheckService;
         }
 
         /// <summary>
@@ -50,6 +53,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Page result or redirect.</returns>
         public async Task<IActionResult> OnGetAsync()
         {
+            // Check if setup has been completed
+            if (await setupCheckService.IsSetup())
+            {
+                // Redirect to setup page
+                Response.Redirect("/");
+            }
+
             // Check if setup is allowed
             var allowSetup = configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
             
@@ -74,6 +84,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to next step.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            // Check if setup has been completed
+            if (await setupCheckService.IsSetup())
+            {
+                // Redirect to setup page
+                Response.Redirect("/");
+            }
+
             try
             {
                 // ✅ Validate database connection FIRST
