@@ -60,17 +60,20 @@ class SkyCmsEditorStack extends cdk.Stack {
         const hostedZoneName = this.node.tryGetContext('hostedZoneName');
         const publisherDomainName = this.node.tryGetContext('publisherDomainName');
         const publisherCertificateArn = this.node.tryGetContext('publisherCertificateArn');
+        // Optional CDN caching controls
+        const editorCacheEnabled = String(this.node.tryGetContext('editorCacheEnabled') ?? 'false') === 'true';
+        const publisherCacheEnabled = String(this.node.tryGetContext('publisherCacheEnabled') ?? 'true') === 'true';
         // ============================================
         // PUBLISHER RESOURCES (S3 + CloudFront)
         // ============================================
         let storageSecret;
         let publisherBucket;
         let publisherDistribution;
+        let cloudFrontSecret;
         if (deployPublisher) {
             // S3 Bucket for static website
             publisherBucket = new s3.Bucket(this, 'PublisherBucket', {
-                websiteIndexDocument: 'index.html',
-                websiteErrorDocument: 'error.html',
+                // Use private bucket with CloudFront OAI/OAC; no website hosting
                 publicReadAccess: false,
                 blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
                 removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -83,16 +86,19 @@ class SkyCmsEditorStack extends cdk.Stack {
             // Grant CloudFront read access to bucket
             publisherBucket.grantRead(oai);
             // CloudFront distribution for Publisher
+            // Use S3BucketOrigin with Origin Access Identity (OAI)
             publisherDistribution = new cloudfront.Distribution(this, 'PublisherDistribution', {
                 defaultBehavior: {
-                    origin: new origins.S3Origin(publisherBucket, {
+                    origin: origins.S3BucketOrigin.withOriginAccessIdentity(publisherBucket, {
                         originAccessIdentity: oai,
                     }),
                     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                     allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                     cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
                     compress: true,
-                    cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                    cachePolicy: publisherCacheEnabled
+                        ? cloudfront.CachePolicy.CACHING_OPTIMIZED
+                        : cloudfront.CachePolicy.CACHING_DISABLED,
                 },
                 defaultRootObject: 'index.html',
                 priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
@@ -112,6 +118,8 @@ class SkyCmsEditorStack extends cdk.Stack {
                 actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
                 resources: [publisherBucket.bucketArn, `${publisherBucket.bucketArn}/*`],
             }));
+            // Grant CloudFront invalidation permission (will be set after distribution is created)
+            // Note: Permission is added after distribution creation below
             // Generate access keys using custom resource
             const accessKeys = new access_key_generator_1.AccessKeyGenerator(this, 'AccessKeys', {
                 userName: s3User.userName,
@@ -123,6 +131,25 @@ class SkyCmsEditorStack extends cdk.Stack {
                 description: 'S3 storage connection string for SkyCMS',
                 secretStringValue: cdk.SecretValue.unsafePlainText(connectionString),
             });
+            // Create CloudFront CDN configuration secret for Editor
+            const cloudFrontConfig = {
+                CdnProvider: 'CloudFront',
+                AccessKeyId: accessKeys.accessKeyId,
+                SecretAccessKey: accessKeys.secretAccessKey,
+                DistributionId: publisherDistribution.distributionId,
+                Region: this.region,
+            };
+            cloudFrontSecret = new secretsmanager.Secret(this, 'CloudFrontSecret', {
+                secretName: `SkyCms-CloudFrontConfig-${this.stackName}`,
+                description: 'CloudFront CDN configuration for SkyCMS Publisher',
+                secretStringValue: cdk.SecretValue.unsafePlainText(JSON.stringify(cloudFrontConfig)),
+            });
+            // Grant CloudFront invalidation permission to S3 user
+            s3User.addToPolicy(new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: ['cloudfront:CreateInvalidation', 'cloudfront:GetInvalidation'],
+                resources: [`arn:aws:cloudfront::${this.account}:distribution/${publisherDistribution.distributionId}`],
+            }));
             // Outputs for Publisher
             new cdk.CfnOutput(this, 'PublisherBucketName', {
                 value: publisherBucket.bucketName,
@@ -131,6 +158,10 @@ class SkyCmsEditorStack extends cdk.Stack {
             new cdk.CfnOutput(this, 'PublisherCloudFrontURL', {
                 value: `https://${publisherDistribution.distributionDomainName}`,
                 description: 'Publisher CloudFront distribution URL',
+            });
+            new cdk.CfnOutput(this, 'CloudFrontConfigSecret', {
+                value: cloudFrontSecret.secretArn,
+                description: 'CloudFront CDN configuration secret ARN',
             });
             new cdk.CfnOutput(this, 'StorageSecretArn', {
                 value: storageSecret.secretArn,
@@ -243,12 +274,18 @@ class SkyCmsEditorStack extends cdk.Stack {
             DB_NAME: dbName,
             DB_USER: 'admin',
         };
-        // Add CosmosPublisherUrl if Publisher is deployed
+        // Add CosmosPublisherUrl and CloudFront config if Publisher is deployed
         if (deployPublisher && publisherDistribution) {
             const publisherUrl = publisherDomainName
                 ? `https://${publisherDomainName}`
                 : `https://${publisherDistribution.distributionDomainName}`;
             containerEnvironment.CosmosPublisherUrl = publisherUrl;
+            // Store the CloudFront secret ARN as an environment variable for the startup service to read
+            if (cloudFrontSecret) {
+                containerEnvironment.CloudFrontConfigSecretArn = cloudFrontSecret.secretArn;
+                // Grant task role permission to read CloudFront secret
+                cloudFrontSecret.grantRead(taskDefinition.taskRole);
+            }
         }
         const container = taskDefinition.addContainer('web', {
             image: ecs.ContainerImage.fromRegistry(props.image),
@@ -282,6 +319,7 @@ class SkyCmsEditorStack extends cdk.Stack {
             cluster,
             taskDefinition,
             desiredCount,
+            minHealthyPercent: 100,
             assignPublicIp: true, // Required to access Secrets Manager without NAT Gateway
             securityGroups: [securityGroup],
             vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
@@ -349,7 +387,9 @@ class SkyCmsEditorStack extends cdk.Stack {
                     originSslProtocols: [cloudfront.OriginSslPolicy.TLS_V1_2],
                 }),
                 allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-                cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+                cachePolicy: editorCacheEnabled
+                    ? cloudfront.CachePolicy.CACHING_OPTIMIZED
+                    : cloudfront.CachePolicy.CACHING_DISABLED,
                 originRequestPolicy: originRequestPolicy,
                 viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 compress: true,

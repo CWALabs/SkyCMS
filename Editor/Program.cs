@@ -520,4 +520,22 @@ catch (Exception ex)
     app.Logger.LogInformation("Hangfire recurring jobs not configured: {Message}", ex.Message);
 }
 
+// Load CloudFront CDN configuration from AWS Secrets Manager (if deployed on AWS)
+try
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<CloudFrontConfigLoader>>();
+        
+        var cloudFrontLoader = new CloudFrontConfigLoader(config, logger, dbContext);
+        await cloudFrontLoader.LoadConfigurationAsync();
+    }
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "CloudFront configuration loader failed. This is expected if not running on AWS.");
+}
+
 await app.RunAsync();

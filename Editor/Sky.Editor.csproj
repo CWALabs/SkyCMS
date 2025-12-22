@@ -86,6 +86,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="AWSSDK.SecretsManager" />
 		<PackageReference Include="Azure.ResourceManager" />
 		<PackageReference Include="Azure.ResourceManager.Cdn" />
 		<PackageReference Include="Cosmos.EmailServices" />

@@ -50,20 +50,18 @@ $Region = Prompt-WithDefault "AWS Region" "us-east-1"
 $Image = Prompt-WithDefault "Docker Image" "toiyabe/sky-editor:latest"
 $DesiredCount = [int](Prompt-WithDefault "Desired ECS Task Count" "1")
 $DbName = Prompt-WithDefault "Database Name" "skycms"
-$StackName = Prompt-WithDefault "CDK Stack Name" "SkyCmsMinimalStack"
+$StackName = Prompt-WithDefault "CDK Stack Name" "SkyCMS-Stack"
 
 Write-Host ""
 Write-Host "--- Publisher (S3 + CloudFront) ---" -ForegroundColor Cyan
 $DeployPublisher = Prompt-YesNo "Deploy Publisher (S3 + CloudFront)?" $true
 
-$PublisherStackName = ""
 $PublisherDomainName = ""
 $PublisherHostedZoneId = ""
 $PublisherHostedZoneName = ""
 $StorageSecretArn = ""
 
 if ($DeployPublisher) {
-  $PublisherStackName = Prompt-WithDefault "Publisher Stack Name" "SkyCmsPublisherStack"
   Write-Host ""
   Write-Host "Optional: Configure custom domain for Publisher CloudFront" -ForegroundColor Gray
   $UsePublisherCustomDomain = Prompt-YesNo "Use custom domain for Publisher?" $false
@@ -73,6 +71,11 @@ if ($DeployPublisher) {
     $PublisherHostedZoneName = Prompt-WithDefault "Route 53 Hosted Zone Name (e.g., example.com)" ""
   }
 }
+
+Write-Host ""
+Write-Host "--- CDN Caching Options ---" -ForegroundColor Cyan
+$EditorCacheEnabled = $false  # Editor should never cache (dynamic app)
+$PublisherCacheEnabled = $true  # Publisher should cache (static site)
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
@@ -85,13 +88,14 @@ Write-Host "  Image:        $Image"
 Write-Host "  DesiredCount: $DesiredCount"
 Write-Host "  DbName:       $DbName"
 Write-Host "  StackName:    $StackName"
+Write-Host "  Editor Cache: $EditorCacheEnabled"
 Write-Host ""
 if ($DeployPublisher) {
-  Write-Host "Publisher Stack Configuration:" -ForegroundColor Cyan
-  Write-Host "  Stack Name:   $PublisherStackName"
+  Write-Host "Publisher Configuration:" -ForegroundColor Cyan
   if ($PublisherDomainName) {
     Write-Host "  Domain:       $PublisherDomainName"
   }
+  Write-Host "  Publisher Cache: $PublisherCacheEnabled"
   Write-Host ""
 }
 Write-Host "Ready to deploy?" -ForegroundColor Yellow
@@ -131,7 +135,7 @@ try {
   Write-Host "========================================" -ForegroundColor Cyan
   Write-Host ""
   Write-Host "Bootstrapping CDK (if needed)..." -ForegroundColor Yellow
-  $bootstrapCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName")
+  $bootstrapCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName", "--context", "editorCacheEnabled=$EditorCacheEnabled", "--context", "publisherCacheEnabled=$PublisherCacheEnabled")
   if ($CertificateArn) { $bootstrapCtx += @("--context", "certificateArn=$CertificateArn") }
   if ($DomainName) { $bootstrapCtx += @("--context", "domainName=$DomainName") }
   if ($HostedZoneId) { $bootstrapCtx += @("--context", "hostedZoneId=$HostedZoneId") }
@@ -146,7 +150,7 @@ try {
 
   Write-Host ""
   Write-Host "Synthesizing CloudFormation template..." -ForegroundColor Yellow
-  $synthCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName")
+  $synthCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName", "--context", "editorCacheEnabled=$EditorCacheEnabled", "--context", "publisherCacheEnabled=$PublisherCacheEnabled")
   if ($CertificateArn) { $synthCtx += @("--context", "certificateArn=$CertificateArn") }
   if ($DomainName) { $synthCtx += @("--context", "domainName=$DomainName") }
   if ($HostedZoneId) { $synthCtx += @("--context", "hostedZoneId=$HostedZoneId") }
@@ -163,7 +167,7 @@ try {
   Write-Host "Deploying $StackName (ECS + RDS + CloudFront)..." -ForegroundColor Yellow
   Write-Host "This will take 5-10 minutes for VPC + ECS + RDS MySQL." -ForegroundColor Gray
   Write-Host ""
-  $deployCtx = @("--require-approval", "never", "--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName")
+  $deployCtx = @("--require-approval", "never", "--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName", "--context", "editorCacheEnabled=$EditorCacheEnabled", "--context", "publisherCacheEnabled=$PublisherCacheEnabled")
   if ($DeployPublisher) { 
     $deployCtx += @("--context", "deployPublisher=true") 
     if ($PublisherDomainName) { $deployCtx += @("--context", "publisherDomainName=$PublisherDomainName") }

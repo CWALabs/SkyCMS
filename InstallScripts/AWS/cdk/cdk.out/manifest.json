@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-deploy-role-873764251532-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-cfn-exec-role-873764251532-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/57d6b4ddfad4d29322c0f97a826bf68523cb746d3cbabacd0f17ff92493eb6d6.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/4730daa8f21089963fdd2796871dd3b481356a2b151dde2c7ac39c33500a74a8.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -34,162 +34,6 @@
         "SkyCmsMinimalStack.assets"
       ],
       "metadata": {
-        "/SkyCmsMinimalStack/PublisherBucket/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "PublisherBucket8AEE464F"
-          }
-        ],
-        "/SkyCmsMinimalStack/PublisherBucket/Policy/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "PublisherBucketPolicy5240CEDE"
-          }
-        ],
-        "/SkyCmsMinimalStack/PublisherBucket/AutoDeleteObjectsCustomResource/Default": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "PublisherBucketAutoDeleteObjectsCustomResource3FFEAD3E"
-          }
-        ],
-        "/SkyCmsMinimalStack/Custom::S3AutoDeleteObjectsCustomResourceProvider": [
-          {
-            "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
-            "data": true
-          }
-        ],
-        "/SkyCmsMinimalStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
-          }
-        ],
-        "/SkyCmsMinimalStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
-          }
-        ],
-        "/SkyCmsMinimalStack/PublisherOAI/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "PublisherOAIBD5FCC28"
-          }
-        ],
-        "/SkyCmsMinimalStack/PublisherDistribution/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "PublisherDistributionAE0015D7"
-          }
-        ],
-        "/SkyCmsMinimalStack/S3PublisherUser/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "S3PublisherUser8A0F3D78"
-          }
-        ],
-        "/SkyCmsMinimalStack/S3PublisherUser/DefaultPolicy/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "S3PublisherUserDefaultPolicy581A6040"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/OnEventHandler/ServiceRole/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeysOnEventHandlerServiceRole174F6939"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/OnEventHandler/ServiceRole/DefaultPolicy/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeysOnEventHandlerServiceRoleDefaultPolicyB0833E81"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/OnEventHandler/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeysOnEventHandler5DFC3933"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/OnEventHandler/LogRetention/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeysOnEventHandlerLogRetention25A50A41"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/Provider/framework-onEvent/ServiceRole/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeysProviderframeworkonEventServiceRole4EB63CC5"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeysProviderframeworkonEventServiceRoleDefaultPolicy91453613"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/Provider/framework-onEvent/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeysProviderframeworkonEvent5C59120E"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/Provider/framework-onEvent/LogRetention/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeysProviderframeworkonEventLogRetentionF2C6FD82"
-          }
-        ],
-        "/SkyCmsMinimalStack/AccessKeys/Resource/Default": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "AccessKeys520E7252"
-          }
-        ],
-        "/SkyCmsMinimalStack/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
-          }
-        ],
-        "/SkyCmsMinimalStack/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/DefaultPolicy/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB"
-          }
-        ],
-        "/SkyCmsMinimalStack/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A"
-          }
-        ],
-        "/SkyCmsMinimalStack/StorageSecret/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "StorageSecretA45921CE"
-          }
-        ],
-        "/SkyCmsMinimalStack/PublisherBucketName": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "PublisherBucketName"
-          }
-        ],
-        "/SkyCmsMinimalStack/PublisherCloudFrontURL": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "PublisherCloudFrontURL"
-          }
-        ],
-        "/SkyCmsMinimalStack/StorageSecretArn": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "StorageSecretArn"
-          }
-        ],
         "/SkyCmsMinimalStack/Vpc/Resource": [
           {
             "type": "aws:cdk:logicalId",
@@ -416,42 +260,6 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "ALBHttpListenerEcsTargetGroupEC97BED8"
-          }
-        ],
-        "/SkyCmsMinimalStack/Service": [
-          {
-            "type": "aws:cdk:warning",
-            "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
-            "trace": [
-              "Annotations.addMessage (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
-              "Annotations.addWarningV2 (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
-              "new BaseService (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\base\\base-service.js:1:8675)",
-              "new FargateService2 (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\fargate\\fargate-service.js:1:6318)",
-              "new FargateService2 (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
-              "new SkyCmsEditorStack (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\lib\\skycms-stack-minimal.ts:306:21)",
-              "Object.<anonymous> (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\bin\\skycms.ts:14:1)",
-              "Module._compile (node:internal/modules/cjs/loader:1761:14)",
-              "Module.m._compile (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\ts-node\\src\\index.ts:1618:23)",
-              "node:internal/modules/cjs/loader:1893:10",
-              "Object.require.extensions.<computed> [as .ts] (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\ts-node\\src\\index.ts:1621:12)",
-              "Module.load (node:internal/modules/cjs/loader:1481:32)",
-              "Module._load (node:internal/modules/cjs/loader:1300:12)",
-              "TracingChannel.traceSync (node:diagnostics_channel:328:14)",
-              "wrapModuleLoad (node:internal/modules/cjs/loader:245:24)",
-              "Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)",
-              "phase4 (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\ts-node\\src\\bin.ts:649:14)",
-              "bootstrap (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\ts-node\\src\\bin.ts:95:10)",
-              "main (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\ts-node\\src\\bin.ts:55:10)",
-              "Object.<anonymous> (D:\\source\\SkyCMS\\InstallScripts\\AWS\\cdk\\node_modules\\ts-node\\src\\bin.ts:800:3)",
-              "Module._compile (node:internal/modules/cjs/loader:1761:14)",
-              "Object.<anonymous> (node:internal/modules/cjs/loader:1893:10)",
-              "Module.load (node:internal/modules/cjs/loader:1481:32)",
-              "Module._load (node:internal/modules/cjs/loader:1300:12)",
-              "TracingChannel.traceSync (node:diagnostics_channel:328:14)",
-              "wrapModuleLoad (node:internal/modules/cjs/loader:245:24)",
-              "Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)",
-              "node:internal/main/run_main_module:33:47"
-            ]
           }
         ],
         "/SkyCmsMinimalStack/Service/Service": [

@@ -1,61 +1,16 @@
 {
   "version": "48.0.0",
   "files": {
-    "faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6": {
-      "displayName": "SkyCmsMinimalStack/Custom::S3AutoDeleteObjectsCustomResourceProvider Code",
-      "source": {
-        "path": "asset.faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6",
-        "packaging": "zip"
-      },
-      "destinations": {
-        "873764251532-us-east-1-d7d57317": {
-          "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
-          "objectKey": "faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip",
-          "region": "us-east-1",
-          "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
-        }
-      }
-    },
-    "2819175352ad1ce0dae768e83fc328fb70fb5f10b4a8ff0ccbcb791f02b0716d": {
-      "displayName": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/Code",
-      "source": {
-        "path": "asset.2819175352ad1ce0dae768e83fc328fb70fb5f10b4a8ff0ccbcb791f02b0716d",
-        "packaging": "zip"
-      },
-      "destinations": {
-        "873764251532-us-east-1-fa8b5e9e": {
-          "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
-          "objectKey": "2819175352ad1ce0dae768e83fc328fb70fb5f10b4a8ff0ccbcb791f02b0716d.zip",
-          "region": "us-east-1",
-          "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
-        }
-      }
-    },
-    "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca": {
-      "displayName": "AccessKeys/Provider/framework-onEvent/Code",
-      "source": {
-        "path": "asset.bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca",
-        "packaging": "zip"
-      },
-      "destinations": {
-        "873764251532-us-east-1-c042c314": {
-          "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
-          "objectKey": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip",
-          "region": "us-east-1",
-          "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
-        }
-      }
-    },
-    "57d6b4ddfad4d29322c0f97a826bf68523cb746d3cbabacd0f17ff92493eb6d6": {
+    "4730daa8f21089963fdd2796871dd3b481356a2b151dde2c7ac39c33500a74a8": {
       "displayName": "SkyCmsMinimalStack Template",
       "source": {
         "path": "SkyCmsMinimalStack.template.json",
         "packaging": "file"
       },
       "destinations": {
-        "873764251532-us-east-1-d25d1e75": {
+        "873764251532-us-east-1-2b37bddf": {
           "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
-          "objectKey": "57d6b4ddfad4d29322c0f97a826bf68523cb746d3cbabacd0f17ff92493eb6d6.json",
+          "objectKey": "4730daa8f21089963fdd2796871dd3b481356a2b151dde2c7ac39c33500a74a8.json",
           "region": "us-east-1",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
         }

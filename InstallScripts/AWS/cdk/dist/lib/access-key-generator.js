@@ -49,6 +49,10 @@ class AccessKeyGenerator extends constructs_1.Construct {
     constructor(scope, id, props) {
         super(scope, id);
         // Lambda function that creates/deletes access keys
+        // Explicit log group to control retention (replaces deprecated logRetention)
+        const onEventLogGroup = new logs.LogGroup(this, 'OnEventHandlerLogGroup', {
+            retention: logs.RetentionDays.ONE_DAY,
+        });
         const onEventHandler = new lambda.Function(this, 'OnEventHandler', {
             runtime: lambda.Runtime.PYTHON_3_12,
             handler: 'index.on_event',
@@ -114,7 +118,7 @@ def on_event(event, context):
         return {'PhysicalResourceId': access_key_id}
 `),
             timeout: cdk.Duration.minutes(2),
-            logRetention: logs.RetentionDays.ONE_DAY,
+            logGroup: onEventLogGroup,
         });
         // Grant permissions to create/delete access keys
         onEventHandler.addToRolePolicy(new iam.PolicyStatement({
@@ -124,7 +128,6 @@ def on_event(event, context):
         // Custom resource provider
         const provider = new cr.Provider(this, 'Provider', {
             onEventHandler,
-            logRetention: logs.RetentionDays.ONE_DAY,
         });
         // Custom resource
         const resource = new cdk.CustomResource(this, 'Resource', {
