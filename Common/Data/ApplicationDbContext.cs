@@ -23,7 +23,7 @@ namespace Cosmos.Common.Data
     /// Includes identity, content (articles, pages, templates, layouts),
     /// operational metadata (metrics, logs) and now multi-blog support via <see cref="BlobService"/>.
     /// </summary>
-    public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, IdentityRole, string>, IDataProtectionKeyContext
+    public class ApplicationDbContext : CosmosIdentityDbContext<IdentityUser, IdentityRole, string>, IDataProtectionKeyContext, IApplicationDbContext
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationDbContext"/> class.

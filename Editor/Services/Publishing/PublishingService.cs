@@ -27,6 +27,7 @@ namespace Sky.Editor.Services.Publishing
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Sky.Cms.Services;
+    using Sky.Editor.Data.Logic;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.BlogPublishing;
     using Sky.Editor.Services.CDN;
@@ -44,7 +45,7 @@ namespace Sky.Editor.Services.Publishing
     public class PublishingService : IPublishingService
     {
         private readonly ApplicationDbContext _db;
-        private readonly StorageContext _storage;
+        private readonly IStorageContext _storage;
         private readonly IEditorSettings _settings;
         private readonly ILogger<PublishingService> _logger;
         private readonly IHttpContextAccessor _accessor;
@@ -54,10 +55,6 @@ namespace Sky.Editor.Services.Publishing
         private readonly IViewRenderService viewRenderService;
         private readonly IServiceProvider _serviceProvider;
         private readonly SemaphoreSlim _layoutLock = new SemaphoreSlim(1, 1);
-        private LayoutViewModel defaultLayout;
-
-        private Guid userId => Guid.Parse(_accessor.HttpContext.User.Claims
-            .FirstOrDefault(f => f.Type == "sub")?.Value ?? Guid.Empty.ToString());
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PublishingService"/> class.
@@ -74,7 +71,7 @@ namespace Sky.Editor.Services.Publishing
         /// <param name="serviceProvider">Service provider for creating scoped dependencies.</param>
         public PublishingService(
             ApplicationDbContext db,
-            StorageContext storage,
+            IStorageContext storage,
             IEditorSettings settings,
             ILogger<PublishingService> logger,
             IHttpContextAccessor accessor,
@@ -95,6 +92,11 @@ namespace Sky.Editor.Services.Publishing
             this.viewRenderService = viewRenderService;
             _serviceProvider = serviceProvider;
         }
+
+        private LayoutViewModel defaultLayout;
+
+        private Guid userId => Guid.Parse(_accessor.HttpContext.User.Claims
+            .FirstOrDefault(f => f.Type == "sub")?.Value ?? Guid.Empty.ToString());
 
         /// <summary>
         /// Publishes (or updates) a blog stream page for the specified blog key and user.
@@ -284,7 +286,7 @@ namespace Sky.Editor.Services.Publishing
         ///   <item><description>Triggers a full CDN cache purge if a CDN service is configured</description></item>
         /// </list>
         /// <para>
-        /// Unlike <see cref="PublishAsync(Article)"/>, this method performs a full CDN purge rather than selective path purging.
+        /// Unlike ArticleEditLogic.PublishAsync(), this method performs a full CDN purge rather than selective path purging.
         /// Only processes pages if <see cref="IEditorSettings.StaticWebPages"/> is enabled.
         /// Static file generation is parallelized with a configurable degree of parallelism (default: 4).
         /// Failed uploads are retried up to 3 times with exponential backoff (initial delay: 500ms, multiplier: 2).
@@ -307,7 +309,7 @@ namespace Sky.Editor.Services.Publishing
             {
                 // Each iteration needs its own DbContext scope
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                var scopedStorage = scope.ServiceProvider.GetRequiredService<StorageContext>();
+                var scopedStorage = scope.ServiceProvider.GetRequiredService<IStorageContext>();
                 var scopedLogger = scope.ServiceProvider.GetRequiredService<ILogger<PublishingService>>();
                 var scopedViewRenderer = scope.ServiceProvider.GetRequiredService<IViewRenderService>(); // ADD THIS LINE
 
@@ -359,7 +361,7 @@ namespace Sky.Editor.Services.Publishing
         private async Task CreateStaticFileWithRetrySafeAsync(
             PublishedPage page,
             LayoutViewModel layout,
-            StorageContext storage,
+            IStorageContext storage,
             IViewRenderService viewRenderer,
             ILogger<PublishingService> logger,
             CancellationToken cancellationToken = default)
@@ -440,7 +442,7 @@ namespace Sky.Editor.Services.Publishing
         private async Task CreateStaticFileSafeAsync(
             PublishedPage page,
             LayoutViewModel layout,
-            StorageContext storage,
+            IStorageContext storage,
             IViewRenderService viewRenderer)
         {
             if (!_settings.StaticWebPages)

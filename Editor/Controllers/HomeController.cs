@@ -41,7 +41,7 @@ namespace Sky.Cms.Controllers
         private readonly EditorSettings options;
         private readonly ApplicationDbContext dbContext;
         private readonly UserManager<IdentityUser> userManager;
-        private readonly StorageContext storageContext;
+        private readonly IStorageContext storageContext;
         private readonly ISetupCheckService setupCheckService;
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Sky.Cms.Controllers
             ArticleEditLogic articleLogic,
             UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager,
-            StorageContext storageContext,
+            IStorageContext storageContext,
             IEmailSender emailSender,
             IConfiguration configuration,
             IServiceProvider services,

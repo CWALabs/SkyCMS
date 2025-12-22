@@ -81,9 +81,6 @@ namespace Sky.Editor.Boot
                     logger.LogWarning(ex, "Tenant schema initialization failed - some tenants may have limited functionality");
                 }
             }
-
-            // Configure storage services
-            builder.Services.AddCosmosStorageContext(builder.Configuration);
         }
 
         /// <summary>

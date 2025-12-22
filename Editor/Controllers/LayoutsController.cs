@@ -70,7 +70,7 @@ namespace Sky.Cms.Controllers
         private readonly ApplicationDbContext dbContext;
         private readonly Uri blobPublicAbsoluteUrl;
         private readonly IViewRenderService viewRenderService;
-        private readonly StorageContext storageContext;
+        private readonly IStorageContext storageContext;
         private readonly IEditorSettings editorSettings;
         private readonly IArticleHtmlService htmlService;
         private readonly ILogger<LayoutsController> logger;
@@ -94,7 +94,7 @@ namespace Sky.Cms.Controllers
             UserManager<IdentityUser> userManager,
             ArticleEditLogic articleLogic,
             IEditorSettings options,
-            StorageContext storageContext,
+            IStorageContext storageContext,
             IViewRenderService viewRenderService,
             IEditorSettings editorSettings,
             IArticleHtmlService htmlService,

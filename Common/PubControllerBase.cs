@@ -23,7 +23,7 @@ namespace Cosmos.Publisher.Controllers
     public class PubControllerBase : Controller
     {
         private readonly ApplicationDbContext dbContext;
-        private readonly StorageContext storageContext;
+        private readonly IStorageContext storageContext;
         private readonly bool requiresAuthentication;
         private readonly ILogger<PubControllerBase> logger;
         private readonly IMemoryCache memoryCache;
@@ -39,7 +39,7 @@ namespace Cosmos.Publisher.Controllers
         /// <param name="memoryCache">Memory cache instance.</param>
         public PubControllerBase(
             ApplicationDbContext dbContext,
-            StorageContext storageContext,
+            IStorageContext storageContext,
             bool requiresAuthentication,
             ILogger<PubControllerBase> logger,
             IMemoryCache memoryCache)

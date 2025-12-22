@@ -45,6 +45,7 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.ReservedPaths;
+    using Sky.Editor.Services.Storage;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
 
@@ -62,7 +63,7 @@ namespace Sky.Cms.Controllers
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly UserManager<IdentityUser> userManager;
         private readonly Uri blobPublicAbsoluteUrl;
-        private readonly StorageContext storageContext;
+        private readonly IStorageContext storageContext;
 
         private readonly ILogger<EditorController> logger;
         private readonly IEditorSettings editorSettings;
@@ -100,7 +101,7 @@ namespace Sky.Cms.Controllers
             ArticleEditLogic articleLogic,
             IEditorSettings editorSettings,
             IViewRenderService viewRenderService,
-            StorageContext storageContext,
+            IStorageContext storageContext,
             IHubContext<LiveEditorHub> hub,
             IPublishingService publishingService,
             IArticleHtmlService htmlService,

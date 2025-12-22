@@ -7,27 +7,25 @@
 
 namespace Sky.Editor.Services.Setup
 {
+    using System;
+    using System.Linq;
+    using System.Net.Mail;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Cms.Data;
     using Cosmos.Common.Data;
-    using Cosmos.Common.Data.Logic;
     using Cosmos.Editor.Services;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Features.Articles.Save;
     using Sky.Editor.Features.Shared;
     using Sky.Editor.Services.Layouts;
-    using System;
-    using System.Linq;
-    using System.Net.Mail;
-    using System.Threading;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Service for setup wizard operations.
@@ -40,12 +38,13 @@ namespace Sky.Editor.Services.Setup
         private readonly IConfiguration configuration;
         private readonly ILogger<SetupService> logger;
         private readonly IMemoryCache memoryCache;
+        private readonly ILayoutImportService layoutImportService;
+        private readonly IMediator mediator;
+
         private readonly UserManager<IdentityUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly ApplicationDbContext applicationDbContext;
-        private readonly ILayoutImportService layoutImportService;
         private readonly ArticleEditLogic articleEditLogic;
-        private readonly IMediator mediator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupService"/> class.
@@ -767,6 +766,7 @@ namespace Sky.Editor.Services.Setup
             {
                 logger.LogInformation("Starting setup completion for {SetupId}", setupId);
 
+                logger.LogInformation("Retrieving setup configuration...");
                 var config = await GetSetupStateAsync();
 
                 if (config?.Id != setupId)
@@ -778,16 +778,11 @@ namespace Sky.Editor.Services.Setup
                     };
                 }
 
-                // Validate all required fields
-                var validationResult = ValidateSetupConfiguration(config);
-                if (!validationResult.Success)
-                {
-                    return validationResult;
-                }
+                logger.LogInformation("\t Successful.");
 
                 // Get the main database connection string
+                logger.LogInformation("Retrieving main database connection string...");
                 var mainDbConnectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
-
                 if (string.IsNullOrEmpty(mainDbConnectionString))
                 {
                     return new SetupCompletionResult
@@ -802,6 +797,19 @@ namespace Sky.Editor.Services.Setup
 
                 // Database schema is already initialized during application startup by SingleTenant.Configure() or MultiTenant.Configure()
                 logger.LogInformation("Database schema already initialized during application startup");
+
+                logger.LogInformation("\t Successful.");
+
+                // Validate all required fields
+                logger.LogInformation("Validating setup configuration...");
+                var validationResult = ValidateSetupConfiguration(config);
+                if (!validationResult.Success)
+                {
+                    return validationResult;
+                }
+
+                logger.LogInformation("\t Successful.");
+
 
                 // Step 1: Create administrator account--if one does not exist yet.
                 var adminAccounts = await userManager.GetUsersInRoleAsync(RequiredIdentityRoles.Administrators);
@@ -821,12 +829,16 @@ namespace Sky.Editor.Services.Setup
                 }
 
                 // Step 2: Save settings to main database
-                logger.LogInformation("Saving settings to database");
+                logger.LogInformation("Saving settings to database...");
                 await SaveSettingsToDatabaseAsync(mainDbContext, config);
+
+                logger.LogInformation("\t Successful.");
 
                 // Step 3: Create default layout if none exists
                 logger.LogInformation("Ensuring default layout exists");
                 await EnsureDefaultLayoutAndHomePageExistsAsync(mainDbContext, config);
+
+                logger.LogInformation("\t Successful.");
 
                 // Step 4: Mark setup as complete
                 config.IsComplete = true;
@@ -1337,6 +1349,9 @@ namespace Sky.Editor.Services.Setup
                 setting.Value = value;
                 setting.Description = description;
             }
+
+            // Save changes.
+            await context.SaveChangesAsync();
         }
 
         /// <summary>

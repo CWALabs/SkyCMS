@@ -30,16 +30,16 @@ namespace Sky.Cms.Hubs
     {
         private readonly ApplicationDbContext dbContext;
         private readonly ArticleEditLogic articleLogic;
-        private readonly StorageContext storageContext;
+        private readonly IStorageContext storageContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ChatHub"/> class.
         /// Constructor.
         /// </summary>
-        /// <param name="dbContext"></param>
-        /// <param name="articleLogic"></param>
-        /// <param name="storageContext"></param>
-        public ChatHub(ApplicationDbContext dbContext, ArticleEditLogic articleLogic, StorageContext storageContext)
+        /// <param name="dbContext">Database context.</param>
+        /// <param name="articleLogic">Article editing logic.</param>
+        /// <param name="storageContext">Storage context.</param>
+        public ChatHub(ApplicationDbContext dbContext, ArticleEditLogic articleLogic, IStorageContext storageContext)
         {
             this.dbContext = dbContext;
             this.articleLogic = articleLogic;

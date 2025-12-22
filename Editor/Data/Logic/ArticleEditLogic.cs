@@ -47,7 +47,7 @@ namespace Sky.Editor.Data.Logic
     /// </summary>
     public partial class ArticleEditLogic : ArticleLogic
     {
-        private readonly StorageContext storageContext;
+        private readonly IStorageContext storageContext; // Used only for deleting static artifacts.
         private readonly ILogger<ArticleEditLogic> logger;
         private readonly IMemoryCache localCache;
         private readonly IEditorSettings settings;
@@ -80,7 +80,7 @@ namespace Sky.Editor.Data.Logic
         public ArticleEditLogic(
             ApplicationDbContext dbContext,
             IMemoryCache memoryCache,
-            StorageContext storageContext,
+            IStorageContext storageContext, // Used only for deleting static artifacts.
             ILogger<ArticleEditLogic> logger,
             IEditorSettings settings,
             IClock clock,
@@ -98,7 +98,7 @@ namespace Sky.Editor.Data.Logic
                 settings.BlobPublicUrl,
                 true)
         {
-            this.storageContext = storageContext ?? throw new ArgumentNullException(nameof(storageContext));
+            this.storageContext = storageContext ?? throw new ArgumentNullException(nameof(storageContext)); // Used only for deleting static artifacts.
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             this.localCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));

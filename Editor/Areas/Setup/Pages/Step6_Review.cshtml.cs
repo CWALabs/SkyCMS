@@ -74,13 +74,6 @@ namespace Sky.Editor.Areas.Setup.Pages
 
             SetupId = Config.Id;
 
-            // Validate all required fields are set
-            //if (string.IsNullOrEmpty(Config.DatabaseConnectionString))
-            //{
-            //    ErrorMessage = "Database connection string is missing. Please go back and configure the database.";
-            //    return Page();
-            //}
-
             if (string.IsNullOrEmpty(Config.StorageConnectionString))
             {
                 ErrorMessage = "Storage connection string is missing. Please go back and configure storage.";

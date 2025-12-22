@@ -112,9 +112,6 @@ namespace Sky.Editor.Services.Scheduling
             try
             {
                 // These services need to be scoped to a particular domainName.
-                ApplicationDbContext dbContext;
-                StorageContext storageContext;
-
                 if (settings.IsMultiTenantEditor)
                 {
                     // All services must be scoped to the tenant's connection
@@ -126,8 +123,12 @@ namespace Sky.Editor.Services.Scheduling
                         return;
                     }
 
-                    dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
-                    storageContext = new StorageContext(connection.StorageConn, memoryCache);
+                    using (var dbContext = new ApplicationDbContext(connection.DbConn))
+                    {
+                        var storageContext = new StorageContext(connection.StorageConn, memoryCache);
+
+                        await Run(dbContext, storageContext, domainName, scopedServices);
+                    }
                 }
                 else
                 {
@@ -135,11 +136,11 @@ namespace Sky.Editor.Services.Scheduling
                     var configuration = scopedServices.GetRequiredService<IConfiguration>();
                     var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
 
-                    dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
-                    storageContext = scopedServices.GetRequiredService<StorageContext>();
-                }
+                    var dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
+                    var storageContext = scopedServices.GetRequiredService<StorageContext>();
 
-                await Run(dbContext, storageContext, domainName, scopedServices);
+                    await Run(dbContext, storageContext, domainName, scopedServices);
+                }
             }
             catch (Exception ex)
             {
@@ -182,7 +183,7 @@ namespace Sky.Editor.Services.Scheduling
         /// </summary>
         /// <param name="now">Current UTC timestamp.</param>
         /// <param name="dbContext">The database context.</param>
-        /// <param name="storageContext">The storage context.</param>
+        /// <param name="storageContext">The storage context (Not IStorageContext).</param>
         /// <param name="articleNumber">Article number.</param>
         /// <param name="domainName">Domain name for logging.</param>
         /// <param name="scopedServices">Scoped service provider.</param>

@@ -157,7 +157,7 @@ namespace Sky.Editor.Services.Scheduling
             return new ArticleEditLogic(
                 scopedServices.GetRequiredService<ApplicationDbContext>(),
                 memoryCache,
-                scopedServices.GetRequiredService<StorageContext>(),
+                scopedServices.GetRequiredService<IStorageContext>(),
                 scopedServices.GetRequiredService<ILogger<ArticleEditLogic>>(),
                 scopedServices.GetRequiredService<IEditorSettings>(),
                 scopedServices.GetRequiredService<IClock>(),

@@ -52,7 +52,7 @@ namespace Sky.Cms.Controllers
         private readonly Uri blobPublicAbsoluteUrl;
         private readonly IViewRenderService viewRenderService;
         private readonly ILogger<FileManagerController> logger;
-        private readonly StorageContext storageContext;
+        private readonly IStorageContext storageContext;
         private readonly IWebHostEnvironment hostEnvironment;
         private readonly IEditorSettings options;
 
@@ -71,7 +71,7 @@ namespace Sky.Cms.Controllers
             IEditorSettings options,
             ILogger<FileManagerController> logger,
             ApplicationDbContext dbContext,
-            StorageContext storageContext,
+            IStorageContext storageContext,
             UserManager<IdentityUser> userManager,
             ArticleEditLogic articleLogic,
             IWebHostEnvironment hostEnvironment,
@@ -147,7 +147,7 @@ namespace Sky.Cms.Controllers
         /// <param name="path">Path to retrieve images.</param>
         /// <param name="exclude">Path to exclude images.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        public static async Task<string[]> GetImageAssetArray(StorageContext storageContext, string path, string exclude)
+        public static async Task<string[]> GetImageAssetArray(IStorageContext storageContext, string path, string exclude)
         {
             var blobs = await storageContext.GetFilesAndDirectories(path);
 

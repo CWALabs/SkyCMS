@@ -31,7 +31,7 @@ namespace Sky.Editor.Controllers
         /// <param name="memoryCache">Memory cache.</param>
         public PubController(
             ApplicationDbContext dbContext, 
-            StorageContext storageContext, 
+            IStorageContext storageContext, 
             IEditorSettings options,
             ILogger<PubController> logger,
             IMemoryCache memoryCache)

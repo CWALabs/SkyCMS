@@ -132,14 +132,7 @@ builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IBlogRenderingService, BlogRenderingService>();
 builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
 builder.Services.AddTransient<IEmailConfigurationService, EmailConfigurationService>();
-
-// Register StorageConfigurationProvider for single-tenant database fallback
-if (!isMultiTenantEditor)
-{
-    builder.Services.AddScoped<IStorageConfigurationProvider, StorageConfigurationProvider>();
-}
-
-builder.Services.AddTransient<StorageContext>();
+builder.Services.AddScoped<IStorageContext, StorageContextService>();
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddTransient<ISetupCheckService, SetupCheckService>();

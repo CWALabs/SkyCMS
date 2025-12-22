@@ -11,10 +11,7 @@ namespace Sky.Editor.Areas.Setup.Pages
     using System.ComponentModel.DataAnnotations;
     using System.Threading.Tasks;
     using Cosmos.Cms.Data;
-    using Cosmos.Common.Data;
-    using Cosmos.EmailServices;
     using Microsoft.AspNetCore.Identity;
-    using Microsoft.AspNetCore.Identity.UI.Services;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.RazorPages;
     using Microsoft.Extensions.DependencyInjection;

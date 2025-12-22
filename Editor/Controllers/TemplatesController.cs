@@ -40,7 +40,7 @@ namespace Sky.Cms.Controllers
         private readonly ArticleEditLogic articleLogic;
         private readonly ApplicationDbContext dbContext;
         private readonly IEditorSettings options;
-        private readonly StorageContext storageContext;
+        private readonly IStorageContext storageContext;
         private readonly IArticleHtmlService htmlService;
         private readonly ITemplateService templateServices;
 
@@ -58,7 +58,7 @@ namespace Sky.Cms.Controllers
         public TemplatesController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
-            StorageContext storageContext,
+            IStorageContext storageContext,
             ArticleEditLogic articleLogic,
             IEditorSettings options,
             IArticleHtmlService htmlService,

@@ -64,9 +64,6 @@ namespace Sky.Editor.Boot
             {
                 CosmosDbOptionsBuilder.ConfigureDbOptions(options, connectionString);
             });
-
-            // Configure storage services
-            builder.Services.AddCosmosStorageContext(builder.Configuration);
         }
 
         /// <summary>

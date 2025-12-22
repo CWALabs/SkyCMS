@@ -24,7 +24,7 @@ namespace Cosmos.BlobService
     /// <summary>
     ///     Multi cloud blob service context.
     /// </summary>
-    public sealed class StorageContext
+    public sealed class StorageContext : IStorageContext
     {
         /// <summary>
         /// Used to brefly store chuk data while uploading.
@@ -67,16 +67,8 @@ namespace Cosmos.BlobService
             }
             else
             {
-                // ✅ Single-tenant: Use storage configuration provider (resolved at construction time)
-                var configProvider = serviceProvider.GetService<IStorageConfigurationProvider>();
-                var connectionString = configProvider?.GetStorageConnectionString();
-
-                // ✅ Fallback to IConfiguration if provider not registered (backwards compatibility)
-                if (string.IsNullOrEmpty(connectionString))
-                {
-                    connectionString = configuration.GetConnectionString("StorageConnectionString")
+                var connectionString = configuration.GetConnectionString("StorageConnectionString")
                         ?? configuration.GetConnectionString("AzureBlobStorageConnectionString");
-                }
 
                 primaryDriver = GetDriverFromConnectionString(connectionString);
             }
