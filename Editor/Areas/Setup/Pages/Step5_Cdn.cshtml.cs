@@ -95,6 +95,34 @@ namespace Sky.Editor.Areas.Setup.Pages
         public string CloudflareZoneId { get; set; } = string.Empty;
 
         /// <summary>
+        /// Gets or sets the AWS access key ID.
+        /// </summary>
+        [BindProperty]
+        [Display(Name = "Access ID")]
+        public string CloudFrontAccessKeyId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the AWS secret access key.
+        /// </summary>
+        [BindProperty]
+        [Display(Name = "Access Key")]
+        public string CloudFrontSecretAccessKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the CloudFront distribution ID.
+        /// </summary>
+        [BindProperty]
+        [Display(Name = "Distribution ID")]
+        public string CloudFrontDistributionId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the AWS region (e.g., us-east-1).
+        /// </summary>
+        [BindProperty]
+        [Display(Name = "AWS Region")]
+        public string CloudFrontRegion { get; set; } = "us-east-1";
+
+        /// <summary>
         /// Gets or sets the Sucuri API key.
         /// </summary>
         [BindProperty]
@@ -119,9 +147,24 @@ namespace Sky.Editor.Areas.Setup.Pages
         public string SuccessMessage { get; set; }
 
         /// <summary>
-        /// Gets a value indicating whether the CDN configuration is pre-configured.
+        /// Gets a value indicating whether Azure CDN configuration is pre-configured.
         /// </summary>
-        public bool IsPreConfigured { get; private set; }
+        public bool AzurePreConfigured { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether Cloudflare has been pre-configured for this instance.
+        /// </summary>
+        public bool CloudflarePreConfigured { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether Sucuri has been pre-configured for this instance.
+        /// </summary>
+        public bool SucuriPreConfigured { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether CloudFront has been pre-configured for this instance.
+        /// </summary>
+        public bool CloudFrontPreConfigured { get; private set; }
 
         /// <summary>
         /// Handles GET requests.
@@ -169,6 +212,17 @@ namespace Sky.Editor.Areas.Setup.Pages
                 SucuriApiKey = config.SucuriApiKey;
                 SucuriApiSecret = config.SucuriApiSecret;
             }
+            else if (!string.IsNullOrEmpty(config.CloudFrontDistributionId) &&
+                     !string.IsNullOrEmpty(config.CloudFrontAccessKeyId) &&
+                     !string.IsNullOrEmpty(config.CloudFrontSecretAccessKey) &&
+                     !string.IsNullOrEmpty(config.CloudFrontRegion))
+            {
+                SelectedProvider = "Cloudfront";
+                CloudFrontAccessKeyId = config.CloudFrontAccessKeyId;
+                CloudFrontSecretAccessKey = config.CloudFrontSecretAccessKey;
+                CloudFrontDistributionId = config.CloudFrontDistributionId;
+                CloudFrontRegion = config.CloudFrontRegion;
+            }
 
             return Page();
         }
@@ -209,6 +263,17 @@ namespace Sky.Editor.Areas.Setup.Pages
                         return Page();
                     }
                 }
+                else if (SelectedProvider == "Cloudfront")
+                {
+                    if (string.IsNullOrEmpty(CloudFrontAccessKeyId) ||
+                        string.IsNullOrEmpty(CloudFrontSecretAccessKey) ||
+                        string.IsNullOrEmpty(CloudFrontDistributionId) ||
+                        string.IsNullOrEmpty(CloudFrontRegion))
+                    {
+                        ErrorMessage = "All CloudFront fields are required when CloudFront is selected.";
+                        return Page();
+                    }
+                }
                 else if (SelectedProvider == "Sucuri")
                 {
                     if (string.IsNullOrEmpty(SucuriApiKey) ||
@@ -230,7 +295,11 @@ namespace Sky.Editor.Areas.Setup.Pages
                     SelectedProvider == "Cloudflare" ? CloudflareApiToken : string.Empty,
                     SelectedProvider == "Cloudflare" ? CloudflareZoneId : string.Empty,
                     SelectedProvider == "Sucuri" ? SucuriApiKey : string.Empty,
-                    SelectedProvider == "Sucuri" ? SucuriApiSecret : string.Empty);
+                    SelectedProvider == "Sucuri" ? SucuriApiSecret : string.Empty,
+                    SelectedProvider == "Cloudfront" ? CloudFrontAccessKeyId : string.Empty,
+                    SelectedProvider == "Cloudfront" ? CloudFrontSecretAccessKey : string.Empty,
+                    SelectedProvider == "Cloudfront" ? CloudFrontDistributionId : string.Empty,
+                    SelectedProvider == "Cloudfront" ? CloudFrontRegion : string.Empty);
 
                 await setupService.UpdateStepAsync(SetupId, 5);
 
@@ -257,6 +326,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                 {
                     return RedirectToPage("./Index");
                 }
+
                 SetupId = config.Id;
 
                 // Clear any existing CDN configuration
@@ -267,6 +337,10 @@ namespace Sky.Editor.Areas.Setup.Pages
                     string.Empty,
                     string.Empty,
                     false,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
                     string.Empty,
                     string.Empty,
                     string.Empty,

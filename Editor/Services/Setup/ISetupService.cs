@@ -117,7 +117,7 @@ namespace Sky.Editor.Services.Setup
             string sendGridApiKey,
             string azureConnectionString,
             string smtpHost,
-            int smtpPort,
+            string smtpPort,
             string smtpUsername,
             string smtpPassword,
             string senderEmail,
@@ -141,7 +141,7 @@ namespace Sky.Editor.Services.Setup
             string sendGridApiKey,
             string azureConnectionString,
             string smtpHost,
-            int smtpPort,
+            string smtpPort,
             string smtpUsername,
             string smtpPassword);
 
@@ -158,6 +158,10 @@ namespace Sky.Editor.Services.Setup
         /// <param name="cloudflareZoneId">Cloudflare zone ID.</param>
         /// <param name="sucuriApiKey">Sucuri API key.</param>
         /// <param name="sucuriApiSecret">Sucuri API secret.</param>
+        /// <param name="cloudFrontAccessKeyId">AWS Access Key ID.</param>
+        /// <param name="cloudFrontSecretAccessKey">AWS Access Key secret.</param>
+        /// <param name="cloudFrontDistributionId">AWS Distribution ID.</param>
+        /// <param name="cloudFrontRegion">AWS Region.</param>
         /// <returns>Task.</returns>
         Task UpdateCdnConfigAsync(
             Guid setupId,
@@ -169,7 +173,11 @@ namespace Sky.Editor.Services.Setup
             string cloudflareApiToken,
             string cloudflareZoneId,
             string sucuriApiKey,
-            string sucuriApiSecret);
+            string sucuriApiSecret,
+            string cloudFrontAccessKeyId,
+            string cloudFrontSecretAccessKey,
+            string cloudFrontDistributionId,
+            string cloudFrontRegion);
 
         /// <summary>
         /// Updates the current step.

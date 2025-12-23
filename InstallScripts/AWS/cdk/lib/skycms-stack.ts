@@ -45,9 +45,16 @@ export class SkyCmsEditorStack extends cdk.Stack {
         require_secure_transport: '1',
       },
     });
-    
-    // Generate a fixed password for RDS (dev-only)
-    const dbPassword = cdk.SecretValue.unsafePlainText('SkyCMS2025!Temp');
+
+    // Generate a managed secret for the DB admin credentials (avoid fixed passwords)
+    const dbCredentialsSecret = new secretsmanager.Secret(this, 'DbAdminCredentials', {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({ username: 'skycms_admin' }),
+        generateStringKey: 'password',
+        excludePunctuation: true,
+        passwordLength: 20,
+      },
+    });
 
     const certificateArn = this.node.tryGetContext('certificateArn') as string | undefined;
     const domainName = this.node.tryGetContext('domainName') as string | undefined;
@@ -76,7 +83,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
       allocatedStorage: 20,
       storageType: rds.StorageType.GP3,
       securityGroups: [dbSg],
-      credentials: rds.Credentials.fromPassword('skycms_admin', dbPassword),
+      credentials: rds.Credentials.fromSecret(dbCredentialsSecret),
       databaseName: props.dbName,
       deletionProtection: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // dev convenience
@@ -85,18 +92,75 @@ export class SkyCmsEditorStack extends cdk.Stack {
       parameterGroup: parameterGroup,
     });
 
-    // Construct connection string from RDS database endpoint and credentials
-    const dbUser = 'skycms_admin';
-    const connectionString = `Server=${db.dbInstanceEndpointAddress};Port=3306;Uid=${dbUser};Pwd=SkyCMS2025!Temp;Database=${props.dbName};`;
+    // Construct connection string using the generated DB password (resolved at deploy/runtime)
+    const connectionString = cdk.Fn.sub(
+      'Server=${DbHost};Port=3306;Uid=skycms_admin;Pwd=${DbPassword};Database=${DbName};',
+      {
+        DbHost: db.dbInstanceEndpointAddress,
+        DbPassword: cdk.Token.asString(dbCredentialsSecret.secretValueFromJson('password')),
+        DbName: props.dbName,
+      }
+    );
 
     const connectionStringSecret = new secretsmanager.Secret(
       this,
       'DbConnectionStringSecret',
       {
         secretStringValue: cdk.SecretValue.unsafePlainText(connectionString),
-        description: 'MySQL connection string (dynamically constructed from RDS) ending with semicolon',
+        description: 'MySQL connection string (dynamically constructed from RDS, password resolved from secret) ending with semicolon',
       }
     );
+
+    // Base environment and secrets for the editor task definition
+    const editorEnv: Record<string, string> = {
+      CosmosAllowSetup: 'true',
+      MultiTenantEditor: 'false',
+      ASPNETCORE_ENVIRONMENT: 'Development',
+      BlobServiceProvider: 'Amazon',
+      AmazonS3BucketName: props.bucketName || '',
+      AmazonS3Region: cdk.Aws.REGION,
+      SKYCMS_DB_HOST: db.instanceEndpoint.hostname,
+      SKYCMS_DB_USER: 'skycms_admin',
+      SKYCMS_DB_NAME: props.dbName,
+      SKYCMS_DB_SSL: 'true',
+      SKYCMS_DB_SSL_MODE: 'Required',
+    };
+
+    const editorSecrets: Record<string, ecs.Secret> = {
+      ConnectionStrings__ApplicationDbContextConnection:
+        ecs.Secret.fromSecretsManager(connectionStringSecret),
+    };
+
+    // Optional: Amazon SES SMTP configuration (password supplied via Secrets Manager)
+    const sesEnabled = this.node.tryGetContext('sesEnabled') === 'true';
+    const sesSmtpHost =
+      (this.node.tryGetContext('sesSmtpHost') as string | undefined) ??
+      `email-smtp.${cdk.Aws.REGION}.amazonaws.com`;
+    const sesSmtpPort =
+      (this.node.tryGetContext('sesSmtpPort') as string | undefined) ?? '587';
+    const sesSmtpUsername = this.node.tryGetContext('sesSmtpUsername') as string | undefined;
+    const sesSmtpPasswordSecretArn = this.node.tryGetContext('sesSmtpPasswordSecretArn') as string | undefined;
+    const sesSenderEmail = this.node.tryGetContext('sesSenderEmail') as string | undefined;
+
+    if (sesEnabled && sesSmtpUsername && sesSmtpPasswordSecretArn) {
+      const sesPasswordSecret = secretsmanager.Secret.fromSecretCompleteArn(
+        this,
+        'SesSmtpPasswordSecret',
+        sesSmtpPasswordSecretArn
+      );
+
+      editorEnv.SmtpEmailProviderOptions__Host = sesSmtpHost;
+      editorEnv.SmtpEmailProviderOptions__Port = sesSmtpPort;
+      editorEnv.SmtpEmailProviderOptions__UserName = sesSmtpUsername;
+      editorEnv.SmtpEmailProviderOptions__UsesSsl = 'false'; // SES uses STARTTLS on 587
+      if (sesSenderEmail) {
+        editorEnv.AdminEmail = sesSenderEmail;
+      }
+
+      editorSecrets.SmtpEmailProviderOptions__Password = ecs.Secret.fromSecretsManager(
+        sesPasswordSecret
+      );
+    }
 
     // Fargate Service with ALB
     const fargate = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'EditorService', {
@@ -111,24 +175,8 @@ export class SkyCmsEditorStack extends cdk.Stack {
       taskImageOptions: {
         image: ecs.ContainerImage.fromRegistry(props.image),
         containerPort: 80,
-        environment: {
-          CosmosAllowSetup: 'true',
-          MultiTenantEditor: 'false',
-          ASPNETCORE_ENVIRONMENT: 'Development',
-          BlobServiceProvider: 'Amazon',
-          AmazonS3BucketName: props.bucketName || '',
-          AmazonS3Region: cdk.Aws.REGION,
-          SKYCMS_DB_HOST: db.instanceEndpoint.hostname,
-          SKYCMS_DB_USER: 'skycms_admin',
-          SKYCMS_DB_NAME: props.dbName,
-          SKYCMS_DB_SSL: 'true',
-          SKYCMS_DB_SSL_MODE: 'Required',
-          AdminEmail: 'admin@example.com',
-        },
-        secrets: {
-          ConnectionStrings__ApplicationDbContextConnection:
-            ecs.Secret.fromSecretsManager(connectionStringSecret),
-        },
+        environment: editorEnv,
+        secrets: editorSecrets,
       },
     });
 
@@ -198,11 +246,6 @@ export class SkyCmsEditorStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'DatabaseUsername', {
       value: 'skycms_admin',
       description: 'RDS MySQL admin username',
-    });
-
-    new cdk.CfnOutput(this, 'DatabasePassword', {
-      value: dbPassword.unsafeUnwrap(),
-      description: '⚠️  DATABASE PASSWORD (dev-only; store securely). Use with MySQL Workbench or other tools.',
     });
 
     new cdk.CfnOutput(this, 'DatabaseName', {

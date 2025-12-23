@@ -125,7 +125,7 @@ namespace Cosmos.Common.Data
         /// Gets or sets the SMTP port (optional).
         /// </summary>
         [Display(Name = "SMTP Port")]
-        public int SmtpPort { get; set; } = 587;
+        public string SmtpPort { get; set; } = "587";
 
         /// <summary>
         /// Gets or sets the SMTP username (optional).

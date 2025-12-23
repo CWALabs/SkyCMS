@@ -94,7 +94,7 @@ namespace Sky.Editor.Services.Setup
                 var existing = await GetSetupStateAsync();
                 if (existing != null && !existing.IsComplete)
                 {
-                    PopulateFromEnvironmentVariables(existing);
+                    GetEnvironmentVariables(existing);
                     return existing;
                 }
 
@@ -107,7 +107,7 @@ namespace Sky.Editor.Services.Setup
                     CurrentStep = 1
                 };
 
-                PopulateFromEnvironmentVariables(config);
+                GetEnvironmentVariables(config);
                 await SaveSetupStateAsync(config);
 
                 logger.LogInformation("Created new setup session {SetupId}", config.Id);
@@ -127,7 +127,7 @@ namespace Sky.Editor.Services.Setup
             {
                 var config = await GetSetupStateAsync();
 
-                PopulateFromEnvironmentVariables(config);
+                GetEnvironmentVariables(config);
 
                 if (config != null && !config.IsComplete)
                 {
@@ -359,7 +359,7 @@ namespace Sky.Editor.Services.Setup
         /// Populates setup configuration from environment variables and configuration.
         /// </summary>
         /// <param name="config">Setup configuration to populate.</param>
-        private void PopulateFromEnvironmentVariables(SetupConfiguration config)
+        private void GetEnvironmentVariables(SetupConfiguration config)
         {
             if (config == null)
             {
@@ -431,7 +431,6 @@ namespace Sky.Editor.Services.Setup
             {
                 config.SenderEmail = senderEmail;
                 config.SenderEmailPreConfigured = true;
-                logger.LogInformation("Sender email loaded from environment variables");
             }
 
             // Database Configuration (optional - usually in appsettings.json)
@@ -439,17 +438,24 @@ namespace Sky.Editor.Services.Setup
             if (!string.IsNullOrEmpty(dbConnectionString))
             {
                 config.DatabaseConnectionString = dbConnectionString;
-                logger.LogInformation("Database configuration loaded from environment variables");
             }
 
             // Detect if one of an Email provider is preconfigured.
-            var sendGridApiKey = configuration["CosmosSendGridApiKey"];
-            var smtpHost = configuration["SmtpEmailProviderOptions:Host"]
+            config.SendGridApiKey = configuration["CosmosSendGridApiKey"];
+
+            config.SmtpHost = configuration["SmtpEmailProviderOptions:Host"]
                   ?? configuration["SmtpEmailProviderOptions__Host"];
+            config.SmtpPort = configuration["SmtpEmailProviderOptions:Port"]
+                  ?? configuration["SmtpEmailProviderOptions__Port"];
+            config.SmtpUsername = configuration["SmtpEmailProviderOptions:UserName "]
+                  ?? configuration["SmtpEmailProviderOptions__UserName "];
+            config.SmtpPassword = configuration["SmtpEmailProviderOptions:Password"]
+                  ?? configuration["SmtpEmailProviderOptions__Password"];
+
             var azureEmailConnectionString = configuration.GetConnectionString("AzureCommunicationConnection");
 
-            if (!string.IsNullOrEmpty(sendGridApiKey)
-                || !string.IsNullOrEmpty(smtpHost)
+            if (!string.IsNullOrEmpty(config.SendGridApiKey)
+                || !string.IsNullOrEmpty(config.SmtpHost)
                 || !string.IsNullOrEmpty(azureEmailConnectionString))
             {
                 config.EmailProviderPreConfigured = true;
@@ -595,7 +601,7 @@ namespace Sky.Editor.Services.Setup
             string sendGridApiKey,
             string azureConnectionString,
             string smtpHost,
-            int smtpPort,
+            string smtpPort,
             string smtpUsername,
             string smtpPassword,
             string senderEmail,
@@ -708,7 +714,7 @@ namespace Sky.Editor.Services.Setup
         /// </summary>
         private async Task<TestResult> TestSmtpAsync(
             string host,
-            int port,
+            string port,
             string username,
             string password,
             string senderEmail,
@@ -716,8 +722,8 @@ namespace Sky.Editor.Services.Setup
         {
             try
             {
-                using var client = new SmtpClient(host, port);
-                client.EnableSsl = port == 587 || port == 465;
+                using var client = new SmtpClient(host, int.Parse(port));
+                client.EnableSsl = port == "587" || port == "465";
                 client.UseDefaultCredentials = false;
                 client.Credentials = new System.Net.NetworkCredential(username, password);
 
@@ -753,7 +759,7 @@ namespace Sky.Editor.Services.Setup
             string sendGridApiKey,
             string azureConnectionString,
             string smtpHost,
-            int smtpPort,
+            string smtpPort,
             string smtpUsername,
             string smtpPassword)
         {
@@ -908,7 +914,11 @@ namespace Sky.Editor.Services.Setup
             string cloudflareApiToken,
             string cloudflareZoneId,
             string sucuriApiKey,
-            string sucuriApiSecret)
+            string sucuriApiSecret,
+            string cloudFrontAccessKeyId,
+            string cloudFrontSecretAccessKey,
+            string cloudFrontDistributionId,
+            string cloudFrontRegion)
         {
             try
             {
@@ -932,6 +942,12 @@ namespace Sky.Editor.Services.Setup
                 // Update Sucuri settings
                 config.SucuriApiKey = sucuriApiKey ?? string.Empty;
                 config.SucuriApiSecret = sucuriApiSecret ?? string.Empty;
+
+                // Update CloudFront settings
+                config.CloudFrontAccessKeyId = cloudFrontAccessKeyId ?? string.Empty;
+                config.CloudFrontSecretAccessKey = cloudFrontSecretAccessKey ?? string.Empty;
+                config.CloudFrontDistributionId = cloudFrontDistributionId ?? string.Empty;
+                config.CloudFrontRegion = cloudFrontRegion ?? string.Empty;
 
                 await SaveSetupStateAsync(config);
 

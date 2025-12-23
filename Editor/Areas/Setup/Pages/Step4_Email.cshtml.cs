@@ -67,7 +67,7 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// Gets or sets the SMTP port.
         /// </summary>
         [BindProperty]
-        public int SmtpPort { get; set; } = 587;
+        public string SmtpPort { get; set; } = "587";
 
         /// <summary>
         /// Gets or sets the SMTP username.

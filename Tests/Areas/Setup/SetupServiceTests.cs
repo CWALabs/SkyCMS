@@ -402,7 +402,7 @@ namespace Sky.Tests.Areas.Setup
                 apiKey,
                 null,
                 null,
-                0,
+                null,
                 null,
                 null,
                 senderEmail,
@@ -422,7 +422,7 @@ namespace Sky.Tests.Areas.Setup
                 null,
                 null,
                 null,
-                0,
+                null,
                 null,
                 null,
                 "test@example.com",
@@ -451,7 +451,7 @@ namespace Sky.Tests.Areas.Setup
                 apiKey,
                 null,
                 null,
-                0,
+                null,
                 null,
                 null);
 
@@ -467,7 +467,7 @@ namespace Sky.Tests.Areas.Setup
             var setup = await setupService.InitializeSetupAsync();
             var provider = "SMTP";
             var smtpHost = "smtp.example.com";
-            var smtpPort = 587;
+            var smtpPort = "587";
             var smtpUsername = "user@example.com";
             var smtpPassword = "password123";
 
@@ -514,7 +514,11 @@ namespace Sky.Tests.Areas.Setup
                 null,
                 null,
                 null,
-                null);
+                null,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty);
 
             // Assert
             var result = await setupService.GetCurrentSetupAsync();
@@ -543,7 +547,11 @@ namespace Sky.Tests.Areas.Setup
                 apiToken,
                 zoneId,
                 null,
-                null);
+                null,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty);
 
             // Assert
             var result = await setupService.GetCurrentSetupAsync();
@@ -565,6 +573,10 @@ namespace Sky.Tests.Areas.Setup
                 string.Empty,
                 string.Empty,
                 false,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
                 string.Empty,
                 string.Empty,
                 string.Empty,

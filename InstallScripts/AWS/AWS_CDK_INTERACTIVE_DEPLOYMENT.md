@@ -8,9 +8,9 @@ The new deployment workflow is fully **interactive** and **user-friendly**:
 
 1. **No command-line flags required** — all configuration is gathered via prompts
 2. **Optional Publisher deployment** — choose whether to deploy S3+CloudFront Publisher
-3. **Automatic IAM user creation** — access credentials generated automatically
-4. **Secrets Manager integration** — storage connection string secured and injected
-5. **Unified output summary** — both Publisher and Editor URLs displayed at the end
+3. **Optional Amazon SES SMTP** — prompt-driven SES wiring with password stored in Secrets Manager
+4. **Secrets Manager integration** — DB creds and storage connection string are secured and injected
+5. **Unified output summary** — Publisher and Editor URLs (and SES info when enabled)
 
 ## Prerequisites
 
@@ -38,15 +38,23 @@ The script will ask you for:
 - `Docker Image` — defaults to `toiyabe/sky-editor:latest`
 - `Desired Task Count` — defaults to `1` (number of ECS tasks)
 - `Database Name` — defaults to `skycms`
-- `Stack Name` — defaults to `skycms-editor`
+- `Stack Name` — defaults to `SkyCMS-Stack`
 - `(Optional) Domain Name` — CloudFront custom domain
 - `(Optional) Hosted Zone ID` — Route 53 zone for custom domain
 - `(Optional) ACM Certificate ARN` — pre-existing certificate for custom domain
 
+**Email (Amazon SES SMTP) – optional:**
+- Enable SES SMTP? (yes/no)
+- Sender email (must be a verified SES identity; can be a single email in sandbox)
+- SES SMTP username
+- SES SMTP password (stored/updated in Secrets Manager)
+- Secrets Manager secret name or existing secret ARN for the SMTP password
+  - Host defaults to `email-smtp.<region>.amazonaws.com`
+  - Port defaults to `587` (STARTTLS; `UsesSsl=false` in the app)
+
 **Publisher Configuration:**
 - `Deploy Publisher (S3 + CloudFront)?` — yes/no prompt
   - If yes:
-    - `Stack Name` — defaults to `skycms-publisher`
     - `(Optional) Domain Name` — custom domain for Publisher CloudFront
     - `(Optional) Hosted Zone ID` — Route 53 zone for custom domain
 
@@ -60,11 +68,13 @@ DEPLOYMENT CONFIGURATION SUMMARY
 ======================================
 
 Editor:
-  Stack Name: skycms-editor
+  Stack Name: SkyCMS-Stack
   Region: us-east-1
   Image: toiyabe/sky-editor:latest
   Desired Count: 1
   Database: skycms
+
+Email (SES): DISABLED
 
 Publisher: ENABLED
   Stack Name: skycms-publisher
@@ -85,10 +95,12 @@ The script will:
    - Store S3 connection string in Secrets Manager as `SkyCms-StorageConnectionString`
 
 2. **Editor**:
-   - Bootstrap CDK (if needed)
-   - Synthesize CloudFormation template
-   - Deploy ECS cluster + RDS MySQL + CloudFront
-   - Inject storage connection string from Secrets Manager (if Publisher deployed)
+  - Bootstrap CDK (if needed)
+  - Synthesize CloudFormation template
+  - Deploy ECS cluster + RDS MySQL + CloudFront
+  - Generate DB admin credentials in Secrets Manager; build connection string from the secret
+  - Inject storage connection string from Secrets Manager (if Publisher deployed)
+  - Inject SES SMTP settings and SMTP password from Secrets Manager (if enabled)
 
 ### 5. Review Final Output
 
@@ -111,7 +123,8 @@ The script will:
    CloudFront URL: https://d456def.cloudfront.net
    Custom Domain: https://editor.example.com
    Database: skycms @ skycms-rds-xxx.us-east-1.rds.amazonaws.com
-   Storage Secret: arn:aws:secretsmanager:us-east-1:123456789:secret:SkyCms-StorageConnectionString-xxx
+  Storage Secret: arn:aws:secretsmanager:us-east-1:123456789:secret:SkyCms-StorageConnectionString-xxx
+  SES SMTP (if enabled): host/port/username env vars; password injected from Secrets Manager
 
 ⏳ CloudFront may take 1-2 minutes to fully propagate.
 ```
@@ -157,6 +170,14 @@ When Publisher is deployed:
 4. **File uploads** in Editor UI are stored in S3 bucket
 
 ### Custom Domain Names
+
+### Email (Amazon SES SMTP) — Optional
+- Enable via prompt; no NuGet changes required in the app (SMTP is env-driven).
+- Sender email must be a verified SES identity (single email in sandbox is fine; domain verification recommended for production).
+- In sandbox, recipients must also be verified until production access is granted.
+- Defaults: host `email-smtp.<region>.amazonaws.com`, port `587` (STARTTLS), `UsesSsl=false`.
+- SMTP password is stored/updated in Secrets Manager; ECS injects it into `SmtpEmailProviderOptions__Password`.
+- Other SMTP env vars set when enabled: `SmtpEmailProviderOptions__Host`, `Port`, `UserName`, `UsesSsl`, and `AdminEmail` (from sender email).
 
 Both Publisher and Editor support custom domains via Route 53 + ACM:
 
@@ -283,7 +304,8 @@ aws configure
 
 1. **Wait for CloudFront propagation** (~1-2 minutes)
 2. **Visit Editor URL** and run setup wizard
-3. **Upload Publisher files** (if deployed):
+3. **If SES enabled**: verify the sender identity (and recipients if still in sandbox) before sending test email.
+4. **Upload Publisher files** (if deployed):
    ```powershell
    aws s3 sync ./website s3://skycms-publisher-bucket-xxx/
    ```
