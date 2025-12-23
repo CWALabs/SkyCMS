@@ -304,7 +304,7 @@ export class SkyCmsEditorStack extends cdk.Stack {
       
       // Store the CloudFront secret ARN as an environment variable for the startup service to read
       if (cloudFrontSecret) {
-        containerEnvironment.CloudFrontConfigSecretArn = cloudFrontSecret.secretArn;
+        containerEnvironment.CloudFrontConfig = cloudFrontSecret.secretArn;
         // Grant task role permission to read CloudFront secret
         cloudFrontSecret.grantRead(taskDefinition.taskRole);
       }

@@ -2,15 +2,6 @@
   "version": 2,
   "dependencies": {
     "net9.0": {
-      "AWSSDK.SecretsManager": {
-        "type": "Direct",
-        "requested": "[4.0.4.1, )",
-        "resolved": "4.0.4.1",
-        "contentHash": "EzTGwDJeJ13egkNXzMdyHsdh8WMyqH8rM7FHcnovJu8IPah23w8XGBXwt9gUvEeCQ6ykr0FYI35Be7B/hbuTfw==",
-        "dependencies": {
-          "AWSSDK.Core": "[4.0.3.6, 5.0.0)"
-        }
-      },
       "Azure.ResourceManager": {
         "type": "Direct",
         "requested": "[1.13.2, 2.0.0)",
@@ -229,8 +220,8 @@
       },
       "AWSSDK.Core": {
         "type": "Transitive",
-        "resolved": "4.0.3.6",
-        "contentHash": "bx61NSP9bQ5BTPXGzyhS7f4d+YzIiSelsblj8JALHp5uoYKVRnoRTbWb3lyUTdzJ9UZj7Q7JiQ8sJJ5JHQ5Jrg=="
+        "resolved": "4.0.3.4",
+        "contentHash": "Bykx2u1jNLfPr/otJBPb1QwXiEip4GbjX72Ah+Rhv7QiazUZGo+d+zuhi4uT1HCnzGK7JfQZ7V+vzTysaLcObw=="
       },
       "Azure.Communication.Email": {
         "type": "Transitive",

@@ -48,7 +48,6 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// Gets or sets the publisher URL.
         /// </summary>
         [BindProperty]
-        [Required(ErrorMessage = "Website URL is required")]
         [Url(ErrorMessage = "Please enter a valid URL")]
         [Display(Name = "Website URL")]
         public string PublisherUrl { get; set; }

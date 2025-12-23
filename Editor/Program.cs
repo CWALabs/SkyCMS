@@ -81,7 +81,7 @@ builder.Services.AddApplicationInsightsTelemetry();
 // Register SiteSettings directly from configuration
 builder.Services.Configure<SiteSettings>(settings =>
 {
-    settings.MultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+    settings.MultiTenantEditor = isMultiTenantEditor;
     settings.AllowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
     settings.CosmosRequiresAuthentication = builder.Configuration.GetValue<bool?>("CosmosRequiresAuthentication") ?? false;
     settings.AllowLocalAccounts = builder.Configuration.GetValue<bool?>("AllowLocalAccounts") ?? true;
@@ -431,9 +431,6 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// ✅ Add automatic setup detection middleware
-//app.UseMiddleware<SetupRedirectMiddleware>();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -518,24 +515,6 @@ catch (Exception ex)
 {
     // Hangfire not configured - this is expected during setup
     app.Logger.LogInformation("Hangfire recurring jobs not configured: {Message}", ex.Message);
-}
-
-// Load CloudFront CDN configuration from AWS Secrets Manager (if deployed on AWS)
-try
-{
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<CloudFrontConfigLoader>>();
-        
-        var cloudFrontLoader = new CloudFrontConfigLoader(config, logger, dbContext);
-        await cloudFrontLoader.LoadConfigurationAsync();
-    }
-}
-catch (Exception ex)
-{
-    app.Logger.LogWarning(ex, "CloudFront configuration loader failed. This is expected if not running on AWS.");
 }
 
 await app.RunAsync();

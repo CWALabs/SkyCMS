@@ -197,6 +197,39 @@ namespace Cosmos.Common.Data
         [Display(Name = "Sucuri API Secret")]
         public string SucuriApiSecret { get; set; } = string.Empty;
 
+        // ============================================
+        // AWS CloudFront Configuration (Optional)
+        // ============================================
+
+        /// <summary>
+        /// Gets or sets the CloudFront distribution ID (optional).
+        /// </summary>
+        [Display(Name = "CloudFront Distribution ID")]
+        public string CloudFrontDistributionId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the CloudFront access key ID (optional).
+        /// </summary>
+        [Display(Name = "CloudFront Access Key ID")]
+        public string CloudFrontAccessKeyId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the CloudFront secret access key (optional).
+        /// </summary>
+        [Display(Name = "CloudFront Secret Access Key")]
+        public string CloudFrontSecretAccessKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the CloudFront region (optional).
+        /// </summary>
+        [Display(Name = "CloudFront Region")]
+        public string CloudFrontRegion { get; set; } = "us-east-1";
+
+        /// <summary>
+        /// Gets or sets a value indicating whether CloudFront was pre-configured via environment variables.
+        /// </summary>
+        public bool CloudFrontPreConfigured { get; set; } = false;
+
         /// <summary>
         /// Gets or sets the current wizard step (for resuming setup).
         /// </summary>

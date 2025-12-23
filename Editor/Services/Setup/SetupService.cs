@@ -456,6 +456,30 @@ namespace Sky.Editor.Services.Setup
                 logger.LogInformation("Email configuration loaded from environment variables");
             }
 
+            // CloudFront Configuration
+            // Pull CDN configuration from Environment Variables
+            var cloudFrontData = configuration["CloudFrontConfig"];
+            if (!string.IsNullOrEmpty(cloudFrontData))
+            {
+                try
+                {
+                    var cloudFrontConfig = JsonConvert.DeserializeObject<CloudFrontConfig>(cloudFrontData);
+
+                    if (cloudFrontConfig != null)
+                    {
+                        config.CloudFrontDistributionId = cloudFrontConfig.DistributionId;
+                        config.CloudFrontAccessKeyId = cloudFrontConfig.AccessKeyId;
+                        config.CloudFrontSecretAccessKey = cloudFrontConfig.SecretAccessKey;
+                        config.CloudFrontRegion = cloudFrontConfig.Region;
+                        config.CloudFrontPreConfigured = true;
+                        logger.LogInformation("CloudFront configuration loaded from Secrets Manager");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to load CloudFront configuration from Secrets Manager");
+                }
+            }
         }
 
         /// <summary>
@@ -1554,6 +1578,24 @@ namespace Sky.Editor.Services.Setup
                 logger.LogError(ex, "Failed to complete post-setup initialization");
                 // Don't throw - this shouldn't prevent application startup
             }
+        }
+
+        /// <summary>
+        /// CloudFront configuration from Secrets Manager.
+        /// </summary>
+        private class CloudFrontConfig
+        {
+            [JsonProperty("AccessKeyId")]
+            public string AccessKeyId { get; set; }
+
+            [JsonProperty("SecretAccessKey")]
+            public string SecretAccessKey { get; set; }
+
+            [JsonProperty("DistributionId")]
+            public string DistributionId { get; set; }
+
+            [JsonProperty("Region")]
+            public string Region { get; set; }
         }
     }
 }
