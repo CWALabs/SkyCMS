@@ -41,6 +41,21 @@
                     The public URL where your website will be accessible (without trailing slash)
                 </small>
             </div>
+            <div class="form-group mb-3">
+                <label asp-for="SiteDesignId" class="form-label">Choose a site design</label>
+                <select asp-for="SiteDesignId" class="form-select" required="true">
+                    <option value="">Select a design</option>
+                    @foreach (var layout in layouts)
+                    {
+                        <option value="@layout.Id">@layout.Title</option>
+                    }
+                </select>
+                <span asp-validation-for="SiteDesignId" class="text-danger"></span>
+                <small class="form-text text-light">
+                    Please choose a design now, you can change or edit it later. The current list of
+                    starter designs can be found <a target="_blank" href="https://cwalabs.github.io/Cosmos.Starter.Designs/">here</a>.
+                </small>
+            </div>
 
             <div class="form-group mb-3">
                 <label asp-for="WebsiteTitle" class="form-label">Website Title <span class="text-danger">*</span></label>
@@ -93,21 +108,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="SiteDesignId" class="form-label">Choose a site design</label>
-                <select asp-for="SiteDesignId" class="form-select">
-                    <option value="">Select a design</option>
-                    @foreach (var layout in layouts)
-                    {
-                        <option value="@layout.Id">@layout.Title</option>
-                    }
-                </select>
-                <small class="form-text text-light">
-                    Please choose a design now, you can change or edit it later. The current list of
-                    starter designs can be found <a target="_blank" href="https://cwalabs.github.io/Cosmos.Starter.Designs/">here</a>.
-                </small>
             </div>
 
             <div class="form-check mb-3">

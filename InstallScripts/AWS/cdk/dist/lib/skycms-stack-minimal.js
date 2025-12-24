@@ -63,6 +63,11 @@ class SkyCmsEditorStack extends cdk.Stack {
         // Optional CDN caching controls
         const editorCacheEnabled = String(this.node.tryGetContext('editorCacheEnabled') ?? 'false') === 'true';
         const publisherCacheEnabled = String(this.node.tryGetContext('publisherCacheEnabled') ?? 'true') === 'true';
+        // Optional SES toggle (opt-in)
+        const sesEnabled = String(this.node.tryGetContext('sesEnabled') ?? 'false') === 'true';
+        const sesSenderEmail = this.node.tryGetContext('sesSenderEmail');
+        const sesSmtpHost = `email-smtp.${this.region}.amazonaws.com`;
+        const sesSmtpPort = '587';
         // ============================================
         // PUBLISHER RESOURCES (S3 + CloudFront)
         // ============================================
@@ -108,8 +113,8 @@ class SkyCmsEditorStack extends cdk.Stack {
                     : undefined,
                 minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
             });
-            // IAM User for S3 access (unique per stack to avoid collisions)
-            const iamUserName = `skycms-s3-publisher-user-${this.stackName}`;
+            // IAM User for S3 access (include account ID for global uniqueness)
+            const iamUserName = `skycms-s3-publisher-user-${cdk.Aws.ACCOUNT_ID}-${this.stackName}`;
             const s3User = new iam.User(this, 'S3PublisherUser', {
                 userName: iamUserName,
             });
@@ -258,6 +263,7 @@ class SkyCmsEditorStack extends cdk.Stack {
             DB_PASSWORD: ecs.Secret.fromSecretsManager(dbCredentials, 'password'),
             ConnectionStrings__ApplicationDbContextConnection: ecs.Secret.fromSecretsManager(connectionStringSecret),
         };
+        let sesSecret;
         // Add StorageConnectionString if Publisher is deployed
         if (storageSecret) {
             containerSecrets.ConnectionStrings__StorageConnectionString =
@@ -274,17 +280,48 @@ class SkyCmsEditorStack extends cdk.Stack {
             DB_NAME: dbName,
             DB_USER: 'admin',
         };
+        // Optional: SES SMTP auto-provisioning (IAM user + derived SMTP password stored in Secrets Manager)
+        if (sesEnabled) {
+            const sesUser = new iam.User(this, 'SesSmtpUser', {
+                userName: `skycms-ses-smtp-${cdk.Aws.ACCOUNT_ID}-${this.stackName}`,
+            });
+            sesUser.addToPolicy(new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: ['ses:SendRawEmail'],
+                resources: ['*'],
+            }));
+            const sesAccessKeys = new access_key_generator_1.AccessKeyGenerator(this, 'SesAccessKeys', {
+                userName: sesUser.userName,
+                region: this.region,
+            });
+            sesSecret = new secretsmanager.Secret(this, 'SesSmtpSecret', {
+                secretName: `SkyCms-SesSmtp-${this.stackName}`,
+                description: 'SES SMTP credentials for SkyCMS',
+                secretObjectValue: {
+                    username: cdk.SecretValue.unsafePlainText(sesAccessKeys.accessKeyId),
+                    password: cdk.SecretValue.unsafePlainText(sesAccessKeys.smtpPassword),
+                    host: cdk.SecretValue.unsafePlainText(sesSmtpHost),
+                    port: cdk.SecretValue.unsafePlainText(sesSmtpPort),
+                },
+            });
+            containerEnvironment.SmtpEmailProviderOptions__Host = sesSmtpHost;
+            containerEnvironment.SmtpEmailProviderOptions__Port = sesSmtpPort;
+            containerEnvironment.SmtpEmailProviderOptions__UserName = sesAccessKeys.accessKeyId;
+            containerEnvironment.SmtpEmailProviderOptions__UsesSsl = 'false'; // SES uses STARTTLS on 587
+            if (sesSenderEmail) {
+                containerEnvironment.AdminEmail = sesSenderEmail;
+            }
+            containerSecrets.SmtpEmailProviderOptions__Password = ecs.Secret.fromSecretsManager(sesSecret, 'password');
+        }
         // Add CosmosPublisherUrl and CloudFront config if Publisher is deployed
         if (deployPublisher && publisherDistribution) {
             const publisherUrl = publisherDomainName
                 ? `https://${publisherDomainName}`
                 : `https://${publisherDistribution.distributionDomainName}`;
             containerEnvironment.CosmosPublisherUrl = publisherUrl;
-            // Store the CloudFront secret ARN as an environment variable for the startup service to read
+            // Surface the CloudFront config JSON to the app via an ECS secret-backed env var (matches SetupService expectation)
             if (cloudFrontSecret) {
-                containerEnvironment.CloudFrontConfig = cloudFrontSecret.secretArn;
-                // Grant task role permission to read CloudFront secret
-                cloudFrontSecret.grantRead(taskDefinition.taskRole);
+                containerSecrets.CloudFrontConfig = ecs.Secret.fromSecretsManager(cloudFrontSecret);
             }
         }
         const container = taskDefinition.addContainer('web', {
@@ -365,8 +402,6 @@ class SkyCmsEditorStack extends cdk.Stack {
         }
         // Allow ECS to connect to RDS
         dbSecurityGroup.addIngressRule(securityGroup, ec2.Port.tcp(3306), 'Allow MySQL from ECS');
-        // Allow temporary access from anywhere for MySQL Workbench (dev only)
-        dbSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(3306), 'Temporary: Allow MySQL from anywhere for development');
         // Allow ALB to reach ECS tasks on port 8080
         securityGroup.addIngressRule(ec2.Peer.securityGroupId(albSg.securityGroupId), ec2.Port.tcp(8080), 'Allow HTTP from ALB to container port 8080');
         // CloudFront Distribution with HTTPS (auto-generated SSL certificate)
@@ -443,6 +478,24 @@ class SkyCmsEditorStack extends cdk.Stack {
             value: `https://${distribution.domainName}`,
             description: 'SkyCMS Editor URL (CloudFront with TLS)',
         });
+        if (sesEnabled) {
+            new cdk.CfnOutput(this, 'SESSmtpUsername', {
+                value: containerEnvironment.SmtpEmailProviderOptions__UserName,
+                description: 'SES SMTP username (Access Key ID)',
+            });
+            new cdk.CfnOutput(this, 'SESSmtpPasswordSecretArn', {
+                value: sesSecret?.secretArn ?? '',
+                description: 'Secret ARN containing SES SMTP password (JSON field: password)',
+            });
+            new cdk.CfnOutput(this, 'SESSmtpHost', {
+                value: sesSmtpHost,
+                description: 'SES SMTP host',
+            });
+            new cdk.CfnOutput(this, 'SESSmtpPort', {
+                value: sesSmtpPort,
+                description: 'SES SMTP port',
+            });
+        }
         new cdk.CfnOutput(this, 'ALBDomainName', {
             value: alb.loadBalancerDnsName,
             description: 'ALB DNS Name (for debugging)',

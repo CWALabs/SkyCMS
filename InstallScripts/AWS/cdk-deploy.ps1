@@ -74,44 +74,12 @@ if ($DeployPublisher) {
 
 Write-Host ""
 Write-Host "--- Email (Amazon SES SMTP) ---" -ForegroundColor Cyan
-$EnableSes = Prompt-YesNo "Configure Amazon SES SMTP for the Editor?" $false
+$EnableSes = Prompt-YesNo "Configure Amazon SES SMTP for the Editor?" $true
 $SesSenderEmail = ""
-$SesSmtpUsername = ""
-$SesSmtpPasswordSecretArn = ""
-$SesSmtpSecretName = ""
 if ($EnableSes) {
   $SesSenderEmail = Prompt-WithDefault "Sender email (must be verified in SES; can be an email identity if you don't have a domain)" "admin@example.com"
-  $SesSmtpUsername = Prompt-WithDefault "SES SMTP username" ""
-  $SesSmtpSecretName = Prompt-WithDefault "Secrets Manager name for SES SMTP password" "skycms-ses-smtp-password-$StackName"
-  $existingSesArn = Prompt-WithDefault "Existing SES SMTP password secret ARN (leave blank to create/update by name)" ""
-
-  $sesPasswordSecure = Read-Host "SES SMTP password (will be stored in Secrets Manager and not logged)" -AsSecureString
-  $sesPasswordPlain = [Runtime.InteropServices.Marshal]::PtrToStringUni([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sesPasswordSecure))
-
-  if (-not [string]::IsNullOrWhiteSpace($existingSesArn)) {
-    $SesSmtpPasswordSecretArn = $existingSesArn
-    aws secretsmanager put-secret-value --secret-id $SesSmtpPasswordSecretArn --region $Region --secret-string $sesPasswordPlain | Out-Null
-  }
-  else {
-    $SesSmtpPasswordSecretArn = aws secretsmanager describe-secret --secret-id $SesSmtpSecretName --region $Region --query ARN --output text 2>$null
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($SesSmtpPasswordSecretArn)) {
-      aws secretsmanager put-secret-value --secret-id $SesSmtpPasswordSecretArn --region $Region --secret-string $sesPasswordPlain | Out-Null
-    }
-    else {
-      $SesSmtpPasswordSecretArn = aws secretsmanager create-secret --name $SesSmtpSecretName --region $Region --secret-string $sesPasswordPlain --query ARN --output text
-    }
-  }
-
-  # clear plaintext from memory
-  $sesPasswordPlain = $null
-
-  if ([string]::IsNullOrWhiteSpace($SesSmtpUsername) -or [string]::IsNullOrWhiteSpace($SesSmtpPasswordSecretArn)) {
-    Write-Host "SES configuration incomplete; skipping SES wiring." -ForegroundColor Yellow
-    $EnableSes = $false
-  }
-  else {
-    Write-Host "Reminder: Verify the sender identity in SES. If your account is in sandbox, recipients must also be verified or you need to request production access." -ForegroundColor Gray
-  }
+  Write-Host "SES SMTP credentials will be auto-provisioned by the CDK stack (no manual entry required)." -ForegroundColor Gray
+  Write-Host "Reminder: Verify the sender identity in SES. If your account is in sandbox, recipients must also be verified or you need to request production access." -ForegroundColor Gray
 }
 
 Write-Host ""
@@ -183,7 +151,7 @@ try {
   if ($HostedZoneId) { $bootstrapCtx += @("--context", "hostedZoneId=$HostedZoneId") }
   if ($HostedZoneName) { $bootstrapCtx += @("--context", "hostedZoneName=$HostedZoneName") }
   if ($EnableSes) {
-    $bootstrapCtx += @("--context", "sesEnabled=true", "--context", "sesSenderEmail=$SesSenderEmail", "--context", "sesSmtpUsername=$SesSmtpUsername", "--context", "sesSmtpPasswordSecretArn=$SesSmtpPasswordSecretArn", "--context", "sesSmtpHost=email-smtp.$Region.amazonaws.com", "--context", "sesSmtpPort=587")
+    $bootstrapCtx += @("--context", "sesEnabled=true", "--context", "sesSenderEmail=$SesSenderEmail")
   }
   if ($DeployPublisher) { 
     $bootstrapCtx += @("--context", "deployPublisher=true") 
@@ -201,7 +169,7 @@ try {
   if ($HostedZoneId) { $synthCtx += @("--context", "hostedZoneId=$HostedZoneId") }
   if ($HostedZoneName) { $synthCtx += @("--context", "hostedZoneName=$HostedZoneName") }
   if ($EnableSes) {
-    $synthCtx += @("--context", "sesEnabled=true", "--context", "sesSenderEmail=$SesSenderEmail", "--context", "sesSmtpUsername=$SesSmtpUsername", "--context", "sesSmtpPasswordSecretArn=$SesSmtpPasswordSecretArn", "--context", "sesSmtpHost=email-smtp.$Region.amazonaws.com", "--context", "sesSmtpPort=587")
+    $synthCtx += @("--context", "sesEnabled=true", "--context", "sesSenderEmail=$SesSenderEmail")
   }
   if ($DeployPublisher) { 
     $synthCtx += @("--context", "deployPublisher=true") 
@@ -225,7 +193,7 @@ try {
   if ($HostedZoneId) { $deployCtx += @("--context", "hostedZoneId=$HostedZoneId") }
   if ($HostedZoneName) { $deployCtx += @("--context", "hostedZoneName=$HostedZoneName") }
   if ($EnableSes) {
-    $deployCtx += @("--context", "sesEnabled=true", "--context", "sesSenderEmail=$SesSenderEmail", "--context", "sesSmtpUsername=$SesSmtpUsername", "--context", "sesSmtpPasswordSecretArn=$SesSmtpPasswordSecretArn", "--context", "sesSmtpHost=email-smtp.$Region.amazonaws.com", "--context", "sesSmtpPort=587")
+    $deployCtx += @("--context", "sesEnabled=true", "--context", "sesSenderEmail=$SesSenderEmail")
   }
   node $cdkBin deploy $StackName $deployCtx
   if ($LASTEXITCODE -ne 0) { throw "cdk deploy failed" }
@@ -238,6 +206,18 @@ try {
   $dbSecretArn   = ($stackOutputs | Where-Object { $_.OutputKey -eq "DatabaseCredentialsSecret" }).OutputValue
   $dbSgId        = ($stackOutputs | Where-Object { $_.OutputKey -eq "DbSecurityGroupId" }).OutputValue
   $mysqlConnOut  = ($stackOutputs | Where-Object { $_.OutputKey -eq "MySqlConnectionString" }).OutputValue
+  $sesSmtpUsername = ""
+  $sesSmtpPasswordSecretArn = ""
+  $sesSmtpHostOut = ""
+  $sesSmtpPortOut = ""
+  if ($EnableSes) {
+    $sesSmtpUsername = ($stackOutputs | Where-Object { $_.OutputKey -eq "SESSmtpUsername" }).OutputValue
+    $sesSmtpPasswordSecretArn = ($stackOutputs | Where-Object { $_.OutputKey -eq "SESSmtpPasswordSecretArn" }).OutputValue
+    $sesSmtpHostOut = ($stackOutputs | Where-Object { $_.OutputKey -eq "SESSmtpHost" }).OutputValue
+    $sesSmtpPortOut = ($stackOutputs | Where-Object { $_.OutputKey -eq "SESSmtpPort" }).OutputValue
+    if (-not $sesSmtpHostOut) { $sesSmtpHostOut = "email-smtp.$Region.amazonaws.com" }
+    if (-not $sesSmtpPortOut) { $sesSmtpPortOut = "587" }
+  }
   
   # Publisher outputs (if deployed)
   if ($DeployPublisher) {
@@ -368,11 +348,16 @@ try {
 
   if ($EnableSes) {
     Write-Host "📧 EMAIL (Amazon SES SMTP)" -ForegroundColor Yellow
-    Write-Host "  SMTP Host:             email-smtp.$Region.amazonaws.com" -ForegroundColor White
-    Write-Host "  SMTP Port:             587" -ForegroundColor White
-    Write-Host "  SMTP Username:         $SesSmtpUsername" -ForegroundColor White
-    Write-Host "  SMTP Password Secret:  $SesSmtpPasswordSecretArn" -ForegroundColor Gray
-    Write-Host "  Sender Email:          $SesSenderEmail" -ForegroundColor White
+    if (-not $sesSmtpUsername) {
+      Write-Host "  ⚠️  SES outputs not found; check CloudFormation outputs or ensure sesEnabled context was true." -ForegroundColor Yellow
+    } else {
+      Write-Host "  SMTP Host:             $sesSmtpHostOut" -ForegroundColor White
+      Write-Host "  SMTP Port:             $sesSmtpPortOut" -ForegroundColor White
+      Write-Host "  SMTP Username:         $sesSmtpUsername" -ForegroundColor White
+      Write-Host "  SMTP Password Secret:  $sesSmtpPasswordSecretArn" -ForegroundColor Gray
+      Write-Host "  Sender Email:          $SesSenderEmail" -ForegroundColor White
+      Write-Host "  The secret JSON has a 'password' field usable as the SMTP password." -ForegroundColor Gray
+    }
     Write-Host "  Note: Verify sender identity in SES and leave sandbox for production sending." -ForegroundColor Gray
     Write-Host ""
   }
