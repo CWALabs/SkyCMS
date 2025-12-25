@@ -121,7 +121,7 @@
                 </small>
             </div>
 
-            <div class="form-check mb-3">
+            <div class="form-check mb-3" style="display:none;">
                 <div id="cosmosRequiresAuthenticationAlert" class="alert alert-primary" role="alert" style="display:none;">
                     Authentication requirement is already set and cannot be changed.
                 </div>
@@ -204,7 +204,7 @@
             var form = $('#publisherForm');
 
             if (isPreConfigured) {
-                $('#PublisherUrl').prop('disabled', true);
+                $('#PublisherUrl').prop('readonly', true).addClass('bg-secondary');
                 $('#publisherUrlAlert').show();
             }
             

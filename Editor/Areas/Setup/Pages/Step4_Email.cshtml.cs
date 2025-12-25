@@ -12,6 +12,7 @@ namespace Sky.Editor.Areas.Setup.Pages
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.RazorPages;
+    using Microsoft.Extensions.Logging;
     using Sky.Editor.Services.Setup;
 
     /// <summary>
@@ -21,16 +22,19 @@ namespace Sky.Editor.Areas.Setup.Pages
     {
         private readonly ISetupService setupService;
         private readonly ISetupCheckService setupCheckService;
+        private readonly ILogger<Step4_Email> logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Step4_Email"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
         /// <param name="setupCheckService">Setup check service.</param>
-        public Step4_Email(ISetupService setupService, ISetupCheckService setupCheckService)
+        /// <param name="logger">Logger.</param>
+        public Step4_Email(ISetupService setupService, ISetupCheckService setupCheckService, ILogger<Step4_Email> logger)
         {
             this.setupService = setupService;
             this.setupCheckService = setupCheckService;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -174,21 +178,26 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Page result.</returns>
         public async Task<IActionResult> OnPostTestEmailAsync()
         {
+            logger.LogInformation("Step4_Email POST TestEmail - EmailProvider: {Provider}, SenderEmail: {Email}", 
+                EmailProvider, SenderEmail);
+
             // Check if setup has been completed
             if (await setupCheckService.IsSetup())
             {
-                // Redirect to setup page
+                logger.LogWarning("Step4_Email POST TestEmail - Setup already completed, redirecting to home");
                 Response.Redirect("/");
             }
 
             if (string.IsNullOrEmpty(EmailProvider))
             {
+                logger.LogError("Step4_Email POST TestEmail - No email provider selected");
                 ErrorMessage = "Please select an email provider";
                 return Page();
             }
 
             if (string.IsNullOrEmpty(SenderEmail))
             {
+                logger.LogError("Step4_Email POST TestEmail - No sender email provided");
                 ErrorMessage = "Please enter a sender email address to test email configuration";
                 return Page();
             }
@@ -222,6 +231,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                 ErrorMessage = string.Empty;
                 SuccessMessage = string.Empty;
 
+                logger.LogInformation("Step4_Email POST TestEmail - Testing email configuration");
                 TestResult = await setupService.TestEmailConfigAsync(
                     EmailProvider,
                     SendGridApiKey,
@@ -231,17 +241,23 @@ namespace Sky.Editor.Areas.Setup.Pages
                     SmtpUsername,
                     SmtpPassword,
                     SenderEmail,
-                    config.SenderEmail); // Send to admin email
+                    config.SenderEmail);
 
                 if (TestResult.Success)
                 {
+                    logger.LogInformation("Step4_Email POST TestEmail - Test email sent successfully");
                     SuccessMessage = "Test email sent successfully! Check your inbox.";
+                }
+                else
+                {
+                    logger.LogError("Step4_Email POST TestEmail - Test email failed: {Message}", TestResult.Message);
                 }
 
                 return Page();
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Step4_Email POST TestEmail - Exception during email test");
                 TestResult = new TestResult
                 {
                     Success = false,
@@ -257,10 +273,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to next step.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            logger.LogInformation("Step4_Email POST - SetupId: {SetupId}, EmailProvider: {Provider}, SenderEmail: {Email}", 
+                SetupId, EmailProvider, SenderEmail);
+
             // Check if setup has been completed
             if (await setupCheckService.IsSetup())
             {
-                // Redirect to setup page
+                logger.LogWarning("Step4_Email POST - Setup already completed, redirecting to home");
                 Response.Redirect("/");
             }
 
@@ -270,7 +289,7 @@ namespace Sky.Editor.Areas.Setup.Pages
 
                 if (config.EmailProviderPreConfigured)
                 {
-                    // If pre-configured, retain existing settings
+                    logger.LogInformation("Step4_Email POST - Using pre-configured email settings");
                     SendGridApiKey = config.SendGridApiKey;
                     AzureEmailConnectionString = config.AzureEmailConnectionString;
                     SmtpHost = config.SmtpHost;
@@ -279,7 +298,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                     SmtpPassword = config.SmtpPassword;
                 }
 
-                // Email is optional, so we don't validate
+                logger.LogInformation("Step4_Email POST - Saving email configuration");
                 await setupService.UpdateEmailConfigAsync(
                     SetupId,
                     EmailProvider,
@@ -291,11 +310,13 @@ namespace Sky.Editor.Areas.Setup.Pages
                     SmtpPassword);
 
                 await setupService.UpdateStepAsync(SetupId, 4);
-
-                return RedirectToPage("./Step5_Cdn"); // Changed from ./Step5_Review
+                
+                logger.LogInformation("Step4_Email POST - Successfully completed Step4, redirecting to Step5");
+                return RedirectToPage("./Step5_Cdn");
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Step4_Email POST - Failed to save email configuration");
                 ErrorMessage = $"Failed to save email configuration: {ex.Message}";
                 return Page();
             }

@@ -162,16 +162,17 @@
             var isPreConfigured = @Model.IsPreConfigured.ToString().ToLower();
             var isSenderEmailPreConfigured = @Model.SystemEmailPreConfigured.ToString().ToLower();
 
-            if (isSenderEmailPreConfigured) {
-                $('#SenderEmail').prop('disabled', true);
-                $('#senderEmailAlert').show();
-            }
-
             if (isPreConfigured) {
-                $('#sendGridOptions input, #sendGridOptions textarea, #azureCommOptions input, #azureCommOptions textarea, #smtpOptions input, #smtpOptions textarea, #emailProviderSelect').prop('disabled', true);
+                $('#sendGridOptions input, #sendGridOptions textarea, #azureCommOptions input, #azureCommOptions textarea, #smtpOptions input, #smtpOptions textarea, #emailProviderSelect').prop('readonly', true);
                 $('#emailProviderAlert').show();
                 // Disable all inputs
-                $('input, select, textarea', form).prop('disabled', true);
+            }
+
+            if (isSenderEmailPreConfigured) {
+                $('#SenderEmail').prop('readonly', true);
+                $('#senderEmailAlert').show();
+            } else {
+                $('#SenderEmail').prop('readonly', false);
             }
 
             // Configure validation

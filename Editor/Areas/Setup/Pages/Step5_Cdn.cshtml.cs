@@ -12,6 +12,7 @@ namespace Sky.Editor.Areas.Setup.Pages
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.RazorPages;
+    using Microsoft.Extensions.Logging;
     using Sky.Editor.Services.Setup;
 
     /// <summary>
@@ -21,16 +22,19 @@ namespace Sky.Editor.Areas.Setup.Pages
     {
         private readonly ISetupService setupService;
         private readonly ISetupCheckService setupCheckService;
+        private readonly ILogger<Step5_Cdn> logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Step5_Cdn"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
         /// <param name="setupCheckService">Setup check service.</param>
-        public Step5_Cdn(ISetupService setupService, ISetupCheckService setupCheckService)
+        /// <param name="logger">Logger.</param>
+        public Step5_Cdn(ISetupService setupService, ISetupCheckService setupCheckService, ILogger<Step5_Cdn> logger)
         {
             this.setupService = setupService;
             this.setupCheckService = setupCheckService;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -242,10 +246,13 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to next step.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            logger.LogInformation("Step5_Cdn POST - SetupId: {SetupId}, SelectedProvider: {Provider}", 
+                SetupId, SelectedProvider);
+
             // Check if setup has been completed
             if (await setupCheckService.IsSetup())
             {
-                // Redirect to setup page
+                logger.LogWarning("Step5_Cdn POST - Setup already completed, redirecting to home");
                 Response.Redirect("/");
             }
 
@@ -259,6 +266,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                         string.IsNullOrEmpty(AzureProfileName) ||
                         string.IsNullOrEmpty(AzureEndpointName))
                     {
+                        logger.LogError("Step5_Cdn POST - Azure CDN validation failed - missing required fields");
                         ErrorMessage = "All Azure CDN fields are required when Azure is selected.";
                         return Page();
                     }
@@ -268,6 +276,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                     if (string.IsNullOrEmpty(CloudflareApiToken) ||
                         string.IsNullOrEmpty(CloudflareZoneId))
                     {
+                        logger.LogError("Step5_Cdn POST - Cloudflare validation failed - missing required fields");
                         ErrorMessage = "Both Cloudflare API Token and Zone ID are required.";
                         return Page();
                     }
@@ -279,6 +288,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                         string.IsNullOrEmpty(CloudFrontDistributionId) ||
                         string.IsNullOrEmpty(CloudFrontRegion))
                     {
+                        logger.LogError("Step5_Cdn POST - CloudFront validation failed - missing required fields");
                         ErrorMessage = "All CloudFront fields are required when CloudFront is selected.";
                         return Page();
                     }
@@ -288,12 +298,13 @@ namespace Sky.Editor.Areas.Setup.Pages
                     if (string.IsNullOrEmpty(SucuriApiKey) ||
                         string.IsNullOrEmpty(SucuriApiSecret))
                     {
+                        logger.LogError("Step5_Cdn POST - Sucuri validation failed - missing required fields");
                         ErrorMessage = "Both Sucuri API Key and API Secret are required.";
                         return Page();
                     }
                 }
 
-                // Save CDN configuration (may be empty if "None" selected)
+                logger.LogInformation("Step5_Cdn POST - Saving CDN configuration for provider: {Provider}", SelectedProvider);
                 await setupService.UpdateCdnConfigAsync(
                     SetupId,
                     SelectedProvider == "Azure" ? AzureSubscriptionId : string.Empty,
@@ -311,11 +322,13 @@ namespace Sky.Editor.Areas.Setup.Pages
                     SelectedProvider == "Cloudfront" ? CloudFrontRegion : string.Empty);
 
                 await setupService.UpdateStepAsync(SetupId, 5);
-
-                return RedirectToPage("./Step6_Review"); // ✅ FIX: Changed from ./Step5a_Cdn
+                
+                logger.LogInformation("Step5_Cdn POST - Successfully completed Step5, redirecting to Step6");
+                return RedirectToPage("./Step6_Review");
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Step5_Cdn POST - Failed to save CDN configuration");
                 ErrorMessage = $"Failed to save CDN configuration: {ex.Message}";
                 return Page();
             }
@@ -327,18 +340,20 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to next step.</returns>
         public async Task<IActionResult> OnPostSkipAsync()
         {
+            logger.LogInformation("Step5_Cdn POST Skip - Skipping CDN configuration");
+
             try
             {
-                // ✅ ADD THIS: Ensure we have a valid SetupId
                 var config = await setupService.GetCurrentSetupAsync();
                 if (config == null)
                 {
+                    logger.LogError("Step5_Cdn POST Skip - No current setup configuration found");
                     return RedirectToPage("./Index");
                 }
 
                 SetupId = config.Id;
 
-                // Clear any existing CDN configuration
+                logger.LogInformation("Step5_Cdn POST Skip - Clearing CDN configuration");
                 await setupService.UpdateCdnConfigAsync(
                     SetupId,
                     string.Empty,
@@ -356,11 +371,13 @@ namespace Sky.Editor.Areas.Setup.Pages
                     string.Empty);
 
                 await setupService.UpdateStepAsync(SetupId, 5);
-
-                return RedirectToPage("./Step6_Review"); // ✅ FIX: Changed from ./Step5a_Cdn
+                
+                logger.LogInformation("Step5_Cdn POST Skip - Successfully skipped Step5, redirecting to Step6");
+                return RedirectToPage("./Step6_Review");
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Step5_Cdn POST Skip - Failed to skip CDN configuration");
                 ErrorMessage = $"Failed to skip CDN configuration: {ex.Message}";
                 return Page();
             }

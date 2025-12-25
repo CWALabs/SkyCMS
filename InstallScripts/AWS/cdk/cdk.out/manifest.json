@@ -1,28 +1,28 @@
 {
   "version": "48.0.0",
   "artifacts": {
-    "SkyCMS-Stack.assets": {
+    "SkyCMS-Stack-2.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "SkyCMS-Stack.assets.json",
+        "file": "SkyCMS-Stack-2.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "SkyCMS-Stack": {
+    "SkyCMS-Stack-2": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://873764251532/us-east-1",
       "properties": {
-        "templateFile": "SkyCMS-Stack.template.json",
+        "templateFile": "SkyCMS-Stack-2.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-deploy-role-873764251532-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-cfn-exec-role-873764251532-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/7a847b238e536e90ad0170e9b9bf464cf374124dcbf67f584a4729db04f42865.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/c3520d2b1fdf4cf6f1263fd5781bc1f43d0412b321fb08a6cd6b65ccbd4cfd5c.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "SkyCMS-Stack.assets"
+          "SkyCMS-Stack-2.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-lookup-role-873764251532-us-east-1",
@@ -31,581 +31,581 @@
         }
       },
       "dependencies": [
-        "SkyCMS-Stack.assets"
+        "SkyCMS-Stack-2.assets"
       ],
       "metadata": {
-        "/SkyCMS-Stack/PublisherBucket/Resource": [
+        "/SkyCMS-Stack-2/PublisherBucket/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PublisherBucket8AEE464F"
           }
         ],
-        "/SkyCMS-Stack/PublisherBucket/Policy/Resource": [
+        "/SkyCMS-Stack-2/PublisherBucket/Policy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PublisherBucketPolicy5240CEDE"
           }
         ],
-        "/SkyCMS-Stack/PublisherBucket/AutoDeleteObjectsCustomResource/Default": [
+        "/SkyCMS-Stack-2/PublisherBucket/AutoDeleteObjectsCustomResource/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PublisherBucketAutoDeleteObjectsCustomResource3FFEAD3E"
           }
         ],
-        "/SkyCMS-Stack/Custom::S3AutoDeleteObjectsCustomResourceProvider": [
+        "/SkyCMS-Stack-2/Custom::S3AutoDeleteObjectsCustomResourceProvider": [
           {
             "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
             "data": true
           }
         ],
-        "/SkyCMS-Stack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+        "/SkyCMS-Stack-2/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
           }
         ],
-        "/SkyCMS-Stack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+        "/SkyCMS-Stack-2/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
           }
         ],
-        "/SkyCMS-Stack/PublisherOAI/Resource": [
+        "/SkyCMS-Stack-2/PublisherOAI/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PublisherOAIBD5FCC28"
           }
         ],
-        "/SkyCMS-Stack/PublisherDistribution/Resource": [
+        "/SkyCMS-Stack-2/PublisherDistribution/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PublisherDistributionAE0015D7"
           }
         ],
-        "/SkyCMS-Stack/S3PublisherUser/Resource": [
+        "/SkyCMS-Stack-2/S3PublisherUser/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "S3PublisherUser8A0F3D78"
           }
         ],
-        "/SkyCMS-Stack/S3PublisherUser/DefaultPolicy/Resource": [
+        "/SkyCMS-Stack-2/S3PublisherUser/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "S3PublisherUserDefaultPolicy581A6040"
           }
         ],
-        "/SkyCMS-Stack/AccessKeys/OnEventHandlerLogGroup/Resource": [
+        "/SkyCMS-Stack-2/AccessKeys/OnEventHandlerLogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AccessKeysOnEventHandlerLogGroupEB41E3EC"
           }
         ],
-        "/SkyCMS-Stack/AccessKeys/OnEventHandler/ServiceRole/Resource": [
+        "/SkyCMS-Stack-2/AccessKeys/OnEventHandler/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AccessKeysOnEventHandlerServiceRole174F6939"
           }
         ],
-        "/SkyCMS-Stack/AccessKeys/OnEventHandler/ServiceRole/DefaultPolicy/Resource": [
+        "/SkyCMS-Stack-2/AccessKeys/OnEventHandler/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AccessKeysOnEventHandlerServiceRoleDefaultPolicyB0833E81"
           }
         ],
-        "/SkyCMS-Stack/AccessKeys/OnEventHandler/Resource": [
+        "/SkyCMS-Stack-2/AccessKeys/OnEventHandler/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AccessKeysOnEventHandler5DFC3933"
           }
         ],
-        "/SkyCMS-Stack/AccessKeys/Provider/framework-onEvent/ServiceRole/Resource": [
+        "/SkyCMS-Stack-2/AccessKeys/Provider/framework-onEvent/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AccessKeysProviderframeworkonEventServiceRole4EB63CC5"
           }
         ],
-        "/SkyCMS-Stack/AccessKeys/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
+        "/SkyCMS-Stack-2/AccessKeys/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AccessKeysProviderframeworkonEventServiceRoleDefaultPolicy91453613"
           }
         ],
-        "/SkyCMS-Stack/AccessKeys/Provider/framework-onEvent/Resource": [
+        "/SkyCMS-Stack-2/AccessKeys/Provider/framework-onEvent/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AccessKeysProviderframeworkonEvent5C59120E"
           }
         ],
-        "/SkyCMS-Stack/AccessKeys/Resource/Default": [
+        "/SkyCMS-Stack-2/AccessKeys/Resource/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AccessKeys520E7252"
           }
         ],
-        "/SkyCMS-Stack/StorageSecret/Resource": [
+        "/SkyCMS-Stack-2/StorageSecret/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "StorageSecretA45921CE"
           }
         ],
-        "/SkyCMS-Stack/CloudFrontSecret/Resource": [
+        "/SkyCMS-Stack-2/CloudFrontSecret/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CloudFrontSecret33A40E9F"
           }
         ],
-        "/SkyCMS-Stack/PublisherBucketName": [
+        "/SkyCMS-Stack-2/PublisherBucketName": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PublisherBucketName"
           }
         ],
-        "/SkyCMS-Stack/PublisherCloudFrontURL": [
+        "/SkyCMS-Stack-2/PublisherCloudFrontURL": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PublisherCloudFrontURL"
           }
         ],
-        "/SkyCMS-Stack/CloudFrontConfigSecret": [
+        "/SkyCMS-Stack-2/CloudFrontConfigSecret": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CloudFrontConfigSecret"
           }
         ],
-        "/SkyCMS-Stack/StorageSecretArn": [
+        "/SkyCMS-Stack-2/StorageSecretArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "StorageSecretArn"
           }
         ],
-        "/SkyCMS-Stack/Vpc/Resource": [
+        "/SkyCMS-Stack-2/Vpc/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Vpc8378EB38"
           }
         ],
-        "/SkyCMS-Stack/Vpc/PublicSubnet1/Subnet": [
+        "/SkyCMS-Stack-2/Vpc/PublicSubnet1/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcPublicSubnet1Subnet5C2D37C4"
           }
         ],
-        "/SkyCMS-Stack/Vpc/PublicSubnet1/RouteTable": [
+        "/SkyCMS-Stack-2/Vpc/PublicSubnet1/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcPublicSubnet1RouteTable6C95E38E"
           }
         ],
-        "/SkyCMS-Stack/Vpc/PublicSubnet1/RouteTableAssociation": [
+        "/SkyCMS-Stack-2/Vpc/PublicSubnet1/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcPublicSubnet1RouteTableAssociation97140677"
           }
         ],
-        "/SkyCMS-Stack/Vpc/PublicSubnet1/DefaultRoute": [
+        "/SkyCMS-Stack-2/Vpc/PublicSubnet1/DefaultRoute": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcPublicSubnet1DefaultRoute3DA9E72A"
           }
         ],
-        "/SkyCMS-Stack/Vpc/PublicSubnet2/Subnet": [
+        "/SkyCMS-Stack-2/Vpc/PublicSubnet2/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcPublicSubnet2Subnet691E08A3"
           }
         ],
-        "/SkyCMS-Stack/Vpc/PublicSubnet2/RouteTable": [
+        "/SkyCMS-Stack-2/Vpc/PublicSubnet2/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcPublicSubnet2RouteTable94F7E489"
           }
         ],
-        "/SkyCMS-Stack/Vpc/PublicSubnet2/RouteTableAssociation": [
+        "/SkyCMS-Stack-2/Vpc/PublicSubnet2/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcPublicSubnet2RouteTableAssociationDD5762D8"
           }
         ],
-        "/SkyCMS-Stack/Vpc/PublicSubnet2/DefaultRoute": [
+        "/SkyCMS-Stack-2/Vpc/PublicSubnet2/DefaultRoute": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcPublicSubnet2DefaultRoute97F91067"
           }
         ],
-        "/SkyCMS-Stack/Vpc/IsolatedSubnet1/Subnet": [
+        "/SkyCMS-Stack-2/Vpc/IsolatedSubnet1/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcIsolatedSubnet1SubnetE48C5737"
           }
         ],
-        "/SkyCMS-Stack/Vpc/IsolatedSubnet1/RouteTable": [
+        "/SkyCMS-Stack-2/Vpc/IsolatedSubnet1/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcIsolatedSubnet1RouteTable4771E3E5"
           }
         ],
-        "/SkyCMS-Stack/Vpc/IsolatedSubnet1/RouteTableAssociation": [
+        "/SkyCMS-Stack-2/Vpc/IsolatedSubnet1/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcIsolatedSubnet1RouteTableAssociationD300FCBB"
           }
         ],
-        "/SkyCMS-Stack/Vpc/IsolatedSubnet2/Subnet": [
+        "/SkyCMS-Stack-2/Vpc/IsolatedSubnet2/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcIsolatedSubnet2Subnet16364B91"
           }
         ],
-        "/SkyCMS-Stack/Vpc/IsolatedSubnet2/RouteTable": [
+        "/SkyCMS-Stack-2/Vpc/IsolatedSubnet2/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcIsolatedSubnet2RouteTable1D30AF7D"
           }
         ],
-        "/SkyCMS-Stack/Vpc/IsolatedSubnet2/RouteTableAssociation": [
+        "/SkyCMS-Stack-2/Vpc/IsolatedSubnet2/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcIsolatedSubnet2RouteTableAssociationF7B18CCA"
           }
         ],
-        "/SkyCMS-Stack/Vpc/IGW": [
+        "/SkyCMS-Stack-2/Vpc/IGW": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcIGWD7BA715C"
           }
         ],
-        "/SkyCMS-Stack/Vpc/VPCGW": [
+        "/SkyCMS-Stack-2/Vpc/VPCGW": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcVPCGWBF912B6E"
           }
         ],
-        "/SkyCMS-Stack/Cluster/Resource": [
+        "/SkyCMS-Stack-2/Cluster/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ClusterEB0386A7"
           }
         ],
-        "/SkyCMS-Stack/DbParameterGroup/Resource": [
+        "/SkyCMS-Stack-2/DbParameterGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DbParameterGroupD5340A4D"
           }
         ],
-        "/SkyCMS-Stack/DbCredentials/Resource": [
+        "/SkyCMS-Stack-2/DbCredentials/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DbCredentials798065DE"
           }
         ],
-        "/SkyCMS-Stack/DbCredentials/Attachment/Resource": [
+        "/SkyCMS-Stack-2/DbCredentials/Attachment/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DbCredentialsAttachmentD2151D4F"
           }
         ],
-        "/SkyCMS-Stack/DbSg/Resource": [
+        "/SkyCMS-Stack-2/DbSg/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DbSg495F8305"
           }
         ],
-        "/SkyCMS-Stack/DbSg/from SkyCMSStackServiceSg7527B025:3306": [
+        "/SkyCMS-Stack-2/DbSg/from SkyCMSStack2ServiceSg8D43A8C2:3306": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "DbSgfromSkyCMSStackServiceSg7527B0253306EF0CEF5E"
+            "data": "DbSgfromSkyCMSStack2ServiceSg8D43A8C23306292BC57E"
           }
         ],
-        "/SkyCMS-Stack/Database/SubnetGroup/Default": [
+        "/SkyCMS-Stack-2/Database/SubnetGroup/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseSubnetGroup7D60F180"
           }
         ],
-        "/SkyCMS-Stack/Database/Resource": [
+        "/SkyCMS-Stack-2/Database/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseB269D8BB"
           }
         ],
-        "/SkyCMS-Stack/DbConnectionStringSecret/Resource": [
+        "/SkyCMS-Stack-2/DbConnectionStringSecret/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DbConnectionStringSecret21A439BA"
           }
         ],
-        "/SkyCMS-Stack/TaskDef/TaskRole/Resource": [
+        "/SkyCMS-Stack-2/TaskDef/TaskRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "TaskDefTaskRole1EDB4A67"
           }
         ],
-        "/SkyCMS-Stack/TaskDef/Resource": [
+        "/SkyCMS-Stack-2/TaskDef/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "TaskDef54694570"
           }
         ],
-        "/SkyCMS-Stack/TaskDef/ExecutionRole/Resource": [
+        "/SkyCMS-Stack-2/TaskDef/ExecutionRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "TaskDefExecutionRoleB4775C97"
           }
         ],
-        "/SkyCMS-Stack/TaskDef/ExecutionRole/DefaultPolicy/Resource": [
+        "/SkyCMS-Stack-2/TaskDef/ExecutionRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "TaskDefExecutionRoleDefaultPolicy0DBB737A"
           }
         ],
-        "/SkyCMS-Stack/LogGroup/Resource": [
+        "/SkyCMS-Stack-2/LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LogGroupF5B46931"
           }
         ],
-        "/SkyCMS-Stack/SesSmtpUser/Resource": [
+        "/SkyCMS-Stack-2/SesSmtpUser/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesSmtpUser885C2183"
           }
         ],
-        "/SkyCMS-Stack/SesSmtpUser/DefaultPolicy/Resource": [
+        "/SkyCMS-Stack-2/SesSmtpUser/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesSmtpUserDefaultPolicyD79D0A7D"
           }
         ],
-        "/SkyCMS-Stack/SesAccessKeys/OnEventHandlerLogGroup/Resource": [
+        "/SkyCMS-Stack-2/SesAccessKeys/OnEventHandlerLogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesAccessKeysOnEventHandlerLogGroup53B70A58"
           }
         ],
-        "/SkyCMS-Stack/SesAccessKeys/OnEventHandler/ServiceRole/Resource": [
+        "/SkyCMS-Stack-2/SesAccessKeys/OnEventHandler/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesAccessKeysOnEventHandlerServiceRole1486803C"
           }
         ],
-        "/SkyCMS-Stack/SesAccessKeys/OnEventHandler/ServiceRole/DefaultPolicy/Resource": [
+        "/SkyCMS-Stack-2/SesAccessKeys/OnEventHandler/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesAccessKeysOnEventHandlerServiceRoleDefaultPolicy129B14E8"
           }
         ],
-        "/SkyCMS-Stack/SesAccessKeys/OnEventHandler/Resource": [
+        "/SkyCMS-Stack-2/SesAccessKeys/OnEventHandler/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesAccessKeysOnEventHandler65293497"
           }
         ],
-        "/SkyCMS-Stack/SesAccessKeys/Provider/framework-onEvent/ServiceRole/Resource": [
+        "/SkyCMS-Stack-2/SesAccessKeys/Provider/framework-onEvent/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesAccessKeysProviderframeworkonEventServiceRole34EFB0DC"
           }
         ],
-        "/SkyCMS-Stack/SesAccessKeys/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
+        "/SkyCMS-Stack-2/SesAccessKeys/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesAccessKeysProviderframeworkonEventServiceRoleDefaultPolicyC7340428"
           }
         ],
-        "/SkyCMS-Stack/SesAccessKeys/Provider/framework-onEvent/Resource": [
+        "/SkyCMS-Stack-2/SesAccessKeys/Provider/framework-onEvent/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesAccessKeysProviderframeworkonEventD6268E28"
           }
         ],
-        "/SkyCMS-Stack/SesAccessKeys/Resource/Default": [
+        "/SkyCMS-Stack-2/SesAccessKeys/Resource/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesAccessKeys3820088C"
           }
         ],
-        "/SkyCMS-Stack/SesSmtpSecret/Resource": [
+        "/SkyCMS-Stack-2/SesSmtpSecret/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SesSmtpSecretF615ED25"
           }
         ],
-        "/SkyCMS-Stack/ServiceSg/Resource": [
+        "/SkyCMS-Stack-2/ServiceSg/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ServiceSg2632F788"
           }
         ],
-        "/SkyCMS-Stack/ServiceSg/from SkyCMSStackALBSecurityGroupA35F33C9:8080": [
+        "/SkyCMS-Stack-2/ServiceSg/from SkyCMSStack2ALBSecurityGroupDFF97DFA:8080": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "ServiceSgfromSkyCMSStackALBSecurityGroupA35F33C98080D6928B92"
+            "data": "ServiceSgfromSkyCMSStack2ALBSecurityGroupDFF97DFA80801773DD84"
           }
         ],
-        "/SkyCMS-Stack/ALB/Resource": [
+        "/SkyCMS-Stack-2/ALB/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ALBAEE750D2"
           }
         ],
-        "/SkyCMS-Stack/ALB/SecurityGroup/Resource": [
+        "/SkyCMS-Stack-2/ALB/SecurityGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ALBSecurityGroup8B8624F8"
           }
         ],
-        "/SkyCMS-Stack/ALB/SecurityGroup/to SkyCMSStackServiceSg7527B025:8080": [
+        "/SkyCMS-Stack-2/ALB/SecurityGroup/to SkyCMSStack2ServiceSg8D43A8C2:8080": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "ALBSecurityGrouptoSkyCMSStackServiceSg7527B0258080AA234860"
+            "data": "ALBSecurityGrouptoSkyCMSStack2ServiceSg8D43A8C2808019345A16"
           }
         ],
-        "/SkyCMS-Stack/ALB/HttpListener/Resource": [
+        "/SkyCMS-Stack-2/ALB/HttpListener/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ALBHttpListener04CE8CD0"
           }
         ],
-        "/SkyCMS-Stack/ALB/HttpListener/EcsTargetGroup/Resource": [
+        "/SkyCMS-Stack-2/ALB/HttpListener/EcsTargetGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ALBHttpListenerEcsTargetGroupEC97BED8"
           }
         ],
-        "/SkyCMS-Stack/Service/Service": [
+        "/SkyCMS-Stack-2/Service/Service": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ServiceD69D759B"
           }
         ],
-        "/SkyCMS-Stack/OriginRequestPolicy/Resource": [
+        "/SkyCMS-Stack-2/OriginRequestPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "OriginRequestPolicy3EFDB4FA"
           }
         ],
-        "/SkyCMS-Stack/CloudFrontDist/Resource": [
+        "/SkyCMS-Stack-2/CloudFrontDist/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CloudFrontDist239A6E31"
           }
         ],
-        "/SkyCMS-Stack/ClusterName": [
+        "/SkyCMS-Stack-2/ClusterName": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ClusterName"
           }
         ],
-        "/SkyCMS-Stack/ServiceName": [
+        "/SkyCMS-Stack-2/ServiceName": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ServiceName"
           }
         ],
-        "/SkyCMS-Stack/LogGroupName": [
+        "/SkyCMS-Stack-2/LogGroupName": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LogGroupName"
           }
         ],
-        "/SkyCMS-Stack/Region": [
+        "/SkyCMS-Stack-2/Region": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Region"
           }
         ],
-        "/SkyCMS-Stack/DatabaseEndpoint": [
+        "/SkyCMS-Stack-2/DatabaseEndpoint": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseEndpoint"
           }
         ],
-        "/SkyCMS-Stack/DatabaseName": [
+        "/SkyCMS-Stack-2/DatabaseName": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseName"
           }
         ],
-        "/SkyCMS-Stack/DatabaseCredentialsSecret": [
+        "/SkyCMS-Stack-2/DatabaseCredentialsSecret": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseCredentialsSecret"
           }
         ],
-        "/SkyCMS-Stack/ConnectionStringSecret": [
+        "/SkyCMS-Stack-2/ConnectionStringSecret": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ConnectionStringSecret"
           }
         ],
-        "/SkyCMS-Stack/MySqlConnectionString": [
+        "/SkyCMS-Stack-2/MySqlConnectionString": [
           {
             "type": "aws:cdk:logicalId",
             "data": "MySqlConnectionString"
           }
         ],
-        "/SkyCMS-Stack/DbSecurityGroupId": [
+        "/SkyCMS-Stack-2/DbSecurityGroupId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DbSecurityGroupId"
           }
         ],
-        "/SkyCMS-Stack/CloudFrontURL": [
+        "/SkyCMS-Stack-2/CloudFrontURL": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CloudFrontURL"
           }
         ],
-        "/SkyCMS-Stack/SESSmtpUsername": [
+        "/SkyCMS-Stack-2/SESSmtpUsername": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SESSmtpUsername"
           }
         ],
-        "/SkyCMS-Stack/SESSmtpPasswordSecretArn": [
+        "/SkyCMS-Stack-2/SESSmtpPasswordSecretArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SESSmtpPasswordSecretArn"
           }
         ],
-        "/SkyCMS-Stack/SESSmtpHost": [
+        "/SkyCMS-Stack-2/SESSmtpHost": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SESSmtpHost"
           }
         ],
-        "/SkyCMS-Stack/SESSmtpPort": [
+        "/SkyCMS-Stack-2/SESSmtpPort": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SESSmtpPort"
           }
         ],
-        "/SkyCMS-Stack/ALBDomainName": [
+        "/SkyCMS-Stack-2/ALBDomainName": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ALBDomainName"
           }
         ],
-        "/SkyCMS-Stack/CDKMetadata/Default": [
+        "/SkyCMS-Stack-2/CDKMetadata/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CDKMetadata"
           }
         ],
-        "/SkyCMS-Stack/BootstrapVersion": [
+        "/SkyCMS-Stack-2/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/SkyCMS-Stack/CheckBootstrapVersion": [
+        "/SkyCMS-Stack-2/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "SkyCMS-Stack"
+      "displayName": "SkyCMS-Stack-2"
     },
     "Tree": {
       "type": "cdk:tree",

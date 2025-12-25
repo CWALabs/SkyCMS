@@ -13,6 +13,7 @@ namespace Sky.Editor.Areas.Setup.Pages
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.RazorPages;
+    using Microsoft.Extensions.Logging;
     using Sky.Editor.Services.Layouts;
     using Sky.Editor.Services.Setup;
 
@@ -24,6 +25,7 @@ namespace Sky.Editor.Areas.Setup.Pages
         private readonly ISetupService setupService;
         private readonly ILayoutImportService layoutImportService;
         private readonly ISetupCheckService setupCheckService;
+        private readonly ILogger<Step3_Publisher> logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Step3_Publisher"/> class.
@@ -31,11 +33,17 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <param name="setupService">Setup service.</param>
         /// <param name="layoutImportService">Layout import service.</param>
         /// <param name="setupCheckService">Setup check service.</param>
-        public Step3_Publisher(ISetupService setupService, ILayoutImportService layoutImportService, ISetupCheckService setupCheckService)
+        /// <param name="logger">Logger.</param>
+        public Step3_Publisher(
+            ISetupService setupService, 
+            ILayoutImportService layoutImportService, 
+            ISetupCheckService setupCheckService,
+            ILogger<Step3_Publisher> logger)
         {
             this.setupService = setupService;
             this.layoutImportService = layoutImportService;
             this.setupCheckService = setupCheckService;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -167,15 +175,32 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to next step.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            logger.LogInformation("Step3_Publisher POST - SetupId: {SetupId}, PublisherUrl: {Url}, WebsiteTitle: {Title}, SiteDesignId: {DesignId}", 
+                SetupId, PublisherUrl, WebsiteTitle, SiteDesignId);
+
             // Check if setup has been completed
             if (await setupCheckService.IsSetup())
             {
-                // Redirect to setup page
+                logger.LogWarning("Step3_Publisher POST - Setup already completed, redirecting to home");
                 Response.Redirect("/");
             }
 
             if (!ModelState.IsValid)
             {
+                logger.LogWarning("Step3_Publisher POST - ModelState validation failed");
+                foreach (var key in ModelState.Keys)
+                {
+                    var state = ModelState[key];
+                    if (state.Errors.Count > 0)
+                    {
+                        foreach (var error in state.Errors)
+                        {
+                            logger.LogError("Step3_Publisher POST - Validation error for {Field}: {Error}", 
+                                key, error.ErrorMessage ?? error.Exception?.Message);
+                        }
+                    }
+                }
+
                 await GetSiteDesignOptions();
                 return Page();
             }
@@ -201,6 +226,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                     ? config.MicrosoftAppId 
                     : MicrosoftAppId;
 
+                logger.LogInformation("Step3_Publisher POST - Saving publisher configuration");
                 await setupService.UpdatePublisherConfigAsync(
                     SetupId, 
                     publisherUrlToSave, 
@@ -212,11 +238,13 @@ namespace Sky.Editor.Areas.Setup.Pages
                     WebsiteTitle);
                 
                 await setupService.UpdateStepAsync(SetupId, 3);
-
+                
+                logger.LogInformation("Step3_Publisher POST - Successfully completed Step3, redirecting to Step4");
                 return RedirectToPage("./Step4_Email");
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Step3_Publisher POST - Failed to save publisher configuration");
                 ErrorMessage = $"Failed to save publisher configuration: {ex.Message}";
                 await GetSiteDesignOptions();
                 return Page();

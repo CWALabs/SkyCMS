@@ -28,6 +28,7 @@
     
     @Html.AntiForgeryToken()
     @Html.HiddenFor(m => m.SetupId)
+    @Html.HiddenFor(m => m.IsPreConfigured)
     <div class="card mb-4 bg-secondary text-light">
         <div class="card-header">
             <h5>Storage Provider</h5>
@@ -118,12 +119,15 @@
             if (isPreConfigured) {
                 $('#storageConnectionStringAlert').show();
 
-                // Disable all inputs
-                $('input, select, textarea', form).prop('disabled', true);
+                // Disable storage-related inputs but keep SetupId enabled for binding
+                $('#StorageConnectionString, #storageTypeSelect, #ContainerName').prop('disabled', true);
+                
+                // Make them visually readonly
+                $('#StorageConnectionString').addClass('bg-secondary').attr('readonly', true);
             }
 
             if (blobPublicUrlPreConfigured) {
-                $('#BlobPublicUrl').prop('disabled', true);
+                $('#BlobPublicUrl').addClass('bg-secondary').attr('readonly', true);
                 $('#blobPublicUrlAlert').show();
             }
             

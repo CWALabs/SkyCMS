@@ -235,7 +235,7 @@
                 $('#cdnConfigAlert').show();
                 saveBtn.text('Continue').prepend('<i class="fas fa-arrow-right"></i> ');
                 // Disable all inputs
-                $('input, select, textarea', form).prop('disabled', true);
+                $('input, select, textarea', form).prop('readonly', true);
             }
 
             // Configure validation

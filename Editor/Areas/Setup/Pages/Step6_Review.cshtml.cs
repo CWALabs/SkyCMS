@@ -101,35 +101,38 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to login page.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            logger.LogInformation("Step6_Review POST - SetupId: {SetupId}", SetupId);
+
             // Check if setup has been completed
             if (await setupCheckService.IsSetup())
             {
-                // Redirect to setup page
+                logger.LogWarning("Step6_Review POST - Setup already completed, redirecting to home");
                 Response.Redirect("/");
             }
 
             try
             {
-                logger.LogInformation("Starting setup completion process for setup ID: {SetupId}", SetupId);
+                logger.LogInformation("Step6_Review POST - Starting setup completion process for setup ID: {SetupId}", SetupId);
 
                 // Complete the setup process
                 var result = await setupService.CompleteSetupAsync(SetupId);
 
                 if (!result.Success)
                 {
+                    logger.LogError("Step6_Review POST - Setup completion failed: {Message}", result.Message);
                     ErrorMessage = result.Message;
                     Config = await setupService.GetCurrentSetupAsync();
                     return Page();
                 }
 
-                logger.LogInformation("Setup completed successfully. Setup ID: {SetupId}", SetupId);
+                logger.LogInformation("Step6_Review POST - Setup completed successfully. Setup ID: {SetupId}", SetupId);
 
                 // Redirect to completion success page
                 return RedirectToPage("./Complete");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to complete setup. Setup ID: {SetupId}", SetupId);
+                logger.LogError(ex, "Step6_Review POST - Failed to complete setup. Setup ID: {SetupId}", SetupId);
                 ErrorMessage = $"Failed to complete setup: {ex.Message}";
                 Config = await setupService.GetCurrentSetupAsync();
                 return Page();

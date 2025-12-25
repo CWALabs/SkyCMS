@@ -13,6 +13,7 @@ namespace Sky.Editor.Areas.Setup.Pages
     using Azure.Storage.Blobs;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.RazorPages;
+    using Microsoft.Extensions.Logging;
     using Sky.Editor.Services.Setup;
 
     /// <summary>
@@ -22,16 +23,19 @@ namespace Sky.Editor.Areas.Setup.Pages
     {
         private readonly ISetupService setupService;
         private readonly ISetupCheckService setupCheckService;
+        private readonly ILogger<Step1_Storage> logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Step1_Storage"/> class.
         /// </summary>
         /// <param name="setupService">Setup service.</param>
         /// <param name="setupCheckService">Setup check service.</param>
-        public Step1_Storage(ISetupService setupService, ISetupCheckService setupCheckService)
+        /// <param name="logger">Logger.</param>
+        public Step1_Storage(ISetupService setupService, ISetupCheckService setupCheckService, ILogger<Step1_Storage> logger)
         {
             this.setupService = setupService;
             this.setupCheckService = setupCheckService;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -78,6 +82,7 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <summary>
         /// Gets a value indicating whether storage is pre-configured.
         /// </summary>
+        [BindProperty]
         public bool IsPreConfigured { get; private set; }
 
         /// <summary>
@@ -138,23 +143,47 @@ namespace Sky.Editor.Areas.Setup.Pages
         /// <returns>Redirect to next step.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
+            logger.LogInformation("Step1_Storage POST - SetupId: {SetupId}, StorageType: {StorageType}, BlobPublicUrl: {BlobPublicUrl}", 
+                SetupId, StorageType, BlobPublicUrl);
+
             // Check if setup has been completed
             if (await setupCheckService.IsSetup())
             {
-                // Redirect to setup page
+                logger.LogWarning("Step1_Storage POST - Setup already completed, redirecting to home");
                 Response.Redirect("/");
             }
 
             if (!ModelState.IsValid)
             {
+                logger.LogWarning("Step1_Storage POST - ModelState validation failed");
+                foreach (var key in ModelState.Keys)
+                {
+                    var state = ModelState[key];
+                    if (state.Errors.Count > 0)
+                    {
+                        foreach (var error in state.Errors)
+                        {
+                            logger.LogError("Step1_Storage POST - Validation error for {Field}: {Error}", 
+                                key, error.ErrorMessage ?? error.Exception?.Message);
+                        }
+                    }
+                }
                 return Page();
             }
 
             var config = await setupService.GetCurrentSetupAsync();
+            if (config == null)
+            {
+                logger.LogError("Step1_Storage POST - No current setup configuration found");
+                ErrorMessage = "Setup configuration not found. Please restart the setup process.";
+                return Page();
+            }
+            
             SetupId = config.Id;
 
             if (!config.StoragePreConfigured && string.IsNullOrWhiteSpace(StorageConnectionString))
             {
+                logger.LogError("Step1_Storage POST - Storage connection string is required but not provided");
                 ModelState.AddModelError(nameof(StorageConnectionString), "Connection string is required.");
                 return Page();
             }
@@ -165,30 +194,35 @@ namespace Sky.Editor.Areas.Setup.Pages
                     ? config.StorageConnectionString
                     : StorageConnectionString;
 
+                logger.LogInformation("Step1_Storage POST - Testing storage connection");
                 var result = await setupService.TestStorageConnectionAsync(testConnectionString);
                 if (!result.Success)
                 {
+                    logger.LogError("Step1_Storage POST - Storage connection test failed: {Message}", result.Message);
                     ErrorMessage = "Storage connection test failed. Please ensure the connection string is correct.";
                     return Page();
                 }
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Step1_Storage POST - Exception during storage connection test");
                 ErrorMessage = $"Failed to proceed: {ex.Message}";
                 return Page();
             }
 
             try
             {
-
                 // If this is an Azure Blob Storage, ensure container name is set
                 var testConnectionString = config.StoragePreConfigured
                     ? config.StorageConnectionString
                     : StorageConnectionString;
                 var inferredType = InferStorageType(testConnectionString);
+                
+                logger.LogInformation("Step1_Storage POST - Inferred storage type: {Type}", inferredType);
+                
                 if (inferredType == "AzureBlob" && string.IsNullOrWhiteSpace(ContainerName))
                 {
-                    // Create default container.
+                    logger.LogInformation("Step1_Storage POST - Creating default Azure Blob container");
                     var blobClient = new BlobServiceClient(testConnectionString);
                     var container = blobClient.GetBlobContainerClient("$web");
                     await container.CreateIfNotExistsAsync();
@@ -203,6 +237,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                         serviceProperties.Value.StaticWebsite.ErrorDocument404Path = "404.html";
 
                         await blobClient.SetPropertiesAsync(serviceProperties.Value);
+                        logger.LogInformation("Step1_Storage POST - Enabled static website for Azure Blob");
                     }
                 }
 
@@ -215,16 +250,19 @@ namespace Sky.Editor.Areas.Setup.Pages
                     ? config.BlobPublicUrl 
                     : BlobPublicUrl;
 
+                logger.LogInformation("Step1_Storage POST - Saving storage configuration");
                 await setupService.UpdateStorageConfigAsync(
                     SetupId,
                     connectionStringToSave,
                     blobPublicUrlToSave);
 
-                await setupService.UpdateStepAsync(SetupId, 1);  // ✅ Changed back to 1
+                await setupService.UpdateStepAsync(SetupId, 1);
+                logger.LogInformation("Step1_Storage POST - Successfully completed Step1, redirecting to Step2");
                 return RedirectToPage("./Step2_AdminAccount");
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Step1_Storage POST - Failed to save storage configuration");
                 ErrorMessage = $"Failed to proceed: {ex.Message}";
                 return Page();
             }

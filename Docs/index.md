@@ -9,7 +9,7 @@ audience: [all]
 
 **SkyCMS is an edge-native CMS that combines the simplicity of WordPress with the performance of JAMstack.** Deploys to Azure, AWS, or other clouds—no complex build pipelines required.
 
-**Version:** 2.0 (December 2025) | **Compatible with:** SkyCMS v2.x
+**Version:** 2.0 (December 2025) | **Compatible with:** SkyCMS v9.2x
 
 ---
 
