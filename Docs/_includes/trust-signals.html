@@ -1,0 +1,93 @@
+<footer class="trust-signals">
+  <hr style="margin: 32px 0; opacity: 0.3;">
+  <div class="trust-signals-content">
+    <div class="trust-signals-section">
+      <h4>SkyCMS Documentation</h4>
+      <p>
+        <small>
+          Last Updated: <strong>{{ site.time | date: "%Y-%m-%d" }}</strong><br>
+          Maintained by <a href="https://github.com/CWALabs">CWALabs</a><br>
+          <a href="https://github.com/CWALabs/SkyCMS">View on GitHub</a>
+        </small>
+      </p>
+    </div>
+
+    <div class="trust-signals-section">
+      <h4>Licenses</h4>
+      <p>
+        <small>
+          This documentation is licensed under multiple licenses:<br>
+          <a href="https://github.com/CWALabs/SkyCMS/blob/main/LICENSE-MIT">MIT License</a><br>
+          <a href="https://github.com/CWALabs/SkyCMS/blob/main/LICENSE-GPL">GPL v2</a><br>
+          <a href="https://github.com/CWALabs/SkyCMS/blob/main/LICENSE-GPL">GPL v3</a>
+        </small>
+      </p>
+    </div>
+
+    <div class="trust-signals-section">
+      <h4>Support</h4>
+      <p>
+        <small>
+          Need help?<br>
+          <a href="https://github.com/CWALabs/SkyCMS/issues">Report an Issue</a><br>
+          <a href="https://github.com/CWALabs/SkyCMS/discussions">Start a Discussion</a>
+        </small>
+      </p>
+    </div>
+  </div>
+
+  <style>
+    .trust-signals {
+      margin-top: 48px;
+      padding-top: 32px;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .trust-signals {
+        color: #999;
+      }
+    }
+
+    .trust-signals-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+      margin-bottom: 32px;
+    }
+
+    .trust-signals-section h4 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1em;
+      color: #333;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .trust-signals-section h4 {
+        color: #e0e0e0;
+      }
+    }
+
+    .trust-signals-section p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .trust-signals-section a {
+      color: #0366d6;
+      text-decoration: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .trust-signals-section a {
+        color: #66b3ff;
+      }
+    }
+
+    .trust-signals-section a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</footer>

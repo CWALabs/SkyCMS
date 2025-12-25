@@ -1,0 +1,58 @@
+{% if page.content contains '<h2' %}
+<nav class="toc" role="doc-toc">
+  <details>
+    <summary><strong>Table of Contents</strong></summary>
+    <ul class="toc-list">
+      {% assign headings = page.content | split: '<h2' %}
+      {% for heading in headings offset: 1 %}
+        {% assign title = heading | split: '</h2>' | first | remove: '>' | remove: '<' | strip | replace: '<em>', '' | replace: '</em>', '' | replace: '<strong>', '' | replace: '</strong>', '' %}
+        {% assign id = title | slugify %}
+        <li><a href="#{{ id }}">{{ title }}</a></li>
+      {% endfor %}
+    </ul>
+  </details>
+</nav>
+
+<style>
+  .toc {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 4px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .toc {
+      background-color: #2d2d2d;
+      border-color: #404040;
+    }
+  }
+
+  .toc summary {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toc summary:hover {
+    color: #0366d6;
+  }
+
+  .toc-list {
+    margin-top: 12px;
+    padding-left: 20px;
+  }
+
+  .toc-list li {
+    margin: 6px 0;
+  }
+
+  .toc-list a {
+    text-decoration: none;
+  }
+
+  .toc-list a:hover {
+    text-decoration: underline;
+  }
+</style>
+{% endif %}

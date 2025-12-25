@@ -6,9 +6,10 @@ title: SkyCMS Documentation
 # description: > # this means to ignore newlines until "footer_text:"
 
 baseurl: "/SkyCMS" # The subpath of your site, e.g. /blog
-url: "https://cwalabs.github.io" # the base hostname & protocol for your site
+url: "https://docs.sky-cms.com" # the base hostname & protocol for your site (update for CloudFlare R2)
 repository: "CWALabs/SkyCMS"
 github_username: CWALabs
+author: "CWALabs"
 
 # Build settings
 markdown: kramdown
@@ -60,8 +61,10 @@ social:
     - https://github.com/CWALabs/SkyCMS
     - https://sky-cms.com
 
-# Analytics (optional)
-# google_analytics: UA-XXXXXXXXX-X
+# Analytics (optional - add your Google Analytics Measurement ID)
+# Get ID from: https://analytics.google.com/analytics/web/
+# Format: G-XXXXXXXXXX (GA4) or UA-XXXXXXXXX-X (UA)
+# google_analytics: G-XXXXXXXXXX
 
 # Comments (optional)
 # disqus:
