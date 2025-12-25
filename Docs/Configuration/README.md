@@ -1,18 +1,11 @@
 ---
-audience: [developers, administrators]
 title: Configuration Documentation
 description: Quick reference index for all SkyCMS configuration options including multi-tenant, database, storage, and CDN
 keywords: configuration, settings, multi-tenant, database, storage, CDN, email
 audience: [developers, administrators]
 version: 2.0
 updated: 2025-12-20
-canonical: /Configuration/README.html
-aliases: []
-scope:
-	platforms: [azure, aws, cloudflare, gcp, local]
-	tenancy: [single, multi]
 status: stable
-chunk_hint: 320
 ---
 
 # Configuration Documentation
