@@ -83,20 +83,6 @@ Deploy SkyCMS to Microsoft Azure using the automated deployment template. This g
 
 ---
 
-### Cloudflare Edge Hosting {#cloudflare}
-
-[Cloudflare Edge Hosting Guide](./CloudflareEdgeHosting.md)
-
-Deploy a static website to Cloudflare using an origin-less (edge) architecture with R2 storage. This guide covers:
-- Setting up Cloudflare R2 bucket
-- Connecting SkyCMS to R2 storage
-- Configuring custom domains and rules
-- Edge-based request handling (no origin server)
-
-**Best for**: Maximum performance, origin-less architecture, global edge distribution, pay-per-use pricing.
-
----
-
 ### AWS {#aws}
 
 [AWS Installation Guide](./AWSInstall.md)
@@ -109,6 +95,20 @@ Deploy SkyCMS on AWS with flexible hosting options. This guide covers:
 - IAM access key setup and permissions
 
 **Best for**: Organizations already using AWS, need flexible infrastructure, prefer AWS services.
+
+---
+
+### Cloudflare Edge Hosting {#cloudflare}
+
+[Cloudflare Edge Hosting Guide](./CloudflareEdgeHosting.md)
+
+Deploy a static website to Cloudflare using an origin-less (edge) architecture with R2 storage. This guide covers:
+- Setting up Cloudflare R2 bucket
+- Connecting SkyCMS to R2 storage
+- Configuring custom domains and rules
+- Edge-based request handling (no origin server)
+
+**Best for**: Maximum performance, origin-less architecture, global edge distribution, pay-per-use pricing.
 
 ---
 

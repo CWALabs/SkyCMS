@@ -1,0 +1,50 @@
+# Bicep build outputs
+*.bicepparam
+
+# Bicep parameter files with secrets (keep example files)
+!dev.bicepparam
+!prod.bicepparam
+*-local.bicepparam
+*-secrets.bicepparam
+
+# Azure deployment outputs
+*.json
+deploymentOutputs.json
+
+# PowerShell logs
+*.log
+
+# Terraform state (if using Terraform instead)
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# VS Code
+.vscode/
+
+# User-specific files
+*.user
+*.suo
+*.user.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Sensitive data
+secrets.txt
+passwords.txt
+*.key
+*.pem
+*.pfx
+
+# Node modules (if using any JS tooling)
+node_modules/
+
+# Bicep cache
+.bicep/
+
+# Local environment files
+.env
+.env.local
+*.local.json

@@ -5,11 +5,13 @@
 [![CodeQL](https://github.com/CWALabs/SkyCMS/actions/workflows/codeql.yml/badge.svg)](https://github.com/CWALabs/SkyCMS/actions/workflows/codeql.yml)
 [![Publish Docker Images CI](https://github.com/CWALabs/SkyCMS/actions/workflows/docker-image.yml/badge.svg)](https://github.com/CWALabs/SkyCMS/actions/workflows/docker-image.yml)
 [![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
-[![Documentation](https://img.shields.io/badge/docs-complete-brightgreen.svg)](https://cwalabs.github.io/SkyCMS/)
+[![Documentation](https://img.shields.io/badge/docs-complete-brightgreen.svg)](https://docs-sky-cms.com)
 
 <!-- [Project Website](https://Sky.moonrise.net) | [Documentation](https://Sky.moonrise.net/Docs) | [Get Free Help](https://Sky.moonrise.net/Support) | [YouTube Channel](https://www.youtube.com/@Sky-cms) | [Slack Channel](https://Sky-cms.slack.com/) -->
 
-**Documentation home:** https://cwalabs.github.io/SkyCMS/
+**Documentation home:** https://docs-sky-cms.com
+
+**Installation Scripts:** [AWS](InstallScripts/AWS/README.md) | [Azure](InstallScripts/Azure/README.md)
 
 **A powerful, modern alternative to Netlify CMS, CloudCannon, TinaCMS, Stackbit, and Publii** — SkyCMS delivers all the benefits of JAMstack architecture without the complexity, cost, or technical barriers that plague traditional static site generators.
 
