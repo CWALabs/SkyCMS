@@ -5,8 +5,8 @@
 title: SkyCMS Documentation
 # description: > # this means to ignore newlines until "footer_text:"
 
-baseurl: "/SkyCMS" # The subpath of your site, e.g. /blog
-url: "https://docs.sky-cms.com" # the base hostname & protocol for your site (update for CloudFlare R2)
+baseurl: "" # Empty for CloudFlare R2 root deployment (was "/SkyCMS" for GitHub Pages)
+url: "https://docs.sky-cms.com" # the base hostname & protocol for your site
 repository: "CWALabs/SkyCMS"
 github_username: CWALabs
 author: "CWALabs"
