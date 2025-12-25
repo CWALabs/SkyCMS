@@ -120,13 +120,16 @@ jobs:
             --cache-control "public, max-age=3600"
       
       - name: Purge CloudFlare cache
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ZONE_ID != '' }}
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ZONE_ID != '' }}
         run: |
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
-            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ env.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ env.CLOUDFLARE_API_TOKEN }}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}' \
             --fail-with-body
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
       
       - name: Deployment summary
         run: |
@@ -139,8 +142,10 @@ jobs:
           echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ secrets.CLOUDFLARE_ZONE_ID }}" ]; then
+          if [ -n "${{ env.CLOUDFLARE_ZONE_ID }}" ]; then
             echo "- Cache purged: ✅" >> $GITHUB_STEP_SUMMARY
           else
             echo "- Cache purged: ⏭️ (skipped - no Zone ID)" >> $GITHUB_STEP_SUMMARY
           fi
+        env:
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
