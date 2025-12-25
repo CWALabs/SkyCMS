@@ -64,7 +64,7 @@ namespace Sky.Editor.Services.Scheduling
             // Only activate dashboard if Hangfire was configured during service registration
             if (hangfireConfigured)
             {
-                logger.LogInformation("Activating Hangfire dashboard at /Editor/CCMS___PageScheduler");
+                //logger.LogInformation("Activating Hangfire dashboard at /Editor/CCMS___PageScheduler");
                 app.UseHangfireDashboard("/Editor/CCMS___PageScheduler", new DashboardOptions()
                 {
                     DashboardTitle = "SkyCMS - Page Scheduler",

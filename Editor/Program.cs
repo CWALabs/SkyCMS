@@ -152,7 +152,10 @@ builder.Services.AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<Art
 builder.Services.AddHangFireScheduling(builder.Configuration); // Add Hangfire services for scheduling
 
 // Add logging to see Hangfire queries
-builder.Logging.AddFilter("Hangfire", LogLevel.Debug);
+builder.Logging.AddFilter("Hangfire", LogLevel.Warning);
+builder.Logging.AddFilter("Hangfire.Server.ServerHeartbeatProcess", LogLevel.Error);
+builder.Logging.AddFilter("Hangfire.Server.BackgroundProcessingServer", LogLevel.Warning);
+builder.Logging.AddFilter("Hangfire.Server.ServerWatchdog", LogLevel.Error);
 builder.Services.AddFlexDbDataProtection(builder.Configuration); // Add shared data protection here
 builder.Services.AddSignalR(); // Add SignalR services
 

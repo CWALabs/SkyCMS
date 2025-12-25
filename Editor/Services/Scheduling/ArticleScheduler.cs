@@ -72,7 +72,7 @@ namespace Sky.Editor.Services.Scheduling
         public async Task ExecuteAsync()
         {
             var now = clock.UtcNow;
-            logger.LogInformation("ArticleScheduler: Starting scheduled execution at {ExecutionTime}", now);
+            // logger.LogInformation("ArticleScheduler: Starting scheduled execution at {ExecutionTime}", now);
 
             if (!settings.IsMultiTenantEditor)
             {
@@ -132,12 +132,16 @@ namespace Sky.Editor.Services.Scheduling
                 }
                 else
                 {
-                    // ✅ Single-tenant mode: use the scoped services from DI
+                    // Single-tenant mode: create StorageContext manually to avoid DI scope issues with Hangfire
                     var configuration = scopedServices.GetRequiredService<IConfiguration>();
                     var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
 
                     var dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
-                    var storageContext = scopedServices.GetRequiredService<StorageContext>();
+                    
+                    // Get the storage connection string and create StorageContext manually
+                    var storageConnectionString = configuration.GetConnectionString("StorageConnectionString") 
+                        ?? configuration.GetValue<string>("StorageConnectionString");
+                    var storageContext = new StorageContext(storageConnectionString, memoryCache);
 
                     await Run(dbContext, storageContext, domainName, scopedServices);
                 }
@@ -175,7 +179,7 @@ namespace Sky.Editor.Services.Scheduling
                 await ProcessArticleVersions(now, dbContext, storageContext, art.ArticleNumber, domainName, scopedServices);
             }
 
-            logger.LogInformation("ArticleScheduler: Completed execution for domain {Domain} at {CompletionTime}", domainName, clock.UtcNow);
+            // logger.LogInformation("ArticleScheduler: Completed execution for domain {Domain} at {CompletionTime}", domainName, clock.UtcNow);
         }
 
         /// <summary>
