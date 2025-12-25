@@ -147,17 +147,21 @@ namespace Sky.Editor.Areas.Setup.Pages
             if (!string.IsNullOrWhiteSpace(SendGridApiKey))
             {
                 EmailProvider = "SendGrid";
+                IsPreConfigured = true;
             }
             else if (!string.IsNullOrWhiteSpace(AzureEmailConnectionString))
             {
                 EmailProvider = "AzureCommunication";
+                IsPreConfigured = true;
             }
             else if (!string.IsNullOrWhiteSpace(SmtpHost))
             {
                 EmailProvider = "SMTP";
+                IsPreConfigured = true;
             }
             else
             {
+                IsPreConfigured = false;
                 EmailProvider = "none";
             }
 
@@ -214,6 +218,10 @@ namespace Sky.Editor.Areas.Setup.Pages
                     EmailProvider = "none";
                 }
 
+                // Clear previous messages
+                ErrorMessage = string.Empty;
+                SuccessMessage = string.Empty;
+
                 TestResult = await setupService.TestEmailConfigAsync(
                     EmailProvider,
                     SendGridApiKey,
@@ -258,6 +266,19 @@ namespace Sky.Editor.Areas.Setup.Pages
 
             try
             {
+                var config = await setupService.GetCurrentSetupAsync();
+
+                if (config.EmailProviderPreConfigured)
+                {
+                    // If pre-configured, retain existing settings
+                    SendGridApiKey = config.SendGridApiKey;
+                    AzureEmailConnectionString = config.AzureEmailConnectionString;
+                    SmtpHost = config.SmtpHost;
+                    SmtpPort = config.SmtpPort;
+                    SmtpUsername = config.SmtpUsername;
+                    SmtpPassword = config.SmtpPassword;
+                }
+
                 // Email is optional, so we don't validate
                 await setupService.UpdateEmailConfigAsync(
                     SetupId,
