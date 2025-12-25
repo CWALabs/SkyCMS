@@ -170,6 +170,8 @@
             if (isPreConfigured) {
                 $('#sendGridOptions input, #sendGridOptions textarea, #azureCommOptions input, #azureCommOptions textarea, #smtpOptions input, #smtpOptions textarea, #emailProviderSelect').prop('disabled', true);
                 $('#emailProviderAlert').show();
+                // Disable all inputs
+                $('input, select, textarea', form).prop('disabled', true);
             }
 
             // Configure validation

@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-deploy-role-873764251532-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-cfn-exec-role-873764251532-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/ca3fc6f82d260d7bcec6ad4d81da1bd1c85fca0e5a5d375edcaf1857c4d1578a.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-873764251532-us-east-1/7a847b238e536e90ad0170e9b9bf464cf374124dcbf67f584a4729db04f42865.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -338,12 +338,6 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "TaskDefTaskRole1EDB4A67"
-          }
-        ],
-        "/SkyCMS-Stack/TaskDef/TaskRole/DefaultPolicy/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "TaskDefTaskRoleDefaultPolicyA592CB18"
           }
         ],
         "/SkyCMS-Stack/TaskDef/Resource": [

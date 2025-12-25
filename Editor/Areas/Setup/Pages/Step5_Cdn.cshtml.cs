@@ -147,24 +147,29 @@ namespace Sky.Editor.Areas.Setup.Pages
         public string SuccessMessage { get; set; }
 
         /// <summary>
+        /// Gets a value indicating whether any CDN configuration is pre-configured.
+        /// </summary>
+        public bool IsPreconfigured => AzurePreConfigured || CloudflarePreConfigured || SucuriPreConfigured || CloudFrontPreConfigured;
+
+        /// <summary>
         /// Gets a value indicating whether Azure CDN configuration is pre-configured.
         /// </summary>
-        public bool AzurePreConfigured { get; private set; }
+        public bool AzurePreConfigured { get; private set; } = false;
 
         /// <summary>
         /// Gets a value indicating whether Cloudflare has been pre-configured for this instance.
         /// </summary>
-        public bool CloudflarePreConfigured { get; private set; }
+        public bool CloudflarePreConfigured { get; private set; } = false;
 
         /// <summary>
         /// Gets a value indicating whether Sucuri has been pre-configured for this instance.
         /// </summary>
-        public bool SucuriPreConfigured { get; private set; }
+        public bool SucuriPreConfigured { get; private set; } = false;
 
         /// <summary>
         /// Gets a value indicating whether CloudFront has been pre-configured for this instance.
         /// </summary>
-        public bool CloudFrontPreConfigured { get; private set; }
+        public bool CloudFrontPreConfigured { get; private set; } = false;
 
         /// <summary>
         /// Handles GET requests.
@@ -199,18 +204,21 @@ namespace Sky.Editor.Areas.Setup.Pages
                 AzureProfileName = config.AzureCdnProfileName;
                 AzureEndpointName = config.AzureCdnEndpointName;
                 AzureIsFrontDoor = config.AzureCdnIsFrontDoor;
+                AzurePreConfigured = true;
             }
             else if (!string.IsNullOrEmpty(config.CloudflareApiToken))
             {
                 SelectedProvider = "Cloudflare";
                 CloudflareApiToken = config.CloudflareApiToken;
                 CloudflareZoneId = config.CloudflareZoneId;
+                CloudflarePreConfigured = true;
             }
             else if (!string.IsNullOrEmpty(config.SucuriApiKey))
             {
                 SelectedProvider = "Sucuri";
                 SucuriApiKey = config.SucuriApiKey;
                 SucuriApiSecret = config.SucuriApiSecret;
+                SucuriPreConfigured = true;
             }
             else if (!string.IsNullOrEmpty(config.CloudFrontDistributionId) &&
                      !string.IsNullOrEmpty(config.CloudFrontAccessKeyId) &&
@@ -222,6 +230,7 @@ namespace Sky.Editor.Areas.Setup.Pages
                 CloudFrontSecretAccessKey = config.CloudFrontSecretAccessKey;
                 CloudFrontDistributionId = config.CloudFrontDistributionId;
                 CloudFrontRegion = config.CloudFrontRegion;
+                CloudFrontPreConfigured = true;
             }
 
             return Page();

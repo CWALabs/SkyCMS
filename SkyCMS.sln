@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.5.33502.453
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11312.151 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5B063402-7947-4E34-A638-E00FE81E3ACE}"
 	ProjectSection(SolutionItems) = preProject
@@ -30,8 +30,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspNetCore.Identity.FlexDb.Tests", "AspNetCore.Identity.FlexDb.Tests\AspNetCore.Identity.FlexDb.Tests.csproj", "{05AA7C0B-7C39-638A-7D26-CC806E5F263D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sky.TestSetup", "Sky.TestSetup\Sky.TestSetup.csproj", "{6399FD65-1892-4630-95C0-BCBE30F51E3A}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "InstallScripts", "InstallScripts", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

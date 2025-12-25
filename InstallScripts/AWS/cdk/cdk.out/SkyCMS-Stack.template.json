@@ -1262,35 +1262,6 @@
     "aws:cdk:path": "SkyCMS-Stack/TaskDef/TaskRole/Resource"
    }
   },
-  "TaskDefTaskRoleDefaultPolicyA592CB18": {
-   "Type": "AWS::IAM::Policy",
-   "Properties": {
-    "PolicyDocument": {
-     "Statement": [
-      {
-       "Action": [
-        "secretsmanager:GetSecretValue",
-        "secretsmanager:DescribeSecret"
-       ],
-       "Effect": "Allow",
-       "Resource": {
-        "Ref": "CloudFrontSecret33A40E9F"
-       }
-      }
-     ],
-     "Version": "2012-10-17"
-    },
-    "PolicyName": "TaskDefTaskRoleDefaultPolicyA592CB18",
-    "Roles": [
-     {
-      "Ref": "TaskDefTaskRole1EDB4A67"
-     }
-    ]
-   },
-   "Metadata": {
-    "aws:cdk:path": "SkyCMS-Stack/TaskDef/TaskRole/DefaultPolicy/Resource"
-   }
-  },
   "TaskDef54694570": {
    "Type": "AWS::ECS::TaskDefinition",
    "Properties": {
@@ -1311,7 +1282,7 @@
        },
        {
         "Name": "AdminEmail",
-        "Value": "admin@example.com"
+        "Value": "eric@moonrise.net"
        },
        {
         "Name": "DB_HOST",
@@ -1370,12 +1341,6 @@
            }
           ]
          ]
-        }
-       },
-       {
-        "Name": "CloudFrontConfig",
-        "Value": {
-         "Ref": "CloudFrontSecret33A40E9F"
         }
        }
       ],
@@ -1437,6 +1402,12 @@
            ":password::"
           ]
          ]
+        }
+       },
+       {
+        "Name": "CloudFrontConfig",
+        "ValueFrom": {
+         "Ref": "CloudFrontSecret33A40E9F"
         }
        }
       ]
@@ -1542,6 +1513,16 @@
        "Effect": "Allow",
        "Resource": {
         "Ref": "SesSmtpSecretF615ED25"
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "CloudFrontSecret33A40E9F"
        }
       }
      ],
@@ -2162,7 +2143,6 @@
    "DependsOn": [
     "ALBHttpListenerEcsTargetGroupEC97BED8",
     "ALBHttpListener04CE8CD0",
-    "TaskDefTaskRoleDefaultPolicyA592CB18",
     "TaskDefTaskRole1EDB4A67"
    ],
    "Metadata": {
