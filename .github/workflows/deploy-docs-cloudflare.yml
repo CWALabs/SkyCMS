@@ -1,0 +1,146 @@
+name: Deploy Docs to CloudFlare R2
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'Docs/**'
+      - '.github/workflows/deploy-docs-cloudflare.yml'
+  workflow_dispatch:
+
+# Prevent concurrent deployments
+concurrency:
+  group: "cloudflare-r2-docs"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: ./Docs
+      
+      - name: Build Jekyll site
+        run: |
+          cd Docs
+          bundle install
+          JEKYLL_ENV=production bundle exec jekyll build --destination ./_site
+        env:
+          JEKYLL_ENV: production
+      
+      - name: Configure AWS CLI for CloudFlare R2
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          aws configure set default.region auto
+      
+      - name: Deploy HTML files to CloudFlare R2
+        run: |
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --exclude "*" \
+            --include "*.html" \
+            --content-type "text/html; charset=utf-8" \
+            --cache-control "public, max-age=3600" \
+            --metadata-directive REPLACE
+      
+      - name: Deploy CSS files to CloudFlare R2
+        run: |
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --exclude "*" \
+            --include "*.css" \
+            --content-type "text/css; charset=utf-8" \
+            --cache-control "public, max-age=31536000" \
+            --metadata-directive REPLACE
+      
+      - name: Deploy JavaScript files to CloudFlare R2
+        run: |
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --exclude "*" \
+            --include "*.js" \
+            --content-type "application/javascript; charset=utf-8" \
+            --cache-control "public, max-age=31536000" \
+            --metadata-directive REPLACE
+      
+      - name: Deploy image files to CloudFlare R2
+        run: |
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --exclude "*" \
+            --include "*.png" \
+            --content-type "image/png" \
+            --cache-control "public, max-age=31536000"
+          
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --exclude "*" \
+            --include "*.jpg" --include "*.jpeg" \
+            --content-type "image/jpeg" \
+            --cache-control "public, max-age=31536000"
+          
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --exclude "*" \
+            --include "*.svg" \
+            --content-type "image/svg+xml" \
+            --cache-control "public, max-age=31536000"
+          
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --exclude "*" \
+            --include "*.gif" \
+            --content-type "image/gif" \
+            --cache-control "public, max-age=31536000"
+          
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --exclude "*" \
+            --include "*.webp" \
+            --content-type "image/webp" \
+            --cache-control "public, max-age=31536000"
+      
+      - name: Deploy remaining files to CloudFlare R2
+        run: |
+          aws s3 sync ./Docs/_site s3://${{ secrets.R2_BUCKET_NAME }} \
+            --endpoint-url https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --delete \
+            --exclude "*.html" --exclude "*.css" --exclude "*.js" \
+            --exclude "*.png" --exclude "*.jpg" --exclude "*.jpeg" \
+            --exclude "*.svg" --exclude "*.gif" --exclude "*.webp" \
+            --cache-control "public, max-age=3600"
+      
+      - name: Purge CloudFlare cache
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ZONE_ID != '' }}
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}' \
+            --fail-with-body
+      
+      - name: Deployment summary
+        run: |
+          echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Documentation deployed to CloudFlare R2 bucket: \`${{ secrets.R2_BUCKET_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ secrets.CLOUDFLARE_ZONE_ID }}" ]; then
+            echo "- Cache purged: ✅" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Cache purged: ⏭️ (skipped - no Zone ID)" >> $GITHUB_STEP_SUMMARY
+          fi
