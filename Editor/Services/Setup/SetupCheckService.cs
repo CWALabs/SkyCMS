@@ -53,28 +53,29 @@ namespace Sky.Editor.Services.Setup
                 return true;
             }
 
-            var canConnect = dbContext.Database.CanConnect();
-            if (!canConnect)
+            try
+            {
+                // Check if the Settings table exists and has the AllowSetup = false entry
+                var setting = await dbContext.Settings
+                    .FirstOrDefaultAsync(s => s.Group == "SYSTEM" && s.Name == "AllowSetup");
+
+                var completed = setting != null && setting.Value.Equals("false", StringComparison.OrdinalIgnoreCase);
+
+                if (!completed)
+                {
+                    Message = "Setup is not completed";
+                    return false;
+                }
+
+                memoryCache.Set("SetupCompleted", true);
+                Message = "Setup is completed";
+                return true;
+            }
+            catch (Exception)
             {
                 Message = "Can't connect to database";
                 return false;
             }
-
-            // Check if the Settings table exists and has the AllowSetup = false entry
-            var setting = await dbContext.Settings
-                .FirstOrDefaultAsync(s => s.Group == "SYSTEM" && s.Name == "AllowSetup");
-
-            var completed = setting != null && setting.Value.Equals("false", StringComparison.OrdinalIgnoreCase);
-
-            if (!completed)
-            {
-                Message = "Setup is not completed";
-                return false;
-            }
-
-            memoryCache.Set("SetupCompleted", true);
-            Message = "Setup is completed";
-            return true;
         }
 
         /// <inheritdoc/>

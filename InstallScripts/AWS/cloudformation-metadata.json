@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2021-09-01/deployment-template-metadata.json#",
+  "version": 1.0,
+  "metadata": {
+    "template": {
+      "metadata": {
+        "description": "SkyCMS Editor - CloudFormation template for AWS deployment",
+        "author": "SkyCMS Contributors",
+        "date": "2025-12-26"
+      },
+      "displayName": "SkyCMS Editor",
+      "description": "Deploy SkyCMS Editor to AWS with ECS Fargate, RDS MySQL, and CloudFront CDN. One-click deployment with sensible defaults.",
+      "summary": "Complete SkyCMS Editor infrastructure with ECS, RDS, and CloudFront in one deployment",
+      "docLink": "https://docs-sky-cms.com",
+      "version": "2025.12",
+      "resourceTypes": [
+        "AWS::EC2::VPC",
+        "AWS::EC2::Subnet",
+        "AWS::EC2::SecurityGroup",
+        "AWS::RDS::DBInstance",
+        "AWS::ECS::Cluster",
+        "AWS::ECS::Service",
+        "AWS::ElasticLoadBalancingV2::LoadBalancer",
+        "AWS::CloudFront::Distribution",
+        "AWS::SecretsManager::Secret"
+      ],
+      "estimatedCost": {
+        "currency": "USD",
+        "monthlyMin": 30,
+        "monthlyMax": 50,
+        "components": [
+          {
+            "name": "ECS Fargate",
+            "cost": "15-25"
+          },
+          {
+            "name": "RDS MySQL",
+            "cost": "10-15"
+          },
+          {
+            "name": "CloudFront & ALB",
+            "cost": "5-10"
+          }
+        ]
+      },
+      "deploymentTime": "15-20 minutes",
+      "publisherMetadata": {
+        "publisherLink": "https://github.com/CWALabs/SkyCMS",
+        "supportLink": "https://docs-sky-cms.com",
+        "license": "GPL-2.0-or-later OR MIT"
+      }
+    }
+  }
+}

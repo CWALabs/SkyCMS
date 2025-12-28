@@ -37,7 +37,7 @@ namespace Sky.Tests
 
             var cache = new MemoryCache(new MemoryCacheOptions());
 
-            var storage = new StorageContext(storageConnectionString, cache);
+            var storage = new StorageContext(configuration, cache, null);
 
             var task = storage.DeleteFolderAsync("/");
             task.Wait();

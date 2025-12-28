@@ -1,0 +1,79 @@
+@page
+@model Sky.Editor.Areas.Setup.Pages.Tenant.IndexModel
+@{
+    ViewData["Title"] = "Tenant Setup";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">Welcome to Your Website</h2>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Your tenant has been provisioned. Let's complete the setup to get started.</p>
+
+                    @if (Model.Status != null)
+                    {
+                        <div class="mt-4">
+                            <h5>Setup Progress</h5>
+                            <ul class="list-group">
+                                <li class="list-group-item @(Model.Status.HasAdminAccount ? "list-group-item-success" : "")">
+                                    <i class="bi @(Model.Status.HasAdminAccount ? "bi-check-circle-fill" : "bi-circle")"></i>
+                                    Administrator Account
+                                </li>
+                                <li class="list-group-item @(Model.Status.HasLayout ? "list-group-item-success" : "")">
+                                    <i class="bi @(Model.Status.HasLayout ? "bi-check-circle-fill" : "bi-circle")"></i>
+                                    Website Layout
+                                </li>
+                                <li class="list-group-item @(Model.Status.HasHomePage ? "list-group-item-success" : "")">
+                                    <i class="bi @(Model.Status.HasHomePage ? "bi-check-circle-fill" : "bi-circle")"></i>
+                                    Home Page
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="mt-4">
+                            @if (!Model.Status.HasAdminAccount)
+                            {
+                                <a href="/___setup/tenant/admin" class="btn btn-primary btn-lg w-100">
+                                    Create Administrator Account
+                                </a>
+                            }
+                            else if (!Model.Status.HasLayout)
+                            {
+                                <a href="/___setup/tenant/layout" class="btn btn-primary btn-lg w-100">
+                                    Choose Website Layout
+                                </a>
+                            }
+                            else if (!Model.Status.HasHomePage)
+                            {
+                                <a href="/___setup/tenant/homepage" class="btn btn-primary btn-lg w-100">
+                                    Create Home Page
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/___setup/tenant/complete" class="btn btn-success btn-lg w-100">
+                                    Complete Setup
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Status?.WebsiteUrl))
+                    {
+                        <div class="mt-4 alert alert-info">
+                            <strong>Website URL:</strong> @Model.Status.WebsiteUrl
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+}

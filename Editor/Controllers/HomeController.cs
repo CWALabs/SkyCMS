@@ -42,7 +42,6 @@ namespace Sky.Cms.Controllers
         private readonly ApplicationDbContext dbContext;
         private readonly UserManager<IdentityUser> userManager;
         private readonly IStorageContext storageContext;
-        private readonly ISetupCheckService setupCheckService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HomeController"/> class.
@@ -57,7 +56,6 @@ namespace Sky.Cms.Controllers
         /// <param name="emailSender">Email service.</param>
         /// <param name="configuration">Website configuration.</param>
         /// <param name="services">Services provider.</param>
-        /// <param name="setupCheckService">Setup check service.</param>
         public HomeController(
             ILogger<HomeController> logger,
             IEditorSettings options,
@@ -68,8 +66,7 @@ namespace Sky.Cms.Controllers
             IStorageContext storageContext,
             IEmailSender emailSender,
             IConfiguration configuration,
-            IServiceProvider services,
-            ISetupCheckService setupCheckService)
+            IServiceProvider services)
         {
             // This handles injection manually to make sure everything is setup.
             this.options = (EditorSettings)options;
@@ -77,7 +74,6 @@ namespace Sky.Cms.Controllers
             this.dbContext = dbContext;
             this.userManager = userManager;
             this.storageContext = storageContext;
-            this.setupCheckService = setupCheckService;
         }
 
         /// <summary>
@@ -171,12 +167,9 @@ namespace Sky.Cms.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index(string lang = "", string mode = "", Guid? layoutId = null, Guid? articleId = null, string previewType = "")
         {
-            // Check if setup is required.
-            if (!await setupCheckService.IsSetup())
-            {
-                return Redirect("~/Setup/Index");
-            }
-
+            // Note: Setup check is handled by middleware (TenantSetupMiddleware for multi-tenant,
+            // or Program.cs middleware for single-tenant) before this action is reached.
+            
             if (User.Identity?.IsAuthenticated == false)
             {
                 // If we require authentication, redirect to the login page.

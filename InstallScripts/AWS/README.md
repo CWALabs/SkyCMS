@@ -2,6 +2,34 @@
 
 Complete set of PowerShell scripts for deploying and managing SkyCMS on AWS.
 
+## 🚀 Launch Stack (One-Click Deploy)
+
+**First-time setup:** The Launch Stack button requires the CloudFormation template to be hosted in S3. Run this one-time setup:
+
+```powershell
+.\setup-s3-cloudformation.ps1
+```
+
+This script will:
+1. Create an S3 bucket in your AWS account
+2. Upload the CloudFormation template
+3. Apply a bucket policy to allow public read of the template (ACLs are disabled by default)
+4. Output the correct Launch Stack button URL
+
+**Then** click the button below to deploy directly to AWS CloudFormation:
+
+[![Launch Stack](https://img.shields.io/badge/Launch_Stack-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=skycms&templateURL=https%3A%2F%2Fskycms-cloudformation-563441.s3.us-east-1.amazonaws.com%2Fskycms-editor-cloudformation.yaml)
+
+Direct link (copy/paste): https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=skycms&templateURL=https%3A%2F%2Fskycms-cloudformation-563441.s3.us-east-1.amazonaws.com%2Fskycms-editor-cloudformation.yaml
+
+After running the setup script, you'll get a customized URL to bookmark.
+
+**First time?** See the [Post-Deployment Quick Start Guide](./QUICKSTART_LAUNCH_BUTTON_AWS.md) after stack creation completes.
+
+**Prefer PowerShell/CDK?** See [CDK Deployment](#cdk-deployment) below for advanced users.
+
+---
+
 > December 2025 Update
 - CloudFront → ALB now forwards `Host`, `CloudFront-Forwarded-Proto`, and `User-Agent` via a custom **Origin Request Policy** to fix setup wizard HTTP 400s (antiforgery).
 - Editor application includes middleware that maps `CloudFront-Forwarded-Proto` to `X-Forwarded-Proto` for ASP.NET Core's `UseForwardedHeaders()` middleware.
@@ -41,49 +69,50 @@ Complete set of PowerShell scripts for deploying and managing SkyCMS on AWS.
 
 ## 🚀 Quick Start Guide
 
-### 1. Deploy Static Website
+### Deployment Methods
+
+Choose your approach:
+
+#### **Option 1: CloudFormation Button (Recommended for Quick Setup)**
+
+Click the Launch Stack button at the top of this README. See [Post-Deployment Quick Start Guide](./QUICKSTART_LAUNCH_BUTTON_AWS.md) for next steps.
+
+#### **Option 2: CDK with PowerShell (Recommended for Production)**
+
+### Prerequisites (CDK Method)
+
+- AWS CLI installed and configured
+- PowerShell 5.1 or later
+- Node.js 14+ (for CDK)
+- Active AWS account with permissions
+
+### Deploy with CDK
 
 ```powershell
-# Deploy S3 bucket with CloudFront (for your public website)
-aws cloudformation deploy `
-  --template-file ./AWS/s3-with-cloudfront.yml `
-  --stack-name skycms-static-site `
-  --region us-east-1
+cd D:\source\SkyCMS\InstallScripts\AWS
 
-# Get bucket name
-$bucket = aws cloudformation describe-stacks `
-  --stack-name skycms-static-site `
-  --query "Stacks[0].Outputs[?OutputKey=='WebsiteBucketName'].OutputValue" `
-  --output text
+# Run interactive CDK deployment
+.\cdk-deploy.ps1
 ```
 
-### 2. Deploy SkyCMS Editor
+You'll be prompted for:
+- AWS Region (default: us-east-1)
+- Docker image (default: toiyabe/sky-editor:latest)
+- Database name (default: skycms)
+- ECS task count (default: 1)
+- Optional: Custom domain and TLS certificate
 
-```powershell
-# Deploy Editor (ECS Fargate + RDS MySQL + CloudFront)
-.\InstallScripts\AWS\deploy-skycms-editor.ps1 `
-  -StaticSiteBucketName $bucket `
-  -DBPassword "YourSecurePassword123"
-```
+⏱️ **Deployment time:** 15-20 minutes (RDS creation is the slowest)
 
-⏱️ Takes 15-20 minutes (RDS creation is slow)
+---
 
-### 3. Create S3 Access Credentials
-
-```powershell
-# Create IAM user with S3 permissions (for setup wizard)
-.\InstallScripts\AWS\create-s3-access-keys.ps1 `
-  -BucketName $bucket
-```
-
-📋 Copy the Access Key ID and Secret Access Key shown
-
-### 4. Complete Setup Wizard
+### Post-Deployment: Setup Wizard
 
 1. Get the Setup Wizard URL from deployment outputs
 2. Navigate to the URL (wait 2-3 min for ECS tasks to start)
 3. Configure:
    - ✅ Database (pre-configured with TLS encryption)
+
    - 🔑 S3 Storage (use credentials from step 3)
    - 👤 Admin account
    - 🌐 Publisher settings

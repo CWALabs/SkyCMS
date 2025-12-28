@@ -55,6 +55,7 @@ function Test-AzureCLI {
         $null = az version 2>&1
         return $true
     } catch {
+        Write-Verbose "Azure CLI test failed: $_"
         return $false
     }
 }
@@ -89,37 +90,48 @@ try {
 
 Write-Header "Building Bicep Templates"
 
-$bicepFiles = @(
-    "bicep\main.bicep",
-    "bicep\modules\keyVault.bicep",
-    "bicep\modules\mysql.bicep",
-    "bicep\modules\containerApp.bicep",
-    "bicep\modules\storage.bicep"
-)
+$bicepDir = Join-Path $PSScriptRoot "bicep"
+$bicepFiles = @()
+
+# Add main bicep file
+$mainBicep = Join-Path $bicepDir "main.bicep"
+if (Test-Path $mainBicep) {
+    $bicepFiles += $mainBicep
+}
+
+# Discover module bicep files dynamically
+$modulesDir = Join-Path $bicepDir "modules"
+if (Test-Path $modulesDir) {
+    $bicepFiles += Get-ChildItem -Path $modulesDir -Filter "*.bicep" -Recurse | ForEach-Object { $_.FullName }
+}
+
+if ($bicepFiles.Count -eq 0) {
+    Write-Error-Custom "No Bicep files found in $bicepDir"
+    exit 1
+}
 
 $allValid = $true
 
 foreach ($file in $bicepFiles) {
-    $fullPath = Join-Path $PSScriptRoot $file
-    
-    if (-not (Test-Path $fullPath)) {
+    if (-not (Test-Path $file)) {
         Write-Error-Custom "File not found: $file"
         $allValid = $false
         continue
     }
     
-    Write-Info "Validating $file..."
+    $relativePath = $file -replace [regex]::Escape((Join-Path $PSScriptRoot "")), ""
+    Write-Info "Validating $relativePath..."
     
     try {
-        az bicep build --file $fullPath --stdout | Out-Null
+        az bicep build --file $file --stdout | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            Write-Success "$file is valid"
+            Write-Success "$relativePath is valid"
         } else {
-            Write-Error-Custom "$file has errors"
+            Write-Error-Custom "$relativePath has errors"
             $allValid = $false
         }
     } catch {
-        Write-Error-Custom "$file validation failed: $_"
+        Write-Error-Custom "$relativePath validation failed: $_"
         $allValid = $false
     }
 }
@@ -137,8 +149,8 @@ if ($ResourceGroupName) {
     
     $mainBicep = Join-Path $PSScriptRoot "bicep\main.bicep"
     
-    # Create minimal parameters for what-if
-    $testPassword = "TestPassword123!"
+    # Generate a random password for validation (not used, just for template validation)
+    $testPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 16 | ForEach-Object {[char]$_})
     
     try {
         az deployment group what-if `

@@ -832,8 +832,6 @@ namespace Sky.Cms.Controllers
 
                 logger.LogInformation("Published layout {LayoutId} as default", id);
 
-                await TryBackupDatabase(id);
-
                 return RedirectToAction("Publish", "Editor");
             }
             catch (Exception ex)
@@ -1274,33 +1272,6 @@ namespace Sky.Cms.Controllers
                 .Trim();
 
             return (cleanedText, string.Empty);
-        }
-
-        /// <summary>
-        /// Attempts to backup database after publish.
-        /// </summary>
-        private async Task TryBackupDatabase(Guid layoutId)
-        {
-            if (string.IsNullOrEmpty(editorSettings.BackupStorageConnectionString))
-            {
-                return;
-            }
-
-            try
-            {
-                var backupService = new FileBackupRestoreService(
-                    editorSettings.BackupStorageConnectionString,
-                    new MemoryCache(new MemoryCacheOptions()));
-                var connectionString = dbContext.Database.GetConnectionString();
-                await backupService.UploadAsync(connectionString);
-
-                logger.LogInformation("Database backup completed after publishing layout {LayoutId}", layoutId);
-            }
-            catch (Exception backupEx)
-            {
-                logger.LogError(backupEx, "Error creating backup after publishing layout {LayoutId}", layoutId);
-                // Don't fail the publish operation if backup fails
-            }
         }
 
         /// <summary>

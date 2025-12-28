@@ -10,8 +10,22 @@ Complete Azure infrastructure deployment for SkyCMS using Bicep Infrastructure a
 > - Managed Identity for passwordless authentication between services
 > - Similar architecture to AWS deployment but optimized for Azure
 
-## 📁 Script Overview
+## � One-Click Deploy
 
+**Click the button below to deploy directly to Azure Portal (no local tools needed):**
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fyour-username%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.bicep)
+
+> **Note:** Replace `your-username` in the button URL with your GitHub username
+
+**First time?** See the [Post-Deployment Quick Start Guide](./QUICKSTART_DEPLOY_BUTTON.md) after deployment completes.
+
+---
+
+## �📁 Script Overview
+### 🚀 Quick Deploy Button
+
+**Prefer one-click deployment?** Click the Deploy to Azure button at the top of this README to deploy directly from the Azure Portal without installing any tools.
 ### Deployment Files
 
 | File | Purpose |

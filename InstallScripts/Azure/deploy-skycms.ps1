@@ -94,6 +94,7 @@ function Test-AzureCLI {
         $null = az version 2>&1
         return $true
     } catch {
+        Write-Verbose "Azure CLI test failed: $_"
         return $false
     }
 }
@@ -103,8 +104,31 @@ function Test-AzureLogin {
         $account = az account show 2>&1 | ConvertFrom-Json
         return $null -ne $account
     } catch {
+        Write-Verbose "Azure login test failed: $_"
         return $false
     }
+}
+
+function Test-DockerImage {
+    <#
+    .SYNOPSIS
+    Validates Docker image reference format
+    
+    .DESCRIPTION
+    Checks if image is in valid format: [registry/]repo[:tag]
+    Examples: ubuntu, myregistry/myapp:v1.0, docker.io/library/node:latest
+    #>
+    param([string]$Image)
+    
+    # Valid formats:
+    # - repo (e.g., 'ubuntu')
+    # - repo:tag (e.g., 'ubuntu:22.04')
+    # - registry/repo (e.g., 'docker.io/ubuntu')
+    # - registry/repo:tag (e.g., 'docker.io/ubuntu:22.04')
+    
+    # Regex: (optional registry/)(required repo)(optional :tag)
+    $pattern = '^([a-z0-9\-\.]+(\.[a-z0-9]+)?/)?[a-z0-9\-_]+(/[a-z0-9\-_]+)*(:[a-z0-9\-_\.]+)?$'
+    return $Image -match $pattern
 }
 
 # ============================================================================
@@ -163,6 +187,16 @@ $environment = Get-UserInput -Prompt "Environment (dev/staging/prod)" -Default "
 
 # Docker Image
 $dockerImage = Get-UserInput -Prompt "Docker Image" -Default "toiyabe/sky-editor:latest" -Required
+
+# Validate docker image format
+if (-not (Test-DockerImage $dockerImage)) {
+    Write-Warning-Custom "Docker image format does not match expected pattern (e.g., 'myregistry/myapp:v1.0')"
+    $retryImage = Get-YesNoInput -Prompt "Continue with '$dockerImage' anyway?" -Default $false
+    if (-not $retryImage) {
+        Write-Host "Deployment cancelled" -ForegroundColor Yellow
+        exit 0
+    }
+}
 
 # MySQL Configuration
 $mysqlDatabaseName = Get-UserInput -Prompt "MySQL Database Name" -Default "skycms" -Required
@@ -242,27 +276,111 @@ Write-Info "Resources: Container Apps, MySQL Flexible Server, Key Vault$(if ($de
 
 $deploymentName = "skycms-deployment-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
-$deploymentResult = az deployment group create `
-    --name $deploymentName `
-    --resource-group $resourceGroupName `
-    --template-file $bicepFile `
-    --parameters `
-        baseName=$baseName `
-        environment=$environment `
-        dockerImage=$dockerImage `
-        mysqlAdminPassword=$mysqlAdminPassword `
-        mysqlDatabaseName=$mysqlDatabaseName `
-        minReplicas=$minReplicas `
-        maxReplicas=$maxReplicas `
-        deployPublisher=$deployPublisher `
-    --output json
+# ============================================================================
+# CREATE TEMPORARY PARAMETER FILE (avoids exposing password in logs)
+# ============================================================================
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Deployment failed" -ForegroundColor Red
+Write-Info "Preparing deployment parameters..."
+
+$paramFile = New-TemporaryFile
+$paramObject = @{
+    "schema"         = "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#"
+    "contentVersion" = "1.0.0.0"
+    "parameters"     = @{
+        "baseName"             = @{ "value" = $baseName }
+        "environment"          = @{ "value" = $environment }
+        "dockerImage"          = @{ "value" = $dockerImage }
+        "mysqlAdminPassword"   = @{ "value" = $mysqlAdminPassword }
+        "mysqlDatabaseName"    = @{ "value" = $mysqlDatabaseName }
+        "minReplicas"          = @{ "value" = [int]$minReplicas }
+        "maxReplicas"          = @{ "value" = [int]$maxReplicas }
+        "deployPublisher"      = @{ "value" = $deployPublisher }
+    }
+}
+
+$paramObject | ConvertTo-Json -Depth 10 | Set-Content $paramFile
+
+# ============================================================================
+# DEPLOY WITH RETRY LOGIC
+# ============================================================================
+
+$maxRetries = 3
+$retryCount = 0
+$deployed = $false
+$deploymentResult = $null
+
+while (-not $deployed -and $retryCount -lt $maxRetries) {
+    try {
+        if ($retryCount -gt 0) {
+            $delaySeconds = [Math]::Min(30 * [Math]::Pow(2, $retryCount - 1), 300)
+            Write-Warning-Custom "Deployment attempt $($retryCount + 1) of $maxRetries. Retrying in $delaySeconds seconds..."
+            Start-Sleep -Seconds $delaySeconds
+        }
+        
+        $deploymentResult = az deployment group create `
+            --name $deploymentName `
+            --resource-group $resourceGroupName `
+            --template-file $bicepFile `
+            --parameters "@$paramFile" `
+            --output json
+
+        if ($LASTEXITCODE -eq 0) {
+            $deployed = $true
+            Write-Success "Deployment succeeded"
+        } else {
+            $retryCount++
+            if ($retryCount -lt $maxRetries) {
+                Write-Warning-Custom "Deployment failed with exit code $LASTEXITCODE, retrying..."
+            }
+        }
+    } catch {
+        $retryCount++
+        if ($retryCount -lt $maxRetries) {
+            Write-Warning-Custom "Deployment error: $_ - Retrying..."
+        } else {
+            Write-Host "❌ Deployment failed after $maxRetries attempts" -ForegroundColor Red
+            Write-Host "Last error: $_" -ForegroundColor Red
+        }
+    }
+}
+
+try {
+    # Clean up parameter file (contains sensitive data)
+    if (Test-Path $paramFile) {
+        Remove-Item $paramFile -Force -ErrorAction SilentlyContinue
+        Write-Verbose "Cleaned up temporary parameter file"
+    }
+} catch {
+    Write-Verbose "Failed to clean up parameter file: $_"
+}
+
+if (-not $deployed) {
+    Write-Host "❌ Deployment failed after $maxRetries attempts" -ForegroundColor Red
     exit 1
 }
 
 $deployment = $deploymentResult | ConvertFrom-Json
+
+# ============================================================================
+# VERIFY DEPLOYMENT SUCCESS
+# ============================================================================
+
+if ($null -eq $deployment.properties) {
+    Write-Host "❌ Deployment returned invalid response" -ForegroundColor Red
+    Write-Host "Deployment ID: $deploymentName" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "📋 TROUBLESHOOTING:" -ForegroundColor Yellow
+    Write-Host "  1. Check Azure Portal for deployment details:" -ForegroundColor White
+    Write-Host "     https://portal.azure.com/ > $resourceGroupName > Deployments > $deploymentName" -ForegroundColor Cyan
+    Write-Host "  2. Review error messages in deployment logs" -ForegroundColor White
+    Write-Host "  3. Check resource constraints and quotas" -ForegroundColor White
+    Write-Host ""
+    Write-Host "🔧 RECOVERY OPTIONS:" -ForegroundColor Yellow
+    Write-Host "  • Fix the issue and re-run this script" -ForegroundColor White
+    Write-Host "  • View logs: az deployment group show --name $deploymentName --resource-group $resourceGroupName" -ForegroundColor Cyan
+    Write-Host "  • Clean up: .\destroy-skycms.ps1 -ResourceGroupName '$resourceGroupName' -Force" -ForegroundColor Cyan
+    exit 1
+}
 
 # ============================================================================
 # ENABLE STATIC WEBSITE (if Publisher deployed)

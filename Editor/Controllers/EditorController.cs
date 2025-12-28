@@ -45,7 +45,6 @@ namespace Sky.Cms.Controllers
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.ReservedPaths;
-    using Sky.Editor.Services.Storage;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
 
@@ -1094,13 +1093,6 @@ namespace Sky.Cms.Controllers
             }
 
             await articleLogic.PublishArticle(articleId, datetime);
-
-            if (!string.IsNullOrEmpty(editorSettings.BackupStorageConnectionString))
-            {
-                var backupService = new FileBackupRestoreService(editorSettings.BackupStorageConnectionString, new MemoryCache(new MemoryCacheOptions()));
-                var connectionString = dbContext.Database.GetConnectionString();
-                await backupService.UploadAsync(connectionString);
-            }
 
             return Redirect(editorUrl);
         }

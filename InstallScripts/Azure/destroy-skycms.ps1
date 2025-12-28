@@ -77,6 +77,7 @@ function Test-AzureCLI {
         $null = az version 2>&1
         return $true
     } catch {
+        Write-Verbose "Azure CLI test failed: $_"
         return $false
     }
 }
@@ -86,6 +87,7 @@ function Test-AzureLogin {
         $account = az account show 2>&1 | ConvertFrom-Json
         return $null -ne $account
     } catch {
+        Write-Verbose "Azure login test failed: $_"
         return $false
     }
 }

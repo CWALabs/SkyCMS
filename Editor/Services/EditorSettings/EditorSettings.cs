@@ -69,7 +69,15 @@ namespace Sky.Editor.Services.EditorSettings
             
             if (isMultiTenantEditor)
             {
-                dynamicConfigurationProvider = serviceProvider.GetRequiredService<IDynamicConfigurationProvider>();
+                dynamicConfigurationProvider = serviceProvider.GetService<IDynamicConfigurationProvider>();
+                
+                if (dynamicConfigurationProvider == null)
+                {
+                    throw new InvalidOperationException(
+                        "MultiTenantEditor is enabled but IDynamicConfigurationProvider is not registered in the service container. " +
+                        "Please add the following registration in Program.cs: " +
+                        "builder.Services.AddSingleton<IDynamicConfigurationProvider, DynamicConfigurationProvider>();");
+                }
             }
 
             // Configuration will be lazy-loaded on first access

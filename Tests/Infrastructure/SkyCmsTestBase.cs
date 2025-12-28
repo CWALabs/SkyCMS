@@ -195,8 +195,8 @@ namespace Sky.Tests
             // Initialize Storage with connection validation
             try
             {
-                Storage = new StorageContext(storageConnectionString, Cache);
-                Console.WriteLine("✅ Successfully connected to Azure Blob Storage");
+                //Storage = new StorageContext(storageConnectionString, Cache);
+                //Console.WriteLine("✅ Successfully connected to Azure Blob Storage");
             }
             catch (Exception ex)
             {

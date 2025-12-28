@@ -11,6 +11,7 @@ namespace Sky.Editor.Services.Scheduling
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using AspNetCore.Identity.FlexDb;
     using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.DynamicConfig;
@@ -132,18 +133,22 @@ namespace Sky.Editor.Services.Scheduling
                 }
                 else
                 {
-                    // Single-tenant mode: create StorageContext manually to avoid DI scope issues with Hangfire
+                    // Single-tenant mode: create DbContext and StorageContext manually to avoid DI scope issues with Hangfire
+                    // Hangfire worker threads don't have HTTP context, so we can't use scoped DI resolution
                     var configuration = scopedServices.GetRequiredService<IConfiguration>();
                     var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
 
-                    var dbContext = scopedServices.GetRequiredService<ApplicationDbContext>();
-                    
-                    // Get the storage connection string and create StorageContext manually
-                    var storageConnectionString = configuration.GetConnectionString("StorageConnectionString") 
-                        ?? configuration.GetValue<string>("StorageConnectionString");
-                    var storageContext = new StorageContext(storageConnectionString, memoryCache);
+                    // Create ApplicationDbContext directly instead of resolving from DI (which requires HTTP context)
+                    using (var dbContext = new ApplicationDbContext(
+                        CosmosDbOptionsBuilder.GetDbOptions<ApplicationDbContext>(connectionString)))
+                    {
+                        // Get the storage connection string and create StorageContext manually
+                        var storageConnectionString = configuration.GetConnectionString("StorageConnectionString") 
+                            ?? configuration.GetValue<string>("StorageConnectionString");
+                        var storageContext = new StorageContext(storageConnectionString, memoryCache);
 
-                    await Run(dbContext, storageContext, domainName, scopedServices);
+                        await Run(dbContext, storageContext, domainName, scopedServices);
+                    }
                 }
             }
             catch (Exception ex)

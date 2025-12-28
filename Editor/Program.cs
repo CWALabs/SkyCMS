@@ -50,10 +50,11 @@ using Sky.Editor.Services.ReservedPaths;
 using Sky.Editor.Services.Scheduling;
 using Sky.Editor.Services.Setup;
 using Sky.Editor.Services.Slugs;
-using Sky.Editor.Services.Storage;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
+using Sky.Editor.Middleware;
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.RateLimiting;
@@ -63,22 +64,42 @@ using System.Web;
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
 // ---------------------------------------------------------------
-// Register Setup Wizard Services (before single/multi-tenant configuration)
+// STEP 1: Determine Deployment Mode
 // ---------------------------------------------------------------
-builder.Services.AddScoped<ISetupService, SetupService>();
-
 var isMultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
 var versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
+System.Console.WriteLine($"Starting Cosmos CMS Editor in {(isMultiTenantEditor ? "Multi-Tenant" : "Single-Tenant")} Mode (v.{versionNumber}).");
+
 // ---------------------------------------------------------------
-// Register base services that are common to both single-tenant and multi-tenant modes
-//
-builder.Services.AddMemoryCache(); // Add memory cache for Cosmos data logic and other services.
-var defaultAzureCredential = new DefaultAzureCredential(); // Create one instance of the DefaultAzureCredential to be used throughout the application.
+// STEP 2: Register Core Infrastructure (Common to Both Modes)
+// ---------------------------------------------------------------
+builder.Services.AddMemoryCache();
+var defaultAzureCredential = new DefaultAzureCredential();
 builder.Services.AddSingleton(defaultAzureCredential);
 builder.Services.AddApplicationInsightsTelemetry();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 
-// Register SiteSettings directly from configuration
+// ---------------------------------------------------------------
+// STEP 3: Configure Mode-Specific Services
+// ---------------------------------------------------------------
+if (isMultiTenantEditor)
+{
+    // Multi-tenant: Dynamic configuration per tenant
+    builder.Services.AddSingleton<IDynamicConfigurationProvider, DynamicConfigurationProvider>();
+    builder.Services.AddScoped<IMultiTenantSetupService, MultiTenantSetupService>();
+    MultiTenant.Configure(builder, defaultAzureCredential);
+}
+else
+{
+    // Single-tenant: Traditional setup wizard
+    SingleTenant.Configure(builder);
+}
+
+// ---------------------------------------------------------------
+// STEP 4: Register Site Settings
+// ---------------------------------------------------------------
 builder.Services.Configure<SiteSettings>(settings =>
 {
     settings.MultiTenantEditor = isMultiTenantEditor;
@@ -90,7 +111,9 @@ builder.Services.Configure<SiteSettings>(settings =>
     settings.MicrosoftAppId = builder.Configuration.GetValue<string>("MicrosoftAppId") ?? string.Empty;
 });
 
-// If you need MicrosoftAppId separately for some services:
+// ---------------------------------------------------------------
+// STEP 5: Register OAuth Configuration (if available)
+// ---------------------------------------------------------------
 var microsoftAuth = builder.Configuration.GetSection("MicrosoftOAuth").Get<AzureAD>()
                     ?? builder.Configuration.GetSection("AzureAD").Get<AzureAD>();
 if (microsoftAuth != null)
@@ -99,22 +122,20 @@ if (microsoftAuth != null)
 }
 
 // ---------------------------------------------------------------
-// Build the app based on single-tenant or multi-tenant mode
-// Schema initialization happens here synchronously during startup
+// STEP 6: Register Application Services
 // ---------------------------------------------------------------
-if (isMultiTenantEditor)
-{
-    System.Console.WriteLine($"Starting Cosmos CMS Editor in Multi-Tenant Mode (v.{versionNumber}).");
-    MultiTenant.Configure(builder, defaultAzureCredential);
-}
-else
-{
-    System.Console.WriteLine($"Starting Cosmos CMS Editor in Single-Tenant Mode (v.{versionNumber}).");
-    SingleTenant.Configure(builder);
-}
 
-// Register transient services - common to both single-tenant and multi-tenant modes
-// Transient services are created each time they are requested.
+// Scoped services (per-request lifecycle, can access HttpContext)
+builder.Services.AddScoped<ISetupService, SetupService>();
+builder.Services.AddScoped<IMediator, Mediator>();
+builder.Services.AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>, CreateArticleHandler>();
+builder.Services.AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>, SaveArticleHandler>();
+builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
+builder.Services.AddScoped<IStorageContext, StorageContext>();
+builder.Services.AddScoped<IEditorSettings, EditorSettings>(); // CHANGED: Scoped for per-request tenant context
+builder.Services.AddScoped<IViewRenderService, ViewRenderService>(); // CHANGED: Scoped for Razor view rendering
+
+// Transient services (stateless operations, created each time)
 builder.Services.AddTransient<ICdnServiceFactory, CdnServiceFactory>();
 builder.Services.AddTransient<ITemplateService, TemplateService>();
 builder.Services.AddTransient<IArticleHtmlService, ArticleHtmlService>();
@@ -122,56 +143,47 @@ builder.Services.AddTransient<IAuthorInfoService, AuthorInfoService>();
 builder.Services.AddTransient<ICatalogService, CatalogService>();
 builder.Services.AddTransient<IClock, Sky.Editor.Infrastructure.Time.SystemClock>();
 builder.Services.AddTransient<IDomainEventDispatcher>(sp => new DomainEventDispatcher(type => sp.GetServices(type)));
-builder.Services.AddTransient<IEditorSettings, EditorSettings>();
 builder.Services.AddTransient<IPublishingService, PublishingService>();
 builder.Services.AddTransient<IRedirectService, RedirectService>();
 builder.Services.AddTransient<IReservedPaths, ReservedPaths>();
 builder.Services.AddTransient<ISlugService, SlugService>();
-builder.Services.AddTransient<IViewRenderService, ViewRenderService>();
 builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IBlogRenderingService, BlogRenderingService>();
-builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
 builder.Services.AddTransient<IEmailConfigurationService, EmailConfigurationService>();
-builder.Services.AddScoped<IStorageContext, StorageContextService>();
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddTransient<ISetupCheckService, SetupCheckService>();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddHttpClient();
 
 // ---------------------------------------------------------------
-// Register Vertical Slice Architecture Feature Handlers
+// STEP 7: Register Background Job Services
 // ---------------------------------------------------------------
-builder.Services.AddScoped<IMediator, Mediator>();
-builder.Services.AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>, CreateArticleHandler>();
-builder.Services.AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>, SaveArticleHandler>();
+builder.Services.AddHangFireScheduling(builder.Configuration);
 
-// ---------------------------------------------------------------
-// Continue registering services common to both single-tenant and multi-tenant modes
-// ---------------------------------------------------------------
-builder.Services.AddHangFireScheduling(builder.Configuration); // Add Hangfire services for scheduling
-
-// Add logging to see Hangfire queries
+// Reduce Hangfire logging noise
 builder.Logging.AddFilter("Hangfire", LogLevel.Warning);
 builder.Logging.AddFilter("Hangfire.Server.ServerHeartbeatProcess", LogLevel.Error);
 builder.Logging.AddFilter("Hangfire.Server.BackgroundProcessingServer", LogLevel.Warning);
 builder.Logging.AddFilter("Hangfire.Server.ServerWatchdog", LogLevel.Error);
-builder.Services.AddFlexDbDataProtection(builder.Configuration); // Add shared data protection here
-builder.Services.AddSignalR(); // Add SignalR services
 
-// Add this before identity
-// See also: https://learn.microsoft.com/en-us/aspnet/core/performance/caching/response?view=aspnetcore-7.0
+// ---------------------------------------------------------------
+// STEP 8: Register Data Protection & SignalR
+// ---------------------------------------------------------------
+builder.Services.AddFlexDbDataProtection(builder.Configuration);
+builder.Services.AddSignalR();
+
+// ---------------------------------------------------------------
+// STEP 9: Register MVC & Razor Pages
+// ---------------------------------------------------------------
 builder.Services.AddControllersWithViews();
 
-// Add Cosmos Identity here
 builder.Services.AddCosmosIdentity<ApplicationDbContext, IdentityUser, IdentityRole, string>(
       options => options.SignIn.RequireConfirmedAccount = true)
-    .AddDefaultUI() // Use this if Identity Scaffolding added
+    .AddDefaultUI()
     .AddDefaultTokenProviders();
 
-// -------------------------------
-// SUPPORTED OAuth Providers
-// Add Google if keys are present
+// ---------------------------------------------------------------
+// STEP 10: Configure OAuth Providers
+// ---------------------------------------------------------------
 var googleOAuth = builder.Configuration.GetSection("GoogleOAuth").Get<OAuth>();
 if (googleOAuth != null && googleOAuth.IsConfigured())
 {
@@ -182,8 +194,6 @@ if (googleOAuth != null && googleOAuth.IsConfigured())
     });
 }
 
-// ---------------------------------
-// Add Microsoft if keys are present
 var entraIdOAuth = builder.Configuration.GetSection("MicrosoftOAuth").Get<OAuth>();
 if (entraIdOAuth != null && entraIdOAuth.IsConfigured())
 {
@@ -194,7 +204,6 @@ if (entraIdOAuth != null && entraIdOAuth.IsConfigured())
 
         if (!string.IsNullOrEmpty(entraIdOAuth.TenantId))
         {
-            // This is for registered apps in the Azure portal that are single tenant.
             options.AuthorizationEndpoint = $"https://login.microsoftonline.com/{entraIdOAuth.TenantId}/oauth2/v2.0/authorize";
             options.TokenEndpoint = $"https://login.microsoftonline.com/{entraIdOAuth.TenantId}/oauth2/v2.0/token";
         }
@@ -211,6 +220,9 @@ if (entraIdOAuth != null && entraIdOAuth.IsConfigured())
     });
 }
 
+// ---------------------------------------------------------------
+// STEP 11: Configure Session & Razor Pages Routes
+// ---------------------------------------------------------------
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromSeconds(3600);
@@ -219,46 +231,57 @@ builder.Services.AddSession(options =>
 
 builder.Services.AddRazorPages(options =>
 {
-    // Setup wizard pages (accessible via /___setup)
-    options.Conventions.AddAreaPageRoute("Setup", "/Index", "___setup");
-    options.Conventions.AddAreaPageRoute("Setup", "/Step1_Mode", "___setup/mode");
-    options.Conventions.AddAreaPageRoute("Setup", "/Step2_Storage", "___setup/storage");
-    options.Conventions.AddAreaPageRoute("Setup", "/Step3_AdminAccount", "___setup/admin");
-    options.Conventions.AddAreaPageRoute("Setup", "/Step4_Publisher", "___setup/publisher");
-    options.Conventions.AddAreaPageRoute("Setup", "/Step5_Email", "___setup/email");
-    options.Conventions.AddAreaPageRoute("Setup", "/Step6_Review", "___setup/review");
-    options.Conventions.AddAreaPageRoute("Setup", "/Complete", "___setup/complete");
+    if (!isMultiTenantEditor)
+    {
+        // Single-tenant setup wizard pages
+        options.Conventions.AddAreaPageRoute("Setup", "/Index", "___setup");
+        options.Conventions.AddAreaPageRoute("Setup", "/Step1_Mode", "___setup/mode");
+        options.Conventions.AddAreaPageRoute("Setup", "/Step2_Storage", "___setup/storage");
+        options.Conventions.AddAreaPageRoute("Setup", "/Step3_AdminAccount", "___setup/admin");
+        options.Conventions.AddAreaPageRoute("Setup", "/Step4_Publisher", "___setup/publisher");
+        options.Conventions.AddAreaPageRoute("Setup", "/Step5_Email", "___setup/email");
+        options.Conventions.AddAreaPageRoute("Setup", "/Step6_Review", "___setup/review");
+        options.Conventions.AddAreaPageRoute("Setup", "/Complete", "___setup/complete");
+    }
+    else
+    {
+        // Multi-tenant setup pages (simplified)
+        options.Conventions.AddAreaPageRoute("Setup", "/Tenant/Index", "___setup");
+        options.Conventions.AddAreaPageRoute("Setup", "/Tenant/Index", "___setup/tenant");
+        options.Conventions.AddAreaPageRoute("Setup", "/Tenant/Admin", "___setup/tenant/admin");
+        options.Conventions.AddAreaPageRoute("Setup", "/Tenant/Complete", "___setup/tenant/complete");
+    }
 });
 
 builder.Services.AddRazorPages();
 
 builder.Services.AddMvc()
     .AddNewtonsoftJson(options =>
-        options.SerializerSettings.ContractResolver =
-            new DefaultContractResolver())
+        options.SerializerSettings.ContractResolver = new DefaultContractResolver())
     .AddRazorPagesOptions(options =>
     {
-        // This section docs are here: https://docs.microsoft.com/en-us/aspnet/core/security/authentication/scaffold-identity?view=aspnetcore-3.1&tabs=visual-studio#full 
         options.Conventions.AuthorizeAreaFolder("Identity", "/Account/Manage");
         options.Conventions.AuthorizeAreaPage("Identity", "/Account/Logout");
     });
+
+// ---------------------------------------------------------------
+// STEP 12: Configure CORS & Security
+// ---------------------------------------------------------------
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(
-        "AllCors",
-        policy =>
-        {
-            policy.AllowAnyOrigin().AllowAnyMethod();
-        });
+    options.AddPolicy("AllCors", policy =>
+    {
+        policy.AllowAnyOrigin().AllowAnyMethod();
+    });
 });
 
-// https://docs.microsoft.com/en-us/aspnet/core/security/enforcing-ssl?view=aspnetcore-2.1&tabs=visual-studio#http-strict-transport-security-protocol-hsts
 builder.Services.AddHsts(options =>
 {
     options.Preload = true;
     options.IncludeSubDomains = true;
     options.MaxAge = TimeSpan.FromDays(365);
 });
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "CosmosAuthCookie";
@@ -273,12 +296,10 @@ builder.Services.ConfigureApplicationCookie(options =>
             var httpContext = context.HttpContext;
             var xOriginHostname = httpContext.Request.Headers["x-origin-hostname"].ToString();
             
-            // Get the current domain from x-origin-hostname header or request host
             var currentDomain = !string.IsNullOrWhiteSpace(xOriginHostname) 
                 ? xOriginHostname.ToLowerInvariant() 
                 : httpContext.Request.Host.Host.ToLowerInvariant();
             
-            // If cookie was issued for a different domain, reject the authentication
             if (context.Principal?.Identity?.IsAuthenticated == true)
             {
                 var cookieDomainClaim = context.Principal.FindFirst("CookieDomain");
@@ -295,7 +316,6 @@ builder.Services.ConfigureApplicationCookie(options =>
             var httpContext = context.HttpContext;
             var xOriginHostname = httpContext.Request.Headers["x-origin-hostname"].ToString();
             
-            // Store the domain where the cookie was issued
             var currentDomain = !string.IsNullOrWhiteSpace(xOriginHostname) 
                 ? xOriginHostname.ToLowerInvariant() 
                 : httpContext.Request.Host.Host.ToLowerInvariant();
@@ -306,20 +326,13 @@ builder.Services.ConfigureApplicationCookie(options =>
             return Task.CompletedTask;
         };
         
-        // Don't set a specific domain - let it default to the current request domain
         options.Cookie.Domain = null;
     }
     
-    // Ensure cookie security
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.HttpOnly = true;
 
-    // This section docs are here: https://docs.microsoft.com/en-us/aspnet/core/security/authentication/scaffold-identity?view=aspnetcore-3.1&tabs=visual-studio#full
-    // The following is when using Docker container with a proxy like
-    // Azure front door. It ensures relative paths for redirects
-    // which is necessary when the public DNS at Front door is www.mycompany.com 
-    // and the DNS of the App Service is something like myappservice.azurewebsites.net.
     options.Events.OnRedirectToLogin = x =>
     {
         var queryParams = System.Web.HttpUtility.ParseQueryString(x.Request.QueryString.Value);
@@ -352,29 +365,16 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
-// BEGIN
-// When deploying to a Docker container, the OAuth redirect_url
-// parameter may have http instead of https.
-// Providers often do not allow http because it is not secure.
-// So authentication will fail.
-// Article below shows instructions for fixing this.
-//
-// NOTE: There is a companion secton below in the Configure method. Must have this
-//
-// https://seankilleen.com/2020/06/solved-net-core-azure-ad-in-docker-container-incorrectly-uses-an-non-https-redirect-uri/
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor |
-                               ForwardedHeaders.XForwardedProto;
-
-    // Only loopback proxies are allowed by default.
-    // Clear that restriction because forwarders are enabled by explicit
-    // configuration.
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
-// Throttle certain endpoints to protect the website.
+// ---------------------------------------------------------------
+// STEP 13: Configure Rate Limiting
+// ---------------------------------------------------------------
 builder.Services.AddRateLimiter(_ => _
     .AddFixedWindowLimiter(policyName: "fixed", options =>
     {
@@ -384,56 +384,77 @@ builder.Services.AddRateLimiter(_ => _
         options.QueueLimit = 2;
     }));
 
-// builder.Services.AddHostedService<PostSetupInitializationService>();
-
+// ---------------------------------------------------------------
+// BUILD APPLICATION
+// ---------------------------------------------------------------
 var app = builder.Build();
 
+// ---------------------------------------------------------------
+// CONFIGURE MIDDLEWARE PIPELINE
+// ---------------------------------------------------------------
+
+// Multi-tenant middleware (must run early in pipeline)
 if (isMultiTenantEditor)
 {
     app.UseMiddleware<DomainMiddleware>();
+    app.UseTenantSetupRedirect();
 }
 
-app.UseCosmosCmsDataProtection(); // Enable data protection services for Cosmos CMS.
+app.UseCosmosCmsDataProtection();
 
-// Map CloudFront viewer protocol to X-Forwarded-Proto so ASP.NET Core recognizes HTTPS
-// CloudFront sets CloudFront-Forwarded-Proto (https when viewer uses HTTPS) but ASP.NET Core's
-// UseForwardedHeaders() middleware only reads X-Forwarded-Proto. Without this mapping, antiforgery
-// validation and OAuth redirects fail because the app sees the CloudFront→ALB protocol (http) instead
-// of the original viewer protocol (https).
-// References:
-// - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html
-// - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-request-policies.html
+// CloudFront protocol mapping (before UseForwardedHeaders)
 app.Use(async (context, next) =>
 {
     var headers = context.Request.Headers;
     if (headers.TryGetValue("CloudFront-Forwarded-Proto", out var cfProto))
     {
-        // Overwrite ALB-provided X-Forwarded-Proto (http) with CloudFront viewer protocol
         headers["X-Forwarded-Proto"] = cfProto;
     }
-
     await next();
 });
 
-app.UseForwardedHeaders(); // https://seankilleen.com/2020/06/solved-net-core-azure-ad-in-docker-container-incorrectly-uses-an-non-https-redirect-uri/
+app.UseForwardedHeaders();
 
+// Setup wizard access control
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/___setup"))
     {
         var config = context.RequestServices.GetRequiredService<IConfiguration>();
-        var allowSetup = config.GetValue<bool?>("CosmosAllowSetup") ?? false;
-
-        if (!allowSetup)
+        
+        if (!isMultiTenantEditor)
         {
-            context.Response.Redirect("/");
-            return;
+            var allowSetup = config.GetValue<bool?>("CosmosAllowSetup") ?? false;
+            if (!allowSetup)
+            {
+                context.Response.Redirect("/");
+                return;
+            }
+        }
+        else
+        {
+            var setupService = context.RequestServices.GetService<IMultiTenantSetupService>();
+            if (setupService != null)
+            {
+                var requiresSetup = await setupService.TenantRequiresSetupAsync();
+                if (!requiresSetup)
+                {
+                    context.Response.Redirect("/");
+                    return;
+                }
+            }
+            else
+            {
+                context.Response.Redirect("/");
+                return;
+            }
         }
     }
 
     await next();
 });
 
+// Environment-specific middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -441,32 +462,32 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts(); // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
 }
 
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
-        // Ensure .js files are served with correct MIME type
         if (ctx.File.Name.EndsWith(".js"))
         {
             ctx.Context.Response.Headers.Append("Content-Type", "application/javascript");
         }
     }
 });
-app.UseRouting();
 
+app.UseRouting();
 app.UseCors();
-app.UseResponseCaching(); // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/middleware?view=aspnetcore-3.1
+app.UseResponseCaching();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-// Map Hangfire scheduling slice (only initializes dashboard if setup is complete)
 app.UseHangfireSchedulingSlice();
 
-// Lightweight liveness/readiness endpoint for load balancer health checks
+// ---------------------------------------------------------------
+// CONFIGURE ENDPOINTS
+// ---------------------------------------------------------------
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 
 app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext context) =>
@@ -476,7 +497,7 @@ app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext 
     return Results.Ok();
 });
 
-app.MapHub<LiveEditorHub>("/___cwps_hubs_live_editor"); // Point to the route that will return the SignalR Hub.
+app.MapHub<LiveEditorHub>("/___cwps_hubs_live_editor");
 app.MapControllerRoute("MsValidation", ".well-known/microsoft-identity-association.json", new { controller = "Home", action = "GetMicrosoftIdentityAssociation" }).AllowAnonymous();
 app.MapControllerRoute("MyArea", "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 app.MapControllerRoute(name: "pub", pattern: "pub/{*index}", defaults: new { controller = "Pub", action = "Index" });
@@ -485,7 +506,6 @@ app.MapControllerRoute(name: "blog_post", pattern: "blog/post/{*slug}", defaults
 app.MapControllerRoute(name: "blog_rss", pattern: "blog/rss", defaults: new { controller = "Blog", action = "Rss" });
 app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 
-// Setup wizard route (uses triple underscore to avoid conflicts with user pages)
 app.MapRazorPages().WithMetadata(new { Area = "Setup" });
 app.MapAreaControllerRoute(
     name: "setup",
@@ -493,11 +513,12 @@ app.MapAreaControllerRoute(
     pattern: "___setup/{*pathInfo}",
     defaults: new { page = "/Index" });
 
-app.MapFallbackToController("Index", "Home"); // Deep path
-
+app.MapFallbackToController("Index", "Home");
 app.MapRazorPages();
 
-// Configure recurring jobs only if Hangfire was initialized
+// ---------------------------------------------------------------
+// CONFIGURE BACKGROUND JOBS
+// ---------------------------------------------------------------
 try
 {
     using (var scope = app.Services.CreateScope())
@@ -506,17 +527,15 @@ try
         
         if (recurring != null)
         {
-            // For async method on a service type:
             recurring.AddOrUpdate<ArticleScheduler>(
                 "article-version-publisher",
                 x => x.ExecuteAsync(),
-                Cron.MinuteInterval(10)); // Runs every 10 minutes
+                Cron.MinuteInterval(10));
         }
     }
 }
 catch (Exception ex)
 {
-    // Hangfire not configured - this is expected during setup
     app.Logger.LogInformation("Hangfire recurring jobs not configured: {Message}", ex.Message);
 }
 

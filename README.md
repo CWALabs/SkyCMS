@@ -11,7 +11,15 @@
 
 **Documentation home:** https://docs-sky-cms.com
 
-**Installation Scripts:** [AWS](InstallScripts/AWS/README.md) | [Azure](InstallScripts/Azure/README.md)
+## Deploy to a cloud
+
+[![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FYOUR_USERNAME%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.bicep) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=skycms&templateURL=https%3A%2F%2Fskycms-cloudformation-563441.s3.us-east-1.amazonaws.com%2Fskycms-editor-cloudformation.yaml)
+
+> **Quick Start:** 
+> - **Azure:** Click the Azure button above for one-click deployment
+> - **AWS:** See [AWS Installation](InstallScripts/AWS/README.md) for one-time S3 setup, then one-click deploy
+>
+> Both links have detailed post-deployment guides.
 
 **A powerful, modern alternative to Netlify CMS, CloudCannon, TinaCMS, Stackbit, and Publii** — SkyCMS delivers all the benefits of JAMstack architecture without the complexity, cost, or technical barriers that plague traditional static site generators.
 

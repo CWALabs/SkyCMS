@@ -9,12 +9,13 @@ namespace Sky.Editor.Boot
 {
     using System;
     using System.Linq;
+    using System.Threading.Tasks;
     using AspNetCore.Identity.FlexDb;
     using Azure.Identity;
-    using Cosmos.BlobService;
     using Cosmos.Common.Data;
     using Cosmos.DynamicConfig;
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
@@ -67,6 +68,66 @@ namespace Sky.Editor.Boot
                 CosmosDbOptionsBuilder.ConfigureDbOptions(options, configConnectionString);
             });
 
+            // Register ApplicationDbContext with dynamic tenant resolution
+            builder.Services.AddScoped<ApplicationDbContext>(serviceProvider =>
+            {
+                var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+                var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+                var contextLogger = serviceProvider.GetRequiredService<ILogger<ApplicationDbContext>>();
+
+                // Get tenant domain from configuration (set by DomainMiddleware)
+                var currentTenantDomain = configuration.GetValue<string>("CurrentTenantDomain");
+
+                if (string.IsNullOrEmpty(currentTenantDomain))
+                {
+                    // Fallback: try to get from request headers
+                    var xOriginHostname = httpContextAccessor.HttpContext?.Request.Headers["x-origin-hostname"].ToString();
+                    currentTenantDomain = !string.IsNullOrWhiteSpace(xOriginHostname)
+                        ? xOriginHostname.ToLowerInvariant()
+                        : httpContextAccessor.HttpContext?.Request.Host.Host.ToLowerInvariant();
+                }
+
+                if (string.IsNullOrEmpty(currentTenantDomain))
+                {
+                    // Provide helpful error message for common scenarios
+                    var errorMessage = "Unable to determine tenant domain for ApplicationDbContext resolution. ";
+                    
+                    if (httpContextAccessor.HttpContext == null)
+                    {
+                        errorMessage += "No HTTP context is available (this is expected for background jobs like Hangfire). " +
+                                      "Background jobs should create ApplicationDbContext directly using 'new ApplicationDbContext(connectionString)' " +
+                                      "instead of resolving it from the DI container.";
+                    }
+                    else
+                    {
+                        errorMessage += "HTTP context is available but tenant domain could not be determined from headers or host. " +
+                                      "Ensure DomainMiddleware is properly configured and running before this request.";
+                    }
+                    
+                    contextLogger.LogError(errorMessage);
+                    throw new InvalidOperationException(errorMessage);
+                }
+
+                // Get the tenant's connection string from DynamicConfigDbContext
+                var configDbContext = serviceProvider.GetRequiredService<DynamicConfigDbContext>();
+                var connection = configDbContext.Connections
+                    .FirstOrDefault(c => c.DomainNames.Contains(currentTenantDomain));
+
+                if (connection == null)
+                {
+                    throw new InvalidOperationException($"No tenant configuration found for domain: {currentTenantDomain}");
+                }
+
+                if (string.IsNullOrEmpty(connection.DbConn))
+                {
+                    throw new InvalidOperationException($"Tenant {currentTenantDomain} has no database connection string configured");
+                }
+
+                // Create ApplicationDbContext with tenant-specific connection string
+                var options = CosmosDbOptionsBuilder.GetDbOptions<ApplicationDbContext>(connection.DbConn);
+                return new ApplicationDbContext(options);
+            });
+
             // Ensure all tenant database schemas exist if setup is allowed
             if (allowSetup)
             {
@@ -88,32 +149,28 @@ namespace Sky.Editor.Boot
         /// </summary>
         /// <param name="connectionString">Config database connection string.</param>
         /// <param name="logger">Logger instance.</param>
-        private static void EnsureConfigDatabaseSchemaExists(string connectionString, ILogger logger)
+        private static async Task EnsureConfigDatabaseSchemaExists(string connectionString, ILogger logger)
         {
             try
             {
-                using var dbContext = new DynamicConfigDbContext(CosmosDbOptionsBuilder.GetDbOptions<DynamicConfigDbContext>(connectionString));
+                using var context = new ApplicationDbContext(connectionString);
                 
-                if (!dbContext.Database.CanConnect())
+                // Replace: if (!context.Database.CanConnect())
+                if (!await CanConnectToCosmosAsync(context, logger))
                 {
-                    logger.LogInformation("Config database not accessible - creating database and schema");
-                    dbContext.Database.EnsureCreated();
-                    logger.LogInformation("Config database and schema created successfully");
+                    logger.LogWarning("Cannot connect to config database");
                     return;
                 }
-
-                // Verify schema exists
-                try
-                {
-                    dbContext.Database.EnsureCreated();
-                    logger.LogInformation("Config database schema verified");
-                }
-                catch
-                {
-                    logger.LogInformation("Config database schema incomplete or missing - creating schema");
-                    dbContext.Database.EnsureCreated();
-                    logger.LogInformation("Config database schema created successfully");
-                }
+                
+                // Cosmos DB automatically creates containers on first access
+                // No explicit schema creation needed like SQL databases
+                await context.Database.EnsureCreatedAsync();
+                
+                logger.LogInformation("Config database schema verified");
+            }
+            catch (NotSupportedException ex)
+            {
+                logger.LogWarning(ex, "Cosmos DB does not support schema operations - skipping");
             }
             catch (Exception ex)
             {
@@ -127,7 +184,7 @@ namespace Sky.Editor.Boot
         /// </summary>
         /// <param name="configConnectionString">Config database connection string.</param>
         /// <param name="logger">Logger instance.</param>
-        private static void EnsureTenantSchemasExist(string configConnectionString, ILogger logger)
+        private static async Task EnsureTenantSchemasExist(string configConnectionString, ILogger logger)
         {
             try
             {
@@ -163,34 +220,23 @@ namespace Sky.Editor.Boot
                         using var tenantDbContext = new ApplicationDbContext(
                             CosmosDbOptionsBuilder.GetDbOptions<ApplicationDbContext>(tenantConnectionString));
                         
-                        if (!tenantDbContext.Database.CanConnect())
+                        // Replace: if (!tenantDbContext.Database.CanConnect())
+                        if (!await CanConnectToCosmosAsync(tenantDbContext, logger))
                         {
-                            logger.LogInformation("Tenant database not accessible - creating database and schema for {TenantName}", 
-                                tenantConfig.DomainNames);
-                            tenantDbContext.Database.EnsureCreated();
-                            logger.LogInformation("Tenant database and schema created for {TenantName}", tenantConfig.DomainNames);
+                            logger.LogWarning($"Cannot connect to tenant database: {tenantConfig.DomainNames}");
                             continue;
                         }
-
-                        // Verify schema by attempting to query a core table
-                        try
-                        {
-                            var testQuery = tenantDbContext.Settings.FirstOrDefault();
-                            logger.LogInformation("Tenant schema verified for {TenantName}", tenantConfig.DomainNames);
-                        }
-                        catch
-                        {
-                            logger.LogInformation("Tenant schema incomplete - creating schema for {TenantName}", 
-                                tenantConfig.DomainNames);
-                            tenantDbContext.Database.EnsureCreated();
-                            logger.LogInformation("Tenant schema created for {TenantName}", tenantConfig.DomainNames);
-                        }
+                        
+                        await tenantDbContext.Database.EnsureCreatedAsync();
+                        logger.LogInformation($"Tenant schema verified for {tenantConfig.DomainNames}");
+                    }
+                    catch (NotSupportedException ex)
+                    {
+                        logger.LogWarning(ex, $"Cosmos DB does not support schema operations for tenant {tenantConfig.DomainNames} - skipping");
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, "Failed to ensure schema for tenant: {TenantName} (ID: {TenantId})", 
-                            tenantConfig.DomainNames, tenantConfig.Id);
-                        // Don't throw - continue with other tenants
+                        logger.LogError(ex, $"Failed to ensure schema for tenant: {tenantConfig.DomainNames}");
                     }
                 }
 
@@ -198,8 +244,24 @@ namespace Sky.Editor.Boot
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to check tenant schemas");
+                logger.LogError(ex, "Failed during tenant schema initialization");
                 throw;
+            }
+        }
+
+        private static async Task<bool> CanConnectToCosmosAsync(DbContext context, ILogger logger)
+        {
+            try
+            {
+                // For Cosmos DB, attempt to ensure the database exists
+                // This validates connectivity without using CanConnect
+                await context.Database.EnsureCreatedAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to connect to Cosmos DB");
+                return false;
             }
         }
     }

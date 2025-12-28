@@ -103,6 +103,12 @@ if ([string]::IsNullOrWhiteSpace($Action)) {
     Show-Menu
 }
 
+# Verify action was selected
+if ([string]::IsNullOrWhiteSpace($Action)) {
+    Write-Host "No action selected" -ForegroundColor Red
+    exit 1
+}
+
 Get-ResourceGroup
 
 switch ($Action) {
@@ -118,10 +124,12 @@ switch ($Action) {
     'RestartContainerApp' {
         Get-ContainerAppNameFromUser
         Write-Info "Restarting $ContainerAppName..."
-        az containerapp revision restart `
+        # Force new revision by updating environment variable
+        az containerapp update `
             --name $ContainerAppName `
-            --resource-group $ResourceGroupName
-        Write-Success "Container app restarted"
+            --resource-group $ResourceGroupName `
+            --set-env-vars RESTART_TIMESTAMP=$(Get-Date -Format 'u')
+        Write-Success "Container app restart triggered"
     }
     
     'ScaleContainerApp' {
