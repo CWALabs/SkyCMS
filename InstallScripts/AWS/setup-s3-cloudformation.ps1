@@ -21,7 +21,7 @@ Write-Host "║                    AWS S3 CLOUDFORMATION SETUP                  
 Write-Host "╚════════════════════════════════════════════════════════════════════════════╝`n" -ForegroundColor Cyan
 
 # Configuration
-$bucketName = "skycms-cloudformation-$(Get-Random -Minimum 100000 -Maximum 999999)"
+$bucketName = "skycms-cloudformation-templates"
 $region = "us-east-1"
 $templateFile = Join-Path $PSScriptRoot "skycms-editor-cloudformation.yaml"
 $templateKey = "skycms-editor-cloudformation.yaml"

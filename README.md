@@ -13,13 +13,13 @@
 
 ## Deploy to a cloud
 
-[![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FYOUR_USERNAME%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.bicep) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=skycms&templateURL=https%3A%2F%2Fskycms-cloudformation-563441.s3.us-east-1.amazonaws.com%2Fskycms-editor-cloudformation.yaml)
+[![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.bicep) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=skycms&templateURL=https%3A%2F%2Fskycms-cloudformation-templates.s3.us-east-1.amazonaws.com%2Fskycms-editor-cloudformation.yaml)
 
 > **Quick Start:** 
-> - **Azure:** Click the Azure button above for one-click deployment
+> - **Azure:** Click the Azure button above for one-click deployment to Container Apps + MySQL
 > - **AWS:** See [AWS Installation](InstallScripts/AWS/README.md) for one-time S3 setup, then one-click deploy
 >
-> Both links have detailed post-deployment guides.
+> Both deployments include detailed post-deployment setup wizard and configuration guides.
 
 **A powerful, modern alternative to Netlify CMS, CloudCannon, TinaCMS, Stackbit, and Publii** — SkyCMS delivers all the benefits of JAMstack architecture without the complexity, cost, or technical barriers that plague traditional static site generators.
 
@@ -476,13 +476,18 @@ Alternative NodeJS Publisher: [Sky.Publisher.NodeJs](https://github.com/CWALabs/
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guidelines and:
+We welcome contributions! Please see our [Contributing Guidelines](./Docs/CONTRIBUTING.md) and:
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+**Community Resources**:
+- [Code of Conduct](./CODE_OF_CONDUCT.md) *(if available)*
+- [Security Policy](./AzureMP/SECURITY.md) - Report vulnerabilities
+- [Support Channels](./AzureMP/SUPPORT.md) - Get help
 
 For documentation updates, follow the pattern in [Docs/CONTRIBUTING.md](./Docs/CONTRIBUTING.md): keep overviews focused on what/why, put detailed settings and defaults in configuration references, and start from the templates in [Docs/_templates](./Docs/_templates).
 
@@ -591,3 +596,15 @@ This project is dual-licensed under GPL 2.0-or-later (with open-source CKEditor)
 ---
 
 **Copyright (c) 2025 Moonrise Software, LLC. All rights reserved.**
+
+---
+
+## Important Links
+
+- **[Documentation](https://docs-sky-cms.com)** - Complete guides and tutorials
+- **[GitHub Repository](https://github.com/CWALabs/SkyCMS)** - Source code and issues
+- **[Support Options](./AzureMP/SUPPORT.md)** - Get help from community or commercial support
+- **[Security Policy](./AzureMP/SECURITY.md)** - Report vulnerabilities
+- **[Privacy Policy](./AzureMP/PRIVACY.md)** - Data handling and privacy
+- **[Terms of Service](./AzureMP/TERMS_OF_SERVICE.md)** - License and usage terms
+- **[Azure Marketplace](https://aka.ms/skycms-azure)** - One-click Azure deployment *(coming soon)*

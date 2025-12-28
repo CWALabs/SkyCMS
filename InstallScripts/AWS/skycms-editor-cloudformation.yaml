@@ -26,7 +26,6 @@ Metadata:
       - Label:
           default: "Caching (Optional)"
         Parameters:
-          - EditorCacheEnabled
           - PublisherCacheEnabled
       - Label:
           default: "Custom Domain (Optional)"
@@ -101,14 +100,6 @@ Parameters:
       - 16384
       - 30720
 
-  EditorCacheEnabled:
-    Type: String
-    Default: 'true'
-    Description: Enable CloudFront caching for Editor responses
-    AllowedValues:
-      - 'true'
-      - 'false'
-
   PublisherCacheEnabled:
     Type: String
     Default: 'true'
@@ -135,7 +126,6 @@ Parameters:
 Conditions:
   HasCustomDomain: !Not [!Equals [!Ref DomainName, '']]
   HasCertificateArn: !Not [!Equals [!Ref CertificateArn, '']]
-  EnableEditorCache: !Equals [!Ref EditorCacheEnabled, 'true']
   EnablePublisherCache: !Equals [!Ref PublisherCacheEnabled, 'true']
 
 Resources:
@@ -356,7 +346,8 @@ Resources:
 
   RdsMysqlInstance:
     Type: AWS::RDS::DBInstance
-    DeletionPolicy: Snapshot
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       DBInstanceIdentifier: !Sub '${StackName}-db'
       Engine: mysql
@@ -534,7 +525,7 @@ Resources:
   AlbListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      LoadBalancerArn: !GetAtt ApplicationLoadBalancer.Arn
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: 80
       Protocol: HTTP
       DefaultActions:

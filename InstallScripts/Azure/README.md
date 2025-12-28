@@ -14,9 +14,7 @@ Complete Azure infrastructure deployment for SkyCMS using Bicep Infrastructure a
 
 **Click the button below to deploy directly to Azure Portal (no local tools needed):**
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fyour-username%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.bicep)
-
-> **Note:** Replace `your-username` in the button URL with your GitHub username
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.bicep)
 
 **First time?** See the [Post-Deployment Quick Start Guide](./QUICKSTART_DEPLOY_BUTTON.md) after deployment completes.
 
