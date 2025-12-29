@@ -400,6 +400,51 @@ if (isMultiTenantEditor)
     app.UseTenantSetupRedirect();
 }
 
+// ---------------------------------------------------------------
+// STEP: Setup Detection & Redirection (Single-Tenant Only)
+// ---------------------------------------------------------------
+if (!isMultiTenantEditor)
+{
+    app.Use(async (context, next) =>
+    {
+        // Skip setup check for setup wizard pages, static files, and health checks
+        if (context.Request.Path.StartsWithSegments("/___setup") ||
+            context.Request.Path.StartsWithSegments("/lib") ||
+            context.Request.Path.StartsWithSegments("/css") ||
+            context.Request.Path.StartsWithSegments("/js") ||
+            context.Request.Path.StartsWithSegments("/images") ||
+            context.Request.Path.StartsWithSegments("/fonts") ||
+            context.Request.Path.Value.EndsWith(".css") ||
+            context.Request.Path.Value.EndsWith(".js") ||
+            context.Request.Path.Value.EndsWith(".map") ||
+            context.Request.Path.StartsWithSegments("/healthz") ||
+            context.Request.Path.StartsWithSegments("/.well-known"))
+        {
+            await next();
+            return;
+        }
+
+        var config = context.RequestServices.GetRequiredService<IConfiguration>();
+        var allowSetup = config.GetValue<bool?>("CosmosAllowSetup") ?? false;
+
+        if (allowSetup)
+        {
+            // Check if setup is complete using the new method
+            var setupService = context.RequestServices.GetRequiredService<ISetupService>();
+            var isComplete = await setupService.IsSetupCompleteAsync();
+
+            if (!isComplete)
+            {
+                // Redirect to setup wizard
+                context.Response.Redirect("/___setup");
+                return;
+            }
+        }
+
+        await next();
+    });
+}
+
 app.UseCosmosCmsDataProtection();
 
 // CloudFront protocol mapping (before UseForwardedHeaders)
@@ -410,6 +455,7 @@ app.Use(async (context, next) =>
     {
         headers["X-Forwarded-Proto"] = cfProto;
     }
+
     await next();
 });
 

@@ -4,9 +4,9 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 
-		<Version>9.2.3.16</Version>
-		<AssemblyVersion>9.2.3.16</AssemblyVersion>
-		<FileVersion>9.2.3.16</FileVersion>
+		<Version>9.2.3.17</Version>
+		<AssemblyVersion>9.2.3.17</AssemblyVersion>
+		<FileVersion>9.2.3.17</FileVersion>
 		<IsPackable>false</IsPackable>
 
 		<!--<UserSecretsId>e5f1f76e-e6ac-4f45-ac55-02e401325c2b</UserSecretsId>-->

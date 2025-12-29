@@ -1,10 +1,24 @@
 # Quick Start: Interactive Deployment
 
-## TL;DR - 3 Commands to Deploy
+## TL;DR - Deploy in 3 Steps
 
+### Step 1: Authenticate to AWS
 ```powershell
-cd D:\source\SkyCMS\InstallScripts\AWS
-aws configure  # (if not already configured)
+aws login
+# Browser opens for authentication
+```
+
+### Step 2: Bootstrap CDK (one-time per account/region)
+```powershell
+cd D:\source\SkyCMS\InstallScripts\AWS\cdk
+.\node_modules\.bin\cdk.cmd bootstrap aws://873764251532/us-east-1 `
+  --qualifier hnb659fds `
+  --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
+```
+
+### Step 3: Run Deployment Script
+```powershell
+cd ..
 .\cdk-deploy.ps1
 ```
 

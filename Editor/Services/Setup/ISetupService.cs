@@ -30,6 +30,12 @@ namespace Sky.Editor.Services.Setup
         Task<SetupConfiguration> GetCurrentSetupAsync();
 
         /// <summary>
+        /// Checks if the setup process has been completed.
+        /// </summary>
+        /// <returns>True if setup is complete; otherwise, false.</returns>
+        Task<bool> IsSetupCompleteAsync();
+
+        /// <summary>
         /// Updates the tenant mode.
         /// </summary>
         /// <param name="setupId">Setup session ID.</param>

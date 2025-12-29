@@ -15,12 +15,31 @@ The new deployment workflow is fully **interactive** and **user-friendly**:
 ## Prerequisites
 
 - **Windows PowerShell 5.1+** or **PowerShell Core 7+**
-- **AWS CLI** configured with credentials (`aws configure`)
+- **AWS CLI** v2+ with valid credentials (`aws login`)
 - **Node.js 18+** and **npm** installed
 - **Docker** running (for container image validation)
 - **AWS Permissions**: CloudFormation, ECS, RDS, S3, CloudFront, IAM, Secrets Manager, ACM, EC2
+- **CDK Bootstrap** (one-time setup per account/region — see "Bootstrap CDK" section below)
 
 ## Quick Start
+
+### Step 0: Authenticate and Bootstrap (First Time Only)
+
+#### Authenticate to AWS:
+```powershell
+aws login
+# Your default browser opens for IAM Identity Center or AWS account sign-in
+# After login, return to terminal
+```
+
+#### Bootstrap CDK (one-time per account/region):
+```powershell
+cd D:\source\SkyCMS\InstallScripts\AWS\cdk
+.\node_modules\.bin\cdk.cmd bootstrap aws://873764251532/us-east-1 `
+  --qualifier hnb659fds `
+  --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
+# Wait for "✨ Environment aws://873764251532/us-east-1 bootstrapped successfully."
+```
 
 ### 1. Run the Script
 
@@ -69,17 +88,20 @@ DEPLOYMENT CONFIGURATION SUMMARY
 
 Editor:
   Stack Name: SkyCMS-Stack
-  Region: us-east-1
-  Image: toiyabe/sky-editor:latest
-  Desired Count: 1
-  Database: skycms
+  RegCheck CDK Bootstrap** (auto-detect and prompt if missing)
+   - If bootstrap assets bucket not found, offers to run bootstrap automatically
 
-Email (SES): DISABLED
+2. **Publisher** (if selected):
+   - Deploy S3 bucket + CloudFront distribution
+   - Request ACM certificate for custom domain (if provided)
+   - Create IAM user `skycms-s3-publisher-user`
+   - Generate access keys
+   - Store S3 connection string in Secrets Manager as `SkyCms-StorageConnectionString`
 
-Publisher: ENABLED
-  Stack Name: skycms-publisher
-  Domain: publisher.example.com
-
+3. **Editor**:
+  - Synthesize CloudFormation template (optionally save YAML to disk)
+  - Deploy ECS cluster + RDS MySQL + CloudFront
+  - Output CloudFront URLs and RDS endpoi
 Continue with deployment? (y/n) [Y]
 ```
 

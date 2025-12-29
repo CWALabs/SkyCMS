@@ -1,0 +1,2441 @@
+{
+ "Resources": {
+  "PublisherBucket8AEE464F": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:auto-delete-objects",
+      "Value": "true"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/PublisherBucket/Resource"
+   }
+  },
+  "PublisherBucketPolicy5240CEDE": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "PublisherBucket8AEE464F"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:PutBucketPolicy",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::GetAtt": [
+          "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+          "Arn"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "PublisherBucket8AEE464F",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "PublisherBucket8AEE464F",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "PublisherOAIBD5FCC28",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "PublisherBucket8AEE464F",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "PublisherBucket8AEE464F",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "PublisherOAIBD5FCC28",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "PublisherBucket8AEE464F",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/PublisherBucket/Policy/Resource"
+   }
+  },
+  "PublisherBucketAutoDeleteObjectsCustomResource3FFEAD3E": {
+   "Type": "Custom::S3AutoDeleteObjects",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+      "Arn"
+     ]
+    },
+    "BucketName": {
+     "Ref": "PublisherBucket8AEE464F"
+    }
+   },
+   "DependsOn": [
+    "PublisherBucketPolicy5240CEDE"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/PublisherBucket/AutoDeleteObjectsCustomResource/Default"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-873764251532-us-east-1",
+     "S3Key": "faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Lambda function for auto-deleting objects in ",
+       {
+        "Ref": "PublisherBucket8AEE464F"
+       },
+       " S3 bucket."
+      ]
+     ]
+    }
+   },
+   "DependsOn": [
+    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6",
+    "aws:asset:property": "Code"
+   }
+  },
+  "PublisherOAIBD5FCC28": {
+   "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+   "Properties": {
+    "CloudFrontOriginAccessIdentityConfig": {
+     "Comment": "OAI for SkyCMS-Stack-01 Publisher"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/PublisherOAI/Resource"
+   }
+  },
+  "PublisherDistributionAE0015D7": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "DefaultCacheBehavior": {
+      "AllowedMethods": [
+       "GET",
+       "HEAD"
+      ],
+      "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+      "CachedMethods": [
+       "GET",
+       "HEAD"
+      ],
+      "Compress": true,
+      "TargetOriginId": "SkyCMSStack01PublisherDistributionOrigin1F3402CC1",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "PublisherBucket8AEE464F",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "SkyCMSStack01PublisherDistributionOrigin1F3402CC1",
+       "S3OriginConfig": {
+        "OriginAccessIdentity": {
+         "Fn::Join": [
+          "",
+          [
+           "origin-access-identity/cloudfront/",
+           {
+            "Ref": "PublisherOAIBD5FCC28"
+           }
+          ]
+         ]
+        }
+       }
+      }
+     ],
+     "PriceClass": "PriceClass_100"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/PublisherDistribution/Resource"
+   }
+  },
+  "S3PublisherUser8A0F3D78": {
+   "Type": "AWS::IAM::User",
+   "Properties": {
+    "UserName": {
+     "Fn::Join": [
+      "",
+      [
+       "skycms-s3-publisher-user-",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       "-SkyCMS-Stack-01"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/S3PublisherUser/Resource"
+   }
+  },
+  "S3PublisherUserDefaultPolicy581A6040": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "PublisherBucket8AEE464F",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "PublisherBucket8AEE464F",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:aws:cloudfront::873764251532:distribution/",
+          {
+           "Ref": "PublisherDistributionAE0015D7"
+          }
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "S3PublisherUserDefaultPolicy581A6040",
+    "Users": [
+     {
+      "Ref": "S3PublisherUser8A0F3D78"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/S3PublisherUser/DefaultPolicy/Resource"
+   }
+  },
+  "AccessKeysOnEventHandlerLogGroupEB41E3EC": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "RetentionInDays": 1
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/AccessKeys/OnEventHandlerLogGroup/Resource"
+   }
+  },
+  "AccessKeysOnEventHandlerServiceRole174F6939": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/AccessKeys/OnEventHandler/ServiceRole/Resource"
+   }
+  },
+  "AccessKeysOnEventHandlerServiceRoleDefaultPolicyB0833E81": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "iam:CreateAccessKey",
+        "iam:DeleteAccessKey"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:aws:iam::873764251532:user/",
+          {
+           "Ref": "S3PublisherUser8A0F3D78"
+          }
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "AccessKeysOnEventHandlerServiceRoleDefaultPolicyB0833E81",
+    "Roles": [
+     {
+      "Ref": "AccessKeysOnEventHandlerServiceRole174F6939"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/AccessKeys/OnEventHandler/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "AccessKeysOnEventHandler5DFC3933": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "\nimport boto3\nimport json\nimport hmac\nimport hashlib\nimport base64\n\niam_client = boto3.client('iam')\n\n\ndef _sig(key, msg):\n    return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()\n\n\ndef _smtp_password(secret_key, region):\n    # SES SMTP password derivation per AWS docs (SigV4-based)\n    date_key = _sig(('AWS4' + secret_key).encode('utf-8'), '11111111')\n    region_key = _sig(date_key, region)\n    service_key = _sig(region_key, 'ses')\n    signing_key = _sig(service_key, 'aws4_request')\n    signature = _sig(signing_key, 'SendRawEmail')\n    return base64.b64encode(b'AWS4' + signature).decode('utf-8')\n\n\ndef on_event(event, context):\n    request_type = event['RequestType']\n    user_name = event['ResourceProperties']['UserName']\n    region = event['ResourceProperties'].get('Region', 'us-east-1')\n\n    if request_type == 'Create':\n        response = iam_client.create_access_key(UserName=user_name)\n        access_key = response['AccessKey']\n        return {\n            'PhysicalResourceId': access_key['AccessKeyId'],\n            'Data': {\n                'AccessKeyId': access_key['AccessKeyId'],\n                'SecretAccessKey': access_key['SecretAccessKey'],\n                'SmtpPassword': _smtp_password(access_key['SecretAccessKey'], region)\n            }\n        }\n\n    elif request_type == 'Update':\n        old_key_id = event['PhysicalResourceId']\n        response = iam_client.create_access_key(UserName=user_name)\n        access_key = response['AccessKey']\n        if old_key_id != access_key['AccessKeyId']:\n            try:\n                iam_client.delete_access_key(UserName=user_name, AccessKeyId=old_key_id)\n            except Exception:\n                pass\n        return {\n            'PhysicalResourceId': access_key['AccessKeyId'],\n            'Data': {\n                'AccessKeyId': access_key['AccessKeyId'],\n                'SecretAccessKey': access_key['SecretAccessKey'],\n                'SmtpPassword': _smtp_password(access_key['SecretAccessKey'], region)\n            }\n        }\n\n    elif request_type == 'Delete':\n        access_key_id = event['PhysicalResourceId']\n        try:\n            iam_client.delete_access_key(UserName=user_name, AccessKeyId=access_key_id)\n        except Exception:\n            pass\n        return {'PhysicalResourceId': access_key_id}\n"
+    },
+    "Handler": "index.on_event",
+    "LoggingConfig": {
+     "LogGroup": {
+      "Ref": "AccessKeysOnEventHandlerLogGroupEB41E3EC"
+     }
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "AccessKeysOnEventHandlerServiceRole174F6939",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.12",
+    "Timeout": 120
+   },
+   "DependsOn": [
+    "AccessKeysOnEventHandlerServiceRoleDefaultPolicyB0833E81",
+    "AccessKeysOnEventHandlerServiceRole174F6939"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/AccessKeys/OnEventHandler/Resource"
+   }
+  },
+  "AccessKeysProviderframeworkonEventServiceRole4EB63CC5": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/AccessKeys/Provider/framework-onEvent/ServiceRole/Resource"
+   }
+  },
+  "AccessKeysProviderframeworkonEventServiceRoleDefaultPolicy91453613": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "AccessKeysOnEventHandler5DFC3933",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "AccessKeysOnEventHandler5DFC3933",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:GetFunction",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "AccessKeysOnEventHandler5DFC3933",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "AccessKeysProviderframeworkonEventServiceRoleDefaultPolicy91453613",
+    "Roles": [
+     {
+      "Ref": "AccessKeysProviderframeworkonEventServiceRole4EB63CC5"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/AccessKeys/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "AccessKeysProviderframeworkonEvent5C59120E": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-873764251532-us-east-1",
+     "S3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
+    },
+    "Description": "AWS CDK resource provider framework - onEvent (SkyCMS-Stack-01/AccessKeys/Provider)",
+    "Environment": {
+     "Variables": {
+      "USER_ON_EVENT_FUNCTION_ARN": {
+       "Fn::GetAtt": [
+        "AccessKeysOnEventHandler5DFC3933",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "Handler": "framework.onEvent",
+    "LoggingConfig": {
+     "ApplicationLogLevel": "FATAL",
+     "LogFormat": "JSON"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "AccessKeysProviderframeworkonEventServiceRole4EB63CC5",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "AccessKeysProviderframeworkonEventServiceRoleDefaultPolicy91453613",
+    "AccessKeysProviderframeworkonEventServiceRole4EB63CC5"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/AccessKeys/Provider/framework-onEvent/Resource",
+    "aws:asset:path": "asset.bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "AccessKeys520E7252": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "AccessKeysProviderframeworkonEvent5C59120E",
+      "Arn"
+     ]
+    },
+    "UserName": {
+     "Ref": "S3PublisherUser8A0F3D78"
+    },
+    "Region": "us-east-1"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/AccessKeys/Resource/Default"
+   }
+  },
+  "StorageSecretA45921CE": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "S3 storage connection string for SkyCMS",
+    "Name": "SkyCms-StorageConnectionString-SkyCMS-Stack-01",
+    "SecretString": {
+     "Fn::Join": [
+      "",
+      [
+       "Bucket=",
+       {
+        "Ref": "PublisherBucket8AEE464F"
+       },
+       ";Region=us-east-1;KeyId=",
+       {
+        "Fn::GetAtt": [
+         "AccessKeys520E7252",
+         "AccessKeyId"
+        ]
+       },
+       ";Key=",
+       {
+        "Fn::GetAtt": [
+         "AccessKeys520E7252",
+         "SecretAccessKey"
+        ]
+       },
+       ";"
+      ]
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/StorageSecret/Resource"
+   }
+  },
+  "CloudFrontSecret33A40E9F": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "CloudFront CDN configuration for SkyCMS Publisher",
+    "Name": "SkyCms-CloudFrontConfig-SkyCMS-Stack-01",
+    "SecretString": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"CdnProvider\":\"CloudFront\",\"AccessKeyId\":\"",
+       {
+        "Fn::GetAtt": [
+         "AccessKeys520E7252",
+         "AccessKeyId"
+        ]
+       },
+       "\",\"SecretAccessKey\":\"",
+       {
+        "Fn::GetAtt": [
+         "AccessKeys520E7252",
+         "SecretAccessKey"
+        ]
+       },
+       "\",\"DistributionId\":\"",
+       {
+        "Ref": "PublisherDistributionAE0015D7"
+       },
+       "\",\"Region\":\"us-east-1\"}"
+      ]
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/CloudFrontSecret/Resource"
+   }
+  },
+  "Vpc8378EB38": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/Resource"
+   }
+  },
+  "VpcPublicSubnet1Subnet5C2D37C4": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/PublicSubnet1/Subnet"
+   }
+  },
+  "VpcPublicSubnet1RouteTable6C95E38E": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/PublicSubnet1/RouteTable"
+   }
+  },
+  "VpcPublicSubnet1RouteTableAssociation97140677": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "VpcPublicSubnet1RouteTable6C95E38E"
+    },
+    "SubnetId": {
+     "Ref": "VpcPublicSubnet1Subnet5C2D37C4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "VpcPublicSubnet1DefaultRoute3DA9E72A": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "VpcIGWD7BA715C"
+    },
+    "RouteTableId": {
+     "Ref": "VpcPublicSubnet1RouteTable6C95E38E"
+    }
+   },
+   "DependsOn": [
+    "VpcVPCGWBF912B6E"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "VpcPublicSubnet2Subnet691E08A3": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/PublicSubnet2/Subnet"
+   }
+  },
+  "VpcPublicSubnet2RouteTable94F7E489": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/PublicSubnet2/RouteTable"
+   }
+  },
+  "VpcPublicSubnet2RouteTableAssociationDD5762D8": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "VpcPublicSubnet2RouteTable94F7E489"
+    },
+    "SubnetId": {
+     "Ref": "VpcPublicSubnet2Subnet691E08A3"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "VpcPublicSubnet2DefaultRoute97F91067": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "VpcIGWD7BA715C"
+    },
+    "RouteTableId": {
+     "Ref": "VpcPublicSubnet2RouteTable94F7E489"
+    }
+   },
+   "DependsOn": [
+    "VpcVPCGWBF912B6E"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "VpcIsolatedSubnet1SubnetE48C5737": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc/IsolatedSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/IsolatedSubnet1/Subnet"
+   }
+  },
+  "VpcIsolatedSubnet1RouteTable4771E3E5": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc/IsolatedSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/IsolatedSubnet1/RouteTable"
+   }
+  },
+  "VpcIsolatedSubnet1RouteTableAssociationD300FCBB": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "VpcIsolatedSubnet1RouteTable4771E3E5"
+    },
+    "SubnetId": {
+     "Ref": "VpcIsolatedSubnet1SubnetE48C5737"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/IsolatedSubnet1/RouteTableAssociation"
+   }
+  },
+  "VpcIsolatedSubnet2Subnet16364B91": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.3.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc/IsolatedSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/IsolatedSubnet2/Subnet"
+   }
+  },
+  "VpcIsolatedSubnet2RouteTable1D30AF7D": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc/IsolatedSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/IsolatedSubnet2/RouteTable"
+   }
+  },
+  "VpcIsolatedSubnet2RouteTableAssociationF7B18CCA": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "VpcIsolatedSubnet2RouteTable1D30AF7D"
+    },
+    "SubnetId": {
+     "Ref": "VpcIsolatedSubnet2Subnet16364B91"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/IsolatedSubnet2/RouteTableAssociation"
+   }
+  },
+  "VpcIGWD7BA715C": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SkyCMS-Stack-01/Vpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/IGW"
+   }
+  },
+  "VpcVPCGWBF912B6E": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "VpcIGWD7BA715C"
+    },
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Vpc/VPCGW"
+   }
+  },
+  "ClusterEB0386A7": {
+   "Type": "AWS::ECS::Cluster",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Cluster/Resource"
+   }
+  },
+  "DbParameterGroupD5340A4D": {
+   "Type": "AWS::RDS::DBParameterGroup",
+   "Properties": {
+    "Description": "Parameter group for mysql8.0",
+    "Family": "mysql8.0",
+    "Parameters": {
+     "require_secure_transport": "1"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/DbParameterGroup/Resource"
+   }
+  },
+  "DbCredentials798065DE": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludePunctuation": true,
+     "GenerateStringKey": "password",
+     "IncludeSpace": false,
+     "PasswordLength": 16,
+     "SecretStringTemplate": "{\"username\":\"admin\"}"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/DbCredentials/Resource"
+   }
+  },
+  "DbCredentialsAttachmentD2151D4F": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "DbCredentials798065DE"
+    },
+    "TargetId": {
+     "Ref": "DatabaseB269D8BB"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/DbCredentials/Attachment/Resource"
+   }
+  },
+  "DbSg495F8305": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "RDS MySQL Security Group",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/DbSg/Resource"
+   }
+  },
+  "DbSgfromSkyCMSStack01ServiceSg6F2ED3AA33060C3EE15A": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow MySQL from ECS",
+    "FromPort": 3306,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "DbSg495F8305",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ServiceSg2632F788",
+      "GroupId"
+     ]
+    },
+    "ToPort": 3306
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/DbSg/from SkyCMSStack01ServiceSg6F2ED3AA:3306"
+   }
+  },
+  "DatabaseSubnetGroup7D60F180": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for Database database",
+    "SubnetIds": [
+     {
+      "Ref": "VpcIsolatedSubnet1SubnetE48C5737"
+     },
+     {
+      "Ref": "VpcIsolatedSubnet2Subnet16364B91"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Database/SubnetGroup/Default"
+   }
+  },
+  "DatabaseB269D8BB": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "20",
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t4g.micro",
+    "DBName": "skycms",
+    "DBParameterGroupName": {
+     "Ref": "DbParameterGroupD5340A4D"
+    },
+    "DBSubnetGroupName": {
+     "Ref": "DatabaseSubnetGroup7D60F180"
+    },
+    "DeletionProtection": false,
+    "Engine": "mysql",
+    "EngineVersion": "8.0",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DbCredentials798065DE"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DbCredentials798065DE"
+       },
+       ":SecretString:username::}}"
+      ]
+     ]
+    },
+    "MaxAllocatedStorage": 100,
+    "MultiAZ": false,
+    "PubliclyAccessible": false,
+    "StorageType": "gp2",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "DbSg495F8305",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Database/Resource"
+   }
+  },
+  "DbConnectionStringSecret21A439BA": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "MySQL connection string (dynamically constructed from RDS) ending with semicolon",
+    "SecretString": {
+     "Fn::Join": [
+      "",
+      [
+       "Server=",
+       {
+        "Fn::GetAtt": [
+         "DatabaseB269D8BB",
+         "Endpoint.Address"
+        ]
+       },
+       ";Port=3306;Uid={{resolve:secretsmanager:",
+       {
+        "Ref": "DbCredentials798065DE"
+       },
+       ":SecretString:username::}};Pwd={{resolve:secretsmanager:",
+       {
+        "Ref": "DbCredentials798065DE"
+       },
+       ":SecretString:password::}};Database=skycms;"
+      ]
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/DbConnectionStringSecret/Resource"
+   }
+  },
+  "TaskDefTaskRole1EDB4A67": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/TaskDef/TaskRole/Resource"
+   }
+  },
+  "TaskDef54694570": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "CosmosAllowSetup",
+        "Value": "true"
+       },
+       {
+        "Name": "MultiTenantEditor",
+        "Value": "false"
+       },
+       {
+        "Name": "ASPNETCORE_ENVIRONMENT",
+        "Value": "Development"
+       },
+       {
+        "Name": "AdminEmail",
+        "Value": "eric@moonrise.net"
+       },
+       {
+        "Name": "DB_HOST",
+        "Value": {
+         "Fn::GetAtt": [
+          "DatabaseB269D8BB",
+          "Endpoint.Address"
+         ]
+        }
+       },
+       {
+        "Name": "DB_PORT",
+        "Value": "3306"
+       },
+       {
+        "Name": "DB_NAME",
+        "Value": "skycms"
+       },
+       {
+        "Name": "DB_USER",
+        "Value": "admin"
+       },
+       {
+        "Name": "SmtpEmailProviderOptions__Host",
+        "Value": "email-smtp.us-east-1.amazonaws.com"
+       },
+       {
+        "Name": "SmtpEmailProviderOptions__Port",
+        "Value": "587"
+       },
+       {
+        "Name": "SmtpEmailProviderOptions__UserName",
+        "Value": {
+         "Fn::GetAtt": [
+          "SesAccessKeys3820088C",
+          "AccessKeyId"
+         ]
+        }
+       },
+       {
+        "Name": "SmtpEmailProviderOptions__UsesSsl",
+        "Value": "false"
+       },
+       {
+        "Name": "CosmosPublisherUrl",
+        "Value": {
+         "Fn::Join": [
+          "",
+          [
+           "https://",
+           {
+            "Fn::GetAtt": [
+             "PublisherDistributionAE0015D7",
+             "DomainName"
+            ]
+           }
+          ]
+         ]
+        }
+       }
+      ],
+      "Essential": true,
+      "Image": "toiyabe/sky-editor:latest",
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "LogGroupF5B46931"
+        },
+        "awslogs-stream-prefix": "SkyCMS",
+        "awslogs-region": "us-east-1"
+       }
+      },
+      "Name": "web",
+      "PortMappings": [
+       {
+        "ContainerPort": 8080,
+        "Protocol": "tcp"
+       }
+      ],
+      "Secrets": [
+       {
+        "Name": "DB_PASSWORD",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "DbCredentials798065DE"
+           },
+           ":password::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "ConnectionStrings__ApplicationDbContextConnection",
+        "ValueFrom": {
+         "Ref": "DbConnectionStringSecret21A439BA"
+        }
+       },
+       {
+        "Name": "ConnectionStrings__StorageConnectionString",
+        "ValueFrom": {
+         "Ref": "StorageSecretA45921CE"
+        }
+       },
+       {
+        "Name": "SmtpEmailProviderOptions__Password",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "SesSmtpSecretF615ED25"
+           },
+           ":password::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "CloudFrontConfig",
+        "ValueFrom": {
+         "Ref": "CloudFrontSecret33A40E9F"
+        }
+       }
+      ]
+     }
+    ],
+    "Cpu": "512",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "TaskDefExecutionRoleB4775C97",
+      "Arn"
+     ]
+    },
+    "Family": "SkyCMSStack01TaskDef451EFA12",
+    "Memory": "1024",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "TaskDefTaskRole1EDB4A67",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/TaskDef/Resource"
+   }
+  },
+  "TaskDefExecutionRoleB4775C97": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/TaskDef/ExecutionRole/Resource"
+   }
+  },
+  "TaskDefExecutionRoleDefaultPolicy0DBB737A": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "LogGroupF5B46931",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "DbCredentials798065DE"
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "DbConnectionStringSecret21A439BA"
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "StorageSecretA45921CE"
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "SesSmtpSecretF615ED25"
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "CloudFrontSecret33A40E9F"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "TaskDefExecutionRoleDefaultPolicy0DBB737A",
+    "Roles": [
+     {
+      "Ref": "TaskDefExecutionRoleB4775C97"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/TaskDef/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "LogGroupF5B46931": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/LogGroup/Resource"
+   }
+  },
+  "SesSmtpUser885C2183": {
+   "Type": "AWS::IAM::User",
+   "Properties": {
+    "UserName": {
+     "Fn::Join": [
+      "",
+      [
+       "skycms-ses-smtp-",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       "-SkyCMS-Stack-01"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesSmtpUser/Resource"
+   }
+  },
+  "SesSmtpUserDefaultPolicyD79D0A7D": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "ses:SendRawEmail",
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SesSmtpUserDefaultPolicyD79D0A7D",
+    "Users": [
+     {
+      "Ref": "SesSmtpUser885C2183"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesSmtpUser/DefaultPolicy/Resource"
+   }
+  },
+  "SesAccessKeysOnEventHandlerLogGroup53B70A58": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "RetentionInDays": 1
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesAccessKeys/OnEventHandlerLogGroup/Resource"
+   }
+  },
+  "SesAccessKeysOnEventHandlerServiceRole1486803C": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesAccessKeys/OnEventHandler/ServiceRole/Resource"
+   }
+  },
+  "SesAccessKeysOnEventHandlerServiceRoleDefaultPolicy129B14E8": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "iam:CreateAccessKey",
+        "iam:DeleteAccessKey"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:aws:iam::873764251532:user/",
+          {
+           "Ref": "SesSmtpUser885C2183"
+          }
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SesAccessKeysOnEventHandlerServiceRoleDefaultPolicy129B14E8",
+    "Roles": [
+     {
+      "Ref": "SesAccessKeysOnEventHandlerServiceRole1486803C"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesAccessKeys/OnEventHandler/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "SesAccessKeysOnEventHandler65293497": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "\nimport boto3\nimport json\nimport hmac\nimport hashlib\nimport base64\n\niam_client = boto3.client('iam')\n\n\ndef _sig(key, msg):\n    return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()\n\n\ndef _smtp_password(secret_key, region):\n    # SES SMTP password derivation per AWS docs (SigV4-based)\n    date_key = _sig(('AWS4' + secret_key).encode('utf-8'), '11111111')\n    region_key = _sig(date_key, region)\n    service_key = _sig(region_key, 'ses')\n    signing_key = _sig(service_key, 'aws4_request')\n    signature = _sig(signing_key, 'SendRawEmail')\n    return base64.b64encode(b'AWS4' + signature).decode('utf-8')\n\n\ndef on_event(event, context):\n    request_type = event['RequestType']\n    user_name = event['ResourceProperties']['UserName']\n    region = event['ResourceProperties'].get('Region', 'us-east-1')\n\n    if request_type == 'Create':\n        response = iam_client.create_access_key(UserName=user_name)\n        access_key = response['AccessKey']\n        return {\n            'PhysicalResourceId': access_key['AccessKeyId'],\n            'Data': {\n                'AccessKeyId': access_key['AccessKeyId'],\n                'SecretAccessKey': access_key['SecretAccessKey'],\n                'SmtpPassword': _smtp_password(access_key['SecretAccessKey'], region)\n            }\n        }\n\n    elif request_type == 'Update':\n        old_key_id = event['PhysicalResourceId']\n        response = iam_client.create_access_key(UserName=user_name)\n        access_key = response['AccessKey']\n        if old_key_id != access_key['AccessKeyId']:\n            try:\n                iam_client.delete_access_key(UserName=user_name, AccessKeyId=old_key_id)\n            except Exception:\n                pass\n        return {\n            'PhysicalResourceId': access_key['AccessKeyId'],\n            'Data': {\n                'AccessKeyId': access_key['AccessKeyId'],\n                'SecretAccessKey': access_key['SecretAccessKey'],\n                'SmtpPassword': _smtp_password(access_key['SecretAccessKey'], region)\n            }\n        }\n\n    elif request_type == 'Delete':\n        access_key_id = event['PhysicalResourceId']\n        try:\n            iam_client.delete_access_key(UserName=user_name, AccessKeyId=access_key_id)\n        except Exception:\n            pass\n        return {'PhysicalResourceId': access_key_id}\n"
+    },
+    "Handler": "index.on_event",
+    "LoggingConfig": {
+     "LogGroup": {
+      "Ref": "SesAccessKeysOnEventHandlerLogGroup53B70A58"
+     }
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "SesAccessKeysOnEventHandlerServiceRole1486803C",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.12",
+    "Timeout": 120
+   },
+   "DependsOn": [
+    "SesAccessKeysOnEventHandlerServiceRoleDefaultPolicy129B14E8",
+    "SesAccessKeysOnEventHandlerServiceRole1486803C"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesAccessKeys/OnEventHandler/Resource"
+   }
+  },
+  "SesAccessKeysProviderframeworkonEventServiceRole34EFB0DC": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesAccessKeys/Provider/framework-onEvent/ServiceRole/Resource"
+   }
+  },
+  "SesAccessKeysProviderframeworkonEventServiceRoleDefaultPolicyC7340428": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "SesAccessKeysOnEventHandler65293497",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "SesAccessKeysOnEventHandler65293497",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:GetFunction",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "SesAccessKeysOnEventHandler65293497",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SesAccessKeysProviderframeworkonEventServiceRoleDefaultPolicyC7340428",
+    "Roles": [
+     {
+      "Ref": "SesAccessKeysProviderframeworkonEventServiceRole34EFB0DC"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesAccessKeys/Provider/framework-onEvent/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "SesAccessKeysProviderframeworkonEventD6268E28": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-873764251532-us-east-1",
+     "S3Key": "bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca.zip"
+    },
+    "Description": "AWS CDK resource provider framework - onEvent (SkyCMS-Stack-01/SesAccessKeys/Provider)",
+    "Environment": {
+     "Variables": {
+      "USER_ON_EVENT_FUNCTION_ARN": {
+       "Fn::GetAtt": [
+        "SesAccessKeysOnEventHandler65293497",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "Handler": "framework.onEvent",
+    "LoggingConfig": {
+     "ApplicationLogLevel": "FATAL",
+     "LogFormat": "JSON"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "SesAccessKeysProviderframeworkonEventServiceRole34EFB0DC",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "SesAccessKeysProviderframeworkonEventServiceRoleDefaultPolicyC7340428",
+    "SesAccessKeysProviderframeworkonEventServiceRole34EFB0DC"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesAccessKeys/Provider/framework-onEvent/Resource",
+    "aws:asset:path": "asset.bdc104ed9cab1b5b6421713c8155f0b753380595356f710400609664d3635eca",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "SesAccessKeys3820088C": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "SesAccessKeysProviderframeworkonEventD6268E28",
+      "Arn"
+     ]
+    },
+    "UserName": {
+     "Ref": "SesSmtpUser885C2183"
+    },
+    "Region": "us-east-1"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesAccessKeys/Resource/Default"
+   }
+  },
+  "SesSmtpSecretF615ED25": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "SES SMTP credentials for SkyCMS",
+    "Name": "SkyCms-SesSmtp-SkyCMS-Stack-01",
+    "SecretString": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"username\":\"",
+       {
+        "Fn::GetAtt": [
+         "SesAccessKeys3820088C",
+         "AccessKeyId"
+        ]
+       },
+       "\",\"password\":\"",
+       {
+        "Fn::GetAtt": [
+         "SesAccessKeys3820088C",
+         "SmtpPassword"
+        ]
+       },
+       "\",\"host\":\"email-smtp.us-east-1.amazonaws.com\",\"port\":\"587\"}"
+      ]
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/SesSmtpSecret/Resource"
+   }
+  },
+  "ServiceSg2632F788": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "ECS Service Security Group",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTP from anywhere",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     },
+     {
+      "Description": "Allow HTTP from ALB to container port 8080",
+      "FromPort": 8080,
+      "IpProtocol": "tcp",
+      "SourceSecurityGroupId": {
+       "Fn::GetAtt": [
+        "ALBSecurityGroup8B8624F8",
+        "GroupId"
+       ]
+      },
+      "ToPort": 8080
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/ServiceSg/Resource"
+   }
+  },
+  "ServiceSgfromSkyCMSStack01ALBSecurityGroupAD7E4871808034AD1491": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 8080,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ServiceSg2632F788",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ALBSecurityGroup8B8624F8",
+      "GroupId"
+     ]
+    },
+    "ToPort": 8080
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/ServiceSg/from SkyCMSStack01ALBSecurityGroupAD7E4871:8080"
+   }
+  },
+  "ALBAEE750D2": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ALBSecurityGroup8B8624F8",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "VpcPublicSubnet1Subnet5C2D37C4"
+     },
+     {
+      "Ref": "VpcPublicSubnet2Subnet691E08A3"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "VpcPublicSubnet1DefaultRoute3DA9E72A",
+    "VpcPublicSubnet1RouteTableAssociation97140677",
+    "VpcPublicSubnet2DefaultRoute97F91067",
+    "VpcPublicSubnet2RouteTableAssociationDD5762D8"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/ALB/Resource"
+   }
+  },
+  "ALBSecurityGroup8B8624F8": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB SkyCMSStack01ALBC46E73E7",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/ALB/SecurityGroup/Resource"
+   }
+  },
+  "ALBSecurityGrouptoSkyCMSStack01ServiceSg6F2ED3AA80808A789389": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ServiceSg2632F788",
+      "GroupId"
+     ]
+    },
+    "FromPort": 8080,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ALBSecurityGroup8B8624F8",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 8080
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/ALB/SecurityGroup/to SkyCMSStack01ServiceSg6F2ED3AA:8080"
+   }
+  },
+  "ALBHttpListener04CE8CD0": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "ALBHttpListenerEcsTargetGroupEC97BED8"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "ALBAEE750D2"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/ALB/HttpListener/Resource"
+   }
+  },
+  "ALBHttpListenerEcsTargetGroupEC97BED8": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckIntervalSeconds": 15,
+    "HealthCheckPath": "/healthz",
+    "HealthCheckTimeoutSeconds": 5,
+    "HealthyThresholdCount": 2,
+    "Matcher": {
+     "HttpCode": "200-399"
+    },
+    "Port": 8080,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "UnhealthyThresholdCount": 2,
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/ALB/HttpListener/EcsTargetGroup/Resource"
+   }
+  },
+  "ServiceD69D759B": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "ClusterEB0386A7"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 100
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 120,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "web",
+      "ContainerPort": 8080,
+      "TargetGroupArn": {
+       "Ref": "ALBHttpListenerEcsTargetGroupEC97BED8"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "ENABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "ServiceSg2632F788",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "VpcPublicSubnet1Subnet5C2D37C4"
+       },
+       {
+        "Ref": "VpcPublicSubnet2Subnet691E08A3"
+       }
+      ]
+     }
+    },
+    "TaskDefinition": {
+     "Ref": "TaskDef54694570"
+    }
+   },
+   "DependsOn": [
+    "ALBHttpListenerEcsTargetGroupEC97BED8",
+    "ALBHttpListener04CE8CD0",
+    "TaskDefTaskRole1EDB4A67"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/Service/Service"
+   }
+  },
+  "OriginRequestPolicy3EFDB4FA": {
+   "Type": "AWS::CloudFront::OriginRequestPolicy",
+   "Properties": {
+    "OriginRequestPolicyConfig": {
+     "CookiesConfig": {
+      "CookieBehavior": "all"
+     },
+     "HeadersConfig": {
+      "HeaderBehavior": "whitelist",
+      "Headers": [
+       "Host",
+       "CloudFront-Forwarded-Proto",
+       "User-Agent"
+      ]
+     },
+     "Name": "SkyCMSStack01OriginRequestPolicyEFBF9B9B",
+     "QueryStringsConfig": {
+      "QueryStringBehavior": "all"
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/OriginRequestPolicy/Resource"
+   }
+  },
+  "CloudFrontDist239A6E31": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Comment": "SkyCMS Editor Distribution",
+     "DefaultCacheBehavior": {
+      "AllowedMethods": [
+       "GET",
+       "HEAD",
+       "OPTIONS",
+       "PUT",
+       "PATCH",
+       "POST",
+       "DELETE"
+      ],
+      "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+      "Compress": true,
+      "OriginRequestPolicyId": {
+       "Ref": "OriginRequestPolicy3EFDB4FA"
+      },
+      "TargetOriginId": "SkyCMSStack01CloudFrontDistOrigin107E17FA8",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "CustomOriginConfig": {
+        "HTTPPort": 80,
+        "HTTPSPort": 443,
+        "OriginProtocolPolicy": "http-only",
+        "OriginSSLProtocols": [
+         "TLSv1.2"
+        ]
+       },
+       "DomainName": {
+        "Fn::GetAtt": [
+         "ALBAEE750D2",
+         "DNSName"
+        ]
+       },
+       "Id": "SkyCMSStack01CloudFrontDistOrigin107E17FA8"
+      }
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/CloudFrontDist/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31TXW/bMAz8LX1Xtc3ZH8jHUgQosCDp+hrQMuOxsaVMpBIEhv/7IMtO3LToE++OdzIp25nOJpnOHuDMj6Y4PFaU62YrYA4KzrxreKKbWTAHFDXf2x6lsnYVmctN7nkiM2BslalcKPbeWdHNb08l2akxyLwq0ApJF55HzzJ6PnUsiMVTHoScjfZ3PCU2+C8gj+b5RG4VQa2bP4w+Orp6C/Ro4yqMNNZWVa5k3Ty78sm7cIz6gFtVQZ0XoJtlsGaYbMCt4skOmFFYT2NRjMajcA0WSvS62XY8ZnqUygv4EmUqAuZvjXZkuO+0Ck2mm9ejiZ7X9VytQ16R2Ybc9gdf0cYFwRfI02pJv2lTZmcIhh26hlp7OoHg7YyVFfQW5QkEz3DpH9qz0cBbNMGTXK439rWwsqVH5g/6r06OS7Ju5lVgSW9tgEvwJcQF+LDAPVkaxr9XnBUgi36k9dkt+hOZdCUJtsoXrJs1eKhR0F9HXszutAUI5MC4sixgDap0UaPAB2GwtgorYCFTOShyqMAasuUp0830eKzIdC/i2UEx63pp7Xd87CMWtL1nwKN++mquU4xo26p5YHH1BtkFn+7hht+11t6dqEAf/2jVfc9bgZJsqa4B0wV2vuesh0z3MwY5BmmVdQXqN/52yn7qH5n+/vDGRI8+WKEa9SbV/3vNp9ePBAAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SkyCMS-Stack-01/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "PublisherBucketName": {
+   "Description": "S3 bucket for Publisher static files",
+   "Value": {
+    "Ref": "PublisherBucket8AEE464F"
+   }
+  },
+  "PublisherCloudFrontURL": {
+   "Description": "Publisher CloudFront distribution URL",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Fn::GetAtt": [
+        "PublisherDistributionAE0015D7",
+        "DomainName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "CloudFrontConfigSecret": {
+   "Description": "CloudFront CDN configuration secret ARN",
+   "Value": {
+    "Ref": "CloudFrontSecret33A40E9F"
+   }
+  },
+  "StorageSecretArn": {
+   "Description": "ARN of storage connection string secret",
+   "Value": {
+    "Ref": "StorageSecretA45921CE"
+   }
+  },
+  "ClusterName": {
+   "Description": "ECS Cluster Name",
+   "Value": {
+    "Ref": "ClusterEB0386A7"
+   }
+  },
+  "ServiceName": {
+   "Description": "ECS Service Name",
+   "Value": {
+    "Fn::GetAtt": [
+     "ServiceD69D759B",
+     "Name"
+    ]
+   }
+  },
+  "LogGroupName": {
+   "Description": "CloudWatch Log Group",
+   "Value": {
+    "Ref": "LogGroupF5B46931"
+   }
+  },
+  "Region": {
+   "Description": "AWS Region",
+   "Value": {
+    "Ref": "AWS::Region"
+   }
+  },
+  "DatabaseEndpoint": {
+   "Description": "RDS MySQL Endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "DatabaseB269D8BB",
+     "Endpoint.Address"
+    ]
+   }
+  },
+  "DatabaseName": {
+   "Description": "Database Name",
+   "Value": "skycms"
+  },
+  "DatabaseCredentialsSecret": {
+   "Description": "Database Credentials Secret ARN",
+   "Value": {
+    "Ref": "DbCredentials798065DE"
+   }
+  },
+  "ConnectionStringSecret": {
+   "Description": "MySQL Connection String Secret ARN (provided)",
+   "Value": {
+    "Ref": "DbConnectionStringSecret21A439BA"
+   }
+  },
+  "MySqlConnectionString": {
+   "Description": "✅ MySQL Connection String for validation and MySQL Workbench (dev-only)",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "Server=",
+      {
+       "Fn::GetAtt": [
+        "DatabaseB269D8BB",
+        "Endpoint.Address"
+       ]
+      },
+      ";Port=3306;Uid=admin;Pwd={{resolve:secretsmanager:",
+      {
+       "Ref": "DbCredentials798065DE"
+      },
+      ":SecretString:password::}};Database=skycms;"
+     ]
+    ]
+   }
+  },
+  "DbSecurityGroupId": {
+   "Description": "RDS MySQL Security Group ID (for IP allow-listing)",
+   "Value": {
+    "Fn::GetAtt": [
+     "DbSg495F8305",
+     "GroupId"
+    ]
+   }
+  },
+  "CloudFrontURL": {
+   "Description": "SkyCMS Editor URL (CloudFront with TLS)",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Fn::GetAtt": [
+        "CloudFrontDist239A6E31",
+        "DomainName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "SESSmtpUsername": {
+   "Description": "SES SMTP username (Access Key ID)",
+   "Value": {
+    "Fn::GetAtt": [
+     "SesAccessKeys3820088C",
+     "AccessKeyId"
+    ]
+   }
+  },
+  "SESSmtpPasswordSecretArn": {
+   "Description": "Secret ARN containing SES SMTP password (JSON field: password)",
+   "Value": {
+    "Ref": "SesSmtpSecretF615ED25"
+   }
+  },
+  "SESSmtpHost": {
+   "Description": "SES SMTP host",
+   "Value": "email-smtp.us-east-1.amazonaws.com"
+  },
+  "SESSmtpPort": {
+   "Description": "SES SMTP port",
+   "Value": "587"
+  },
+  "ALBDomainName": {
+   "Description": "ALB DNS Name (for debugging)",
+   "Value": {
+    "Fn::GetAtt": [
+     "ALBAEE750D2",
+     "DNSName"
+    ]
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

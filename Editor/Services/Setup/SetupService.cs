@@ -1502,97 +1502,130 @@ namespace Sky.Editor.Services.Setup
             }
         }
 
-        private async Task DeployHomePage(CancellationToken cancellationToken)
+        //private async Task DeployHomePage(CancellationToken cancellationToken)
+        //{
+        //    try
+        //    {
+        //        // Check if this is multi-tenant mode
+        //        var isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+
+        //        if (isMultiTenant)
+        //        {
+        //            logger.LogInformation("Multi-tenant mode detected. Post-setup initialization will be handled per-tenant on first request.");
+        //            // Don't process here - let middleware handle it per tenant
+        //            return;
+        //        }
+
+        //        // Single-tenant mode - process immediately
+        //        logger.LogInformation("Single-tenant mode detected. Processing post-setup initialization...");
+
+        //        // Check if home page creation is pending
+        //        var pendingSetting = await applicationDbContext.Settings
+        //            .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "PendingHomePageCreation", cancellationToken);
+
+        //        if (pendingSetting?.Value == "true")
+        //        {
+        //            logger.LogInformation("Detected pending home page creation. Creating home page...");
+
+        //            var userIdSetting = await applicationDbContext.Settings
+        //                .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageUserId", cancellationToken);
+        //            var titleSetting = await applicationDbContext.Settings
+        //                .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageTitle", cancellationToken);
+        //            var templateIdSetting = await applicationDbContext.Settings
+        //                .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageTemplateId", cancellationToken);
+
+        //            if (userIdSetting != null && titleSetting != null && Guid.TryParse(userIdSetting.Value, out var userId))
+        //            {
+        //                // Check if home page already exists
+        //                var existingHomePage = await applicationDbContext.Articles
+        //                    .FirstOrDefaultAsync(a => a.ArticleNumber == 1 && a.UrlPath == "root", cancellationToken);
+
+        //                if (existingHomePage == null)
+        //                {
+        //                    Guid? templateId = null;
+        //                    if (templateIdSetting != null && Guid.TryParse(templateIdSetting.Value, out var parsedTemplateId))
+        //                    {
+        //                        templateId = parsedTemplateId;
+        //                    }
+
+        //                    // Create the home page
+        //                    var model = await articleEditLogic.CreateArticle(titleSetting.Value, userId, templateId);
+
+        //                    logger.LogInformation("Home page created successfully with article number {ArticleNumber}", model.ArticleNumber);
+        //                }
+        //                else
+        //                {
+        //                    logger.LogInformation("Home page already exists, skipping creation");
+        //                }
+
+        //                // Clear the pending flags
+        //                applicationDbContext.Settings.Remove(pendingSetting);
+        //                if (userIdSetting != null)
+        //                {
+        //                    applicationDbContext.Settings.Remove(userIdSetting);
+        //                }
+
+        //                if (titleSetting != null)
+        //                {
+        //                    applicationDbContext.Settings.Remove(titleSetting);
+        //                }
+
+        //                if (templateIdSetting != null)
+        //                {
+        //                    applicationDbContext.Settings.Remove(templateIdSetting);
+        //                }
+
+        //                await applicationDbContext.SaveChangesAsync(cancellationToken);
+
+        //                logger.LogInformation("Post-setup initialization completed successfully");
+        //            }
+        //            else
+        //            {
+        //                logger.LogWarning("Missing or invalid settings for home page creation");
+        //            }
+        //        }
+        //        else
+        //        {
+        //            logger.LogInformation("No pending post-setup initialization tasks found");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError(ex, "Failed to complete post-setup initialization");
+        //        // Don't throw - this shouldn't prevent application startup
+        //    }
+        //}
+
+        /// <inheritdoc/>
+        public async Task<bool> IsSetupCompleteAsync()
         {
             try
             {
-                // Check if this is multi-tenant mode
-                var isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+                // Check if the AllowSetup setting is false (which means setup is complete)
+                var allowSetupSetting = await applicationDbContext.Settings
+                    .FirstOrDefaultAsync(s => s.Group == "SYSTEM" && s.Name == "AllowSetup");
 
-                if (isMultiTenant)
+                if (allowSetupSetting != null && bool.TryParse(allowSetupSetting.Value, out var allowSetup))
                 {
-                    logger.LogInformation("Multi-tenant mode detected. Post-setup initialization will be handled per-tenant on first request.");
-                    // Don't process here - let middleware handle it per tenant
-                    return;
+                    // If AllowSetup is false, setup is complete
+                    return !allowSetup;
                 }
 
-                // Single-tenant mode - process immediately
-                logger.LogInformation("Single-tenant mode detected. Processing post-setup initialization...");
+                // Fallback: Check if setup state exists and is marked as complete
+                var setupState = await GetSetupStateAsync();
 
-                // Check if home page creation is pending
-                var pendingSetting = await applicationDbContext.Settings
-                    .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "PendingHomePageCreation", cancellationToken);
-
-                if (pendingSetting?.Value == "true")
+                if (setupState != null)
                 {
-                    logger.LogInformation("Detected pending home page creation. Creating home page...");
-
-                    var userIdSetting = await applicationDbContext.Settings
-                        .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageUserId", cancellationToken);
-                    var titleSetting = await applicationDbContext.Settings
-                        .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageTitle", cancellationToken);
-                    var templateIdSetting = await applicationDbContext.Settings
-                        .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageTemplateId", cancellationToken);
-
-                    if (userIdSetting != null && titleSetting != null && Guid.TryParse(userIdSetting.Value, out var userId))
-                    {
-                        // Check if home page already exists
-                        var existingHomePage = await applicationDbContext.Articles
-                            .FirstOrDefaultAsync(a => a.ArticleNumber == 1 && a.UrlPath == "root", cancellationToken);
-
-                        if (existingHomePage == null)
-                        {
-                            Guid? templateId = null;
-                            if (templateIdSetting != null && Guid.TryParse(templateIdSetting.Value, out var parsedTemplateId))
-                            {
-                                templateId = parsedTemplateId;
-                            }
-
-                            // Create the home page
-                            var model = await articleEditLogic.CreateArticle(titleSetting.Value, userId, templateId);
-
-                            logger.LogInformation("Home page created successfully with article number {ArticleNumber}", model.ArticleNumber);
-                        }
-                        else
-                        {
-                            logger.LogInformation("Home page already exists, skipping creation");
-                        }
-
-                        // Clear the pending flags
-                        applicationDbContext.Settings.Remove(pendingSetting);
-                        if (userIdSetting != null)
-                        {
-                            applicationDbContext.Settings.Remove(userIdSetting);
-                        }
-
-                        if (titleSetting != null)
-                        {
-                            applicationDbContext.Settings.Remove(titleSetting);
-                        }
-
-                        if (templateIdSetting != null)
-                        {
-                            applicationDbContext.Settings.Remove(templateIdSetting);
-                        }
-
-                        await applicationDbContext.SaveChangesAsync(cancellationToken);
-
-                        logger.LogInformation("Post-setup initialization completed successfully");
-                    }
-                    else
-                    {
-                        logger.LogWarning("Missing or invalid settings for home page creation");
-                    }
+                    return setupState.IsComplete;
                 }
-                else
-                {
-                    logger.LogInformation("No pending post-setup initialization tasks found");
-                }
+
+                // No setup state found - assume setup is required
+                return false;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to complete post-setup initialization");
-                // Don't throw - this shouldn't prevent application startup
+                logger.LogWarning(ex, "Failed to check setup completion status, assuming setup is required");
+                return false;
             }
         }
 

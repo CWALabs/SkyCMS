@@ -129,6 +129,37 @@ try {
 
   # Use node to invoke cdk CLI directly
   $cdkBin = Join-Path $cdkDir "node_modules\aws-cdk\bin\cdk"
+  $bootstrapCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName", "--context", "editorCacheEnabled=$EditorCacheEnabled", "--context", "publisherCacheEnabled=$PublisherCacheEnabled")
+  if ($CertificateArn) { $bootstrapCtx += @("--context", "certificateArn=$CertificateArn") }
+  if ($DomainName) { $bootstrapCtx += @("--context", "domainName=$DomainName") }
+  if ($HostedZoneId) { $bootstrapCtx += @("--context", "hostedZoneId=$HostedZoneId") }
+  if ($HostedZoneName) { $bootstrapCtx += @("--context", "hostedZoneName=$HostedZoneName") }
+  if ($EnableSes) {
+    $bootstrapCtx += @("--context", "sesEnabled=true", "--context", "sesSenderEmail=$SesSenderEmail")
+  }
+  if ($DeployPublisher) { 
+    $bootstrapCtx += @("--context", "deployPublisher=true") 
+    if ($PublisherDomainName) { $bootstrapCtx += @("--context", "publisherDomainName=$PublisherDomainName") }
+    if ($PublisherCertificateArn) { $bootstrapCtx += @("--context", "publisherCertificateArn=$PublisherCertificateArn") }
+  }
+
+  # Detect CDK bootstrap (asset bucket) and optionally run bootstrap if missing
+  $bootstrapBucket = "cdk-hnb659fds-assets-$accountId-$Region"
+  Write-Host "Checking for CDK bootstrap assets bucket: $bootstrapBucket" -ForegroundColor Gray
+  aws s3api head-bucket --bucket $bootstrapBucket | Out-Null
+  $bootstrapPresent = $LASTEXITCODE -eq 0
+  if (-not $bootstrapPresent) {
+    Write-Host "CDK bootstrap stack not detected in $Region for account $accountId." -ForegroundColor Yellow
+    $doBootstrap = Prompt-YesNo "Run 'cdk bootstrap aws://$accountId/$Region' now?" $true
+    if ($doBootstrap) {
+      node $cdkBin bootstrap "aws://$accountId/$Region" $bootstrapCtx
+      if ($LASTEXITCODE -ne 0) { throw "cdk bootstrap failed" }
+    } else {
+      throw "CDK bootstrap stack is required. Aborting deploy."
+    }
+  } else {
+    Write-Host "CDK bootstrap assets bucket found." -ForegroundColor Gray
+  }
   
   # ============================================
   # DEPLOY UNIFIED STACK (PUBLISHER + EDITOR)
@@ -144,23 +175,6 @@ try {
   }
   Write-Host "========================================" -ForegroundColor Cyan
   Write-Host ""
-  Write-Host "Bootstrapping CDK (if needed)..." -ForegroundColor Yellow
-  $bootstrapCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName", "--context", "editorCacheEnabled=$EditorCacheEnabled", "--context", "publisherCacheEnabled=$PublisherCacheEnabled")
-  if ($CertificateArn) { $bootstrapCtx += @("--context", "certificateArn=$CertificateArn") }
-  if ($DomainName) { $bootstrapCtx += @("--context", "domainName=$DomainName") }
-  if ($HostedZoneId) { $bootstrapCtx += @("--context", "hostedZoneId=$HostedZoneId") }
-  if ($HostedZoneName) { $bootstrapCtx += @("--context", "hostedZoneName=$HostedZoneName") }
-  if ($EnableSes) {
-    $bootstrapCtx += @("--context", "sesEnabled=true", "--context", "sesSenderEmail=$SesSenderEmail")
-  }
-  if ($DeployPublisher) { 
-    $bootstrapCtx += @("--context", "deployPublisher=true") 
-    if ($PublisherDomainName) { $bootstrapCtx += @("--context", "publisherDomainName=$PublisherDomainName") }
-    if ($PublisherCertificateArn) { $bootstrapCtx += @("--context", "publisherCertificateArn=$PublisherCertificateArn") }
-  }
-  node $cdkBin bootstrap "aws://$accountId/$Region" $bootstrapCtx
-  if ($LASTEXITCODE -ne 0) { throw "cdk bootstrap failed" }
-
   Write-Host ""
   Write-Host "Synthesizing CloudFormation template..." -ForegroundColor Yellow
   $synthCtx = @("--context", "image=$Image", "--context", "desiredCount=$DesiredCount", "--context", "dbName=$DbName", "--context", "stackName=$StackName", "--context", "editorCacheEnabled=$EditorCacheEnabled", "--context", "publisherCacheEnabled=$PublisherCacheEnabled")
@@ -176,6 +190,7 @@ try {
     if ($PublisherDomainName) { $synthCtx += @("--context", "publisherDomainName=$PublisherDomainName") }
     if ($PublisherCertificateArn) { $synthCtx += @("--context", "publisherCertificateArn=$PublisherCertificateArn") }
   }
+
   node $cdkBin synth $synthCtx
   if ($LASTEXITCODE -ne 0) { throw "cdk synth failed" }
 
