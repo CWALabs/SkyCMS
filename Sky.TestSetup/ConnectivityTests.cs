@@ -68,7 +68,12 @@ public class ConnectivityTests
         {
             // Act - Attempt to connect and read database properties
             using var client = new CosmosClient(endpoint, key);
-            var database = client.GetDatabase(databaseName);
+            
+            // Create database if it doesn't exist (for CI/CD environments)
+            var databaseResponse = await client.CreateDatabaseIfNotExistsAsync(databaseName);
+            var database = databaseResponse.Database;
+            
+            // Read database properties to confirm connectivity
             var response = await database.ReadAsync();
 
             // Assert
@@ -103,10 +108,16 @@ public class ConnectivityTests
             return;
         }
 
+        // Remove Initial Catalog to avoid database permission issues during connectivity test
+        // This test only needs to verify the server is reachable, not access a specific database
+        var builder = new SqlConnectionStringBuilder(connectionString);
+        builder.InitialCatalog = string.Empty;
+        var modifiedConnectionString = builder.ConnectionString;
+
         try
         {
             // Act - Attempt to connect and execute a simple query
-            using var connection = new SqlConnection(connectionString);
+            using var connection = new SqlConnection(modifiedConnectionString);
             await connection.OpenAsync();
 
             using var command = connection.CreateCommand();
@@ -157,6 +168,50 @@ public class ConnectivityTests
                 return;
             }
 
+            // Parse connection string to extract database name
+            var databaseName = ExtractDatabaseFromConnectionString(connectionString);
+            var connectionStringWithoutDb = RemoveDatabaseFromConnectionString(connectionString);
+
+            // First, connect without database and create it if needed
+            if (!string.IsNullOrEmpty(databaseName))
+            {
+                var setupConnection = Activator.CreateInstance(connectionType, connectionStringWithoutDb);
+                if (setupConnection != null)
+                {
+                    var openMethod = connectionType.GetMethod("OpenAsync", Type.EmptyTypes);
+                    if (openMethod != null)
+                    {
+                        await (Task)openMethod.Invoke(setupConnection, null)!;
+                    }
+
+                    // Create database if it doesn't exist
+                    var createCommandMethod = connectionType.GetMethod("CreateCommand");
+                    var setupCommand = createCommandMethod?.Invoke(setupConnection, null);
+                    if (setupCommand != null)
+                    {
+                        var commandTextProperty = setupCommand.GetType().GetProperty("CommandText");
+                        commandTextProperty?.SetValue(setupCommand, $"CREATE DATABASE IF NOT EXISTS `{databaseName}`");
+
+                        var executeNonQueryMethod = setupCommand.GetType().GetMethod("ExecuteNonQueryAsync", Type.EmptyTypes);
+                        if (executeNonQueryMethod != null)
+                        {
+                            await (Task<int>)executeNonQueryMethod.Invoke(setupCommand, null)!;
+                        }
+
+                        if (setupCommand is IDisposable cmdDisposable)
+                        {
+                            cmdDisposable.Dispose();
+                        }
+                    }
+
+                    if (setupConnection is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+            }
+
+            // Now connect with the database specified
             var connection = Activator.CreateInstance(connectionType, connectionString);
             if (connection == null)
             {
@@ -164,22 +219,22 @@ public class ConnectivityTests
                 return;
             }
 
-            var openMethod = connectionType.GetMethod("OpenAsync", Type.EmptyTypes);
-            if (openMethod != null)
+            var openMethodMain = connectionType.GetMethod("OpenAsync", Type.EmptyTypes);
+            if (openMethodMain != null)
             {
-                await (Task)openMethod.Invoke(connection, null)!;
+                await (Task)openMethodMain.Invoke(connection, null)!;
             }
 
-            var createCommandMethod = connectionType.GetMethod("CreateCommand");
-            var command = createCommandMethod?.Invoke(connection, null);
+            var createCommandMethodMain = connectionType.GetMethod("CreateCommand");
+            var command = createCommandMethodMain?.Invoke(connection, null);
             if (command == null)
             {
                 Assert.Fail("Failed to create MySQL command.");
                 return;
             }
 
-            var commandTextProperty = command.GetType().GetProperty("CommandText");
-            commandTextProperty?.SetValue(command, "SELECT VERSION()");
+            var commandTextPropertyMain = command.GetType().GetProperty("CommandText");
+            commandTextPropertyMain?.SetValue(command, "SELECT VERSION()");
 
             var executeScalarMethod = command.GetType().GetMethod("ExecuteScalarAsync", Type.EmptyTypes);
             if (executeScalarMethod != null)
@@ -194,9 +249,9 @@ public class ConnectivityTests
             }
 
             // Cleanup
-            if (connection is IDisposable disposable)
+            if (connection is IDisposable disposable2)
             {
-                disposable.Dispose();
+                disposable2.Dispose();
             }
         }
         catch (FileNotFoundException)
@@ -207,6 +262,20 @@ public class ConnectivityTests
         {
             Assert.Fail($"MySQL connectivity failed: {ex.Message}");
         }
+    }
+
+    private static string? ExtractDatabaseFromConnectionString(string connectionString)
+    {
+        var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        var dbPart = parts.FirstOrDefault(p => p.Trim().StartsWith("Database=", StringComparison.OrdinalIgnoreCase));
+        return dbPart?.Split('=', 2).LastOrDefault()?.Trim();
+    }
+
+    private static string RemoveDatabaseFromConnectionString(string connectionString)
+    {
+        var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        var filteredParts = parts.Where(p => !p.Trim().StartsWith("Database=", StringComparison.OrdinalIgnoreCase));
+        return string.Join(";", filteredParts) + ";";
     }
 
     /// <summary>

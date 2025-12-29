@@ -1,4 +1,40 @@
-# Quick Start: Interactive Deployment
+# Quick Start: AWS Deployment
+
+## Option A: Download the Deployment Package (Recommended)
+
+1. Download the latest SkyCMS AWS Deployment Package from your GitHub Releases page:
+   - https://github.com/CWALabs/SkyCMS/releases/latest
+   - File name format: skycms-aws-deployment-vX.Y.Z.zip
+2. Extract the archive, then run:
+   ```powershell
+   cd skycms-aws-deployment
+   .\cdk-deploy.ps1
+   ```
+3. Follow the prompts (Region, Docker image, task count, DB name, stack name, optional Publisher/custom domains).
+4. To remove all resources later:
+   ```powershell
+   .\cdk-destroy.ps1
+   ```
+
+Prerequisites:
+- AWS CLI v2 and credentials
+  ```powershell
+  aws --version
+  aws login   # or: aws configure
+  ```
+- Node.js 18+ and npm
+  ```powershell
+  node --version
+  npm --version
+  ```
+
+Notes:
+- The deploy script auto-detects whether CDK is bootstrapped and will prompt to run bootstrap if needed (one-time per account/region).
+- CloudFront may take 1–2 minutes to fully propagate after deployment.
+
+---
+
+## Option B: Run From Source (Advanced)
 
 ## TL;DR - Deploy in 3 Steps
 

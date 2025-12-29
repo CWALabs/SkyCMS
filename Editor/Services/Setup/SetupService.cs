@@ -434,28 +434,53 @@ namespace Sky.Editor.Services.Setup
             }
 
             // Database Configuration (optional - usually in appsettings.json)
+            // Only overwrite if not already set to preserve values from UpdateDatabaseConfigAsync
             var dbConnectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
-            if (!string.IsNullOrEmpty(dbConnectionString))
+            if (!string.IsNullOrEmpty(dbConnectionString) && string.IsNullOrEmpty(config.DatabaseConnectionString))
             {
                 config.DatabaseConnectionString = dbConnectionString;
             }
 
             // Detect if one of an Email provider is preconfigured.
-            config.SendGridApiKey = configuration["CosmosSendGridApiKey"];
+            // Only overwrite if environment variable is set to preserve database values
+            var sendGridApiKey = configuration["CosmosSendGridApiKey"];
+            if (!string.IsNullOrEmpty(sendGridApiKey))
+            {
+                config.SendGridApiKey = sendGridApiKey;
+            }
 
-            config.SmtpHost = configuration["SmtpEmailProviderOptions:Host"]
+            var smtpHost = configuration["SmtpEmailProviderOptions:Host"]
                   ?? configuration["SmtpEmailProviderOptions__Host"];
-            config.SmtpPort = configuration["SmtpEmailProviderOptions:Port"]
+            if (!string.IsNullOrEmpty(smtpHost))
+            {
+                config.SmtpHost = smtpHost;
+            }
+
+            var smtpPort = configuration["SmtpEmailProviderOptions:Port"]
                   ?? configuration["SmtpEmailProviderOptions__Port"];
-            config.SmtpUsername = configuration["SmtpEmailProviderOptions:UserName "]
+            if (!string.IsNullOrEmpty(smtpPort))
+            {
+                config.SmtpPort = smtpPort;
+            }
+
+            var smtpUsername = configuration["SmtpEmailProviderOptions:UserName "]
                   ?? configuration["SmtpEmailProviderOptions__UserName "];
-            config.SmtpPassword = configuration["SmtpEmailProviderOptions:Password"]
+            if (!string.IsNullOrEmpty(smtpUsername))
+            {
+                config.SmtpUsername = smtpUsername;
+            }
+
+            var smtpPassword = configuration["SmtpEmailProviderOptions:Password"]
                   ?? configuration["SmtpEmailProviderOptions__Password"];
+            if (!string.IsNullOrEmpty(smtpPassword))
+            {
+                config.SmtpPassword = smtpPassword;
+            }
 
             var azureEmailConnectionString = configuration.GetConnectionString("AzureCommunicationConnection");
 
-            if (!string.IsNullOrEmpty(config.SendGridApiKey)
-                || !string.IsNullOrEmpty(config.SmtpHost)
+            if (!string.IsNullOrEmpty(sendGridApiKey)
+                || !string.IsNullOrEmpty(smtpHost)
                 || !string.IsNullOrEmpty(azureEmailConnectionString))
             {
                 config.EmailProviderPreConfigured = true;

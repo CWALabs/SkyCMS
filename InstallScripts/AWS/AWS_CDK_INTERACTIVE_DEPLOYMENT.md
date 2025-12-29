@@ -7,6 +7,7 @@ This guide describes the enhanced **interactive deployment script** (`cdk-deploy
 The new deployment workflow is fully **interactive** and **user-friendly**:
 
 1. **No command-line flags required** — all configuration is gathered via prompts
+> Recommended: Most users should download the packaged installer from [Releases](https://github.com/CWALabs/SkyCMS/releases/latest) and run `cdk-deploy.ps1`. This document is for running the CDK project from source.
 2. **Optional Publisher deployment** — choose whether to deploy S3+CloudFront Publisher
 3. **Optional Amazon SES SMTP** — prompt-driven SES wiring with password stored in Secrets Manager
 4. **Secrets Manager integration** — DB creds and storage connection string are secured and injected
@@ -28,26 +29,12 @@ The new deployment workflow is fully **interactive** and **user-friendly**:
 #### Authenticate to AWS:
 ```powershell
 aws login
-# Your default browser opens for IAM Identity Center or AWS account sign-in
-# After login, return to terminal
-```
-
-#### Bootstrap CDK (one-time per account/region):
-```powershell
-cd D:\source\SkyCMS\InstallScripts\AWS\cdk
-.\node_modules\.bin\cdk.cmd bootstrap aws://873764251532/us-east-1 `
   --qualifier hnb659fds `
   --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
-# Wait for "✨ Environment aws://873764251532/us-east-1 bootstrapped successfully."
-```
-
-### 1. Run the Script
-
 ```powershell
 cd D:\source\SkyCMS\InstallScripts\AWS
 .\cdk-deploy.ps1
 ```
-
 ### 2. Answer the Interactive Prompts
 
 The script will ask you for:
@@ -74,9 +61,6 @@ The script will ask you for:
 **Publisher Configuration:**
 - `Deploy Publisher (S3 + CloudFront)?` — yes/no prompt
   - If yes:
-    - `(Optional) Domain Name` — custom domain for Publisher CloudFront
-    - `(Optional) Hosted Zone ID` — Route 53 zone for custom domain
-
 ### 3. Review Configuration Summary
 
 Before deploying, the script displays a summary:
@@ -129,33 +113,16 @@ The script will:
 ```
 ========================================
 ✅ DEPLOYMENT COMPLETE!
-========================================
-
 📦 PUBLISHER (S3 + CloudFront):
    S3 Bucket: skycms-publisher-bucket-xxx
-   CloudFront URL: https://d123abc.cloudfront.net
-   Custom Domain: https://publisher.example.com
-   IAM User: skycms-s3-publisher-user
 
    📝 To upload website files:
-   aws s3 sync ./website s3://skycms-publisher-bucket-xxx/
-
-📝 EDITOR (ECS + RDS + CloudFront):
    Stack Name: skycms-editor
    CloudFront URL: https://d456def.cloudfront.net
-   Custom Domain: https://editor.example.com
-   Database: skycms @ skycms-rds-xxx.us-east-1.rds.amazonaws.com
-  Storage Secret: arn:aws:secretsmanager:us-east-1:123456789:secret:SkyCms-StorageConnectionString-xxx
   SES SMTP (if enabled): host/port/username env vars; password injected from Secrets Manager
-
-⏳ CloudFront may take 1-2 minutes to fully propagate.
-```
 
 ## Feature Details
 
-### Interactive Prompts with Defaults
-
-All prompts support default values shown in `[brackets]`. Press Enter to accept defaults:
 
 ```powershell
 AWS Region [us-east-1]: 
@@ -192,19 +159,9 @@ When Publisher is deployed:
 4. **File uploads** in Editor UI are stored in S3 bucket
 
 ### Custom Domain Names
-
-### Email (Amazon SES SMTP) — Optional
-- Enable via prompt; no NuGet changes required in the app (SMTP is env-driven).
-- Sender email must be a verified SES identity (single email in sandbox is fine; domain verification recommended for production).
-- In sandbox, recipients must also be verified until production access is granted.
-- Defaults: host `email-smtp.<region>.amazonaws.com`, port `587` (STARTTLS), `UsesSsl=false`.
 - SMTP password is stored/updated in Secrets Manager; ECS injects it into `SmtpEmailProviderOptions__Password`.
 - Other SMTP env vars set when enabled: `SmtpEmailProviderOptions__Host`, `Port`, `UserName`, `UsesSsl`, and `AdminEmail` (from sender email).
 
-Both Publisher and Editor support custom domains via Route 53 + ACM:
-
-**For Publisher:**
-```
 Domain Name: publisher.example.com
 Hosted Zone ID: Z1234567890ABC
 # (ACM certificate auto-requested or selected)

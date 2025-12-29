@@ -133,21 +133,34 @@ namespace Sky.Editor.Services.Scheduling
                 }
                 else
                 {
-                    // Single-tenant mode: create DbContext and StorageContext manually to avoid DI scope issues with Hangfire
-                    // Hangfire worker threads don't have HTTP context, so we can't use scoped DI resolution
-                    var configuration = scopedServices.GetRequiredService<IConfiguration>();
-                    var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
-
-                    // Create ApplicationDbContext directly instead of resolving from DI (which requires HTTP context)
-                    using (var dbContext = new ApplicationDbContext(
-                        CosmosDbOptionsBuilder.GetDbOptions<ApplicationDbContext>(connectionString)))
+                    // Single-tenant mode: Try to resolve DbContext from DI first (for tests),
+                    // otherwise create manually to avoid DI scope issues with Hangfire
+                    var dbContextFromDI = scopedServices.GetService<ApplicationDbContext>();
+                    
+                    if (dbContextFromDI != null)
                     {
-                        // Get the storage connection string and create StorageContext manually
-                        var storageConnectionString = configuration.GetConnectionString("StorageConnectionString") 
-                            ?? configuration.GetValue<string>("StorageConnectionString");
-                        var storageContext = new StorageContext(storageConnectionString, memoryCache);
+                        // Use the DbContext from DI (typically in test scenarios with in-memory database)
+                        var storageContext = scopedServices.GetRequiredService<StorageContext>();
+                        await Run(dbContextFromDI, storageContext, domainName, scopedServices);
+                    }
+                    else
+                    {
+                        // Create DbContext manually (production/Hangfire scenarios)
+                        // Hangfire worker threads don't have HTTP context, so we can't use scoped DI resolution
+                        var configuration = scopedServices.GetRequiredService<IConfiguration>();
+                        var connectionString = configuration.GetConnectionString("ApplicationDbContextConnection");
 
-                        await Run(dbContext, storageContext, domainName, scopedServices);
+                        // Create ApplicationDbContext directly instead of resolving from DI (which requires HTTP context)
+                        using (var dbContext = new ApplicationDbContext(
+                            CosmosDbOptionsBuilder.GetDbOptions<ApplicationDbContext>(connectionString)))
+                        {
+                            // Get the storage connection string and create StorageContext manually
+                            var storageConnectionString = configuration.GetConnectionString("StorageConnectionString") 
+                                ?? configuration.GetValue<string>("StorageConnectionString");
+                            var storageContext = new StorageContext(storageConnectionString, memoryCache);
+
+                            await Run(dbContext, storageContext, domainName, scopedServices);
+                        }
                     }
                 }
             }

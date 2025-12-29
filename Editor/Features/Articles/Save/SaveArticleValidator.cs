@@ -41,7 +41,10 @@ namespace Sky.Editor.Features.Articles.Save
             }
 
             // Content validation
-           
+            if (string.IsNullOrWhiteSpace(command.Content))
+            {
+                errors[nameof(command.Content)] = new[] { "Content is required." };
+            }
 
             // UserId validation
             if (command.UserId == Guid.Empty)

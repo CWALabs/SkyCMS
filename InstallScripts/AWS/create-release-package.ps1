@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 # Package AWS CDK deployment scripts for distribution
 $scriptDir = $PSScriptRoot
-$version = "1.0.0"  # Update this for each release
+$version = "1.0.1"  # Update this for each release
 $outputName = "skycms-aws-deployment-v$version.zip"
 $tempDir = Join-Path $env:TEMP "skycms-aws-package"
 
@@ -25,7 +25,7 @@ Write-Host "Copying deployment files..." -ForegroundColor Yellow
 Copy-Item -Path (Join-Path $scriptDir "cdk-deploy.ps1") -Destination $packageDir
 Copy-Item -Path (Join-Path $scriptDir "cdk-destroy.ps1") -Destination $packageDir
 
-# Copy CDK directory (excluding node_modules, dist, cdk.out, bin)
+# Copy CDK directory (excluding node_modules, dist, cdk.out)
 $cdkSource = Join-Path $scriptDir "cdk"
 $cdkDest = Join-Path $packageDir "cdk"
 New-Item -ItemType Directory -Path $cdkDest -Force | Out-Null
@@ -46,6 +46,11 @@ foreach ($file in $cdkFilesToCopy) {
 
 # Copy lib directory
 Copy-Item -Path (Join-Path $cdkSource "lib") -Destination (Join-Path $cdkDest "lib") -Recurse -Force
+
+# Copy bin directory (entrypoint referenced by cdk.json)
+if (Test-Path (Join-Path $cdkSource "bin")) {
+   Copy-Item -Path (Join-Path $cdkSource "bin") -Destination (Join-Path $cdkDest "bin") -Recurse -Force
+}
 
 # Copy README
 $readmePath = Join-Path $scriptDir "README.md"
@@ -134,7 +139,7 @@ To remove all resources:
 
 ## Support
 
-For issues or questions, visit: https://github.com/[your-repo]/issues
+For issues or questions, visit: https://github.com/CWALabs/SkyCMS/issues
 "@
 
 Set-Content -Path (Join-Path $packageDir "QUICK_START.md") -Value $installGuide

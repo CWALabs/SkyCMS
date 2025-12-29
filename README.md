@@ -13,11 +13,12 @@
 
 ## Deploy to a cloud
 
-[![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.bicep) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](./InstallScripts/AWS/AWS_CDK_INTERACTIVE_DEPLOYMENT.md)
+[![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.bicep) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](./InstallScripts/AWS/QUICK_START.md)
 
 > **Quick Start:** 
 > - **Azure:** Click the Azure button above for one-click deployment to Container Apps + MySQL
-> - **AWS:** See [AWS Installation](InstallScripts/AWS/README.md) for one-time S3 setup, then one-click deploy
+> - **AWS (Recommended):** Download the SkyCMS AWS Deployment Package from Releases and run `cdk-deploy.ps1` — https://github.com/CWALabs/SkyCMS/releases/latest
+> - **AWS (Advanced):** Run from source using the interactive CDK deployment — [AWS CDK Guide](./InstallScripts/AWS/AWS_CDK_INTERACTIVE_DEPLOYMENT.md)
 >
 > Both deployments include detailed post-deployment setup wizard and configuration guides.
 

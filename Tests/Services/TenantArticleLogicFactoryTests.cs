@@ -162,9 +162,11 @@ namespace Sky.Tests.Services
                 ?? _configuration.GetConnectionString("AzureBlobStorageConnectionString")
                 ?? "DefaultEndpointsProtocol=https;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;";
 
-            //services.AddSingleton(sp => new StorageContext(
-            //    storageConnectionString,
-            //    sp.GetRequiredService<IMemoryCache>()));
+            services.AddSingleton<StorageContext>(sp => new StorageContext(
+                storageConnectionString,
+                sp.GetRequiredService<IMemoryCache>()));
+            
+            services.AddSingleton<IStorageContext>(sp => sp.GetRequiredService<StorageContext>());
 
             // Service dependencies
             services.AddSingleton<IClock, SystemClock>();

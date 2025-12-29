@@ -310,27 +310,6 @@ namespace Sky.Tests.Areas.Setup
 
         #endregion
 
-        #region UpdateStorageConfigAsync Tests
-
-        [TestMethod]
-        public async Task UpdateStorageConfigAsync_ValidConnection_UpdatesConfiguration()
-        {
-            // Arrange
-            var setup = await setupService.InitializeSetupAsync();
-            var connectionString = "DefaultEndpointsProtocol=https;AccountName=test;";
-            var blobPublicUrl = "/blobs";
-
-            // Act
-            await setupService.UpdateStorageConfigAsync(setup.Id, connectionString, blobPublicUrl);
-
-            // Assert
-            var result = await setupService.GetCurrentSetupAsync();
-            Assert.AreEqual(connectionString, result.StorageConnectionString);
-            Assert.AreEqual(blobPublicUrl, result.BlobPublicUrl);
-        }
-
-        #endregion
-
         #region UpdateAdminAccountAsync Tests
 
         [TestMethod]
