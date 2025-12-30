@@ -1,4 +1,4 @@
-// <copyright file="Program.cs" company="Moonrise Software, LLC">
+﻿// <copyright file="Program.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/CWALabs/SkyCMS
@@ -40,6 +40,7 @@ using Sky.Editor.Services.Authors;
 using Sky.Editor.Services.BlogPublishing;
 using Sky.Editor.Services.Catalog;
 using Sky.Editor.Services.CDN;
+using Sky.Editor.Services.Diagnostics;
 using Sky.Editor.Services.EditorSettings;
 using Sky.Editor.Services.Email;
 using Sky.Editor.Services.Html;
@@ -67,9 +68,92 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 // STEP 1: Determine Deployment Mode
 // ---------------------------------------------------------------
 var isMultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
+var allowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
 var versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
 System.Console.WriteLine($"Starting Cosmos CMS Editor in {(isMultiTenantEditor ? "Multi-Tenant" : "Single-Tenant")} Mode (v.{versionNumber}).");
+
+// ---------------------------------------------------------------
+// STEP 1.5: EARLY CONFIGURATION VALIDATION
+// ---------------------------------------------------------------
+bool configurationValid = true;
+ValidationResult? earlyValidationResult = null;
+
+if (allowSetup)
+{
+    System.Console.WriteLine("CosmosAllowSetup is enabled - performing early configuration validation...");
+    
+    // Perform synchronous validation WITHOUT requiring any services
+    var loggerFactory = LoggerFactory.Create(config => config.AddConsole());
+    var logger = loggerFactory.CreateLogger<ConfigurationValidator>();
+    var validator = new ConfigurationValidator(builder.Configuration, logger);
+    
+    // Run validation synchronously at startup
+    earlyValidationResult = validator.ValidateAsync().GetAwaiter().GetResult();
+    configurationValid = earlyValidationResult.IsValid;
+    
+    if (!configurationValid)
+    {
+        System.Console.WriteLine("⚠️ Configuration validation FAILED - starting in diagnostic-only mode");
+        System.Console.WriteLine($"   Errors: {earlyValidationResult.Checks.Count(c => c.Status == CheckStatus.Error)}");
+        System.Console.WriteLine($"   Warnings: {earlyValidationResult.Checks.Count(c => c.Status == CheckStatus.Warning)}");
+    }
+    else
+    {
+        System.Console.WriteLine("✅ Configuration validation passed");
+    }
+}
+
+// ---------------------------------------------------------------
+// CONDITIONAL SERVICE REGISTRATION
+// If configuration is invalid, register only minimal services for diagnostic page
+// ---------------------------------------------------------------
+if (!configurationValid && allowSetup)
+{
+    // DIAGNOSTIC-ONLY MODE: Minimal services to show diagnostic page
+    System.Console.WriteLine("Registering minimal services for diagnostic-only mode...");
+    
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ConfigurationValidator>();
+    builder.Services.AddRazorPages();
+    builder.Services.AddControllersWithViews();
+    
+    // Build minimal app
+    var diagnosticApp = builder.Build();
+    
+    // Configure minimal middleware pipeline
+    diagnosticApp.UseRouting();
+    diagnosticApp.UseStaticFiles();
+    
+    // Redirect ALL requests to diagnostic page
+    diagnosticApp.Use(async (context, next) =>
+    {
+        if (!context.Request.Path.StartsWithSegments("/___diagnostics") &&
+            !context.Request.Path.StartsWithSegments("/lib") &&
+            !context.Request.Path.StartsWithSegments("/css") &&
+            !context.Request.Path.StartsWithSegments("/js") &&
+            !context.Request.Path.Value.EndsWith(".css") &&
+            !context.Request.Path.Value.EndsWith(".js"))
+        {
+            context.Response.Redirect("/___diagnostics");
+            return;
+        }
+        await next();
+    });
+    
+    diagnosticApp.MapRazorPages();
+    
+    System.Console.WriteLine("🔧 Application started in DIAGNOSTIC-ONLY mode");
+    System.Console.WriteLine("   Navigate to: /___diagnostics");
+    System.Console.WriteLine("   Fix configuration issues and restart the application");
+    
+    await diagnosticApp.RunAsync();
+    return; // Exit here - don't continue with normal startup
+}
+
+// ---------------------------------------------------------------
+// NORMAL STARTUP CONTINUES BELOW (only if configuration is valid)
+// ---------------------------------------------------------------
 
 // ---------------------------------------------------------------
 // STEP 2: Register Core Infrastructure (Common to Both Modes)
@@ -103,7 +187,7 @@ else
 builder.Services.Configure<SiteSettings>(settings =>
 {
     settings.MultiTenantEditor = isMultiTenantEditor;
-    settings.AllowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
+    settings.AllowSetup = allowSetup;
     settings.CosmosRequiresAuthentication = builder.Configuration.GetValue<bool?>("CosmosRequiresAuthentication") ?? false;
     settings.AllowLocalAccounts = builder.Configuration.GetValue<bool?>("AllowLocalAccounts") ?? true;
     settings.AllowedFileTypes = ".js,.css,.htm,.html,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json";
@@ -153,6 +237,12 @@ builder.Services.AddTransient<IEmailConfigurationService, EmailConfigurationServ
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddTransient<ISetupCheckService, SetupCheckService>();
+
+// Register validator for diagnostic page (if setup allowed)
+if (allowSetup)
+{
+    builder.Services.AddScoped<ConfigurationValidator>();
+}
 
 // ---------------------------------------------------------------
 // STEP 7: Register Background Job Services
@@ -391,7 +481,7 @@ var app = builder.Build();
 
 // ---------------------------------------------------------------
 // CONFIGURE MIDDLEWARE PIPELINE
-// ---------------------------------------------------------------
+// --------------------------------------------------------------
 
 // Multi-tenant middleware (must run early in pipeline)
 if (isMultiTenantEditor)
@@ -401,9 +491,9 @@ if (isMultiTenantEditor)
 }
 
 // ---------------------------------------------------------------
-// STEP: Setup Detection & Redirection (Single-Tenant Only)
+// STEP: Setup Detection (for valid configurations)
 // ---------------------------------------------------------------
-if (!isMultiTenantEditor)
+if (!isMultiTenantEditor && allowSetup)
 {
     app.Use(async (context, next) =>
     {
@@ -424,21 +514,15 @@ if (!isMultiTenantEditor)
             return;
         }
 
-        var config = context.RequestServices.GetRequiredService<IConfiguration>();
-        var allowSetup = config.GetValue<bool?>("CosmosAllowSetup") ?? false;
+        // Check if setup is complete
+        var setupService = context.RequestServices.GetRequiredService<ISetupService>();
+        var isComplete = await setupService.IsSetupCompleteAsync();
 
-        if (allowSetup)
+        if (!isComplete)
         {
-            // Check if setup is complete using the new method
-            var setupService = context.RequestServices.GetRequiredService<ISetupService>();
-            var isComplete = await setupService.IsSetupCompleteAsync();
-
-            if (!isComplete)
-            {
-                // Redirect to setup wizard
-                context.Response.Redirect("/___setup");
-                return;
-            }
+            // Redirect to setup wizard
+            context.Response.Redirect("/___setup");
+            return;
         }
 
         await next();

@@ -198,21 +198,17 @@ if (-not (Test-DockerImage $dockerImage)) {
     }
 }
 
-# MySQL Configuration
-$mysqlDatabaseName = Get-UserInput -Prompt "MySQL Database Name" -Default "skycms" -Required
+# Database Configuration
+$databaseProvider = Get-UserInput -Prompt "Database Provider (cosmos/mysql/sql)" -Default "cosmos" -Required
 
-Write-Info "MySQL admin password requirements: 8-128 chars, include uppercase, lowercase, numbers, and special chars"
-do {
-    $mysqlAdminPassword = Get-UserInput -Prompt "MySQL Admin Password" -Required -Secure
-    if ($mysqlAdminPassword.Length -lt 8) {
-        Write-Warning-Custom "Password must be at least 8 characters long"
-        $mysqlAdminPassword = $null
-    }
-} while ([string]::IsNullOrWhiteSpace($mysqlAdminPassword))
+$mysqlDatabaseName = Get-UserInput -Prompt "Database Name" -Default "skycms" -Required
+
+Write-Info "Database credentials: Leave blank to auto-generate secure credentials"
+$databaseAdminUsername = Get-UserInput -Prompt "Database Admin Username (optional, auto-generated if blank)"
+$databaseAdminPassword = Get-UserInput -Prompt "Database Admin Password (optional, auto-generated if blank)" -Secure
 
 # Container Configuration
-$minReplicas = Get-UserInput -Prompt "Minimum Container Replicas" -Default "1"
-$maxReplicas = Get-UserInput -Prompt "Maximum Container Replicas" -Default "3"
+$minReplicas = Get-UserInput -Prompt "Minimum App Service Instances" -Default "1"
 
 # Publisher Option
 $deployPublisher = Get-YesNoInput -Prompt "Deploy Publisher (Blob Storage for static website)?" -Default $true
@@ -228,9 +224,12 @@ Write-Host "Location:          $location" -ForegroundColor White
 Write-Host "Base Name:         $baseName" -ForegroundColor White
 Write-Host "Environment:       $environment" -ForegroundColor White
 Write-Host "Docker Image:      $dockerImage" -ForegroundColor White
+Write-Host "Database Provider: $databaseProvider" -ForegroundColor White
 Write-Host "Database Name:     $mysqlDatabaseName" -ForegroundColor White
+Write-Host "Admin Username:    $(if ($databaseAdminUsername) { $databaseAdminUsername } else { 'Auto-generated' })" -ForegroundColor White
+Write-Host "Admin Password:    $(if ($databaseAdminPassword) { '[Provided]' } else { 'Auto-generated' })" -ForegroundColor White
 Write-Host "Deploy Publisher:  $deployPublisher" -ForegroundColor White
-Write-Host "Min/Max Replicas:  $minReplicas / $maxReplicas" -ForegroundColor White
+Write-Host "Min Instances:     $minReplicas" -ForegroundColor White
 
 $confirm = Get-YesNoInput -Prompt "`nProceed with deployment?" -Default $true
 if (-not $confirm) {
@@ -287,14 +286,16 @@ $paramObject = @{
     "schema"         = "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#"
     "contentVersion" = "1.0.0.0"
     "parameters"     = @{
-        "baseName"             = @{ "value" = $baseName }
-        "environment"          = @{ "value" = $environment }
-        "dockerImage"          = @{ "value" = $dockerImage }
-        "mysqlAdminPassword"   = @{ "value" = $mysqlAdminPassword }
-        "mysqlDatabaseName"    = @{ "value" = $mysqlDatabaseName }
-        "minReplicas"          = @{ "value" = [int]$minReplicas }
-        "maxReplicas"          = @{ "value" = [int]$maxReplicas }
-        "deployPublisher"      = @{ "value" = $deployPublisher }
+        "location"                  = @{ "value" = $location }
+        "baseName"                  = @{ "value" = $baseName }
+        "environment"               = @{ "value" = $environment }
+        "databaseProvider"          = @{ "value" = $databaseProvider }
+        "deployPublisher"           = @{ "value" = $deployPublisher }
+        "dockerImage"               = @{ "value" = $dockerImage }
+        "databaseAdminPassword"     = @{ "value" = $databaseAdminPassword }
+        "mysqlDatabaseName"         = @{ "value" = $mysqlDatabaseName }
+        "mysqlAdminUsername"        = @{ "value" = $databaseAdminUsername }
+        "minReplicas"               = @{ "value" = [int]$minReplicas }
     }
 }
 
