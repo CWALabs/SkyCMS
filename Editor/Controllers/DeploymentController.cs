@@ -111,9 +111,9 @@ public class DeploymentController : ControllerBase
     [HttpPost]
     [RequestSizeLimit(MaxZipFileSize)]
     public async Task<IActionResult> Deploy(
-        [FromForm] Guid articleId,
-        [FromForm] string password,
-        [FromForm] IFormFile zipFile)
+    [FromForm] Guid articleId,
+    [FromForm] string password,
+    [FromForm] IFormFile zipFile)
     {
         try
         {
@@ -198,6 +198,12 @@ public class DeploymentController : ControllerBase
                 filesDeployed = deployedFiles.Count,
                 cdnPurged = cdnPurged
             });
+        }
+        catch (InvalidOperationException)
+        {
+            // Re-throw security validation exceptions (e.g., path traversal attempts)
+            // These should propagate to indicate malicious input
+            throw;
         }
         catch (Exception ex)
         {
@@ -393,6 +399,7 @@ public class DeploymentController : ControllerBase
             var fileMetadata = new FileUploadMetaData
             {
                 FileName = blobPath,
+                RelativePath = blobPath,
                 ContentType = contentType,
                 TotalFileSize = ms.Length,
                 ChunkIndex = 0,
