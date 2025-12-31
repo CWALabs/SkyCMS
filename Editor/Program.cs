@@ -138,6 +138,7 @@ if (!configurationValid && allowSetup)
             context.Response.Redirect("/___diagnostics");
             return;
         }
+
         await next();
     });
     
@@ -474,6 +475,46 @@ builder.Services.AddRateLimiter(_ => _
         options.QueueLimit = 2;
     }));
 
+// Configure rate limiting for deployment API
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("deployment", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(5);
+        opt.PermitLimit = 10;  // Max 10 deployments per 5 minutes per IP
+        opt.QueueLimit = 0;    // No queuing
+    });
+
+    // Add a global rate limiter for general API protection
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        // Exempt deployment endpoint from global limits (it has its own)
+        if (context.Request.Path.StartsWithSegments("/api/deployment"))
+        {
+            return RateLimitPartition.GetNoLimiter("deployment-exempt");
+        }
+
+        // Apply general rate limiting to other API endpoints
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 100
+            });
+    });
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            success = false,
+            error = "Too many requests. Please try again later."
+        }, cancellationToken);
+    };
+});
+
 // ---------------------------------------------------------------
 // BUILD APPLICATION
 // ---------------------------------------------------------------
@@ -499,6 +540,7 @@ if (!isMultiTenantEditor && allowSetup)
     {
         // Skip setup check for setup wizard pages, static files, and health checks
         if (context.Request.Path.StartsWithSegments("/___setup") ||
+        context.Request.Path.StartsWithSegments("/setup") ||
             context.Request.Path.StartsWithSegments("/lib") ||
             context.Request.Path.StartsWithSegments("/css") ||
             context.Request.Path.StartsWithSegments("/js") ||

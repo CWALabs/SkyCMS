@@ -351,13 +351,24 @@ namespace Sky.Editor.Services.Diagnostics
         private string DetectDatabaseType(string connectionString)
         {
             if (connectionString.Contains("AccountEndpoint", StringComparison.OrdinalIgnoreCase))
+            {
                 return "Azure Cosmos DB";
+            }
+
             if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) && connectionString.Contains("Port=3306"))
+            {
                 return "MySQL";
+            }
+
             if (connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) && connectionString.Contains(".db"))
+            {
                 return "SQLite";
+            }
+
             if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase))
+            {
                 return "SQL Server";
+            }
 
             return "Unknown";
         }
@@ -365,9 +376,14 @@ namespace Sky.Editor.Services.Diagnostics
         private string DetectStorageType(string connectionString)
         {
             if (connectionString.Contains("DefaultEndpointsProtocol", StringComparison.OrdinalIgnoreCase))
+            {
                 return "Azure Blob Storage";
+            }
+
             if (connectionString.Contains("Bucket", StringComparison.OrdinalIgnoreCase) && connectionString.Contains("KeyId"))
+            {
                 return "S3-Compatible (Cloudflare R2)";
+            }
 
             return "Unknown";
         }
@@ -380,11 +396,15 @@ namespace Sky.Editor.Services.Diagnostics
         private string MaskEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
+            {
                 return string.Empty;
+            }
 
             var parts = email.Split('@');
             if (parts.Length != 2)
+            {
                 return "***@***";
+            }
 
             var localPart = parts[0];
             var maskedLocal = localPart.Length > 2
@@ -397,7 +417,9 @@ namespace Sky.Editor.Services.Diagnostics
         private string MaskConnectionString(string connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
+            {
                 return string.Empty;
+            }
 
             // Mask sensitive parts of connection strings
             var masked = Regex.Replace(connectionString, @"(Password|pwd|AccountKey|Key|ClientSecret)=([^;]+)", "$1=***", RegexOptions.IgnoreCase);
@@ -407,7 +429,9 @@ namespace Sky.Editor.Services.Diagnostics
         private string MaskSensitiveValue(string value)
         {
             if (string.IsNullOrWhiteSpace(value) || value.Length <= 4)
+            {
                 return "***";
+            }
 
             return $"{value[..2]}***{value[^2..]}";
         }

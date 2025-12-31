@@ -10,6 +10,7 @@ namespace Sky.Cms.Models
     using System;
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
+    using Cosmos.Cms.Common;
     using Cosmos.Cms.Data;
     using Cosmos.Common.Data;
     using Microsoft.AspNetCore.Mvc.Rendering;

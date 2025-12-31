@@ -7,6 +7,7 @@
 
 namespace Sky.Tests.Features.Articles.Create
 {
+    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

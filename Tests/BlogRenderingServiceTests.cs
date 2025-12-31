@@ -7,6 +7,7 @@
 
 namespace Sky.Tests.Services.BlogPublishing
 {
+    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.EntityFrameworkCore;

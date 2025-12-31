@@ -23,16 +23,11 @@ param baseName string = 'skycms'
 ])
 param environment string = 'dev'
 
-@description('Database provider to deploy')
-@allowed([
-  'cosmos'
-  'mysql'
-  'sql'
-])
-param databaseProvider string = 'cosmos'
-
 @description('Deploy publisher (Blob Storage for static website)')
 param deployPublisher bool = true
+
+@description('Administrator email address for the CMS')
+param adminEmail string = ''
 
 // Docker Image Configuration
 @description('Docker image for the SkyCMS Editor')
@@ -47,11 +42,8 @@ param databaseAdminPassword string = ''
 @secure()
 param passwordSeed string = newGuid()
 
-@description('MySQL database name')
-param mysqlDatabaseName string = 'skycms'
-
-@description('Database administrator username (used for MySQL or Azure SQL). Leave blank to auto-generate.')
-param mysqlAdminUsername string = ''
+@description('Random seed to ensure unique resource names per deployment run')
+param randomSeed string = newGuid()
 
 @description('Minimum worker instances for App Service Plan')
 @minValue(1)
@@ -78,27 +70,40 @@ param tags object = {
 // VARIABLES
 // ============================================================================
 
+// Always use Azure SQL
+var databaseProvider = 'sql'
+
 var uniqueSuffix = uniqueString(resourceGroup().id, baseName)
+var randomSuffix = toLower(uniqueString(resourceGroup().id, baseName, randomSeed))
+var randomSuffix8 = substring(randomSuffix, 0, 8)
+
 var keyVaultName = 'kv-${baseName}-${uniqueSuffix}'
-var mysqlServerName = 'mysql-${baseName}-${uniqueSuffix}'
-var sqlServerName = 'sql-${baseName}-${uniqueSuffix}'
-var cosmosAccountName = 'cosmos-${baseName}-${uniqueSuffix}'
-var appServicePlanName = 'plan-${baseName}-${environment}'
-var webAppName = 'app-${baseName}-editor-${environment}'
-var managedIdentityName = 'id-${baseName}-${environment}'
-var storageAccountName = 'st${baseName}${uniqueSuffix}'
+var mysqlServerName = 'mysql-${baseName}-${randomSuffix8}'
+var sqlServerName = 'sql-${baseName}-${randomSuffix8}'
+var cosmosAccountName = 'cosmos-${baseName}-${randomSuffix8}'
+var appServicePlanName = 'plan-${baseName}-${environment}-${randomSuffix8}'
+var webAppName = 'editor-${baseName}-${environment}-${randomSuffix8}'
+var managedIdentityName = 'id-${baseName}-${environment}-${randomSuffix8}'
+var storageAccountName = 'st${substring(baseName, 0, min(10, length(baseName)))}${substring(randomSuffix, 0, 10)}'
 var dbConnectionSecretName = 'db-connection-string'
 var storageConnectionSecretName = 'storage-connection-string'
 var acsConnectionSecretName = 'acs-connection-string'
+var databaseName = 'skycms'
 var mysqlServerFqdn = '${mysqlServerName}.mysql.database.azure.com'
-var sqlServerFqdn = '${sqlServerName}.${az.environment().suffixes.sqlServerHostname}'
-var keyVaultBaseUri = 'https://${keyVaultName}.${az.environment().suffixes.keyvaultDns}'
+var sqlServerHostnameSuffix = az.environment().suffixes.sqlServerHostname
+var sqlServerFqdn = startsWith(sqlServerHostnameSuffix, '.')
+  ? '${sqlServerName}${sqlServerHostnameSuffix}'
+  : '${sqlServerName}.${sqlServerHostnameSuffix}'
+var keyVaultDnsSuffix = az.environment().suffixes.keyvaultDns
+var keyVaultBaseUri = startsWith(keyVaultDnsSuffix, '.')
+  ? 'https://${keyVaultName}${keyVaultDnsSuffix}'
+  : 'https://${keyVaultName}.${keyVaultDnsSuffix}'
 var dbConnectionSecretUri = '${keyVaultBaseUri}/secrets/${dbConnectionSecretName}'
 var storageConnectionSecretUriValue = deployPublisher ? '${keyVaultBaseUri}/secrets/${storageConnectionSecretName}' : ''
 var acsConnectionSecretUriValue = !empty(acsConnectionString) ? '${keyVaultBaseUri}/secrets/${acsConnectionSecretName}' : ''
 var generatedAdminUsername = 'admin${substring(uniqueSuffix, 0, 6)}'
 var generatedAdminPassword = '${toUpper(substring(passwordSeed, 0, 8))}!${substring(passwordSeed, 9, 4)}${substring(passwordSeed, 14, 4)}${substring(passwordSeed, 19, 4)}'
-var adminUsernameFinal = empty(mysqlAdminUsername) ? generatedAdminUsername : mysqlAdminUsername
+var adminUsernameFinal = generatedAdminUsername
 var adminPasswordFinal = empty(databaseAdminPassword) ? generatedAdminPassword : databaseAdminPassword
 
 // ============================================================================
@@ -139,7 +144,7 @@ module mysql 'modules/mysql.bicep' = if (databaseProvider == 'mysql') {
     serverName: mysqlServerName
     administratorLogin: adminUsernameFinal
     administratorPassword: adminPasswordFinal
-    databaseName: mysqlDatabaseName
+    databaseName: databaseName
     skuName: environment == 'prod' ? 'Standard_B2s' : 'Standard_B1ms'
     skuTier: 'Burstable'
     storageSizeGB: 20
@@ -155,7 +160,7 @@ module sql 'modules/sqlDatabase.bicep' = if (databaseProvider == 'sql') {
     serverName: sqlServerName
     administratorLogin: adminUsernameFinal
     administratorPassword: adminPasswordFinal
-    databaseName: mysqlDatabaseName
+    databaseName: databaseName
     tags: tags
   }
 }
@@ -165,7 +170,7 @@ module cosmos 'modules/cosmos.bicep' = if (databaseProvider == 'cosmos') {
   params: {
     location: location
     accountName: cosmosAccountName
-    databaseName: mysqlDatabaseName
+    databaseName: databaseName
     tags: tags
   }
 }
@@ -174,8 +179,8 @@ module cosmos 'modules/cosmos.bicep' = if (databaseProvider == 'cosmos') {
 // STORE DB CONNECTION STRING IN KEY VAULT
 // ============================================================================
 
-var mysqlConnectionString = databaseProvider == 'mysql' ? 'Server=${mysqlServerFqdn};Port=3306;Uid=${adminUsernameFinal};Pwd=${adminPasswordFinal};Database=${mysqlDatabaseName};SslMode=Required;' : ''
-var sqlConnectionString = databaseProvider == 'sql' ? 'Server=${sqlServerFqdn};Database=${mysqlDatabaseName};User ID=${adminUsernameFinal};Password=${adminPasswordFinal};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;' : ''
+var mysqlConnectionString = databaseProvider == 'mysql' ? 'Server=${mysqlServerFqdn};Port=3306;Uid=${adminUsernameFinal};Pwd=${adminPasswordFinal};Database=${databaseName};SslMode=Required;' : ''
+var sqlConnectionString = databaseProvider == 'sql' ? 'Server=${sqlServerFqdn};Database=${databaseName};User ID=${adminUsernameFinal};Password=${adminPasswordFinal};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;' : ''
 var cosmosConnectionString = databaseProvider == 'cosmos' ? listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', cosmosAccountName), '2023-11-15').connectionStrings[0].connectionString : ''
 
 var applicationConnectionString = !empty(mysqlConnectionString) ? mysqlConnectionString : !empty(sqlConnectionString) ? sqlConnectionString : cosmosConnectionString
@@ -185,11 +190,10 @@ resource dbConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   properties: {
     value: applicationConnectionString
   }
-  dependsOn: databaseProvider == 'mysql'
-    ? [keyVault, mysql]
-    : databaseProvider == 'sql'
-      ? [keyVault, sql]
-      : [keyVault, cosmos]
+  dependsOn: [
+    keyVault
+    sql
+  ]
 }
 
 // ============================================================================
@@ -211,7 +215,7 @@ module storage 'modules/storage.bicep' = if (deployPublisher) {
 resource storageConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (deployPublisher) {
   name: '${keyVaultName}/${storageConnectionSecretName}'
   properties: {
-    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${listKeys(resourceId('Microsoft.Storage/storageAccounts', storageAccountName), '2023-01-01').keys[0].value};EndpointSuffix=${az.environment().suffixes.storage};'
+    value: storage.outputs.primaryConnectionString
   }
   dependsOn: [
     keyVault
@@ -255,15 +259,13 @@ module webApp 'modules/webApp.bicep' = {
     webAppName: webAppName
     planName: appServicePlanName
     imageName: dockerImage
-    dbConnectionSecretUri: dbConnectionSecretUri
-    storageConnectionSecretUri: storageConnectionSecretUriValue
-    acsConnectionSecretUri: acsConnectionSecretUriValue
-    acsSenderEmail: acsSenderEmail
+    dbConnectionString: applicationConnectionString
+    storageConnectionString: deployPublisher ? storage.outputs.primaryConnectionString : ''
+    adminEmail: adminEmail
+    publisherUrl: deployPublisher ? storage.outputs.primaryWebEndpoint : ''
     managedIdentityId: managedIdentity.id
-    storageAccountName: deployPublisher ? storageAccountName : ''
-    mysqlServerFqdn: databaseProvider == 'mysql' ? mysqlServerFqdn : ''
-    mysqlDatabaseName: mysqlDatabaseName
-    mysqlAdminUsername: databaseProvider == 'mysql' ? adminUsernameFinal : ''
+    skuName: environment == 'prod' ? 'P2v3' : 'P1v3'
+    skuTier: 'PremiumV3'
     capacity: max(1, minReplicas)
     tags: tags
   }
@@ -283,13 +285,7 @@ output editorUrl string = webApp.outputs.url
 output editorFqdn string = webApp.outputs.hostName
 
 @description('MySQL Server FQDN')
-output mysqlServerFqdn string = databaseProvider == 'mysql' ? mysqlServerFqdn : 'Not deployed'
-
-@description('MySQL Database Name')
-output mysqlDatabaseName string = databaseProvider == 'mysql' ? mysqlDatabaseName : 'Not deployed'
-
-@description('MySQL Admin Username')
-output mysqlAdminUsername string = databaseProvider == 'mysql' ? adminUsernameFinal : 'Not deployed'
+output mysqlServerFqdn string = 'Not deployed (using Azure SQL instead)'
 
 @description('Key Vault Name')
 output keyVaultName string = keyVault.outputs.keyVaultName
@@ -312,4 +308,20 @@ output nextSteps string = '''
 2. Visit the Editor URL above
 3. Complete the SkyCMS setup wizard
 4. ${deployPublisher ? 'Enable static website: Run the command from storage outputs' : 'Publisher not deployed'}
+'''
+
+@description('Human-friendly deployment summary')
+output deploymentSummary string = '''Deployment succeeded. Here are the outputs:
+
+Editor URL: ${webApp.outputs.url}
+Web app hostname: ${webApp.outputs.hostName}
+MySQL server: ${databaseProvider == 'mysql' ? mysqlServerFqdn : 'Not deployed'}
+Key Vault: ${keyVault.outputs.keyVaultName}
+Storage account: ${deployPublisher ? storageAccountName : 'Not deployed'}
+Static website URL: ${deployPublisher ? format('https://{0}.z13.web.{1}', storageAccountName, az.environment().suffixes.storage) : 'Not deployed'}
+Managed identity: ${managedIdentity.name}
+
+Next steps:
+1) Wait ~1–2 minutes for the web app to warm up.
+2) Browse the editor URL above and complete the SkyCMS setup wizard.
 '''

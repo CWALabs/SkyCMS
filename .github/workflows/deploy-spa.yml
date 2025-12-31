@@ -1,0 +1,60 @@
+﻿name: Deploy SPA to SkyCMS
+
+on:
+  # push:
+  #   branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React app
+        run: npm run build
+        env:
+          PUBLIC_URL: ${{ secrets.SKYCMS_APP_URL }}
+
+      - name: Create deployment package
+        run: |
+          cd build
+          zip -r ../spa-deployment.zip .
+          cd ..
+
+      - name: Deploy to SkyCMS
+        run: |
+          RESPONSE=$(curl -X POST ${{ secrets.SKYCMS_EDITOR_URL }}/api/spa/deploy \
+            -F "articleId=${{ secrets.SKYCMS_ARTICLE_ID }}" \
+            -F "password=${{ secrets.SKYCMS_DEPLOY_KEY }}" \
+            -F "zipFile=@spa-deployment.zip" \
+            -H "X-GitHub-SHA: ${{ github.sha }}" \
+            -H "X-GitHub-Repository: ${{ github.repository }}" \
+            -w "\n%{http_code}" \
+            -s)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "Response: $BODY"
+          echo "HTTP Code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Deployment failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          
+          echo "✅ Deployment successful!"
+          echo "Files deployed: $(echo "$BODY" | jq -r '.filesDeployed')"
+          echo "CDN purged: $(echo "$BODY" | jq -r '.cdnPurged')"

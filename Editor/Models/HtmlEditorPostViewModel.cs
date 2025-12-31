@@ -8,6 +8,7 @@
 namespace Sky.Cms.Models
 {
     using System;
+    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
 
     /// <summary>

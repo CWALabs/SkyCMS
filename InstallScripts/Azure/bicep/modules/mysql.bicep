@@ -108,12 +108,13 @@ resource allowAllIps 'Microsoft.DBforMySQL/flexibleServers/firewallRules@2023-12
 }
 
 // Create the application database
+// Note: Using default charset/collation to avoid Azure provisioning issues
 resource database 'Microsoft.DBforMySQL/flexibleServers/databases@2023-12-30' = {
   parent: mysqlServer
   name: databaseName
   properties: {
-    charset: 'utf8mb4'
-    collation: 'utf8mb4_unicode_ci'
+    charset: 'utf8mb3'
+    collation: 'utf8mb3_general_ci'
   }
 }
 

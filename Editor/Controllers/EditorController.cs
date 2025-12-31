@@ -14,6 +14,7 @@ namespace Sky.Cms.Controllers
     using System.Threading.Tasks;
     using System.Web;
     using Cosmos.BlobService;
+    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;

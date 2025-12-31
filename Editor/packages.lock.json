@@ -21,6 +21,12 @@
           "Azure.ResourceManager": "1.13.2"
         }
       },
+      "BCrypt.Net-Next": {
+        "type": "Direct",
+        "requested": "[4.0.3, )",
+        "resolved": "4.0.3",
+        "contentHash": "W+U9WvmZQgi5cX6FS5GDtDoPzUCV4LkBLkywq/kRZhuDwcbavOzcDAr3LXJFqHUi952Yj3LEYoWW0jbEUQChsA=="
+      },
       "Cosmos.EmailServices": {
         "type": "Direct",
         "requested": "[9.0.1, 10.0.0)",
@@ -2102,16 +2108,16 @@
           "AWSSDK.S3": "[4.0.14.1, )",
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.1, 2.0.0)",
           "Azure.Storage.Files.Shares": "[12.24.0, 13.0.0)",
-          "Cosmos.DynamicConfig": "[9.2.3.12, )"
+          "Cosmos.DynamicConfig": "[9.2.3.18, )"
         }
       },
       "cosmos.common": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.3.12, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.3.17, )",
           "Azure.Monitor.Query": "[1.5.0, )",
-          "Cosmos.BlobService": "[9.2.3.12, )",
-          "Cosmos.DynamicConfig": "[9.2.3.12, )",
+          "Cosmos.BlobService": "[9.2.3.18, )",
+          "Cosmos.DynamicConfig": "[9.2.3.18, )",
           "MailChimp.Net.V3": "[5.8.2, 6.0.0)",
           "Microsoft.AspNetCore.DataProtection.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Otp.NET": "[1.4.1, )",
@@ -2121,7 +2127,7 @@
       "cosmos.dynamicconfig": {
         "type": "Project",
         "dependencies": {
-          "AspNetCore.Identity.FlexDb": "[9.2.3.12, )",
+          "AspNetCore.Identity.FlexDb": "[9.2.3.17, )",
           "Microsoft.EntityFrameworkCore": "[9.0.10, 10.0.0)",
           "Microsoft.EntityFrameworkCore.Cosmos": "[9.0.10, 10.0.0)"
         }

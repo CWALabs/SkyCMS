@@ -97,5 +97,8 @@ output primaryWebEndpoint string = storageAccount.properties.primaryEndpoints.we
 @description('Static website URL')
 output staticWebsiteUrl string = replace(storageAccount.properties.primaryEndpoints.web, 'https://', '')
 
+@description('Primary connection string for the storage account')
+output primaryConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${listKeys(storageAccount.id, '2023-01-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage};'
+
 @description('Azure CLI command to enable static website (run this after deployment)')
 output enableStaticWebsiteCommand string = 'az storage blob service-properties update --account-name ${storageAccountName} --static-website --index-document ${indexDocument} --404-document ${errorDocument404Path}'

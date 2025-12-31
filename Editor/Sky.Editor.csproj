@@ -88,6 +88,7 @@
 	<ItemGroup>
 		<PackageReference Include="Azure.ResourceManager" />
 		<PackageReference Include="Azure.ResourceManager.Cdn" />
+		<PackageReference Include="BCrypt.Net-Next" />
 		<PackageReference Include="Cosmos.EmailServices" />
 		<PackageReference Include="CsvHelper" />
 		<PackageReference Include="Hangfire.AspNetCore" />

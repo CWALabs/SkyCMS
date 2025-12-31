@@ -1,0 +1,101 @@
+@page
+@model Sky.Editor.Pages.SpaApps.CreateModel
+@{
+    ViewData["Title"] = "Create SPA Application";
+}
+
+<h1>Create SPA Application</h1>
+
+@if (Model.ShowingSecrets)
+{
+    <div class="alert alert-warning">
+        <h4><i class="bi bi-exclamation-triangle"></i> Save These Credentials!</h4>
+        <p>These secrets will only be shown <strong>once</strong>. Copy them to a secure location immediately.</p>
+        
+        <div class="mb-3">
+            <label class="form-label fw-bold">Article ID:</label>
+            <div class="input-group">
+                <input type="text" class="form-control font-monospace" value="@Model.ArticleId" readonly id="articleId">
+                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('articleId')">
+                    <i class="bi bi-clipboard"></i> Copy
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Deployment Key:</label>
+            <div class="input-group">
+                <input type="text" class="form-control font-monospace" value="@Model.DeploymentKey" readonly id="deploymentKey">
+                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('deploymentKey')">
+                    <i class="bi bi-clipboard"></i> Copy
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Webhook Secret:</label>
+            <div class="input-group">
+                <input type="text" class="form-control font-monospace" value="@Model.WebhookSecret" readonly id="webhookSecret">
+                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('webhookSecret')">
+                    <i class="bi bi-clipboard"></i> Copy
+                </button>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <p class="mb-0"><strong>Next Steps:</strong></p>
+            <ol class="mb-0">
+                <li>Add these as GitHub Secrets in your repository settings</li>
+                <li>Configure your GitHub Action workflow (see documentation)</li>
+                <li>Deploy your React app with: <code>npm run build</code></li>
+            </ol>
+        </div>
+
+        <a asp-page="./Index" class="btn btn-primary">Go to SPA Applications</a>
+    </div>
+}
+else
+{
+    <form method="post">
+        <div class="mb-3">
+            <label asp-for="Input.Title" class="form-label"></label>
+            <input asp-for="Input.Title" class="form-control" placeholder="My React Application">
+            <span asp-validation-for="Input.Title" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Input.UrlPath" class="form-label"></label>
+            <input asp-for="Input.UrlPath" class="form-control" placeholder="/my-react-app">
+            <div class="form-text">Must start with / and contain only lowercase letters, numbers, and hyphens</div>
+            <span asp-validation-for="Input.UrlPath" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create SPA Application</button>
+        <a asp-page="./Index" class="btn btn-secondary">Cancel</a>
+    </form>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            element.setSelectionRange(0, 99999); // For mobile devices
+            navigator.clipboard.writeText(element.value);
+            
+            // Show feedback
+            const button = element.nextElementSibling;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-secondary');
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-secondary');
+            }, 2000);
+        }
+    </script>
+}

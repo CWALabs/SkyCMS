@@ -7,6 +7,7 @@
 
 namespace Sky.Tests.Features.Articles.Save
 {
+    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Articles.Save;

@@ -1,4 +1,4 @@
-// <copyright file="TenantSetupMiddleware.cs" company="Moonrise Software, LLC">
+﻿// <copyright file="TenantSetupMiddleware.cs" company="Moonrise Software, LLC">
 // Copyright (c) Moonrise Software, LLC. All rights reserved.
 // Licensed under the MIT License (https://opensource.org/licenses/MIT)
 // See https://github.com/CWALabs/SkyCMS
@@ -33,8 +33,10 @@ namespace Sky.Editor.Middleware
         /// </summary>
         public async Task InvokeAsync(HttpContext context)
         {
-            // Skip for static files, health checks, and setup pages
+            // Skip for static files, health checks, diagnostics, and setup pages
             if (context.Request.Path.StartsWithSegments("/___setup") ||
+                context.Request.Path.StartsWithSegments("/___diagnostics") ||
+                context.Request.Path.StartsWithSegments("/api") || // ✅ Skip API endpoints
                 context.Request.Path.StartsWithSegments("/healthz") ||
                 context.Request.Path.StartsWithSegments("/lib") ||
                 context.Request.Path.StartsWithSegments("/css") ||

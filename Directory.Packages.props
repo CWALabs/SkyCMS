@@ -9,6 +9,7 @@
     <!-- Core .NET 9 packages with version constraints -->
     <PackageVersion Include="AWSSDK.CloudFront" Version="4.0.10.3" />
     <PackageVersion Include="AWSSDK.SecretsManager" Version="4.0.4.1" />
+    <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageVersion Include="coverlet.msbuild" Version="6.0.4" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="[9.0.10,10.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Cosmos" Version="[9.0.10,10.0)" />

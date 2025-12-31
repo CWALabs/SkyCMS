@@ -137,10 +137,16 @@ namespace Sky.Editor.Domain.Events
         /// </remarks>
         public async Task DispatchAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default)
         {
-            if (domainEvent == null) return;
+            if (domainEvent == null)
+            {
+                return;
+            }
 
             var delegates = GetOrCreateDelegates(domainEvent.GetType());
-            if (delegates.Count == 0) return;
+            if (delegates.Count == 0)
+            {
+                return;
+            }
 
             var failures = new List<Exception>();
 
@@ -181,8 +187,15 @@ namespace Sky.Editor.Domain.Events
                 }
             }
 
-            if (failures.Count == 1) throw failures[0];
-            if (failures.Count > 1) throw new AggregateException("One or more domain event handlers failed.", failures);
+            if (failures.Count == 1)
+            {
+                throw failures[0];
+            }
+
+            if (failures.Count > 1)
+            {
+                throw new AggregateException("One or more domain event handlers failed.", failures);
+            }
         }
 
         /// <summary>
@@ -195,7 +208,11 @@ namespace Sky.Editor.Domain.Events
         /// </remarks>
         public async Task DispatchAsync(IEnumerable<IDomainEvent> events, CancellationToken cancellationToken = default)
         {
-            if (events == null) return;
+            if (events == null)
+            {
+                return;
+            }
+
             foreach (var e in events)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -246,7 +263,10 @@ namespace Sky.Editor.Domain.Events
                     "HandleAsync",
                     BindingFlags.Public | BindingFlags.Instance);
 
-                if (method == null) continue;
+                if (method == null)
+                {
+                    continue;
+                }
 
                 var parameters = method.GetParameters();
                 bool supportsCancellation =

@@ -171,8 +171,107 @@ Write-Header "Deployment Configuration"
 # Resource Group
 $resourceGroupName = Get-UserInput -Prompt "Resource Group Name" -Default "rg-skycms-dev" -Required
 
-Write-Info "Common Azure regions: eastus, westus2, centralus, westeurope, northeurope, southeastasia"
-$location = Get-UserInput -Prompt "Azure Region" -Default "eastus" -Required
+# Database Configuration (Azure SQL only)
+$databaseProvider = 'sql'
+Write-Info "Database Provider: Azure SQL (hardcoded for reliability)"
+
+# Get available regions for SQL deployment
+Write-Info "Checking available Azure regions for $databaseProvider deployment..."
+
+function Get-AvailableRegionsForDeployment {
+    param([string]$DbProvider)
+    
+    $resourceTypes = @{
+        'AppService' = @{ Namespace = 'Microsoft.Web'; ResourceType = 'sites' }
+        'Storage' = @{ Namespace = 'Microsoft.Storage'; ResourceType = 'storageAccounts' }
+        'KeyVault' = @{ Namespace = 'Microsoft.KeyVault'; ResourceType = 'vaults' }
+    }
+    
+    switch ($DbProvider) {
+        'mysql' { $resourceTypes['Database'] = @{ Namespace = 'Microsoft.DBforMySQL'; ResourceType = 'flexibleServers' } }
+        'sql' { $resourceTypes['Database'] = @{ Namespace = 'Microsoft.Sql'; ResourceType = 'servers' } }
+        'cosmos' { $resourceTypes['Database'] = @{ Namespace = 'Microsoft.DocumentDB'; ResourceType = 'databaseAccounts' } }
+    }
+    
+    $regionsByResource = @{}
+    foreach ($key in $resourceTypes.Keys) {
+        $resource = $resourceTypes[$key]
+        try {
+            $query = "resourceTypes[?resourceType=='$($resource.ResourceType)'].locations | [0]"
+            $locations = az provider show --namespace $resource.Namespace --query $query -o json 2>$null | ConvertFrom-Json
+            if ($locations) {
+                $normalizedLocations = $locations | ForEach-Object { $_ -replace '\s+', '' | ForEach-Object { $_.ToLower() } }
+                $regionsByResource[$key] = $normalizedLocations
+            }
+        } catch {
+            # Ignore errors
+        }
+    }
+    
+    # Find intersection
+    $commonRegions = $null
+    foreach ($key in $regionsByResource.Keys) {
+        if ($null -eq $commonRegions) {
+            $commonRegions = $regionsByResource[$key]
+        } else {
+            $commonRegions = $commonRegions | Where-Object { $regionsByResource[$key] -contains $_ }
+        }
+    }
+    
+    return $commonRegions | Sort-Object
+}
+
+$availableRegions = Get-AvailableRegionsForDeployment -DbProvider 'sql'
+
+if ($availableRegions -and $availableRegions.Count -gt 0) {
+    Write-Success "$($availableRegions.Count) regions support all required resources"
+    
+    # Get user's existing regions
+    $userRegions = @()
+    try {
+        $userRegions = az group list --query '[].location' -o json 2>$null | ConvertFrom-Json | 
+            Select-Object -Unique | 
+            ForEach-Object { $_ -replace '\s+', '' | ForEach-Object { $_.ToLower() } }
+    } catch { }
+    
+    # Sort: user's regions first, then others
+    $recommendedRegions = $availableRegions | Where-Object { $userRegions -contains $_ }
+    $otherRegions = $availableRegions | Where-Object { $userRegions -notcontains $_ }
+    
+    Write-Host "`nAvailable regions:" -ForegroundColor Cyan
+    if ($recommendedRegions) {
+        Write-Host "  🌟 RECOMMENDED (you have resources here):" -ForegroundColor Yellow
+        $recommendedRegions | ForEach-Object { Write-Host "     $_" -ForegroundColor Green }
+    }
+    if ($otherRegions.Count -le 10) {
+        Write-Host "  Other options:" -ForegroundColor DarkGray
+        $otherRegions | ForEach-Object { Write-Host "     $_" -ForegroundColor White }
+    } else {
+        Write-Host "  Other options (showing first 10):" -ForegroundColor DarkGray
+        $otherRegions | Select-Object -First 10 | ForEach-Object { Write-Host "     $_" -ForegroundColor White }
+        Write-Host "     ... and $($otherRegions.Count - 10) more" -ForegroundColor DarkGray
+    }
+    
+    $defaultRegion = if ($recommendedRegions) { $recommendedRegions[0] } else { $availableRegions[0] }
+    
+    do {
+        $location = Get-UserInput -Prompt "`nAzure Region" -Default $defaultRegion -Required
+        $location = $location.ToLower() -replace '\s+', ''
+        
+        if ($availableRegions -contains $location) {
+            Write-Success "Region '$location' validated"
+            break
+        } else {
+            Write-Warning-Custom "Region '$location' does not support all required resources for $databaseProvider"
+            Write-Info "Please choose from the available regions listed above"
+            $location = $null
+        }
+    } while ($true)
+} else {
+    Write-Warning-Custom "Could not validate region availability. Using manual entry."
+    Write-Info "Common Azure regions: eastus, westus2, centralus, westeurope, northeurope, southeastasia"
+    $location = Get-UserInput -Prompt "Azure Region" -Default "eastus" -Required
+}
 
 # Base Configuration
 do {
@@ -198,10 +297,9 @@ if (-not (Test-DockerImage $dockerImage)) {
     }
 }
 
-# Database Configuration
-$databaseProvider = Get-UserInput -Prompt "Database Provider (cosmos/mysql/sql)" -Default "cosmos" -Required
-
 $mysqlDatabaseName = Get-UserInput -Prompt "Database Name" -Default "skycms" -Required
+
+$adminEmail = Get-UserInput -Prompt "Administrator Email (for CMS)" -Default "" -Required
 
 Write-Info "Database credentials: Leave blank to auto-generate secure credentials"
 $databaseAdminUsername = Get-UserInput -Prompt "Database Admin Username (optional, auto-generated if blank)"
@@ -224,7 +322,7 @@ Write-Host "Location:          $location" -ForegroundColor White
 Write-Host "Base Name:         $baseName" -ForegroundColor White
 Write-Host "Environment:       $environment" -ForegroundColor White
 Write-Host "Docker Image:      $dockerImage" -ForegroundColor White
-Write-Host "Database Provider: $databaseProvider" -ForegroundColor White
+Write-Host "Database Provider: Azure SQL (default)" -ForegroundColor White
 Write-Host "Database Name:     $mysqlDatabaseName" -ForegroundColor White
 Write-Host "Admin Username:    $(if ($databaseAdminUsername) { $databaseAdminUsername } else { 'Auto-generated' })" -ForegroundColor White
 Write-Host "Admin Password:    $(if ($databaseAdminPassword) { '[Provided]' } else { 'Auto-generated' })" -ForegroundColor White
@@ -289,13 +387,11 @@ $paramObject = @{
         "location"                  = @{ "value" = $location }
         "baseName"                  = @{ "value" = $baseName }
         "environment"               = @{ "value" = $environment }
-        "databaseProvider"          = @{ "value" = $databaseProvider }
         "deployPublisher"           = @{ "value" = $deployPublisher }
         "dockerImage"               = @{ "value" = $dockerImage }
         "databaseAdminPassword"     = @{ "value" = $databaseAdminPassword }
-        "mysqlDatabaseName"         = @{ "value" = $mysqlDatabaseName }
-        "mysqlAdminUsername"        = @{ "value" = $databaseAdminUsername }
         "minReplicas"               = @{ "value" = [int]$minReplicas }
+        "adminEmail"                = @{ "value" = $adminEmail }
     }
 }
 
@@ -426,9 +522,7 @@ Write-Host "   URL:        $($outputs.editorUrl.value)" -ForegroundColor White
 Write-Host "   FQDN:       $($outputs.editorFqdn.value)" -ForegroundColor White
 Write-Host ""
 Write-Host "🗄️  DATABASE:" -ForegroundColor Cyan
-Write-Host "   Server:     $($outputs.mysqlServerFqdn.value)" -ForegroundColor White
-Write-Host "   Database:   $($outputs.mysqlDatabaseName.value)" -ForegroundColor White
-Write-Host "   Username:   $($outputs.mysqlAdminUsername.value)" -ForegroundColor White
+Write-Host "   Provider:   Azure SQL Database" -ForegroundColor White
 Write-Host ""
 Write-Host "🔐 SECRETS:" -ForegroundColor Cyan
 Write-Host "   Key Vault:  $($outputs.keyVaultName.value)" -ForegroundColor White

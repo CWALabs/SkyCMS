@@ -9,6 +9,7 @@ namespace Cosmos.Common.Models
 {
     using System;
     using System.ComponentModel.DataAnnotations;
+    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Microsoft.AspNetCore.Mvc;

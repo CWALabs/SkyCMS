@@ -17,6 +17,7 @@ namespace Sky.Editor.Services.Publishing
     using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.BlobService.Models;
+    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
