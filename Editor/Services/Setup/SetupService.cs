@@ -234,6 +234,9 @@ namespace Sky.Editor.Services.Setup
             {
                 var storageContext = new StorageContext(connectionString, memoryCache);
 
+                // Enable static website to ensure proper configuration for Azure, AWS S3, etc. does nothing.
+                await storageContext.EnableAzureStaticWebsite();
+
                 // Test by listing root directory
                 var result = await storageContext.GetFilesAndDirectories("/");
 

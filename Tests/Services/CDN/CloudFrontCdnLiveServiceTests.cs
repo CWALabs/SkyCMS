@@ -33,7 +33,7 @@ namespace Sky.Tests.Services.CDN
     /// 2. Remove the [Ignore] attribute from the test class
     /// 3. Run: dotnet test --filter "TestCategory=CloudFront"
     /// </remarks>
-    // [Ignore("Requires live AWS CloudFront credentials - run deploy.ps1 and remove this attribute")]
+    [Ignore("Requires live AWS CloudFront credentials - run CloudFrontTestSetup\\deploy.ps1 and remove this attribute")]
     [TestClass]
     [DoNotParallelize]
     public class CloudFrontCdnLiveServiceTests

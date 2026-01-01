@@ -12,6 +12,7 @@ namespace Cosmos.BlobService.Drivers
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Azure;
     using Azure.Identity;
@@ -296,8 +297,10 @@ namespace Cosmos.BlobService.Drivers
         /// Enables the static website and sets default CORS rule.
         /// </summary>
         /// <param name="indexDocument">Index document (default is index.html).</param>
+        /// <param name="errorDocument">Error document.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task EnableStaticWebsite(string indexDocument = "index.html")
+        public async Task EnableStaticWebsite(string indexDocument = "index.html", string errorDocument = "404.html", CancellationToken cancellationToken = default)
         {
             if (this.usesAzureDefaultCredential)
             {
@@ -310,6 +313,7 @@ namespace Cosmos.BlobService.Drivers
             {
                 properties.StaticWebsite.Enabled = true;
                 properties.StaticWebsite.IndexDocument = indexDocument;
+                properties.StaticWebsite.ErrorDocument404Path = errorDocument;
                 await this.blobServiceClient.SetPropertiesAsync(properties);
             }
 

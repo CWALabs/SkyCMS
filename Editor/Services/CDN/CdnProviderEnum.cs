@@ -40,6 +40,11 @@ namespace Sky.Editor.Services.CDN
         /// <summary>
         /// No CDN provider.
         /// </summary>
-        None
+        None,
+
+        /// <summary>
+        /// Fastly CDN.
+        /// </summary>
+        Fastly
     }
 }

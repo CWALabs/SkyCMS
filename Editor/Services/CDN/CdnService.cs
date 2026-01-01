@@ -129,6 +129,9 @@ namespace Sky.Editor.Services.CDN
                     case CdnProviderEnum.Sucuri:
                         driver = new SucuriCdnService(setting, logger);
                         break;
+                    case CdnProviderEnum.Fastly:  // Add this
+                        driver = new FastlyCdnDriver(setting, logger);
+                        break;
                     default:
                         break;
                 }
@@ -166,6 +169,9 @@ namespace Sky.Editor.Services.CDN
                         break;
                     case CdnProviderEnum.Sucuri:
                         driver = new SucuriCdnService(setting, logger);
+                        break;
+                    case CdnProviderEnum.Fastly:  // Add this
+                        driver = new FastlyCdnDriver(setting, logger);
                         break;
                     default:
                         break;

@@ -492,30 +492,6 @@ if ($null -eq $deployment.properties) {
 }
 
 # ============================================================================
-# ENABLE STATIC WEBSITE (if Publisher deployed)
-# ============================================================================
-
-if ($deployPublisher) {
-    Write-Header "Configuring Static Website"
-    
-    $storageAccountName = $deployment.properties.outputs.storageAccountName.value
-    
-    Write-Info "Enabling static website hosting on storage account..."
-    az storage blob service-properties update `
-        --account-name $storageAccountName `
-        --static-website `
-        --index-document index.html `
-        --404-document 404.html `
-        --auth-mode login | Out-Null
-    
-    if ($LASTEXITCODE -eq 0) {
-        Write-Success "Static website hosting enabled"
-    } else {
-        Write-Warning-Custom "Failed to enable static website hosting (may need to run manually)"
-    }
-}
-
-# ============================================================================
 # DISPLAY RESULTS
 # ============================================================================
 
