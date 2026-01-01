@@ -21,6 +21,14 @@ param dbConnectionString string
 @secure()
 param storageConnectionString string = ''
 
+@description('Azure Communication Services connection string (optional)')
+@secure()
+param acsConnectionString string = ''
+
+@description('Application Insights connection string (optional)')
+@secure()
+param appInsightsConnectionString string = ''
+
 @description('Administrator email address')
 param adminEmail string = ''
 
@@ -55,6 +63,11 @@ var connectionStrings = [
     connectionString: storageConnectionString
     type: 'Custom'
   }
+  {
+    name: 'AzureCommunicationConnection'
+    connectionString: acsConnectionString
+    type: 'Custom'
+  }
 ]
 
 // Essential app settings for Single Tenant mode
@@ -82,6 +95,10 @@ var appSettings = [
   {
     name: 'CosmosPublisherUrl'
     value: publisherUrl
+  }
+  {
+    name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+    value: appInsightsConnectionString
   }
 ]
 

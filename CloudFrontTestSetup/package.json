@@ -1,0 +1,19 @@
+{
+  "name": "skycms-cloudfront-test",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "cdk deploy",
+    "destroy": "cdk destroy",
+    "synth": "cdk synth"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.115.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.115.0",
+    "constructs": "^10.3.0"
+  }
+}

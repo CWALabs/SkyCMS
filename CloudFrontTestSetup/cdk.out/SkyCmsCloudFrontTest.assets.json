@@ -1,0 +1,36 @@
+{
+  "version": "48.0.0",
+  "files": {
+    "faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6": {
+      "displayName": "SkyCmsCloudFrontTest/Custom::S3AutoDeleteObjectsCustomResourceProvider Code",
+      "source": {
+        "path": "asset.faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "873764251532-us-east-1-d7d57317": {
+          "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
+          "objectKey": "faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
+        }
+      }
+    },
+    "57c6eb3311bab168ca1e3a7e14fcb23b1ba5d6d7973d565c7fa97c84c4fddae9": {
+      "displayName": "SkyCmsCloudFrontTest Template",
+      "source": {
+        "path": "SkyCmsCloudFrontTest.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "873764251532-us-east-1-9d2ce6b8": {
+          "bucketName": "cdk-hnb659fds-assets-873764251532-us-east-1",
+          "objectKey": "57c6eb3311bab168ca1e3a7e14fcb23b1ba5d6d7973d565c7fa97c84c4fddae9.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::873764251532:role/cdk-hnb659fds-file-publishing-role-873764251532-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

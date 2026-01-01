@@ -353,6 +353,12 @@ namespace Cosmos.Common.Data
             }
             else
             {
+                // SQL Database providers (SQL Server, MySQL, PostgreSQL, etc.)
+                // Configure CatalogEntry.ArticleNumber as auto-increment identity
+                modelBuilder.Entity<CatalogEntry>()
+                    .Property(e => e.ArticleNumber)
+                    .ValueGeneratedOnAdd();
+
                 if (Database.IsMySql())
                 {
                     modelBuilder.Entity<Article>()

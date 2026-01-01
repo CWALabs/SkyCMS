@@ -173,10 +173,10 @@ $resourceGroupName = Get-UserInput -Prompt "Resource Group Name" -Default "rg-sk
 
 # Database Configuration (Azure SQL only)
 $databaseProvider = 'sql'
-Write-Info "Database Provider: Azure SQL (hardcoded for reliability)"
+Write-Info "Database Provider: Azure SQL"
 
 # Get available regions for SQL deployment
-Write-Info "Checking available Azure regions for $databaseProvider deployment..."
+Write-Info "Getting available Azure regions ..."
 
 function Get-AvailableRegionsForDeployment {
     param([string]$DbProvider)
@@ -197,7 +197,7 @@ function Get-AvailableRegionsForDeployment {
     foreach ($key in $resourceTypes.Keys) {
         $resource = $resourceTypes[$key]
         try {
-            $query = "resourceTypes[?resourceType=='$($resource.ResourceType)'].locations | [0]"
+            $query = "resourceTypes[?resourceType=='$($resource.ResourceType)'].locations | `[0`]"
             $locations = az provider show --namespace $resource.Namespace --query $query -o json 2>$null | ConvertFrom-Json
             if ($locations) {
                 $normalizedLocations = $locations | ForEach-Object { $_ -replace '\s+', '' | ForEach-Object { $_.ToLower() } }
@@ -275,7 +275,7 @@ if ($availableRegions -and $availableRegions.Count -gt 0) {
 
 # Base Configuration
 do {
-    $baseName = Get-UserInput -Prompt "Base Name (3-10 chars, lowercase alphanumeric only)" -Default "skycms" -Required
+    $baseName = Get-UserInput -Prompt "Base Name - 3 to 10 chars, lowercase alphanumeric only" -Default "skycms" -Required
     if ($baseName -notmatch '^[a-z0-9]{3,10}$') {
         Write-Warning-Custom "Base name must be 3-10 characters, lowercase letters and numbers only (no hyphens)"
         $baseName = $null
@@ -299,17 +299,25 @@ if (-not (Test-DockerImage $dockerImage)) {
 
 $mysqlDatabaseName = Get-UserInput -Prompt "Database Name" -Default "skycms" -Required
 
-$adminEmail = Get-UserInput -Prompt "Administrator Email (for CMS)" -Default "" -Required
+# Email Option - Ask first before AdminEmail
+$deployEmail = Get-YesNoInput -Prompt "Deploy Azure Communication Services for email?" -Default $false
 
-Write-Info "Database credentials: Leave blank to auto-generate secure credentials"
-$databaseAdminUsername = Get-UserInput -Prompt "Database Admin Username (optional, auto-generated if blank)"
-$databaseAdminPassword = Get-UserInput -Prompt "Database Admin Password (optional, auto-generated if blank)" -Secure
+# AdminEmail - auto-generate if ACS deployed, otherwise ask user
+if ($deployEmail) {
+    Write-Info "Admin email will be auto-generated from Azure Communication Services (DoNotReply@<domain>)"
+    $adminEmail = ""  # Will be set by Bicep from ACS
+} else {
+    $adminEmail = Get-UserInput -Prompt "Administrator Email (for CMS)" -Default "" -Required
+}
 
 # Container Configuration
 $minReplicas = Get-UserInput -Prompt "Minimum App Service Instances" -Default "1"
 
 # Publisher Option
 $deployPublisher = Get-YesNoInput -Prompt "Deploy Publisher (Blob Storage for static website)?" -Default $true
+
+# Application Insights Option
+$deployAppInsights = Get-YesNoInput -Prompt "Deploy Application Insights for monitoring?" -Default $false
 
 # ============================================================================
 # CONFIRMATION
@@ -324,9 +332,12 @@ Write-Host "Environment:       $environment" -ForegroundColor White
 Write-Host "Docker Image:      $dockerImage" -ForegroundColor White
 Write-Host "Database Provider: Azure SQL (default)" -ForegroundColor White
 Write-Host "Database Name:     $mysqlDatabaseName" -ForegroundColor White
-Write-Host "Admin Username:    $(if ($databaseAdminUsername) { $databaseAdminUsername } else { 'Auto-generated' })" -ForegroundColor White
-Write-Host "Admin Password:    $(if ($databaseAdminPassword) { '[Provided]' } else { 'Auto-generated' })" -ForegroundColor White
+Write-Host "Admin Username:    Auto-generated" -ForegroundColor White
+Write-Host "Admin Password:    Auto-generated" -ForegroundColor White
+Write-Host "Deploy Email (ACS): $deployEmail" -ForegroundColor White
+Write-Host "Admin Email:       $(if ($deployEmail) { 'Auto-generated from ACS' } else { $adminEmail })" -ForegroundColor White
 Write-Host "Deploy Publisher:  $deployPublisher" -ForegroundColor White
+Write-Host "Deploy App Insights: $deployAppInsights" -ForegroundColor White
 Write-Host "Min Instances:     $minReplicas" -ForegroundColor White
 
 $confirm = Get-YesNoInput -Prompt "`nProceed with deployment?" -Default $true
@@ -388,8 +399,9 @@ $paramObject = @{
         "baseName"                  = @{ "value" = $baseName }
         "environment"               = @{ "value" = $environment }
         "deployPublisher"           = @{ "value" = $deployPublisher }
+        "deployEmail"               = @{ "value" = $deployEmail }
+        "deployAppInsights"         = @{ "value" = $deployAppInsights }
         "dockerImage"               = @{ "value" = $dockerImage }
-        "databaseAdminPassword"     = @{ "value" = $databaseAdminPassword }
         "minReplicas"               = @{ "value" = [int]$minReplicas }
         "adminEmail"                = @{ "value" = $adminEmail }
     }

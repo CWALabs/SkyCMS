@@ -318,6 +318,18 @@ namespace Sky.Editor.Services.Diagnostics
             {
                 var options = CosmosDbOptionsBuilder.GetDbOptions<ApplicationDbContext>(connectionString);
                 using var context = new ApplicationDbContext(options);
+
+                if (context.Database.IsSqlite())
+                {
+                    // For SQLite, check if the file exists
+                    var dataSource = context.Database.GetDbConnection().DataSource;
+                    if (!System.IO.File.Exists(dataSource))
+                    {
+                        // Attempt to create the database file
+                        await context.Database.EnsureCreatedAsync();
+                    }
+                }
+
                 return await context.Database.CanConnectAsync();
             }
             catch

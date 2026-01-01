@@ -23,6 +23,11 @@ namespace Sky.Editor.Services.CDN
     /// </summary>
     public class CloudFrontCdnDriver : ICdnDriver
     {
+        private static readonly HttpClient HttpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
+
         private readonly CloudFrontCdnConfig config;
         private readonly ILogger logger;
 
@@ -52,6 +57,27 @@ namespace Sky.Editor.Services.CDN
                 if (config == null)
                 {
                     throw new ArgumentException("Failed to deserialize CDN configuration.", nameof(setting));
+                }
+
+                // Validate required configuration values
+                if (string.IsNullOrWhiteSpace(config.DistributionId))
+                {
+                    throw new ArgumentException("CloudFront Distribution ID is required.", nameof(setting));
+                }
+
+                if (string.IsNullOrWhiteSpace(config.AccessKeyId))
+                {
+                    throw new ArgumentException("AWS Access Key ID is required.", nameof(setting));
+                }
+
+                if (string.IsNullOrWhiteSpace(config.SecretAccessKey))
+                {
+                    throw new ArgumentException("AWS Secret Access Key is required.", nameof(setting));
+                }
+
+                if (string.IsNullOrWhiteSpace(config.Region))
+                {
+                    throw new ArgumentException("AWS Region is required.", nameof(setting));
                 }
             }
             catch (JsonException ex)
@@ -111,6 +137,42 @@ namespace Sky.Editor.Services.CDN
 
                 model.Add(cdnResult);
             }
+            catch (HttpRequestException ex)
+            {
+                logger.LogError(ex, "Network error during CloudFront invalidation");
+
+                var cdnResult = new CdnResult
+                {
+                    ClientRequestId = Guid.NewGuid().ToString(),
+                    Id = string.Empty,
+                    IsSuccessStatusCode = false,
+                    Status = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = "Network error",
+                    Message = ex.Message,
+                    EstimatedFlushDateTime = DateTimeOffset.UtcNow,
+                    ProviderName = ProviderName
+                };
+
+                model.Add(cdnResult);
+            }
+            catch (TaskCanceledException ex)
+            {
+                logger.LogError(ex, "CloudFront invalidation request timed out");
+
+                var cdnResult = new CdnResult
+                {
+                    ClientRequestId = Guid.NewGuid().ToString(),
+                    Id = string.Empty,
+                    IsSuccessStatusCode = false,
+                    Status = HttpStatusCode.RequestTimeout,
+                    ReasonPhrase = "Request timed out",
+                    Message = ex.Message,
+                    EstimatedFlushDateTime = DateTimeOffset.UtcNow,
+                    ProviderName = ProviderName
+                };
+
+                model.Add(cdnResult);
+            }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error creating CloudFront invalidation");
@@ -140,7 +202,11 @@ namespace Sky.Editor.Services.CDN
         /// <returns>The invalidation ID if successful, otherwise null.</returns>
         private async Task<string> CreateInvalidationAsync(List<string> paths)
         {
-            var timestamp = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
+            // Capture the current time once to ensure consistency across all usages
+            var utcNow = DateTime.UtcNow;
+            var timestamp = utcNow.ToString("yyyyMMddTHHmmssZ");
+            var dateStamp = utcNow.ToString("yyyyMMdd");
+            var amzDate = utcNow.ToString("yyyyMMddTHHmmssZ");
             var callerReference = $"SkyCMS-{timestamp}-{Guid.NewGuid()}";
 
             // Build the invalidation batch XML
@@ -157,12 +223,12 @@ namespace Sky.Editor.Services.CDN
 </InvalidationBatch>";
 
             var endpoint = $"https://cloudfront.amazonaws.com/2020-05-31/distribution/{config.DistributionId}/invalidation";
-            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
-            var amzDate = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
 
-            using var httpClient = new HttpClient();
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
             request.Content = new StringContent(requestBody, Encoding.UTF8, "application/xml");
+
+            // Get the actual Content-Type value (includes charset parameter added by StringContent)
+            var contentType = request.Content.Headers.ContentType.ToString();
 
             // AWS Signature Version 4 signing process
             var authorization = CreateAwsSignature(
@@ -170,22 +236,22 @@ namespace Sky.Editor.Services.CDN
                 endpoint,
                 requestBody,
                 amzDate,
-                dateStamp);
+                dateStamp,
+                contentType);
 
-            request.Headers.Add("x-amz-date", amzDate);
-            request.Headers.Add("Authorization", authorization);
+            request.Headers.TryAddWithoutValidation("x-amz-date", amzDate);
+            request.Headers.TryAddWithoutValidation("Authorization", authorization);
 
-            var response = await httpClient.SendAsync(request);
+            var response = await HttpClient.SendAsync(request);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
-                // Extract invalidation ID from XML response
-                var idStart = responseContent.IndexOf("<Id>") + 4;
-                var idEnd = responseContent.IndexOf("</Id>");
-                if (idStart > 3 && idEnd > idStart)
+                // Extract invalidation ID from XML response using more robust parsing
+                var match = System.Text.RegularExpressions.Regex.Match(responseContent, @"<Id>([^<]+)</Id>");
+                if (match.Success)
                 {
-                    return responseContent.Substring(idStart, idEnd - idStart);
+                    return match.Groups[1].Value;
                 }
             }
             else
@@ -204,8 +270,9 @@ namespace Sky.Editor.Services.CDN
         /// <param name="requestBody">Request body content.</param>
         /// <param name="amzDate">AMZ date timestamp.</param>
         /// <param name="dateStamp">Date stamp.</param>
+        /// <param name="contentType">Content-Type header value.</param>
         /// <returns>Authorization header value.</returns>
-        private string CreateAwsSignature(string method, string endpoint, string requestBody, string amzDate, string dateStamp)
+        private string CreateAwsSignature(string method, string endpoint, string requestBody, string amzDate, string dateStamp, string contentType)
         {
             var service = "cloudfront";
             var region = config.Region;
@@ -216,8 +283,9 @@ namespace Sky.Editor.Services.CDN
             var uri = new Uri(endpoint);
             var canonicalUri = uri.AbsolutePath;
             var canonicalQueryString = string.Empty;
-            var canonicalHeaders = $"host:{uri.Host}\nx-amz-date:{amzDate}\n";
-            var signedHeaders = "host;x-amz-date";
+            // Headers must be sorted alphabetically and lowercase
+            var canonicalHeaders = $"content-type:{contentType}\nhost:{uri.Host}\nx-amz-date:{amzDate}\n";
+            var signedHeaders = "content-type;host;x-amz-date";
             var payloadHash = ComputeSha256Hash(requestBody);
 
             var canonicalRequest = $"{method}\n{canonicalUri}\n{canonicalQueryString}\n{canonicalHeaders}\n{signedHeaders}\n{payloadHash}";
