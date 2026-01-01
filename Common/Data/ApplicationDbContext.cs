@@ -353,17 +353,8 @@ namespace Cosmos.Common.Data
             }
             else
             {
-                // SQL Database providers (SQL Server, MySQL, PostgreSQL, etc.)
-                // Configure CatalogEntry.ArticleNumber as auto-increment identity
-                modelBuilder.Entity<CatalogEntry>()
-                    .Property(e => e.ArticleNumber)
-                    .ValueGeneratedOnAdd();
-
                 if (Database.IsMySql())
                 {
-                    modelBuilder.Entity<Article>()
-                        .HasIndex(a => a.ArticleNumber);
-
                     modelBuilder.Entity<PublishedPage>()
                         .HasIndex(p => p.UrlPath)
                         .HasAnnotation("MySql:IndexPrefixLength", new[] { 768 }); // 768 * 4 = 3072 bytes max

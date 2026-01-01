@@ -10,6 +10,7 @@ namespace Cosmos.Common.Data
     using System;
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
+    using System.ComponentModel.DataAnnotations.Schema;
 
     /// <summary>
     /// Represents the canonical catalog entry (metadata record) for a published or draft article.
@@ -38,6 +39,7 @@ namespace Cosmos.Common.Data
         /// content (e.g., permissions, article body storage, assets).
         /// </remarks>
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
         [Display(Name = "Article#")]
         public int ArticleNumber { get; set; }
 
