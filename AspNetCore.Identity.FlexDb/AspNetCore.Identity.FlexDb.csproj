@@ -2,10 +2,10 @@
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
-		<Version>9.2.3.18</Version>
-		<AssemblyVersion>9.2.3.18</AssemblyVersion>
-		<FileVersion>9.2.3.18</FileVersion>
-		<PackageVersion>9.2.3.18</PackageVersion>
+		<Version>9.2.3.19</Version>
+		<AssemblyVersion>9.2.3.19</AssemblyVersion>
+		<FileVersion>9.2.3.19</FileVersion>
+		<PackageVersion>9.2.3.19</PackageVersion>
 		<Authors>toiyabe62</Authors>
 		<Nullable>enable</Nullable>
 		<RepositoryType>GitHub</RepositoryType>

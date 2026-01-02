@@ -65,96 +65,93 @@ using System.Web;
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
 // ---------------------------------------------------------------
-// STEP 1: Determine Deployment Mode
+// STEP 1: DETERMINE DEPLOYMENT MODE
 // ---------------------------------------------------------------
 var isMultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
 var allowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
+var enableDiagnostics = builder.Configuration.GetValue<bool?>("EnableDiagnostics") ?? false;
 var versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-System.Console.WriteLine($"Starting Cosmos CMS Editor in {(isMultiTenantEditor ? "Multi-Tenant" : "Single-Tenant")} Mode (v.{versionNumber}).");
+if (enableDiagnostics)
+{
+    System.Console.WriteLine("⚠️ DIAGNOSTIC MODE ENABLED - Normal startup will be bypassed");
+}
+else
+{
+    System.Console.WriteLine($"Starting Cosmos CMS Editor in {(isMultiTenantEditor ? "Multi-Tenant" : "Single-Tenant")} Mode (v.{versionNumber}).");
+}
 
 // ---------------------------------------------------------------
-// STEP 1.5: EARLY CONFIGURATION VALIDATION
+// STEP 1.5: ENTER DIAGNOSTIC MODE IF INDICATED
 // ---------------------------------------------------------------
-bool configurationValid = true;
-ValidationResult? earlyValidationResult = null;
+if (enableDiagnostics)
+{
+    bool configurationValid = true;
+    ValidationResult? earlyValidationResult = null;
 
-//if (allowSetup)
-//{
-//    System.Console.WriteLine("CosmosAllowSetup is enabled - performing early configuration validation...");
-    
-//    // Perform synchronous validation WITHOUT requiring any services
-//    var loggerFactory = LoggerFactory.Create(config => config.AddConsole());
-//    var logger = loggerFactory.CreateLogger<ConfigurationValidator>();
-//    var validator = new ConfigurationValidator(builder.Configuration, logger);
-    
-//    // Run validation synchronously at startup
-//    earlyValidationResult = validator.ValidateAsync().GetAwaiter().GetResult();
-//    configurationValid = earlyValidationResult.IsValid;
-    
-//    if (!configurationValid)
-//    {
-//        System.Console.WriteLine("⚠️ Configuration validation FAILED - starting in diagnostic-only mode");
-//        System.Console.WriteLine($"   Errors: {earlyValidationResult.Checks.Count(c => c.Status == CheckStatus.Error)}");
-//        System.Console.WriteLine($"   Warnings: {earlyValidationResult.Checks.Count(c => c.Status == CheckStatus.Warning)}");
-//    }
-//    else
-//    {
-//        System.Console.WriteLine("✅ Configuration validation passed");
-//    }
-//}
+    System.Console.WriteLine("Diagnostic mode is enabled - performing early configuration validation...");
 
-// ---------------------------------------------------------------
-// CONDITIONAL SERVICE REGISTRATION
-// If configuration is invalid, register only minimal services for diagnostic page
-// ---------------------------------------------------------------
-//if (!configurationValid && allowSetup)
-//{
-//    // DIAGNOSTIC-ONLY MODE: Minimal services to show diagnostic page
-//    System.Console.WriteLine("Registering minimal services for diagnostic-only mode...");
-    
-//    builder.Services.AddHttpContextAccessor();
-//    builder.Services.AddScoped<ConfigurationValidator>();
-//    builder.Services.AddRazorPages();
-//    builder.Services.AddControllersWithViews();
-    
-//    // Build minimal app
-//    var diagnosticApp = builder.Build();
-    
-//    // Configure minimal middleware pipeline
-//    diagnosticApp.UseRouting();
-//    diagnosticApp.UseStaticFiles();
-    
-//    // Redirect ALL requests to diagnostic page
-//    diagnosticApp.Use(async (context, next) =>
-//    {
-//        if (!context.Request.Path.StartsWithSegments("/___diagnostics") &&
-//            !context.Request.Path.StartsWithSegments("/lib") &&
-//            !context.Request.Path.StartsWithSegments("/css") &&
-//            !context.Request.Path.StartsWithSegments("/js") &&
-//            !context.Request.Path.Value.EndsWith(".css") &&
-//            !context.Request.Path.Value.EndsWith(".js"))
-//        {
-//            context.Response.Redirect("/___diagnostics");
-//            return;
-//        }
+    // Perform synchronous validation WITHOUT requiring any services
+    var loggerFactory = LoggerFactory.Create(config => config.AddConsole());
+    var logger = loggerFactory.CreateLogger<ConfigurationValidator>();
+    var validator = new ConfigurationValidator(builder.Configuration, logger);
 
-//        await next();
-//    });
-    
-//    diagnosticApp.MapRazorPages();
-    
-//    System.Console.WriteLine("🔧 Application started in DIAGNOSTIC-ONLY mode");
-//    System.Console.WriteLine("   Navigate to: /___diagnostics");
-//    System.Console.WriteLine("   Fix configuration issues and restart the application");
-    
-//    await diagnosticApp.RunAsync();
-//    return; // Exit here - don't continue with normal startup
-//}
+    // Run validation synchronously at startup
+    earlyValidationResult = validator.ValidateAsync().GetAwaiter().GetResult();
+    configurationValid = earlyValidationResult.IsValid;
 
-// ---------------------------------------------------------------
-// NORMAL STARTUP CONTINUES BELOW (only if configuration is valid)
-// ---------------------------------------------------------------
+    if (!configurationValid)
+    {
+        System.Console.WriteLine("⚠️ Configuration validation FAILED - starting in diagnostic-only mode");
+        System.Console.WriteLine($"   Errors: {earlyValidationResult.Checks.Count(c => c.Status == CheckStatus.Error)}");
+        System.Console.WriteLine($"   Warnings: {earlyValidationResult.Checks.Count(c => c.Status == CheckStatus.Warning)}");
+    }
+    else
+    {
+        System.Console.WriteLine("✅ Configuration validation passed");
+    }
+
+    // DIAGNOSTIC-ONLY MODE: Minimal services to show diagnostic page
+    System.Console.WriteLine("Registering minimal services for diagnostic-only mode...");
+
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ConfigurationValidator>();
+    builder.Services.AddRazorPages();
+    builder.Services.AddControllersWithViews();
+
+    // Build minimal app
+    var diagnosticApp = builder.Build();
+
+    // Configure minimal middleware pipeline
+    diagnosticApp.UseRouting();
+    diagnosticApp.UseStaticFiles();
+
+    // Redirect ALL requests to diagnostic page
+    diagnosticApp.Use(async (context, next) =>
+    {
+        if (!context.Request.Path.StartsWithSegments("/___diagnostics") &&
+            !context.Request.Path.StartsWithSegments("/lib") &&
+            !context.Request.Path.StartsWithSegments("/css") &&
+            !context.Request.Path.StartsWithSegments("/js") &&
+            !context.Request.Path.Value.EndsWith(".css") &&
+            !context.Request.Path.Value.EndsWith(".js"))
+        {
+            context.Response.Redirect("/___diagnostics");
+            return;
+        }
+
+        await next();
+    });
+
+    diagnosticApp.MapRazorPages();
+
+    System.Console.WriteLine("🔧 Application started in DIAGNOSTIC-ONLY mode");
+    System.Console.WriteLine("   Navigate to: /___diagnostics");
+    System.Console.WriteLine("   Fix configuration issues and restart the application");
+
+    await diagnosticApp.RunAsync();
+    return; // Exit here - don't continue with normal startup
+}
 
 // ---------------------------------------------------------------
 // STEP 2: Register Core Infrastructure (Common to Both Modes)
@@ -507,11 +504,12 @@ builder.Services.AddRateLimiter(options =>
     options.OnRejected = async (context, cancellationToken) =>
     {
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        await context.HttpContext.Response.WriteAsJsonAsync(new
-        {
-            success = false,
-            error = "Too many requests. Please try again later."
-        }, cancellationToken);
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new
+            {
+                success = false,
+                error = "Too many requests. Please try again later."
+            }, cancellationToken);
     };
 });
 
