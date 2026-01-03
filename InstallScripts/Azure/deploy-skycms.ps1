@@ -401,17 +401,27 @@ $paramObject = @{
         "deployPublisher"           = @{ "value" = $deployPublisher }
         "deployEmail"               = @{ "value" = $deployEmail }
         "deployAppInsights"         = @{ "value" = $deployAppInsights }
+        "deploySlot"                = @{ "value" = $true }
         "dockerImage"               = @{ "value" = $dockerImage }
         "minReplicas"               = @{ "value" = [int]$minReplicas }
         "adminEmail"                = @{ "value" = $adminEmail }
     }
 }
 
-$paramObject | ConvertTo-Json -Depth 10 | Set-Content $paramFile
+try {
+    $jsonContent = $paramObject | ConvertTo-Json -Depth 10
+    $jsonContent | Set-Content $paramFile -Encoding UTF8
+    Write-Info "Parameter file created: $paramFile"
+} catch {
+    Write-Host "❌ Failed to create parameter file: $_" -ForegroundColor Red
+    exit 1
+}
 
 # ============================================================================
 # DEPLOY WITH RETRY LOGIC
-# ============================================================================$maxRetries = 3
+# ============================================================================
+
+$maxRetries = 3
 $retryCount = 0
 $deployed = $false
 $deploymentResult = $null
