@@ -24,17 +24,17 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
+          ruby-version: '3.4'
           bundler-cache: true
           working-directory: ./Docs
       
       - name: Build Jekyll site
+        working-directory: ./Docs
         run: |
-          cd Docs
-          bundle install
-          JEKYLL_ENV=production bundle exec jekyll build --destination ./_site
+          bundle exec jekyll build --config _config.yml --destination ./_site
         env:
           JEKYLL_ENV: production
+          PAGES_REPO_NWO: ${{ github.repository }}
       
       - name: Configure AWS CLI for CloudFlare R2
         run: |
