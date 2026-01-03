@@ -23,95 +23,63 @@ audience: [all]
 }
 </script>
 
-**SkyCMS is an edge-native CMS that combines the simplicity of WordPress with the performance of JAMstack.** Deploys to Azure, AWS, or other clouds—no complex build pipelines required.
+**Edge-native CMS.** Publish in seconds, no build pipelines. Deploy to Azure, AWS, or Cloudflare with one config model.
 
-**Version:** 2.0 (December 2025) | **Compatible with:** SkyCMS v9.2x
+**Version:** 2.0 (Dec 2025) · **Compatible:** v9.2x
 
 ---
 
-## When to use this
-- You need a single starting point to navigate SkyCMS docs by role (creators, developers, decision makers, DevOps).
-- You want the fastest path to install, launch, and compare SkyCMS without reading every page.
-
-## Next steps
-- Pick your lane below, or jump straight to the Quick Start / Installation guides linked in each section.
+## Quick links
+- [Developer Quick Start](./QuickStart.html)
+- [Installation Overview](./Installation/README.html)
+- [Minimum Required Settings](./Installation/MinimumRequiredSettings.html)
+- [Setup Wizard](./Installation/SetupWizard.html)
+- [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.html)
+- [FAQ](./FAQ.html)
 
 ## Choose Your Path
 
 ### Content Creators
-*Create and manage content without technical expertise*
+*Create and publish fast*
 
-**Start here:** [Quick Start for Editors](./QuickStart.html) (5 min)
-
-- [Creating Your First Page](./Editors/LiveEditor/QuickStart.html)
+**Start here:** [Quick Start for Editors](./QuickStart.html) · [Creating Your First Page](./Editors/LiveEditor/QuickStart.html)
 - [Managing Files & Images](./FileManagement/Quick-Start.html)
 - [Publishing & Scheduling](./Editors/PageScheduling.html)
 - [Blog Management](./blog/BlogPostLifecycle.html)
 
-**Editing Tools:**
-- [Live Editor (WYSIWYG)](./Editors/LiveEditor/README.html)
-- [Visual Designer (Drag & Drop)](./Editors/Designer/README.html)
-- [Image Editing](./Editors/ImageEditing/README.html)
+**Tools:** [Live Editor](./Editors/LiveEditor/README.html) · [Designer](./Editors/Designer/README.html) · [Image Editing](./Editors/ImageEditing/README.html)
 
 ---
 
 ### Developers
-*Build, customize, and deploy SkyCMS sites*
+*Build, customize, and ship*
 
-**Start here:** [Developer Quick Start](./QuickStart.html) (15 min)
-
-**Essential Guides:**
-- [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.html) ⭐ (Complete project roadmap)
+**Start here:** [Developer Quick Start](./QuickStart.html) · [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.html)
 - [Installation Overview](./Installation/README.html)
 - [Layouts & Templates](./Layouts/Readme.html)
 - [Widgets & Components](./Widgets/README.html)
-
-**Technical Deep Dives:**
 - [Architecture](./Architecture/Startup-Lifecycle.html)
-- [Controllers & Base Classes](./Developers/Controllers/README.html)
 - [Testing Guide](./Development/Testing/README.html)
 
 ---
 
 ### Decision Makers
-*Evaluate SkyCMS for your organization*
+*Evaluate fit and cost*
 
-**Start here:** [About SkyCMS](./About.html) (10 min)
-
-- [SkyCMS vs Alternatives](./Comparisons.html)
+**Start here:** [About SkyCMS](./About.html) · [SkyCMS vs Alternatives](./Comparisons.html)
 - [Developer Experience Comparison](./Developer-Experience-Comparison.html)
 - [Total Cost of Ownership](./_Marketing/Cost-Comparison.html)
 - [FAQ](./FAQ.html)
 
-**Key Strengths:**
-- No vendor lock-in (open source, dual-licensed)
-- Deploy anywhere (Azure, AWS, Cloudflare)
-- Modern architecture (edge-native, JAMstack-compatible)
-- Familiar workflow (like WordPress, but faster)
-
 ---
 
 ### DevOps / System Administrators
-*Deploy, configure, and maintain SkyCMS*
+*Deploy, configure, operate*
 
-**Start here:** [Installation Overview](./Installation/README.html) (10 min)
-
-**Deployment Guides:**
-- [Azure Installation](./Installation/AzureInstall.html)
-- [AWS S3 Static Hosting](./S3StaticWebsite.html)
-- [Cloudflare Edge Hosting](./Installation/CloudflareEdgeHosting.html)
-
-**Configuration:**
-- [Setup Wizard Guide](./Installation/SetupWizard.html)
-- [Database Configuration](./Configuration/Database-Overview.html)
-- [Storage Configuration](./Configuration/Storage-Overview.html)
-- [CDN Integration](./Configuration/CDN-Overview.html)
-- [Multi-Tenant Setup](./Configuration/Multi-Tenant-Configuration.html)
-
-**Operations:**
-- [Post-Installation Tasks](./Installation/Post-Installation.html) ⭐
-- [Monthly Maintenance](./Checklists/Monthly-Maintenance.html)
-- [Troubleshooting](./Troubleshooting.html)
+**Start here:** [Installation Overview](./Installation/README.html) · [Minimum Required Settings](./Installation/MinimumRequiredSettings.html)
+- Deploy: [Azure](./Installation/AzureInstall.html) · [AWS S3](./S3StaticWebsite.html) · [Cloudflare Edge](./Installation/CloudflareEdgeHosting.html)
+- Configure: [Setup Wizard](./Installation/SetupWizard.html) · [Database](./Configuration/Database-Overview.html) · [Storage](./Configuration/Storage-Overview.html) · [CDN](./Configuration/CDN-Overview.html) · [Multi-Tenant](./Configuration/Multi-Tenant-Configuration.html)
+- Operate: [Post-Installation](./Installation/Post-Installation.html) ⭐ · [Monthly Maintenance](./Checklists/Monthly-Maintenance.html) · [Troubleshooting](./Troubleshooting.html)
 
 ---
 

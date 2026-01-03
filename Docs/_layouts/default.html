@@ -106,7 +106,7 @@
     <!-- Analytics -->
     {% include analytics.html %}
 
-    <!-- Accessibility & Dark Mode Styles -->
+    <!-- Accessibility styles -->
     <style>
       /* Skip to main content link */
       .skip-link {
@@ -124,29 +124,6 @@
       .skip-link:focus {
         top: 0;
       }
-
-      /* Dark mode support */
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg-color: #1e1e1e;
-          --text-color: #e0e0e0;
-          --border-color: #404040;
-        }
-
-        body {
-          background-color: var(--bg-color, #1e1e1e);
-          color: var(--text-color, #e0e0e0);
-        }
-
-        a {
-          color: #66b3ff;
-        }
-
-        code {
-          background-color: #2d2d2d;
-          color: #e0e0e0;
-        }
-      }
     </style>
   </head>
 
@@ -159,9 +136,15 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner" role="main">
-        {% include breadcrumbs.html %}
-        {% include toc.html %}
-        {{ content }}
+        <div class="doc-layout">
+          <aside class="doc-sidebar" aria-label="Table of contents">
+            {% include toc.html %}
+          </aside>
+          <article class="doc-main">
+            {% include breadcrumbs.html %}
+            {{ content }}
+          </article>
+        </div>
       </section>
     </div>
 
