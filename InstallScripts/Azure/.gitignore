@@ -9,6 +9,7 @@
 
 # Azure deployment outputs
 *.json
+!bicep/main.json
 deploymentOutputs.json
 
 # PowerShell logs
