@@ -3,6 +3,10 @@ title: Database Configuration Overview
 description: Overview of supported database providers including Cosmos DB, SQL Server, MySQL, and SQLite
 keywords: database, configuration, Cosmos-DB, SQL-Server, MySQL, SQLite
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 5
 ---
 
 # Database Configuration Overview
@@ -13,6 +17,29 @@ SkyCMS stores CMS data (users, content, settings) in a relational or document da
 - MS SQL Server / Azure SQL (relational)
 - MySQL (relational)
 - SQLite (file-based; development/testing only)
+
+## When to use this
+- You need to choose a database provider for SkyCMS and get the right connection string format.
+- You want a fast path to configure or switch providers (Cosmos DB, SQL Server, MySQL, SQLite).
+
+## Why this matters
+- Correct provider/connection setup is foundational; mistakes block the app from starting.
+- Picking the right provider affects latency, cost, and scaling strategy.
+
+## Key takeaways
+- Use the wizard for first-time single-tenant setup; use env vars for production/automation.
+- SQLite is for dev/test only; use managed SQL/MySQL/Cosmos for shared or production.
+- ConnectionStrings: `ApplicationDbContextConnection` drives provider selection automatically.
+
+## Prerequisites
+- Chosen provider and a reachable database instance.
+- Credentials/connection string with create/read/write permissions for the app.
+- For wizard use: `CosmosAllowSetup=true` set before launch.
+
+## Quick path
+1. Pick a provider and assemble its connection string (see table below).
+2. Configure via wizard (single-tenant) or env vars/appsettings (production/CI).
+3. Start the app and verify connectivity; check logs for provider/EF provider load.
 
 ## How database configuration works
 

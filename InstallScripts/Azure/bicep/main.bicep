@@ -44,6 +44,9 @@ param dockerImage string = 'toiyabe/sky-editor:latest'
 @maxValue(10)
 param minReplicas int = 1
 
+@description('Deploy staging deployment slot for zero-downtime deployments')
+param deploySlot bool = true
+
 // Tags
 @description('Tags to apply to all resources')
 param tags object = {
@@ -63,6 +66,7 @@ var sqlServerName = 'sql-${baseName}-${uniqueSuffix8}'
 var appServicePlanName = 'plan-${baseName}-${environment}-${uniqueSuffix8}'
 var webAppName = 'editor-${baseName}-${environment}-${uniqueSuffix8}'
 var managedIdentityName = 'id-${baseName}-${environment}-${uniqueSuffix8}'
+var keyVaultName = 'kv-${baseName}-${uniqueSuffix8}'
 var storageAccountName = 'st${substring(baseName, 0, min(10, length(baseName)))}${substring(uniqueSuffix, 0, 10)}'
 var communicationServiceName = 'acs-${baseName}-${uniqueSuffix8}'
 var appInsightsName = 'ai-${baseName}-${environment}-${uniqueSuffix8}'
@@ -87,6 +91,21 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-
 }
 
 // ============================================================================
+// KEY VAULT
+// ============================================================================
+
+module keyVault 'modules/keyVault.bicep' = {
+  name: 'keyVault-deployment'
+  params: {
+    location: location
+    keyVaultName: keyVaultName
+    principalId: managedIdentity.properties.principalId
+    enablePurgeProtection: environment == 'prod'
+    tags: tags
+  }
+}
+
+// ============================================================================
 // AZURE SQL DATABASE
 // ============================================================================
 
@@ -107,6 +126,56 @@ module sql 'modules/sqlDatabase.bicep' = {
 // ============================================================================
 
 var sqlConnectionString = 'Server=${sqlServerFqdn};Database=${databaseName};User ID=${generatedAdminUsername};Password=${generatedAdminPassword};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+
+// ============================================================================
+// KEY VAULT SECRETS
+// ============================================================================
+
+resource kvDbConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  name: '${keyVaultName}/ApplicationDbContextConnection'
+  properties: {
+    value: sqlConnectionString
+  }
+  dependsOn: [
+    keyVault
+  ]
+}
+
+resource kvStorageConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (deployPublisher) {
+  name: '${keyVaultName}/StorageConnectionString'
+  properties: {
+    #disable-next-line BCP318
+    value: deployPublisher ? storage.outputs.primaryConnectionString : ''
+  }
+  dependsOn: [
+    keyVault
+    storage
+  ]
+}
+
+resource kvAcsConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (deployEmail) {
+  name: '${keyVaultName}/AzureCommunicationConnection'
+  properties: {
+    #disable-next-line BCP318
+    value: deployEmail ? acs.outputs.connectionString : ''
+  }
+  dependsOn: [
+    keyVault
+    acs
+  ]
+}
+
+resource kvAppInsightsConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (deployAppInsights) {
+  name: '${keyVaultName}/AppInsightsConnectionString'
+  properties: {
+    #disable-next-line BCP318
+    value: deployAppInsights ? appInsights.outputs.connectionString : ''
+  }
+  dependsOn: [
+    keyVault
+    appInsights
+  ]
+}
 
 // ============================================================================
 // BLOB STORAGE (PUBLISHER) - Optional
@@ -181,13 +250,7 @@ module webApp 'modules/webApp.bicep' = {
     webAppName: webAppName
     planName: appServicePlanName
     imageName: dockerImage
-    dbConnectionString: sqlConnectionString
-    #disable-next-line BCP318
-    storageConnectionString: deployPublisher ? storage.outputs.primaryConnectionString : ''
-    #disable-next-line BCP318
-    acsConnectionString: deployEmail ? acs.outputs.connectionString : ''
-    #disable-next-line BCP318
-    appInsightsConnectionString: deployAppInsights ? appInsights.outputs.connectionString : ''
+    keyVaultUri: keyVault.outputs.keyVaultUri
     #disable-next-line BCP318
     adminEmail: deployEmail ? acs.outputs.senderEmailAddress : adminEmail
     #disable-next-line BCP318
@@ -196,10 +259,15 @@ module webApp 'modules/webApp.bicep' = {
     skuName: environment == 'prod' ? 'P2v3' : 'P1v3'
     skuTier: 'PremiumV3'
     capacity: max(1, minReplicas)
+    deploySlot: deploySlot
     tags: tags
   }
   dependsOn: [
     storageBlobDataContributorRole
+    kvDbConnectionString
+    kvStorageConnectionString
+    kvAcsConnectionString
+    kvAppInsightsConnectionString
   ]
 }
 
@@ -238,6 +306,12 @@ output appInsightsName string = deployAppInsights ? appInsightsName : 'Not deplo
 
 @description('Managed Identity Name')
 output managedIdentityName string = managedIdentity.name
+
+@description('Key Vault Name')
+output keyVaultName string = keyVault.outputs.keyVaultName
+
+@description('Key Vault URI')
+output keyVaultUri string = keyVault.outputs.keyVaultUri
 
 @description('Resource Group Name')
 output resourceGroupName string = resourceGroup().name

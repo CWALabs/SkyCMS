@@ -3,11 +3,36 @@ title: Azure Communication Services Email
 description: Configure Azure Communication Services for transactional email delivery
 keywords: Azure-Communication-Services, email, Azure, transactional-emails, configuration
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # Azure Communication Services Email with SkyCMS
 
 Azure Communication Services is a cloud-based communication platform managed by Microsoft Azure. Its email service integrates seamlessly with other Azure services and provides reliable transactional email delivery.
+
+## When to use this
+- You run on Azure and want managed email without third-party SMTP.
+- You need straightforward Azure-native auth (connection string) and sender domain options.
+
+## Why this matters
+- Email is required for password resets and notifications; correct domain verification is mandatory.
+- Azure-managed domain offers quick start; custom domain improves branding/deliverability.
+
+## Key takeaways
+- Set `ConnectionStrings__AzureCommunicationConnection` + `AdminEmail`; verify sender domain/email.
+- Managed domain is fastest; custom domain requires DNS records (SPF/DKIM/DMARC).
+- Store connection string in Key Vault/secret store; rotate keys.
+
+## Prerequisites
+- Azure subscription; Communication Services resource; managed or custom domain verified.
+
+## Quick path
+1. Create Communication Services resource; get connection string.
+2. Choose managed domain or verify custom domain; obtain sender email.
+3. Set env/appsettings (or wizard) with connection string + sender; send test email.
 
 ## Values you need
 

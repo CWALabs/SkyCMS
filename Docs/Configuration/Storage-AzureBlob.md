@@ -3,11 +3,37 @@ title: Azure Blob Storage Configuration
 description: Configure Azure Blob Storage for SkyCMS static assets with connection strings and container setup
 keywords: Azure-Blob, storage, configuration, Azure, object-storage, static-assets
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 5
 ---
 
 # Azure Blob Storage with SkyCMS
 
 Azure Blob Storage is a fully managed, scalable cloud object storage service. SkyCMS integrates seamlessly for storing and serving static assets.
+
+## When to use this
+- You’re deploying SkyCMS on Azure or prefer Azure storage for assets/CDN.
+- You want key-based or managed-identity setup details and public endpoint format.
+
+## Why this matters
+- Correct storage setup determines publish success and asset delivery performance.
+- Managed identity reduces secret sprawl and improves security posture.
+
+## Key takeaways
+- Use `StorageConnectionString`; managed identity via `AccountKey=AccessToken` with Blob Data roles.
+- Provide the public URL to match your container/CDN endpoint.
+- Static website hosting can be enabled; key-based string needed to toggle it.
+
+## Prerequisites
+- Azure subscription and storage account; either keys or managed identity with Blob Data Contributor.
+- Container/bucket name and public URL (storage endpoint or CDN URL).
+
+## Quick path
+1. Create storage account; get connection string (or set managed identity + role).
+2. Set `StorageConnectionString` via wizard or env/appsettings; add public URL.
+3. Validate, publish, and confirm files land in the container.
 
 ## Values you need
 

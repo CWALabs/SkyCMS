@@ -3,6 +3,10 @@ title: Storage Configuration Overview
 description: Cloud object storage configuration for static assets including Azure Blob, S3, Cloudflare R2, and Google Cloud
 keywords: storage, configuration, Azure-Blob, S3, Cloudflare-R2, Google-Cloud, object-storage
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 5
 ---
 
 # Storage Configuration Overview
@@ -14,6 +18,29 @@ SkyCMS stores static web assets (images, CSS/JS, downloads) in cloud object stor
 - Cloudflare R2 (S3-compatible)
 - Google Cloud Storage (S3-compatible)
 - Any S3-compatible storage
+
+## When to use this
+- You need to select and configure a storage provider for SkyCMS assets.
+- You plan to switch providers (Azure Blob, S3, R2, GCS) and want connection formats fast.
+
+## Why this matters
+- Correct storage setup determines where published assets live and how fast they’re delivered.
+- Misconfigured credentials or endpoints block publishing and media uploads.
+
+## Key takeaways
+- Use `StorageConnectionString` to drive provider selection; wizard for first-time, env vars for production.
+- Keep storage region close to your users/CDN; use least-privilege keys.
+- Any S3-compatible endpoint works if connection string matches format.
+
+## Prerequisites
+- Chosen provider, bucket/container, and credentials with create/write/list permissions.
+- Public endpoint/CDN URL for the bucket if serving static assets.
+- For wizard use: `CosmosAllowSetup=true` set before launch.
+
+## Quick path
+1. Pick provider; gather connection string and public endpoint.
+2. Configure via wizard (single-tenant) or env vars/appsettings (production/CI).
+3. Test upload/publish and confirm files appear in the bucket/container.
 
 ## How storage configuration works
 

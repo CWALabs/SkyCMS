@@ -3,6 +3,10 @@ title: CDN Integration Overview
 description: CDN cache purging configuration for Azure Front Door, CloudFront, Cloudflare, and Sucuri
 keywords: CDN, cache-purging, Azure-Front-Door, CloudFront, Cloudflare, Sucuri
 audience: [developers, devops]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 4
 ---
 
 # CDN Integration Overview
@@ -13,6 +17,28 @@ SkyCMS can purge CDN caches after publish so fresh content appears immediately. 
 - Cloudflare CDN
 - Amazon CloudFront
 - Sucuri CDN/WAF
+
+## When to use this
+- You publish via SkyCMS and need CDN cache purges to make changes visible immediately.
+- You must choose or configure a CDN provider (Front Door, Cloudflare, CloudFront, Sucuri).
+
+## Why this matters
+- Without cache purging, visitors may see stale content after publish.
+- Correct scoping of credentials reduces risk while enabling automated invalidations.
+
+## Key takeaways
+- Configure CDN settings in Editor → Settings → CDN; use least-privilege tokens/roles.
+- Purge failures don’t block publish; they only affect cache freshness.
+- Each provider requires specific IDs/tokens; validate with the test button before go-live.
+
+## Prerequisites
+- Active CDN distribution/zone and credentials with purge/invalidation rights only.
+- Target URLs/paths you plan to purge and awareness of propagation delays.
+
+## Quick path
+1. Select provider and gather required IDs/tokens (see table below).
+2. Enter credentials in Settings → CDN and run **Save and test settings**.
+3. Publish content and confirm cache invalidation completes; monitor CDN logs if available.
 
 ## How CDN integration works
 

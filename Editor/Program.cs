@@ -658,7 +658,7 @@ app.UseHangfireSchedulingSlice();
 // ---------------------------------------------------------------
 // CONFIGURE ENDPOINTS
 // ---------------------------------------------------------------
-app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/___healthz", () => Results.Ok(new { status = "ok" }));
 
 app.MapGet("ccms__antiforgery/token", (IAntiforgery forgeryService, HttpContext context) =>
 {

@@ -3,11 +3,37 @@ title: Installing SkyCMS on Azure
 description: Complete guide for deploying SkyCMS on Microsoft Azure with Deploy button
 keywords: Azure, installation, deployment, setup, App-Service
 audience: [developers, devops]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # Installing SkyCMS on Azure
 
 The following describes how to install SkyCMS on Microsoft Azure.
+
+## When to use this
+- You want the fastest path to deploy SkyCMS on Azure using the Deploy button.
+- You prefer managed Azure services and a guided post-deploy setup (wizard).
+
+## Why this matters
+- One-click deploy reduces manual Azure setup and misconfiguration risk.
+- Clear prerequisites and steps avoid stalled deployments and missing resources.
+
+## Key takeaways
+- Use the Deploy button for quick starts; wizard handles single-tenant setup.
+- Multi-tenant/production can deploy from the template but should keep `CosmosAllowSetup=false` and use DynamicConfig.
+- Ensure Azure subscription, resource group, and basic permissions before starting.
+
+## Prerequisites
+- Azure subscription with rights to deploy the template and create App Service + storage.
+- Admin email for setup; optional email provider details if configuring during wizard.
+
+## Quick path
+1. Click Deploy to Azure (from README) and provision the template.
+2. After deploy, browse to the Editor app and run `/___setup` (single-tenant wizard).
+3. Finish wizard, restart automatically, sign in, and publish first page.
 
 ## Quick Installation using Deploy Button
 
@@ -46,11 +72,13 @@ The easiest way to install SkyCMS is using the Deploy button located in the main
     - Wait for the deployment to complete
 
 2. **Access Your Installation**
-    - Once deployment is finished, open the resource groups where you installed Sky.
-    - Find the editor web app. The name prefix will start with "ed".
-    - Browse to `https://<your-editor>.azurewebsites.net/Setup` and run the **single-tenant setup wizard** (enabled via `CosmosAllowSetup=true`). Multi-tenant deployments should leave this flag false and use DynamicConfig instead.
+    - Once deployment is finished, open the resource group where you installed SkyCMS.
+    - Find the App Service web app. The name will include "editor" in the prefix.
+    - The health check (`/___healthz`) ensures the app is ready within 30-60 seconds.
+    - Browse to `https://<your-editor>.azurewebsites.net/___setup` and run the **single-tenant setup wizard** (enabled via `CosmosAllowSetup=true`). Multi-tenant deployments should leave this flag false and use DynamicConfig instead.
     - Wizard steps: Storage → Admin account → Publisher URL/title/layout → (optional) Email provider → (optional) CDN → Review & Complete. It validates storage and database connectivity and creates the first Administrator user.
-    - After finishing the wizard, restart the app (App Service restarts itself after a configuration change) and sign in with the admin email/password you specified.
+    - After finishing the wizard, the app will automatically restart and apply the new configuration.
+    - Sign in with the admin email/password you specified.
     - Create your first page and choose a starter design.
     - At your website's home page, select the "Menu" button, then "Public Website".
 

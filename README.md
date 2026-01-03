@@ -1,3 +1,19 @@
+---
+title: "SkyCMS: Edge-Native CMS"
+description: "Fast, edge-native CMS with instant publishing, multi-cloud deployment, and no-build pipelines."
+audience: ["developers", "administrators", "content-creators", "decision-makers"]
+tags: ["edge-native", "cms", "static", "cloud", "azure", "aws", "cloudflare"]
+keywords: ["skycms", "edge", "static", "jamstack", "cms", "azure", "aws", "cloudflare"]
+version: "9.2x"
+last_updated: "2026-01-03"
+stage: "ga"
+platforms: ["aws", "azure", "cloudflare", "any-docker"]
+tenancy: ["single", "multi"]
+read_time: 7
+canonical: "https://github.com/CWALabs/SkyCMS"
+robots: "index,follow"
+---
+
 # SkyCMS: The Edge-Native CMS
 
 ![SkyCMS Logo](./Editor/wwwroot/images/skycms/SkyCMSLogoNoWiTextDarkTransparent30h.png)
@@ -10,6 +26,38 @@
 <!-- [Project Website](https://Sky.moonrise.net) | [Documentation](https://Sky.moonrise.net/Docs) | [Get Free Help](https://Sky.moonrise.net/Support) | [YouTube Channel](https://www.youtube.com/@Sky-cms) | [Slack Channel](https://Sky-cms.slack.com/) -->
 
 **Documentation home:** https://docs-sky-cms.com
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "SkyCMS: Edge-Native CMS",
+  "description": "Fast, edge-native CMS with instant publishing, multi-cloud deployment, and no-build pipelines.",
+  "author": { "@type": "Organization", "name": "CWALabs" },
+  "dateModified": "2026-01-03",
+  "version": "9.2x",
+  "keywords": ["skycms", "edge", "static", "jamstack", "cms", "azure", "aws", "cloudflare"],
+  "audience": ["developers", "administrators", "content-creators", "decision-makers"],
+  "inLanguage": "en",
+  "url": "https://github.com/CWALabs/SkyCMS"
+}
+</script>
+
+> SkyCMS is a lightweight, edge-native CMS that ships instant publishing, static generation, and multi-cloud deployment without external build pipelines.
+
+## When to use SkyCMS
+- You need sub-second global delivery with static output but want a full CMS editing experience.
+- You want multi-cloud optionality (Azure, AWS, Cloudflare, any S3-compatible storage) without lock-in.
+- You prefer instant publishing over Git/CI-driven rebuilds and long queues.
+
+## Who this is for
+- Content teams needing an easy editor and fast preview/publish loops.
+- Developers who want a CMS without maintaining bespoke build systems.
+- Ops/DevOps who need predictable, low-cost, globally distributed sites.
+
+## Prerequisites
+- Docker-capable environment and one supported database (MySQL, MS SQL, SQLite, or Cosmos DB) plus S3-compatible or Azure storage.
+- For cloud deploys: access to Azure/AWS/Cloudflare accounts and their CLIs where applicable.
 
 ## Deploy to a cloud
 

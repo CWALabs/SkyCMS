@@ -3,7 +3,6 @@ audience: [developers, administrators]
 title: Installation Guide
 description: Complete installation guide for SkyCMS including wizard setup and manual configuration options
 keywords: installation, setup, Docker, AWS, Azure, configuration, wizard
-audience: [developers, administrators]
 version: 2.0
 updated: 2025-12-20
 canonical: /Installation/README.html
@@ -16,6 +15,76 @@ chunk_hint: 340
 ---
 
 # SkyCMS Installation Guide
+
+<script type="application/ld+json">
+{
+   "@context": "https://schema.org",
+   "@type": "HowTo",
+   "name": "Install SkyCMS",
+   "description": "Choose the wizard or environment-variable path, gather credentials, configure settings, and verify post-install checks.",
+   "totalTime": "PT30M",
+   "audience": ["developers", "administrators"],
+   "proficiencyLevel": "Beginner",
+   "inLanguage": "en",
+   "supply": [
+      {"@type": "HowToSupply", "name": "Database and storage credentials"}
+   ],
+   "tool": [
+      {"@type": "HowToTool", "name": "Provider CLIs (az, aws, cloudflare, mysql/sqlcmd)"}
+   ],
+   "step": [
+      {
+         "@type": "HowToStep",
+         "name": "Choose configuration approach",
+         "url": "https://docs-sky-cms.com/Installation/README.html#choose-approach",
+         "text": "Decide between the interactive wizard for single-tenant quick starts or environment variables for production and multi-tenant setups."
+      },
+      {
+         "@type": "HowToStep",
+         "name": "Gather prerequisites",
+         "url": "https://docs-sky-cms.com/Installation/README.html#prerequisites",
+         "text": "Ensure provider roles and CLIs are installed, and collect database and storage credentials for your chosen platform."
+      },
+      {
+         "@type": "HowToStep",
+         "name": "Configure settings",
+         "url": "https://docs-sky-cms.com/Installation/README.html#quick-path",
+         "text": "Follow the Minimum Required Settings, then set environment variables or run the Setup Wizard as appropriate."
+      },
+      {
+         "@type": "HowToStep",
+         "name": "Verify post-install",
+         "url": "https://docs-sky-cms.com/Installation/README.html#after-installation",
+         "text": "Publish a test page, validate email/CDN, and finalize admin setup with the post-install guide."
+      }
+   ],
+   "url": "https://docs-sky-cms.com/Installation/README.html"
+}
+</script>
+
+## When to use this
+- You need to install SkyCMS for the first time (single-tenant wizard) or configure production-ready env-var deployments.
+- You are selecting a platform path (Azure, AWS, Cloudflare, local) and need prerequisites in one place.
+
+## Why this matters
+- Reduces misconfigurations by front-loading required env vars, roles, and platform assumptions.
+- Clarifies when to use the wizard vs. DynamicConfig for multi-tenant production setups.
+
+## Key takeaways
+- Two paths: wizard (single-tenant) vs. env-vars (production/automation); multi-tenant skips the wizard.
+- Validate provider credentials/roles before deployment to avoid runtime failures.
+- After install, follow the post-install checklist to verify publish, email, CDN, and admin setup.
+
+## Prerequisites
+- Database and storage credentials reachable from your target platform.
+- Cloud access/roles for Azure/AWS/Cloudflare if deploying there; provider CLIs installed for validation.
+- Decision on tenancy: single (wizard ok) vs. multi (DynamicConfig, `CosmosAllowSetup=false`).
+
+## Quick path
+1. Review Minimum Required Settings.
+2. Pick wizard (single-tenant) or env-vars (production/CI, multi-tenant with DynamicConfig).
+3. Run the Setup Wizard if applicable; otherwise set env vars and start the app.
+4. Complete post-install verification (publish test page, email, CDN, admin accounts).
 
 ## Key facts {#key-facts}
 

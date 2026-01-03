@@ -12,6 +12,28 @@ status: stable
 
 Quick reference index for all SkyCMS configuration documentation.
 
+## When to use this
+- You need a single hub for all configuration topics (database, storage, CDN, email, multi-tenant).
+- You want to decide which provider to use and jump to the right reference quickly.
+
+## Why this matters
+- Prevents misconfiguration by grouping overviews, references, and provider guides in one place.
+- Shortens time-to-config by linking directly to env var/connection string references.
+
+## Key takeaways
+- Start with overviews, then the reference, then provider specifics.
+- Multi-tenant deployments use DynamicConfig and skip the setup wizard.
+- Verify required roles/permissions for each provider before deploying.
+
+## Prerequisites
+- Chosen tenancy model (single vs multi) and target providers.
+- Access/roles for the selected database, storage, CDN, and email providers.
+
+## Quick path
+1. Pick your provider from the overview tables.
+2. Apply the matching reference for env vars/connection strings.
+3. Follow the provider guide to validate roles and endpoints.
+
 ---
 
 ## Key facts {#key-facts}

@@ -3,11 +3,37 @@ title: Cloudflare R2 Storage Configuration
 description: Configure Cloudflare R2 S3-compatible object storage with no egress fees
 keywords: Cloudflare-R2, storage, S3-compatible, object-storage, configuration
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # Cloudflare R2 with SkyCMS
 
 Cloudflare R2 is an S3-compatible object storage service with no egress fees, making it cost-effective for static asset delivery. SkyCMS integrates seamlessly with R2.
+
+## When to use this
+- You want low-cost S3-compatible storage with no egress fees and Cloudflare edge delivery.
+- You plan to run origin-less hosting with R2 + Cloudflare Rules (no Worker needed).
+
+## Why this matters
+- Correct Account ID/keys/public URL are required for publishing and edge rewrites.
+- Scoped tokens reduce risk; R2 endpoints differ from AWS S3 defaults.
+
+## Key takeaways
+- Connection string: AccountId + Bucket + KeyId + Key; provide the R2 public URL or custom domain.
+- Pair with Cloudflare Rules for HTTPS redirect and index rewrite for origin-less sites.
+- Scope S3 API tokens to the bucket; rotate regularly.
+
+## Prerequisites
+- R2 bucket, Account ID, and S3 API token (KeyId/Key) with read/write/delete.
+- Public URL (account-based or custom domain) for assets.
+
+## Quick path
+1. Create R2 bucket and S3 API token; note Account ID.
+2. Set `StorageConnectionString` via wizard or env/appsettings; add public URL.
+3. Publish and verify objects; add Cloudflare Rules for edge hosting if desired.
 
 ## Values you need
 

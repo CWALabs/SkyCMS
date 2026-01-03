@@ -3,6 +3,10 @@ title: Storage Configuration Reference
 description: Complete reference for cloud storage configuration with S3, Azure Blob, Cloudflare R2, and Google Cloud
 keywords: storage, configuration-reference, S3, Azure-Blob, Cloudflare-R2, Google-Cloud
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 8
 ---
 
 # Storage Configuration
@@ -37,6 +41,28 @@ Jump to:
   - [Troubleshooting](#troubleshooting)
 
 ---
+
+## When to use this
+- You need precise connection string formats and options for storage providers (Azure Blob, S3, R2, GCS).
+- You’re wiring production/CI and need authoritative reference values.
+
+## Why this matters
+- Correct strings and endpoints are required for publishing/uploads to succeed.
+- Least-privilege keys and secret handling reduce risk.
+
+## Key takeaways
+- `StorageConnectionString` drives provider selection; S3-compatible endpoints work if formatted correctly.
+- For Azure static website enablement, use a key-based string (managed identity can’t enable it programmatically).
+- Keep credentials in env vars/secret stores; test uploads after configuring.
+
+## Prerequisites
+- Chosen storage provider, bucket/container, and credentials with write/list/delete.
+- Public endpoint/CDN URL if serving static assets.
+
+## Quick path
+1. Pick provider; copy the matching format below and fill values.
+2. Set `ConnectionStrings__StorageConnectionString` (env) or appsettings.
+3. Restart and test upload/publish; confirm files appear in storage.
 
 ## Azure Blob Storage
 

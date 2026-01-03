@@ -3,6 +3,10 @@ title: SMTP Email Configuration
 description: Configure SMTP email server for transactional emails (Gmail, Outlook, custom servers)
 keywords: SMTP, email, Gmail, Outlook, configuration, transactional-emails
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 7
 ---
 
 # SMTP Email with SkyCMS
@@ -13,6 +17,27 @@ SMTP (Simple Mail Transfer Protocol) is the standard protocol for sending emails
 - Office 365 / Microsoft Exchange
 - Self-hosted mail servers
 - Managed email services (Zoho, FastMail, ProtonMail, etc.)
+
+## When to use this
+- You want to reuse existing SMTP infra (Gmail/Workspace/Office 365/SES/custom).
+- You prefer SMTP credentials over API-based providers.
+
+## Why this matters
+- Email is required for password resets and notifications; provider settings must be correct.
+- TLS/SSL choices and auth details vary per provider.
+
+## Key takeaways
+- Configure `SmtpEmailProviderOptions` + `AdminEmail`; use app passwords where required.
+- TLS (UsesSsl=false) on 587 is typical; SSL rarely needed.
+- Store creds in env vars/secret stores; avoid committing them.
+
+## Prerequisites
+- SMTP host/port/user/password and sender email; provider allows SMTP auth.
+
+## Quick path
+1. Gather SMTP host/port/user/pass; generate app password if needed (Gmail/Workspace).
+2. Set env vars or wizard fields; choose TLS (UsesSsl=false) unless provider requires SSL.
+3. Send test email; adjust firewall/provider settings if blocked.
 
 ## Values you need
 

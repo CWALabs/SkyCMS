@@ -3,11 +3,37 @@ title: Setup Wizard Installation Guide
 description: Interactive web-based setup wizard for first-time SkyCMS configuration
 keywords: setup-wizard, installation, configuration, interactive, guided-setup
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # Setup Wizard Installation Guide
 
 The **Setup Wizard** is the easiest way to configure SkyCMS for first-time deployment. It walks you through each configuration step in an interactive web interface.
+
+## When to use this
+- First-time or single-tenant setups that want guided, interactive configuration.
+- Teams preferring UI-driven setup instead of pre-seeding all env vars.
+
+## Why this matters
+- Reduces setup errors and time-to-first-publish by validating connections in-UI.
+- Clarifies what must be preconfigured vs. safely entered in the wizard.
+
+## Key takeaways
+- Wizard is for single-tenant; multi-tenant uses DynamicConfig with `CosmosAllowSetup=false`.
+- Preconfig via env vars makes fields read-only to protect critical settings.
+- Typical completion time: ~10–15 minutes.
+
+## Prerequisites
+- `CosmosAllowSetup=true` set before start; reachable database connection string.
+- Optional: storage/email/CDN settings if you want them pre-seeded/read-only.
+
+## Quick path
+1. Deploy SkyCMS with `CosmosAllowSetup=true` and DB connection string.
+2. Navigate to `/___setup` and complete steps (Storage → Admin → Publisher → optional Email/CDN → Review).
+3. Finish, let the app restart, then sign in with the admin you created.
 
 ---
 

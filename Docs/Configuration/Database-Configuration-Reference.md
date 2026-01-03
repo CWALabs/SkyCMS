@@ -3,6 +3,10 @@ title: Database Configuration Reference
 description: Complete reference for database configuration with Cosmos DB, SQL Server, MySQL, and SQLite
 keywords: database, configuration-reference, connection-strings, EF-Core, providers
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 7
 ---
 
 # Database Configuration
@@ -34,6 +38,28 @@ Jump to:
   - [See Also](#see-also)
 
 ---
+
+## When to use this
+- You need exact connection string formats and provider-specific guidance for SkyCMS databases.
+- You’re wiring production or CI/CD and want authoritative reference values.
+
+## Why this matters
+- Provider detection hinges on connection string shape; mistakes block startup or migrations.
+- Correct strings and secrets handling reduce downtime and security risk.
+
+## Key takeaways
+- Use `ApplicationDbContextConnection` for all providers; the string determines EF provider.
+- Keep secrets out of source; prefer env vars/secret stores.
+- SQLite is dev/test only; use managed SQL/MySQL/Cosmos for production.
+
+## Prerequisites
+- Chosen database provider and a reachable instance; credentials with create/read/write.
+- Ability to set env vars or appsettings securely.
+
+## Quick path
+1. Copy the provider format below and fill in your values.
+2. Set `ConnectionStrings__ApplicationDbContextConnection` (env) or appsettings.
+3. Start the app and verify provider loads; run migrations if applicable.
 
 ## Azure Cosmos DB
 

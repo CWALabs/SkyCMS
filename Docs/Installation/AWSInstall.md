@@ -3,11 +3,37 @@ title: AWS Installation Guide
 description: Deploy SkyCMS on AWS using S3 for static website hosting and blob storage
 keywords: AWS, installation, S3, deployment, setup
 audience: [developers, devops]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 7
 ---
 
 # AWS Installation Guide
 
 Deploy SkyCMS on AWS using either the **interactive CDK deployment** (recommended) or the **manual S3-only setup**.
+
+## When to use this
+- You want guided AWS deployment (Editor + optional Publisher) via CDK script.
+- You prefer AWS-native stack with S3/CloudFront and managed RDS/ECS.
+
+## Why this matters
+- The CDK flow reduces manual AWS wiring and secrets handling via Secrets Manager.
+- Clear prerequisites avoid failures from missing CLI config or permissions.
+
+## Key takeaways
+- Interactive CDK script deploys Editor + optional Publisher + Secrets Manager wiring.
+- Requires AWS CLI configured and permissions for CloudFormation/ECS/RDS/S3/CloudFront/IAM/ACM.
+- Post-deploy, run the SkyCMS setup wizard for single-tenant; use DynamicConfig for multi-tenant.
+
+## Prerequisites
+- AWS CLI configured; Node.js 18+, npm, Docker; PowerShell 5.1+ or Core 7+.
+- IAM permissions for CloudFormation, ECS, RDS, S3, CloudFront, IAM, Secrets Manager, ACM, EC2.
+
+## Quick path
+1. Run `./cdk-deploy.ps1` in InstallScripts/AWS.
+2. Answer prompts (region, image, DB, domains, SES, publisher S3/CloudFront).
+3. After deploy, visit the Editor URL, run `/___setup`, verify email (if SES), and upload publisher assets if enabled.
 
 ## Quick Start
 

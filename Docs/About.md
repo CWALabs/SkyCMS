@@ -2,10 +2,59 @@
 title: About SkyCMS
 description: Learn about SkyCMS, an edge-native CMS that combines traditional editor usability with static site generation speed
 keywords: about, overview, edge-native, CMS, Docker, multi-cloud
-audiencе: [decision-makers, developers, content-creators]
+audience: [decision-makers, developers, content-creators]
 ---
 
 # About SkyCMS
+
+<script type="application/ld+json">
+{
+	"@context": "https://schema.org",
+	"@type": "TechArticle",
+	"headline": "About SkyCMS",
+	"description": "Learn about SkyCMS, an edge-native CMS that combines traditional editor usability with static site generation speed.",
+	"author": { "@type": "Organization", "name": "CWALabs" },
+	"dateModified": "2026-01-03",
+	"version": "SkyCMS v9.2x",
+	"keywords": ["about", "skycms", "edge-native", "cms", "docker", "multi-cloud", "static"],
+	"audience": ["decision-makers", "developers", "content-creators"],
+	"inLanguage": "en",
+	"url": "https://docs-sky-cms.com/About.html"
+}
+</script>
+
+<script type="application/ld+json">
+{
+	"@context": "https://schema.org",
+	"@type": "FAQPage",
+	"mainEntity": [
+		{
+			"@type": "Question",
+			"name": "Who is SkyCMS for?",
+			"acceptedAnswer": {
+				"@type": "Answer",
+				"text": "Decision makers seeking lower hosting costs and faster publishing; developers wanting no-build, multi-cloud workflows; editors needing familiar WYSIWYG, visual, and code tools."
+			}
+		},
+		{
+			"@type": "Question",
+			"name": "What makes SkyCMS different from typical JAMstack workflows?",
+			"acceptedAnswer": {
+				"@type": "Answer",
+				"text": "SkyCMS ships an integrated publishing pipeline with static and dynamic delivery, avoids external CI/CD build chains, and supports edge or origin-less deployments with fast publishing and rollbacks."
+			}
+		},
+		{
+			"@type": "Question",
+			"name": "Where can I deploy SkyCMS?",
+			"acceptedAnswer": {
+				"@type": "Answer",
+				"text": "Deploy containers that target Azure Blob, Amazon S3, or Cloudflare R2 for static delivery, or run the Publisher for dynamic or decoupled rendering, including origin-less edge options."
+			}
+		}
+	]
+}
+</script>
 
 SkyCMS is an edge-native CMS that combines the usability of traditional editors with the speed of static site generation—without CI/CD or Git pipelines. It ships as Docker containers and deploys to any cloud that supports S3-compatible storage or Azure Blob, with optional origin-less edge hosting on Cloudflare R2 + Rules.
 

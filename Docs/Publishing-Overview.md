@@ -19,6 +19,28 @@ chunk_hint: 360
 
 Publishing is the process of making content live on your website. SkyCMS supports multiple publishing modes and workflows to fit different content strategies and team structures.
 
+## When to use this
+- You need to choose a publishing mode (Direct, Staged, Static Generation, Git-Based) for your team and hosting model.
+- You want a concise view of workflows, approvals, and rollback options before configuring environments.
+
+## Why this matters
+- Picking the right mode balances speed, safety, and operational overhead.
+- Aligns editors, reviewers, and DevOps on environments and promotion paths to avoid production mistakes.
+
+## Key takeaways
+- Direct is fastest but riskiest; Staged/Git-based add review and rollback; Static suits edge/static hosting.
+- CDN purge issues don’t block publication; they only affect cache freshness.
+- Keep Editor/Staging/Production URLs distinct to avoid cross-environment confusion.
+
+## Prerequisites
+- Defined environments (staging/production) and access to storage/CDN where content is deployed.
+- Decision on approval requirements and who can publish/promote.
+
+## Quick path
+1. Pick a mode (Direct, Staged, Static, or Git-Based) based on team/process.
+2. Configure targets and approvals as shown in each mode’s section.
+3. Validate end-to-end: publish, verify on target, and confirm CDN cache behavior.
+
 ---
 
 ## Key facts {#key-facts}

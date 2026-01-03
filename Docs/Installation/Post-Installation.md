@@ -3,6 +3,10 @@ title: Post-Installation Configuration
 description: Verify installation and configure essential features for production use after setup wizard
 keywords: post-installation, verification, production, configuration, security
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 7
 ---
 
 # Post-Installation Configuration
@@ -10,6 +14,28 @@ audience: [developers, administrators]
 After completing the [Setup Wizard](./SetupWizard.md), follow this guide to verify your installation and configure essential features for production use.
 
 > **Before starting**: Ensure the application has been restarted after setup completion.
+
+## When to use this
+- Immediately after finishing the wizard or a production deploy to validate the installation.
+- Before granting wider access to editors or going live.
+
+## Why this matters
+- Catches misconfigurations early (DB/storage/email/publisher) before users hit errors.
+- Ensures publishing, email, and CDN are working end-to-end.
+
+## Key takeaways
+- Verify editor login, DB, storage uploads, email, and publisher reachability.
+- Run through a first publish to confirm the full path works.
+- Harden defaults (auth, file types, roles) before opening to users.
+
+## Prerequisites
+- Completed setup wizard (or equivalent config) and app restart.
+- Admin credentials and access to storage/CDN/email providers if verification fails.
+
+## Quick path
+1. Run the verification checklist (login, DB, storage upload, email test, publisher reachability).
+2. Publish a first page and verify on the public site.
+3. Review defaults (static mode, auth, file types) and apply hardening steps.
 
 ---
 

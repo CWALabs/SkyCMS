@@ -2,12 +2,38 @@
 title: Amazon S3 Storage Configuration
 description: Configure Amazon S3 object storage for SkyCMS static assets with access keys and bucket setup
 keywords: S3, AWS, storage, configuration, object-storage, static-assets
-audience: {developers, administrators}
+audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # Amazon S3 with SkyCMS
 
 Amazon S3 is a highly scalable object storage service widely available across AWS regions. SkyCMS integrates seamlessly with S3 for storing and serving static assets.
+
+## When to use this
+- You are deploying SkyCMS on AWS or want S3-compatible storage for assets.
+- You need least-privilege IAM and connection string formats for S3.
+
+## Why this matters
+- Correct bucket/region/credentials are required for publishing and uploads.
+- Least-privilege IAM reduces blast radius for key leakage.
+
+## Key takeaways
+- Use `StorageConnectionString` with bucket/region/keyId/key; scope IAM to the bucket.
+- Pair with CloudFront for CDN; supply the public URL in the wizard for validation.
+- Rotate keys; never commit them—use env vars or Secrets Manager.
+
+## Prerequisites
+- S3 bucket and region; IAM user with Get/Put/Delete/List on that bucket.
+- Optional CloudFront distribution if you want CDN delivery.
+
+## Quick path
+1. Create bucket and IAM user with bucket-scoped policy; copy keys.
+2. Set `StorageConnectionString` via wizard or env/appsettings; include public URL.
+3. Validate, publish, and confirm objects land in the bucket (and through CloudFront if used).
 
 ## Values you need
 

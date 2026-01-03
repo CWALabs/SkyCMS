@@ -18,6 +18,29 @@ chunk_hint: 320
 
 Use the new setup wizard for **single-tenant** installs. It walks you through storage, admin user, publisher URL, optional email, and optional CDN. Set `CosmosAllowSetup=true` and make sure `ConnectionStrings:ApplicationDbContextConnection` points to a reachable database before you begin.
 
+## When to use this
+- You want the fastest way to try SkyCMS (single-tenant) locally or on Azure.
+- You prefer a guided wizard instead of manual env-var configuration.
+
+## Why this matters
+- Minimizes setup friction and lets you validate the product in minutes.
+- Ensures prerequisites (database + storage) are in place before you invest more time.
+
+## Key takeaways
+- Wizard is **single-tenant only**; multi-tenant uses DynamicConfig with `CosmosAllowSetup=false`.
+- Wizard disables itself after completion; re-enable only when needed.
+- Works locally via Docker or via the Azure one-click deploy.
+
+## Prerequisites
+- Single-tenant intent; for multi-tenant, use DynamicConfig instead of the wizard.
+- Database reachable from the container (SQLite for local trials; Azure SQL/Cosmos DB/MySQL for cloud).
+- For Azure one-click: access to an Azure subscription and permissions to deploy.
+
+## Quick path
+1. Run local Docker or deploy to Azure using the main README button.
+2. Browse to `/Setup` and complete the wizard (Storage → Admin → Publisher → optional Email/CDN → Review).
+3. Restart when prompted; sign in with the admin you created.
+
 ## Key facts {#key-facts}
 
 - Wizard is for single-tenant setups; multi-tenant uses DynamicConfig, not the wizard.

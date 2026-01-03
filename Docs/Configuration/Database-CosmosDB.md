@@ -3,11 +3,37 @@ title: Azure Cosmos DB Configuration
 description: Configure Azure Cosmos DB NoSQL database for SkyCMS content, users, and metadata storage
 keywords: Cosmos-DB, Azure, NoSQL, database, configuration, serverless
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # Azure Cosmos DB with SkyCMS
 
 Azure Cosmos DB is a fully managed, serverless NoSQL database ideal for global, low-latency applications. SkyCMS integrates seamlessly with Cosmos DB for storing content, users, and metadata.
+
+## When to use this
+- You want globally distributed, low-latency data with elastic scaling.
+- You deploy on Azure and prefer NoSQL with serverless or provisioned throughput.
+
+## Why this matters
+- Proper connection and database selection are required for SkyCMS to start.
+- Partitioning and key management affect cost and performance.
+
+## Key takeaways
+- Use `ApplicationDbContextConnection` with AccountEndpoint/Key/Database; supports `AccountKey=AccessToken` for managed identity.
+- Prefer serverless for variable workloads; provisioned for steady traffic.
+- Keep keys in Key Vault; rotate regularly.
+
+## Prerequisites
+- Cosmos DB account (NoSQL API), database name, and key or managed identity with Data Contributor.
+- Azure subscription access to retrieve keys or assign roles.
+
+## Quick path
+1. Create Cosmos DB (NoSQL); get endpoint/key or assign managed identity role.
+2. Set connection string via wizard or env/appsettings; include `Database=`.
+3. Start app; verify connectivity; monitor RU consumption.
 
 ## Values you need
 

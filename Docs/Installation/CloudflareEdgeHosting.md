@@ -3,6 +3,10 @@ title: Cloudflare Edge Hosting Guide
 description: Origin-less static website architecture using Cloudflare R2 and edge rules
 keywords: Cloudflare, R2, edge-hosting, origin-less, CDN, static-website
 audience: [developers, devops]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 7
 ---
 
 # Cloudflare Edge Hosting: Origin-less Static Website Architecture
@@ -10,6 +14,28 @@ audience: [developers, devops]
 This guide shows how to host a static site on Cloudflare using an origin-less (edge) pattern with R2 object storage and Cloudflare Rules for request handling at the edge. It also explains how to configure SkyCMS to deploy your build output to R2.
 
 Key idea: Unlike traditional static hosting that serves from a single origin, edge/origin-less sites are distributed and executed at Cloudflare's global edge—improving latency, resilience, and cost profiles.
+
+## When to use this
+- You want origin-less static hosting with Cloudflare R2 + Rules (no Workers required).
+- You need a low-cost, globally distributed static site backed by S3-compatible storage.
+
+## Why this matters
+- Removes origin servers, reducing ops overhead and latency.
+- Clarifies the minimal setup: R2 bucket + custom domain + rules for HTTPS and index rewrites.
+
+## Key takeaways
+- R2 is S3-compatible; SkyCMS publishes directly using Account ID + Key ID/Secret + bucket.
+- Two key rules: HTTP→HTTPS redirect and root→index.html rewrite.
+- Custom domain binding is required for clean URLs and TLS.
+
+## Prerequisites
+- Cloudflare account with R2 enabled; ability to create API token/keys.
+- Wrangler CLI authenticated; domain in Cloudflare DNS if using custom domains.
+
+## Quick path
+1. Create R2 bucket; grab Account ID and keys (S3 API token).
+2. Set `StorageConnectionString` for R2 in SkyCMS; publish.
+3. Bind custom domain to R2 and add Rules (HTTPS redirect, index.html rewrite).
 
 ## What "origin-less" means (vs. traditional static hosting)
 

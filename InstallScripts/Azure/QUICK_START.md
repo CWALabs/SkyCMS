@@ -38,15 +38,40 @@ cd D:\source\SkyCMS\InstallScripts\Azure
 ## What Gets Deployed
 
 ### Always (Editor + Database):
-- ✅ Azure Container Apps (serverless container platform)
-- ✅ MySQL Flexible Server (managed database with TLS)
-- ✅ Azure Key Vault (secrets management)
+- ✅ Azure App Service (managed container hosting)
+- ✅ App Service Plan (Premium v3 for production-ready performance)
+- ✅ Azure SQL Database (managed database with TLS)
+- ✅ Azure Key Vault (secrets management with RBAC)
 - ✅ Managed Identity (passwordless auth)
+- ✅ Deployment Slot (staging for zero-downtime updates)
 - ✅ HTTPS endpoint (automatic, no extra config)
+- ✅ Health monitoring (`/___healthz` endpoint)
 
 ### Optional (Publisher):
 - ✅ Blob Storage (static website hosting)
 - ✅ Public HTTPS endpoint for static content
+
+---
+
+## Understanding Deployment Slots
+
+**First Deployment (What Happens Now):**
+- Production slot gets deployed first with your container image
+- Editor URL is immediately accessible at `https://<name>.azurewebsites.net`
+- Complete the setup wizard right away - no waiting!
+- Staging slot is created but remains empty until your first update
+
+**Future Deployments (Zero-Downtime Updates):**
+1. Deploy new container image to staging slot
+2. Staging slot starts up and runs health check on `/___healthz`
+3. Once health check passes, staging auto-swaps to production
+4. Old production version moves to staging (instant rollback available)
+5. Users never see downtime or errors
+
+**When to Deploy Updates:**
+- After initial setup is complete and SkyCMS is configured
+- Push new images to staging slot using Azure CLI or CI/CD pipelines
+- Staging validates before going live automatically
 
 ---
 
@@ -58,16 +83,18 @@ cd D:\source\SkyCMS\InstallScripts\Azure
 ========================================
 
 📝 EDITOR APPLICATION:
-   URL:        https://ca-skycms-editor-dev.kindocean-abc123.eastus.azurecontainerapps.io
-   FQDN:       ca-skycms-editor-dev.kindocean-abc123.eastus.azurecontainerapps.io
+   URL:        https://editor-skycms-dev-abc12345.azurewebsites.net
+   FQDN:       editor-skycms-dev-abc12345.azurewebsites.net
+   Staging:    https://editor-skycms-dev-abc12345-staging.azurewebsites.net
 
 🗄️  DATABASE:
-   Server:     mysql-skycms-xyz456.mysql.database.azure.com
+   Server:     sql-skycms-xyz456.database.windows.net
    Database:   skycms
-   Username:   skycms_admin
+   Username:   (stored in Key Vault)
 
 🔐 SECRETS:
    Key Vault:  kv-skycms-abc123
+   Secrets:    ApplicationDbContextConnection, StorageConnectionString
 
 📦 PUBLISHER (Static Website):
    Storage:    stskycmsabc123
@@ -77,10 +104,11 @@ cd D:\source\SkyCMS\InstallScripts\Azure
  📋 NEXT STEPS
 ========================================
 
-1. Wait 1-2 minutes for Container App to fully start
+1. Health check ensures app is ready (30-60 seconds)
 2. Visit the Editor URL above
 3. Complete the SkyCMS setup wizard
 4. Upload publisher files to blob storage
+5. Deploy updates to staging slot for zero-downtime
 ```
 
 ---
@@ -88,7 +116,7 @@ cd D:\source\SkyCMS\InstallScripts\Azure
 ## After Deployment
 
 ### 1. Access SkyCMS Editor
-- Wait 1-2 minutes for container startup
+- Health check ensures the app is ready within 30-60 seconds
 - Visit the Editor URL from output
 - Complete the setup wizard
 
@@ -116,24 +144,26 @@ az storage blob upload-batch `
 |---------|----------|
 | Script fails at login | Run `az login` manually first |
 | Deployment timeout | Check Azure Portal for deployment status |
-| Container not starting | Wait 2-3 minutes, then check logs: `.\helpers.ps1 -Action ViewLogs` |
+| App not starting | Check health check status and logs: `.\helpers.ps1 -Action ViewLogs` |
 | Static website 404 | Enable static hosting: `.\helpers.ps1 -Action EnableStaticWebsite` |
-| Database connection fails | Check MySQL firewall rules in Portal |
+| Database connection fails | Check SQL firewall rules and Key Vault secrets in Portal |
 | "Base name must be alphanumeric" | Use only lowercase letters and numbers (no hyphens) |
+| Key Vault access denied | Verify Managed Identity has "Key Vault Secrets Officer" role |
+| Health check failing | Ensure container exposes port 8080 and `/___healthz` responds |
 
 ---
 
 ## Cost Estimate
 
 **Development Environment:**
-- Container Apps: ~$15-20/month (minimal traffic)
-- MySQL (Burstable): ~$10-15/month
+- App Service (P1v3): ~$55-75/month
+- Azure SQL (Basic): ~$5-15/month
 - Key Vault: ~$0.50/month
 - Blob Storage: ~$1-5/month (usage-based)
 
-**Total: ~$30-40/month**
+**Total: ~$60-95/month**
 
-💡 **Cost Savings:** Set `minReplicas: 0` to scale to zero when idle!
+💡 **Cost Savings:** Use B-series App Service Plan for dev (~$13/month) or Standard tier (~$50/month)!
 
 ---
 
@@ -155,13 +185,16 @@ az storage blob upload-batch `
 | Feature | AWS | Azure |
 |---------|-----|-------|
 | **Deployment Tool** | CDK (TypeScript) | Bicep (native IaC) |
-| **Compute** | ECS + ALB + CloudFront | Container Apps (simpler) |
-| **Endpoint** | CloudFront custom URL | Built-in HTTPS |
+| **Compute** | ECS + ALB + CloudFront | App Service (simpler) |
+| **Endpoint** | CloudFront custom URL | Built-in HTTPS + auto-certs |
 | **Networking** | VPC required | Optional (simpler) |
 | **Secrets** | Secrets Manager | Key Vault + RBAC |
-| **Cost** | ~$40-60/month | ~$30-40/month |
+| **Database** | RDS MySQL | Azure SQL Database |
+| **Deployment** | Manual blue/green | Deployment slots + auto-swap |
+| **Health Checks** | Target group health | Built-in + `/___healthz` |
+| **Cost** | ~$40-60/month | ~$60-95/month |
 
-**Azure is simpler:** Fewer resources needed for same functionality!
+**Azure is simpler:** Fewer resources, integrated health checks, zero-downtime deployments!
 
 ---
 

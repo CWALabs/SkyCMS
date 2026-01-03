@@ -3,6 +3,10 @@ title: CDN Configuration Reference
 description: Complete reference for CDN cache purging configuration with Azure Front Door, CloudFront, Cloudflare, and Sucuri
 keywords: CDN, configuration-reference, Azure-Front-Door, CloudFront, Cloudflare, Sucuri
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # CDN Configuration Reference
@@ -10,6 +14,28 @@ audience: [developers, administrators]
 Complete reference for CDN cache purging configuration options, credentials, and settings for all supported providers.
 
 SkyCMS integrates with CDN providers to automatically purge caches after publishing, ensuring fresh content appears immediately. Configuration is managed through **Editor → Settings → CDN**.
+
+## When to use this
+- You’re configuring CDN cache purging and need exact fields/permissions per provider.
+- You want least-privilege examples for Front Door, Cloudflare, CloudFront, or Sucuri.
+
+## Why this matters
+- Wrong tokens/roles cause purge failures and stale content after publish.
+- Provider-specific scopes prevent over-permissioning and security risk.
+
+## Key takeaways
+- Configure in Editor → Settings → CDN; validate with the built-in test before go-live.
+- Scope credentials narrowly (zone/distribution/profile) with purge-only rights.
+- Purge failures don’t block publish; they only affect cache freshness.
+
+## Prerequisites
+- Active CDN property (zone/distribution/profile) and ability to create scoped credentials.
+- Paths/URLs you plan to purge and awareness of provider propagation times.
+
+## Quick path
+1. Select provider and gather required IDs/tokens/roles (see tables below).
+2. Enter values in Settings → CDN and run **Save and test settings**.
+3. Publish content and confirm invalidations complete via provider logs.
 
 ## Supported CDN Providers
 

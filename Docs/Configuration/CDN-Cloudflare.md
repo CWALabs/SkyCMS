@@ -3,11 +3,34 @@ title: Cloudflare CDN Configuration
 description: Configure Cloudflare cache purging with API tokens
 keywords: Cloudflare, CDN, cache-purging, API, configuration
 audience: [developers, devops]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 4
 ---
 
 # Cloudflare CDN with SkyCMS
 
 SkyCMS can purge Cloudflare cache after publish.
+
+## When to use this
+- You use Cloudflare CDN and need automated cache purge after publishes.
+
+## Why this matters
+- Stale cache hides updates; correct token scope is required for purge success.
+
+## Key takeaways
+- Use scoped API token with Zone.Cache Purge on the target zone; keep to single zone.
+- Configure in Editor → Settings → CDN with API token + Zone ID; test before go-live.
+- Rotate tokens periodically and store in a secret manager.
+
+## Prerequisites
+- Cloudflare zone, Zone ID, and scoped API token with purge permission.
+
+## Quick path
+1. Create scoped token (Zone → Cache Purge → Purge) for the target zone; copy Zone ID.
+2. Enter token + Zone ID in Settings → CDN (Cloudflare); save and test.
+3. Publish and confirm invalidations complete.
 
 ## Values you need
 

@@ -3,6 +3,10 @@ title: Email Provider Integration Overview
 description: Email provider configuration for transactional emails including SendGrid, SMTP, and Azure Communication Services
 keywords: email, SendGrid, SMTP, Azure-Communication-Services, transactional-emails, configuration
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 5
 ---
 
 # Email Provider Integration Overview
@@ -13,6 +17,28 @@ SkyCMS can send transactional emails (password resets, notifications, etc.) thro
 - **Azure Communication Services** - Azure-native email service
 - **SMTP** - Generic SMTP server (Gmail, Office 365, dedicated servers, etc.)
 - **None** - No-op provider for development/testing
+
+## When to use this
+- You need to enable password resets/notifications and choose an email provider for SkyCMS.
+- You want a quick comparison of SendGrid vs ACS vs SMTP with setup pointers.
+
+## Why this matters
+- Email is required for account recovery and notifications; misconfiguration blocks user onboarding.
+- Picking the right provider impacts deliverability, cost, and compliance.
+
+## Key takeaways
+- Environment variables first for production; wizard is fine for first-time setup.
+- SendGrid/ACS for managed delivery; SMTP for existing infra; None for dev.
+- `AdminEmail` is required as the default sender across providers.
+
+## Prerequisites
+- Provider credentials: API key (SendGrid), connection string (ACS), or SMTP host/port/user/pass.
+- Verified sender domains/identities where required (SES/SMTP equivalents, ACS, SendGrid).
+
+## Quick path
+1. Pick provider and gather credentials.
+2. Set env vars (production) or use the wizard (first-time/single-tenant).
+3. Send a test email before going live; monitor bounces/complaints where supported.
 
 ## How email integration works
 

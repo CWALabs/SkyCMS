@@ -3,11 +3,37 @@ title: MySQL Database Configuration
 description: Configure MySQL database for SkyCMS with connection strings and setup instructions
 keywords: MySQL, database, configuration, connection-string, relational
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # MySQL with SkyCMS
 
 MySQL is a popular open-source relational database, widely available on shared hosting and cloud platforms. SkyCMS works seamlessly with MySQL.
+
+## When to use this
+- You prefer MySQL/Azure Database for MySQL or existing LAMP-style hosting.
+- You need connection string formats and least-privilege guidance for SkyCMS.
+
+## Why this matters
+- Correct MySQL strings (server/uid/pwd/db) are required for startup and migrations.
+- Firewall/SSL settings affect connectivity and security.
+
+## Key takeaways
+- Use `ApplicationDbContextConnection`; MySQL expects lowercase `server`/`uid`.
+- Create dedicated app user with minimal privileges; avoid root.
+- Enable SSL/TLS for cloud providers; store secrets in vault/secret stores.
+
+## Prerequisites
+- MySQL instance reachable by the app; database and user with create/read/write.
+- Port 3306 (or custom) allowed; SSL config if required by provider.
+
+## Quick path
+1. Create DB/user; gather host/user/password/db (and port).
+2. Set connection string via wizard or env/appsettings.
+3. Start app and verify connectivity; run migrations if applicable.
 
 ## Values you need
 

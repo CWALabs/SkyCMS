@@ -3,6 +3,10 @@ title: Minimum Required Settings
 description: Environment variable configuration guide for Docker, Kubernetes, and production deployments
 keywords: configuration, environment-variables, Docker, Kubernetes, production, settings
 audience: [developers, devops, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 8
 ---
 
 # SkyCMS Minimum Required Settings
@@ -12,6 +16,29 @@ This guide covers **environment variable configuration** for SkyCMS. Use this wh
 - Setting up production environments
 - Configuring multi-tenant installations
 - Bypassing the Setup Wizard entirely
+
+## When to use this
+- You’re deploying to Docker/Kubernetes/production and want full env-var control.
+- You need multi-tenant setup (no wizard) with DynamicConfig.
+- You want to preconfigure everything and skip the wizard entirely.
+
+## Why this matters
+- Prevents runtime failures by declaring all required settings up front.
+- Enables automation/CI and secure secret handling without UI steps.
+
+## Key takeaways
+- Wizard is single-tenant only; multi-tenant uses DynamicConfig with `CosmosAllowSetup=false`.
+- `ApplicationDbContextConnection` (single) vs `ConfigDbConnectionString` + `DataProtectionStorage` (multi).
+- Environment variables override appsettings and are preferred for production.
+
+## Prerequisites
+- Chosen tenancy model (single vs multi) and a reachable database/storage for that model.
+- Access to set env vars/secrets in your runtime (Docker/K8s/cloud service).
+
+## Quick path
+1. Pick single vs multi-tenant and set the corresponding required keys.
+2. Apply connection strings via env vars; start the app.
+3. (Single) run `/___setup`; (Multi) configure tenants via DynamicConfig.
 
 > **New to SkyCMS?** Consider using the **[Setup Wizard](./SetupWizard.md)** instead for an interactive configuration experience.
 

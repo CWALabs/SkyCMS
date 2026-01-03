@@ -3,11 +3,34 @@ title: Amazon CloudFront CDN Configuration
 description: Configure CloudFront cache purging with distribution ID and IAM credentials
 keywords: CloudFront, CDN, AWS, cache-purging, invalidation, configuration
 audience: [developers, devops]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 5
 ---
 
 # Configure Amazon CloudFront CDN in SkyCMS
 
 SkyCMS can purge CloudFront caches after publishes. Use the CDN settings screen to store a CloudFront distribution ID and an IAM key pair that can create invalidations.
+
+## When to use this
+- You front SkyCMS with CloudFront and need automatic cache invalidations after publish.
+
+## Why this matters
+- Correct distribution ID and least-privilege IAM are required for purge success.
+
+## Key takeaways
+- Use a distribution-scoped IAM policy allowing Create/GetInvalidation; set region to `us-east-1` for API.
+- Configure in Editor → Settings → CDN (CloudFront) and run test.
+- Rotate IAM keys and keep them in a secret manager.
+
+## Prerequisites
+- CloudFront distribution ID and IAM user with invalidation permissions.
+
+## Quick path
+1. Create IAM user with policy scoped to the distribution ARN; copy keys.
+2. Enter Distribution ID, keys, and region (us-east-1) in Settings → CDN; save/test.
+3. Publish and confirm invalidations complete.
 
 ## Prerequisites
 

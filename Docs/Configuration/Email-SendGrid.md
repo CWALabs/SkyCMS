@@ -3,11 +3,36 @@ title: SendGrid Email Configuration
 description: Configure SendGrid email provider with API keys for transactional emails
 keywords: SendGrid, email, Twilio, transactional-emails, API, configuration
 audience: [developers, administrators]
+version: 2.0
+last_updated: "2026-01-03"
+stage: stable
+read_time: 6
 ---
 
 # SendGrid Email with SkyCMS
 
 SendGrid (owned by Twilio) is a cloud-based email delivery platform with reliable sending, detailed analytics, and advanced features like templates and delivery tracking.
+
+## When to use this
+- You want managed email delivery with analytics and API-first workflow.
+- You need quick setup with API key + verified sender/domain.
+
+## Why this matters
+- Password resets and notifications require reliable email; misconfig blocks onboarding.
+- Proper sender verification improves deliverability.
+
+## Key takeaways
+- Use restricted API key with Mail Send only; set `CosmosSendGridApiKey` + `AdminEmail`.
+- Verify sender (single sender for dev, domain auth for production) to avoid rejections.
+- Prefer env vars/secret stores; rotate keys periodically.
+
+## Prerequisites
+- SendGrid account, verified sender (single or domain), and API key with Mail Send scope.
+
+## Quick path
+1. Create/verify sender; create restricted API key (Mail Send).
+2. Set `CosmosSendGridApiKey` and `AdminEmail` via env/appsettings or wizard.
+3. Send test email (wizard or API) before go-live.
 
 ## Values you need
 

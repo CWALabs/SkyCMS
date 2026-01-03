@@ -13,21 +13,8 @@ param planName string
 @description('Docker image for the Web App')
 param imageName string = 'toiyabe/sky-editor:latest'
 
-@description('Database connection string')
-@secure()
-param dbConnectionString string
-
-@description('Storage connection string (optional)')
-@secure()
-param storageConnectionString string = ''
-
-@description('Azure Communication Services connection string (optional)')
-@secure()
-param acsConnectionString string = ''
-
-@description('Application Insights connection string (optional)')
-@secure()
-param appInsightsConnectionString string = ''
+@description('Key Vault URI for secret references')
+param keyVaultUri string
 
 @description('Administrator email address')
 param adminEmail string = ''
@@ -48,24 +35,27 @@ param skuTier string = 'Basic'
 @minValue(1)
 param capacity int = 1
 
+@description('Deploy staging slot for zero-downtime deployments')
+param deploySlot bool = true
+
 @description('Tags to apply to resources')
 param tags object = {}
 
-// Build connection strings array
+// Build connection strings array using Key Vault references
 var connectionStrings = [
   {
     name: 'ApplicationDbContextConnection'
-    connectionString: dbConnectionString
+    connectionString: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/ApplicationDbContextConnection/)'
     type: 'Custom'
   }
   {
     name: 'StorageConnectionString'
-    connectionString: storageConnectionString
+    connectionString: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/StorageConnectionString/)'
     type: 'Custom'
   }
   {
     name: 'AzureCommunicationConnection'
-    connectionString: acsConnectionString
+    connectionString: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/AzureCommunicationConnection/)'
     type: 'Custom'
   }
 ]
@@ -98,7 +88,7 @@ var appSettings = [
   }
   {
     name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-    value: appInsightsConnectionString
+    value: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/AppInsightsConnectionString/)'
   }
 ]
 
@@ -144,6 +134,7 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
       httpLoggingEnabled: true
       detailedErrorLoggingEnabled: true
       requestTracingEnabled: true
+      healthCheckPath: '/___healthz'
     }
   }
 }
@@ -170,6 +161,38 @@ resource webAppLogs 'Microsoft.Web/sites/config@2022-09-01' = {
     }
     detailedErrorMessages: {
       enabled: true
+    }
+  }
+}
+
+// Staging deployment slot for zero-downtime deployments
+resource stagingSlot 'Microsoft.Web/sites/slots@2022-09-01' = if (deploySlot) {
+  name: 'staging'
+  parent: webApp
+  location: location
+  tags: tags
+  kind: 'app,linux,container'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentityId}': {}
+    }
+  }
+  properties: {
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    keyVaultReferenceIdentity: managedIdentityId
+    siteConfig: {
+      linuxFxVersion: 'DOCKER|${imageName}'
+      alwaysOn: true
+      ftpsState: 'Disabled'
+      connectionStrings: connectionStrings
+      appSettings: appSettings
+      httpLoggingEnabled: true
+      detailedErrorLoggingEnabled: true
+      requestTracingEnabled: true
+      healthCheckPath: '/___healthz'
+      autoSwapSlotName: 'production' // Auto-swap after successful deployment
     }
   }
 }

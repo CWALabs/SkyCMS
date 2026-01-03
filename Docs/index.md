@@ -7,11 +7,34 @@ audience: [all]
 
 # SkyCMS Documentation
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "SkyCMS Documentation Home",
+  "description": "Fast, edge-native CMS for developers and content teams.",
+  "author": { "@type": "Organization", "name": "CWALabs" },
+  "dateModified": "2026-01-03",
+  "version": "Docs 2.0 / SkyCMS v9.2x",
+  "keywords": ["skycms", "documentation", "cms", "edge", "jamstack", "azure", "aws", "cloudflare"],
+  "audience": ["all"],
+  "inLanguage": "en",
+  "url": "https://docs-sky-cms.com"
+}
+</script>
+
 **SkyCMS is an edge-native CMS that combines the simplicity of WordPress with the performance of JAMstack.** Deploys to Azure, AWS, or other clouds—no complex build pipelines required.
 
 **Version:** 2.0 (December 2025) | **Compatible with:** SkyCMS v9.2x
 
 ---
+
+## When to use this
+- You need a single starting point to navigate SkyCMS docs by role (creators, developers, decision makers, DevOps).
+- You want the fastest path to install, launch, and compare SkyCMS without reading every page.
+
+## Next steps
+- Pick your lane below, or jump straight to the Quick Start / Installation guides linked in each section.
 
 ## Choose Your Path
 
