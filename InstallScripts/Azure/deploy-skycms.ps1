@@ -411,9 +411,7 @@ $paramObject | ConvertTo-Json -Depth 10 | Set-Content $paramFile
 
 # ============================================================================
 # DEPLOY WITH RETRY LOGIC
-# ============================================================================
-
-$maxRetries = 3
+# ============================================================================$maxRetries = 3
 $retryCount = 0
 $deployed = $false
 $deploymentResult = $null
@@ -512,10 +510,6 @@ Write-Host ""
 Write-Host "🗄️  DATABASE:" -ForegroundColor Cyan
 Write-Host "   Provider:   Azure SQL Database" -ForegroundColor White
 Write-Host ""
-Write-Host "🔐 SECRETS:" -ForegroundColor Cyan
-Write-Host "   Key Vault:  $($outputs.keyVaultName.value)" -ForegroundColor White
-Write-Host ""
-
 if ($deployPublisher) {
     Write-Host "📦 PUBLISHER (Static Website):" -ForegroundColor Cyan
     Write-Host "   Storage:    $($outputs.storageAccountName.value)" -ForegroundColor White
