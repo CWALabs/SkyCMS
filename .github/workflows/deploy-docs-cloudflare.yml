@@ -60,7 +60,8 @@ jobs:
             --include "*.css" \
             --content-type "text/css; charset=utf-8" \
             --cache-control "public, max-age=31536000" \
-            --metadata-directive REPLACE
+            --metadata-directive REPLACE \
+            --size-only
       
       - name: Deploy JavaScript files to CloudFlare R2
         run: |
@@ -120,10 +121,10 @@ jobs:
             --cache-control "public, max-age=3600"
       
       - name: Purge CloudFlare cache
-        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ZONE_ID != '' }}
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ZONE_ID != '' }}
         run: |
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ env.CLOUDFLARE_ZONE_ID }}/purge_cache" \
-            -H "Authorization: Bearer ${{ env.CLOUDFLARE_API_TOKEN }}" \
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}' \
             --fail-with-body
