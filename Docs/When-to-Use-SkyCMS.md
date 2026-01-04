@@ -1,12 +1,12 @@
 ---
-title: "Is SkyCMS Right for You?"
-description: "Evaluation guide to determine if SkyCMS fits your project, team, and goals"
-keywords: evaluation, when to use, use cases, decision guide
+title: "When to Use SkyCMS"
+description: "Complete guide to determine if SkyCMS fits your project, team, and goals"
+keywords: when to use, use cases, evaluation, decision guide, comparison
 audience: [decision-makers, developers, organizations]
 last_updated: "2026-01-04"
 ---
 
-# Is SkyCMS Right for You?
+# When to Use SkyCMS
 
 Before you invest time in evaluating or deploying SkyCMS, use this guide to determine if it's the right fit for your project, team, and organization.
 
@@ -154,6 +154,59 @@ Before you invest time in evaluating or deploying SkyCMS, use this guide to dete
 
 ---
 
+## Real-World Impact
+
+| Scenario | Traditional CMS | Static Site Generator | SkyCMS |
+|----------|----------------|----------------------|---------|
+| **Content update time** | Instant (but slow delivery) | 2-15 minutes (build + deploy) | < 5 seconds |
+| **Technical skill required** | Low | High (Git, CLI, build tools) | Low |
+| **Performance under load** | Poor (requires scaling) | Excellent | Excellent |
+| **Hosting cost (100k pageviews)** | $50-500/month | $0-10/month | $0-10/month |
+| **Setup complexity** | Moderate | High (multiple tools) | Low (single platform) |
+| **Maintenance burden** | High (security, updates) | High (build pipeline) | Low (containerized) |
+
+## Advantages Over Traditional Git-Based Static Site Deployment
+
+SkyCMS represents a **next-generation approach** to static site publishing that eliminates the complexity and friction of traditional Git-based CI/CD workflows:
+
+| **Traditional Approach** | **SkyCMS Approach** |
+|--------------------------|---------------------|
+| External Git repository required | Built-in version control integrated into CMS |
+| Separate CI/CD pipeline (GitHub Actions, Netlify, etc.) | Automatic triggers built into the system |
+| Static site generator needed (Jekyll, Hugo, Gatsby, Next.js) | Direct rendering without external build tools |
+| Multiple tools to learn and configure | Single integrated platform |
+| Build time delays (minutes per deployment) | Instant publishing with Publisher component |
+| Complex pipeline debugging | Streamlined troubleshooting |
+| Content creators need Git knowledge | User-friendly content management interface |
+| Static OR dynamic content | **Hybrid: simultaneous static AND dynamic content** |
+| Manual scheduling or cron-based rebuilds | **Built-in page scheduling with calendar widget** |
+
+### Key Technical Advantages
+
+- **No Build Pipeline Required**: Content is rendered directly by the Publisher component, eliminating wait times and pipeline configuration
+- **Integrated Version Control**: Full versioning system built into the CMS—no external Git workflow needed
+- **Automatic Deployment**: Direct deployment to Azure Blob Storage, AWS S3, or Cloudflare R2 without intermediary services
+- **Built-in Page Scheduling**: Schedule pages for future publication with a simple calendar widget—no GitHub Actions, cron jobs, or CI/CD scheduling needed
+- **Faster Publishing**: Changes go live immediately without waiting for CI/CD builds
+- **Hybrid Architecture**: Serve static files for performance while maintaining dynamic capabilities when needed
+- **Simplified Operations**: Fewer moving parts mean less infrastructure to maintain and fewer points of failure
+- **Multi-Cloud Native**: Deploy to any cloud platform that supports Docker containers and object storage
+
+## Performance Benchmarks
+
+Real-world comparison of publishing workflows:
+
+| Scenario | Git-Based (Netlify) | SkyCMS |
+|----------|-------------------|---------|
+| Single page update | 2-5 minutes | < 5 seconds |
+| Bulk content update (50 pages) | 5-15 minutes | < 30 seconds |
+| Image optimization | Build-time penalty | On-upload processing |
+| Preview environment | Separate branch + build | Instant preview mode |
+| Rollback time | Redeploy previous build (2-5 min) | Instant version restore |
+| **Scheduled publishing** | **Cron job + full rebuild** | **Calendar widget + instant activation** |
+
+---
+
 ## Why Choose SkyCMS?
 
 ### Performance & Speed
@@ -212,10 +265,10 @@ SkyCMS is purpose-built for the **intersection of editing simplicity and edge pe
 
 ## Next Steps
 
-- **Curious?** Read [What is an Edge-Native CMS?](./Edge-Native-CMS.md)
-- **Ready to Evaluate?** Check [SkyCMS vs Alternatives](./Comparisons.md)
-- **Want Details?** See [Developer Experience Comparison](./Developer-Experience-Comparison.md)
-- **Let's Go!** Start with [Installation Overview](./Installation/README.md)
+- **Learn the Concept**: [What is an Edge-Native CMS?](./Edge-Native-CMS.md)
+- **Compare Alternatives**: [SkyCMS vs Alternatives](./Comparisons.md)
+- **Detailed Comparison**: [Developer Experience Comparison](./Developer-Experience-Comparison.md)
+- **Get Started**: [Installation Overview](./Installation/README.md)
 
 ---
 

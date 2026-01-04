@@ -23,7 +23,7 @@ audience: [all]
 }
 </script>
 
-**Edge-native CMS.** Publish in seconds, no build pipelines. Deploy to Azure, AWS, or Cloudflare with one config model ([read more](./Edge-Native-CMS.md)).
+**Edge-native CMS.** Publish in seconds, no build pipelines. Deploy to Azure, AWS, or other clouds, and integrate with your edge providers—Azure Front Door, Cloudflare, CloudFront, Fastly, or Sucuri—all with one configuration model.
 
 **Version:** 2.0 (Dec 2025) · **Compatible:** v9.2x
 
@@ -31,14 +31,29 @@ audience: [all]
 [![Deploy to AWS](./assets/images/deploy-to-aws.svg)](./InstallScripts/AWS/QUICK_START.html)
 
 ## Quick links
-- [Is SkyCMS Right for You?](./Is-SkyCMS-Right-For-You.md) ⭐
-- [What is SkyCMS?](./Edge-Native-CMS.md)
+- [What is an Edge-Native CMS?](./Edge-Native-CMS.md)
 - [Developer Quick Start](./QuickStart.md)
 - [Installation Overview](./Installation/README.md)
 - [Minimum Required Settings](./Installation/MinimumRequiredSettings.md)
 - [Setup Wizard](./Installation/SetupWizard.md)
 - [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.md)
 - [FAQ](./FAQ.md)
+
+## When to use SkyCMS
+- You need sub-second global delivery with static output but want a full CMS editing experience.
+- You want multi-cloud optionality (Azure, AWS, Cloudflare, any S3-compatible storage) without lock-in.
+- You prefer instant publishing over Git/CI-driven rebuilds and long queues.
+
+[Read more about when to use Sky.](./When-to-Use-SkyCMS.md) ⭐
+
+## Who this is for
+- Content teams needing an easy editor and fast preview/publish loops.
+- Developers who want a CMS without maintaining bespoke build systems.
+- Ops/DevOps who need predictable, low-cost, globally distributed sites.
+
+## Prerequisites
+- Docker-capable environment and one supported database (MySQL, MS SQL, SQLite, or Cosmos DB) plus S3-compatible or Azure storage.
+- For cloud deploys: access to Azure/AWS/Cloudflare accounts and their CLIs where applicable.
 
 ## Choose Your Path
 
@@ -69,7 +84,7 @@ audience: [all]
 ### Decision Makers
 *Evaluate fit and cost*
 
-**Start here:** [Is SkyCMS Right for You?](./Is-SkyCMS-Right-For-You.md) ⭐ · [What is an Edge-Native CMS?](./Edge-Native-CMS.md) · [About SkyCMS](./About.md)
+**Start here:** [When to Use SkyCMS](./When-to-Use-SkyCMS.md) ⭐ · [What is an Edge-Native CMS?](./Edge-Native-CMS.md) · [About SkyCMS](./About.md)
 - [SkyCMS vs Alternatives](./Comparisons.md)
 - [Developer Experience Comparison](./Developer-Experience-Comparison.md)
 - [Total Cost of Ownership](./_Marketing/Cost-Comparison.md)
