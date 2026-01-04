@@ -7,7 +7,10 @@ targetScope = 'resourceGroup'
 // PARAMETERS
 // ============================================================================
 
-@description('Location for all resources')
+@metadata({
+  description: 'Location for all resources'
+  'x-ms-visibility': 'hidden'
+})
 param location string = resourceGroup().location
 
 @description('Base name for resources (used to generate unique names)')
