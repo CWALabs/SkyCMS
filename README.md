@@ -21,27 +21,11 @@ robots: "index,follow"
 [![CodeQL](https://github.com/CWALabs/SkyCMS/actions/workflows/codeql.yml/badge.svg)](https://github.com/CWALabs/SkyCMS/actions/workflows/codeql.yml)
 [![Publish Docker Images CI](https://github.com/CWALabs/SkyCMS/actions/workflows/docker-image.yml/badge.svg)](https://github.com/CWALabs/SkyCMS/actions/workflows/docker-image.yml)
 [![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
-[![Documentation](https://img.shields.io/badge/docs-complete-brightgreen.svg)](https://docs-sky-cms.com)
+[![Documentation](https://img.shields.io/badge/docs-complete-brightgreen.svg)](https://docs.sky-cms.com)
 
 [![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.json) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](./InstallScripts/AWS/QUICK_START.md)
 
 **Documentation home:** https://docs.sky-cms.com
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "TechArticle",
-  "headline": "SkyCMS: Edge-Native CMS",
-  "description": "Fast, edge-native CMS with instant publishing, multi-cloud deployment, and no-build pipelines.",
-  "author": { "@type": "Organization", "name": "CWALabs" },
-  "dateModified": "2026-01-03",
-  "version": "9.2x",
-  "keywords": ["skycms", "edge", "static", "jamstack", "cms", "azure", "aws", "cloudflare"],
-  "audience": ["developers", "administrators", "content-creators", "decision-makers"],
-  "inLanguage": "en",
-  "url": "https://github.com/CWALabs/SkyCMS"
-}
-</script>
 
 > SkyCMS is a lightweight, edge-native CMS that ships instant publishing, static generation, and multi-cloud deployment without external build pipelines.
 
