@@ -23,7 +23,8 @@ robots: "index,follow"
 [![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![Documentation](https://img.shields.io/badge/docs-complete-brightgreen.svg)](https://docs.sky-cms.com)
 
-[![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.json) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](./InstallScripts/AWS/QUICK_START.md)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.json)
+[![Deploy to AWS](./Docs/assets/images/deploy-to-aws.svg)](./InstallScripts/AWS/QUICK_START.md)
 
 **Documentation home:** https://docs.sky-cms.com
 

@@ -27,7 +27,8 @@ audience: [all]
 
 **Version:** 2.0 (Dec 2025) · **Compatible:** v9.2x
 
-[![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.json) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](./InstallScripts/AWS/QUICK_START.md)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.json)
+[![Deploy to AWS](./assets/images/deploy-to-aws.svg)](./InstallScripts/AWS/QUICK_START.md)
 
 ## Quick links
 - [Is SkyCMS Right for You?](./Is-SkyCMS-Right-For-You.md) ⭐
@@ -67,9 +68,9 @@ audience: [all]
 
 ### Decision Makers
 *Evaluate fit and cost*
-Is SkyCMS Right for You?](./Is-SkyCMS-Right-For-You.md) ⭐ · [What is an Edge-Native CMS?](./Edge-Native-CMS.md) · [About SkyCMS](./About.md)
--
-**Start here:** [What is an Edge-Native CMS?](./Edge-Native-CMS.md) ⭐ · [About SkyCMS](./About.md) · [SkyCMS vs Alternatives](./Comparisons.md)
+
+**Start here:** [Is SkyCMS Right for You?](./Is-SkyCMS-Right-For-You.md) ⭐ · [What is an Edge-Native CMS?](./Edge-Native-CMS.md) · [About SkyCMS](./About.md)
+- [SkyCMS vs Alternatives](./Comparisons.md)
 - [Developer Experience Comparison](./Developer-Experience-Comparison.md)
 - [Total Cost of Ownership](./_Marketing/Cost-Comparison.md)
 - [Performance Benchmarks](./Edge-Native-CMS.md#performance-benchmarks)
