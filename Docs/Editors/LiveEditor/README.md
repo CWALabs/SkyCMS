@@ -194,7 +194,7 @@ To add plugins or toolbar items:
 ### Resources
 
 - [CKEditor 5 Documentation](https://ckeditor.com/docs/ckeditor5/latest/)
-- [CKEditor 5 Balloon Block Editor](https://ckeditor.com/docs/ckeditor5/latest/examples/builds/balloon-block-editor.html)
+- [CKEditor 5 Balloon Block Editor](https://ckeditor.com/docs/ckeditor5/latest/examples/builds/balloon-block-editor.md)
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/)
 
 ---
@@ -212,3 +212,4 @@ To add plugins or toolbar items:
 *SkyCMS Version: Latest*  
 *CKEditor Version: 5 (Balloon Block Editor)*
 Once an image is inserted:
+

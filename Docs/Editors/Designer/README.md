@@ -868,7 +868,7 @@ For visual learners, SkyCMS provides video tutorials:
 ### Official Documentation
 - **GrapesJS Documentation** - [https://grapesjs.com/docs/](https://grapesjs.com/docs/)
 - **GrapesJS API Reference** - [https://grapesjs.com/docs/api/](https://grapesjs.com/docs/api/)
-- **GrapesJS Plugins** - [https://grapesjs.com/docs/guides/Replace-Rich-Text-Editor.html](https://grapesjs.com/docs/guides/Replace-Rich-Text-Editor.html)
+- **GrapesJS Plugins** - [https://grapesjs.com/docs/guides/Replace-Rich-Text-Editor.md](https://grapesjs.com/docs/guides/Replace-Rich-Text-Editor.md)
 
 ### SkyCMS Resources
 - **Code Editor Documentation** - [../CodeEditor/README.md](../CodeEditor/README.md)
@@ -887,3 +887,4 @@ The Design Editor (GrapesJS) in SkyCMS provides a professional-grade visual web 
 For more advanced control, you can always switch to the [Code Editor](../CodeEditor/README.md) to work directly with HTML, CSS, and JavaScript.
 
 Happy designing!
+

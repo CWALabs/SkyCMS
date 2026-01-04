@@ -66,7 +66,7 @@ See [Storage configuration reference](../Configuration/Storage-Configuration-Ref
 
 ### Multi-Tenancy
 
-The Cosmos.DynamicConfig project enables multi-tenant configurations where a single application instance can serve multiple customers with isolated databases and storage. See the [Cosmos.DynamicConfig README](../../Cosmos.ConnectionStrings/README.md) for details.
+The Cosmos.DynamicConfig project enables multi-tenant configurations where a single application instance can serve multiple customers with isolated databases and storage. For implementation details, see the `Cosmos.ConnectionStrings` component in the source repository.
 
 ## Extending SkyCMS
 

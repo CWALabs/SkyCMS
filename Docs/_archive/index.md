@@ -140,9 +140,9 @@
 
 ## 12. Marketing & Content Assets
 
-- [Homepage Content (HTML)](./SkyCMS-Homepage-Content.html)
+- [Homepage Content (HTML)](./SkyCMS-Homepage-Content.md)
 - [Homepage Content (Markdown)](./SkyCMS-Homepage-Content.md)
-- [Azure Marketplace Description](./AzureMarketplaceDescription.html)
+- [Azure Marketplace Description](./AzureMarketplaceDescription.md)
 
 ## 13. Licensing & Legal
 
@@ -167,3 +167,4 @@
 ---
 
 Last updated: December 2025
+

@@ -537,16 +537,16 @@ A: [Recommended frequency and why]
 
 ### Documentation
 
-- [Full System Documentation](link)
-- [Feature Reference Guide](link)
-- [Administrator Manual](link)
-- [Developer Documentation](link)
+- [Full System Documentation](../index.md)
+- [Feature Reference Guide](../Quick-Reference.md)
+- [Administrator Manual](../Administration/Roles-and-Permissions.md)
+- [Developer Documentation](../Developer-Guides/README.md)
 
 ### External Resources
 
-- [Related tool documentation](link)
-- [Industry best practices](link)
-- [Tutorials and guides](link)
+- [Related tool documentation](https://example.com/related-tools)
+- [Industry best practices](https://example.com/best-practices)
+- [Tutorials and guides](https://example.com/tutorials)
 
 ### Getting Help
 

@@ -5,7 +5,7 @@ This folder contains marketing content, competitive analysis, and sales material
 ## 🚀 Azure Marketplace Materials
 
 ### Listing Content
-- **[Azure Marketplace Description (HTML)](./Azure-Marketplace-Description.html)** ⭐ **ENHANCED** - Complete marketplace listing with benefits, use cases, and pricing
+- **[Azure Marketplace Description (HTML)](./Azure-Marketplace-Description.md)** ⭐ **ENHANCED** - Complete marketplace listing with benefits, use cases, and pricing
 
 ### Status: ✅ Ready for submission (pending visual assets)
 
@@ -16,7 +16,7 @@ This folder contains marketing content, competitive analysis, and sales material
 - **[Cost Comparison](./Cost-Comparison.md)** - Operational cost analysis vs alternatives
 
 ### Website Content
-- **[Homepage Content (HTML)](./Homepage-Content.html)** - Marketing page HTML for website
+- **[Homepage Content (HTML)](./Homepage-Content.md)** - Marketing page HTML for website
 - **[Homepage Content (Markdown)](./Homepage-Content.md)** - Marketing page markdown version
 
 ## 📋 Launch Checklist
@@ -47,10 +47,8 @@ This folder contains marketing content, competitive analysis, and sales material
 
 For **technical documentation**, see the main [Documentation README](../README.md).
 
-For **Azure Marketplace readiness**, see:
-- [Azure Marketplace Checklist](../../AzureMP/AZURE_MARKETPLACE_CHECKLIST.md) - Complete pre-submission checklist
-- [Azure Marketplace Quick Start](../../AzureMP/AZURE_MARKETPLACE_QUICKSTART.md) - Post-deployment customer guide
-- [Azure Marketplace Review Summary](../../AzureMP/AZURE_MARKETPLACE_REVIEW_SUMMARY.md) - Full review and launch plan
+For **Azure Marketplace readiness**:
+> Azure Marketplace documentation is available in the source repository. Contact the SkyCMS team for Azure Marketplace deployment guidance.
 
 For **product positioning** suitable for technical decision makers:
 - [About SkyCMS](../About.md) - Product overview
@@ -169,3 +167,4 @@ For **product positioning** suitable for technical decision makers:
 
 **Last Updated**: December 28, 2025  
 **Status**: Ready for marketplace submission (pending visual assets)
+

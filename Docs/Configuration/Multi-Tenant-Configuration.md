@@ -552,9 +552,11 @@ Assert.Throws<InvalidOperationException>(() =>
 
 ## Code References
 
-- **Tenant Context**: [TenantContext.cs](../../Cosmos.ConnectionStrings/TenantContext.cs)
-- **Domain Middleware**: [DomainMiddleware.cs](../../Cosmos.ConnectionStrings/DomainMiddleware.cs)
-- **Tenant Validation**: [TenantValidationMiddleware.cs](../../Cosmos.ConnectionStrings/TenantValidationMiddleware.cs)
-- **Configuration Provider**: [IDynamicConfigurationProvider.cs](../../Cosmos.ConnectionStrings/IDynamicConfigurationProvider.cs)
-- **Connection Model**: [Connection.cs](../../Cosmos.ConnectionStrings/Connection.cs)
-- **Config Database**: [DynamicConfigDbContext.cs](../../Cosmos.ConnectionStrings/DynamicConfigDbContext.cs)
+> **Note**: The following source code files are located in the SkyCMS project repository, not in the published documentation.
+
+- **Tenant Context**: `Cosmos.ConnectionStrings/TenantContext.cs`
+- **Domain Middleware**: `Cosmos.ConnectionStrings/DomainMiddleware.cs`
+- **Tenant Validation**: `Cosmos.ConnectionStrings/Middleware/TenantValidationMiddleware.cs`
+- **Configuration Provider**: `Cosmos.ConnectionStrings/IDynamicConfigurationProvider.cs`
+- **Connection Model**: `Cosmos.ConnectionStrings/Connection.cs`
+- **Config Database**: `Cosmos.ConnectionStrings/DynamicConfigDbContext.cs`

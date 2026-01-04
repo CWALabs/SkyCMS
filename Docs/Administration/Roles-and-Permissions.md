@@ -345,8 +345,10 @@ Maintain documentation of what each role can do:
 
 ## Code References
 
-- **Role Definition**: [RequiredIdentityRoles.cs](../../Editor/Data/RequiredIdentityRoles.cs)
-- **Role Initialization**: [SetupNewAdministrator.cs](../../Editor/Services/SetupNewAdministrator.cs)
-- **Role Management UI**: [RolesController.cs](../../Editor/Controllers/RolesController.cs)
-- **User Management**: [UsersController.cs](../../Editor/Controllers/UsersController.cs)
-- **Content Editor**: [EditorController.cs](../../Editor/Controllers/EditorController.cs)
+> **Note**: The following source code files are located in the SkyCMS project repository, not in the published documentation.
+
+- **Role Definition**: `Editor/Data/RequiredIdentityRoles.cs`
+- **Role Initialization**: `Editor/Services/SetupNewAdministrator.cs`
+- **Role Management UI**: `Editor/Controllers/RolesController.cs`
+- **User Management**: `Editor/Controllers/UsersController.cs`
+- **Content Editor**: `Editor/Controllers/EditorController.cs`

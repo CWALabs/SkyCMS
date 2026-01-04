@@ -539,9 +539,9 @@ Emergency: Use contact form for urgent issues
 - **Urgent**: Use phone number for critical issues
 
 ### Help Resources
-- [User Guide](link)
-- [Content Guidelines](link)
-- [FAQ](link)
+- [User Guide](./QuickStart.md)
+- [Content Guidelines](../Templates/Content-Workflow-Template.md)
+- [FAQ](./FAQ.md)
 - [SkyCMS Documentation](https://www.moonrise.net/cosmos/documentation/)
 ```
 

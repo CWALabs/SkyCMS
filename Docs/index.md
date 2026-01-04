@@ -23,88 +23,92 @@ audience: [all]
 }
 </script>
 
-**Edge-native CMS.** Publish in seconds, no build pipelines. Deploy to Azure, AWS, or Cloudflare with one config model.
+**Edge-native CMS.** Publish in seconds, no build pipelines. Deploy to Azure, AWS, or Cloudflare with one config model ([read more](./Edge-Native-CMS.md)).
 
 **Version:** 2.0 (Dec 2025) · **Compatible:** v9.2x
 
----
+[![Deploy to Azure](https://img.shields.io/badge/Deploy_to-Azure-0078D4?style=plastic&logo=microsoftazure&logoColor=white)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.json) [![Deploy to AWS](https://img.shields.io/badge/Deploy_to-AWS-FF9900?style=plastic&logo=amazonaws&logoColor=white)](./InstallScripts/AWS/QUICK_START.md)
 
 ## Quick links
-- [Developer Quick Start](./QuickStart.html)
-- [Installation Overview](./Installation/README.html)
-- [Minimum Required Settings](./Installation/MinimumRequiredSettings.html)
-- [Setup Wizard](./Installation/SetupWizard.html)
-- [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.html)
-- [FAQ](./FAQ.html)
+- [Is SkyCMS Right for You?](./Is-SkyCMS-Right-For-You.md) ⭐
+- [What is SkyCMS?](./Edge-Native-CMS.md)
+- [Developer Quick Start](./QuickStart.md)
+- [Installation Overview](./Installation/README.md)
+- [Minimum Required Settings](./Installation/MinimumRequiredSettings.md)
+- [Setup Wizard](./Installation/SetupWizard.md)
+- [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.md)
+- [FAQ](./FAQ.md)
 
 ## Choose Your Path
 
 ### Content Creators
 *Create and publish fast*
 
-**Start here:** [Quick Start for Editors](./QuickStart.html) · [Creating Your First Page](./Editors/LiveEditor/QuickStart.html)
-- [Managing Files & Images](./FileManagement/Quick-Start.html)
-- [Publishing & Scheduling](./Editors/PageScheduling.html)
-- [Blog Management](./blog/BlogPostLifecycle.html)
+**Start here:** [Quick Start for Editors](./QuickStart.md) · [Creating Your First Page](./Editors/LiveEditor/QuickStart.md)
+- [Managing Files & Images](./FileManagement/Quick-Start.md)
+- [Publishing & Scheduling](./Editors/PageScheduling.md)
+- [Blog Management](./blog/BlogPostLifecycle.md)
 
-**Tools:** [Live Editor](./Editors/LiveEditor/README.html) · [Designer](./Editors/Designer/README.html) · [Image Editing](./Editors/ImageEditing/README.html)
+**Tools:** [Live Editor](./Editors/LiveEditor/README.md) · [Designer](./Editors/Designer/README.md) · [Image Editing](./Editors/ImageEditing/README.md)
 
 ---
 
 ### Developers
 *Build, customize, and ship*
 
-**Start here:** [Developer Quick Start](./QuickStart.html) · [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.html)
-- [Installation Overview](./Installation/README.html)
-- [Layouts & Templates](./Layouts/Readme.html)
-- [Widgets & Components](./Widgets/README.html)
-- [Architecture](./Architecture/Startup-Lifecycle.html)
-- [Testing Guide](./Development/Testing/README.html)
+**Start here:** [Developer Quick Start](./QuickStart.md) · [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.md)
+- [Installation Overview](./Installation/README.md)
+- [Layouts & Templates](./Layouts/Readme.md)
+- [Widgets & Components](./Widgets/README.md)
+- [Architecture](./Architecture/Startup-Lifecycle.md)
+- [Testing Guide](./Development/Testing/README.md)
 
 ---
 
 ### Decision Makers
 *Evaluate fit and cost*
-
-**Start here:** [About SkyCMS](./About.html) · [SkyCMS vs Alternatives](./Comparisons.html)
-- [Developer Experience Comparison](./Developer-Experience-Comparison.html)
-- [Total Cost of Ownership](./_Marketing/Cost-Comparison.html)
-- [FAQ](./FAQ.html)
+Is SkyCMS Right for You?](./Is-SkyCMS-Right-For-You.md) ⭐ · [What is an Edge-Native CMS?](./Edge-Native-CMS.md) · [About SkyCMS](./About.md)
+-
+**Start here:** [What is an Edge-Native CMS?](./Edge-Native-CMS.md) ⭐ · [About SkyCMS](./About.md) · [SkyCMS vs Alternatives](./Comparisons.md)
+- [Developer Experience Comparison](./Developer-Experience-Comparison.md)
+- [Total Cost of Ownership](./_Marketing/Cost-Comparison.md)
+- [Performance Benchmarks](./Edge-Native-CMS.md#performance-benchmarks)
+- [FAQ](./FAQ.md)
 
 ---
 
 ### DevOps / System Administrators
 *Deploy, configure, operate*
 
-**Start here:** [Installation Overview](./Installation/README.html) · [Minimum Required Settings](./Installation/MinimumRequiredSettings.html)
-- Deploy: [Azure](./Installation/AzureInstall.html) · [AWS S3](./S3StaticWebsite.html) · [Cloudflare Edge](./Installation/CloudflareEdgeHosting.html)
-- Configure: [Setup Wizard](./Installation/SetupWizard.html) · [Database](./Configuration/Database-Overview.html) · [Storage](./Configuration/Storage-Overview.html) · [CDN](./Configuration/CDN-Overview.html) · [Multi-Tenant](./Configuration/Multi-Tenant-Configuration.html)
-- Operate: [Post-Installation](./Installation/Post-Installation.html) ⭐ · [Monthly Maintenance](./Checklists/Monthly-Maintenance.html) · [Troubleshooting](./Troubleshooting.html)
+**Start here:** [Installation Overview](./Installation/README.md) · [Minimum Required Settings](./Installation/MinimumRequiredSettings.md)
+- Deploy: [Azure](./Installation/AzureInstall.md) · [AWS S3](./S3StaticWebsite.md) · [Cloudflare Edge](./Installation/CloudflareEdgeHosting.md)
+- Configure: [Setup Wizard](./Installation/SetupWizard.md) · [Database](./Configuration/Database-Overview.md) · [Storage](./Configuration/Storage-Overview.md) · [CDN](./Configuration/CDN-Overview.md) · [Multi-Tenant](./Configuration/Multi-Tenant-Configuration.md)
+- Operate: [Post-Installation](./Installation/Post-Installation.md) ⭐ · [Monthly Maintenance](./Checklists/Monthly-Maintenance.md) · [Troubleshooting](./Troubleshooting.md)
 
 ---
 
 ## Core Topics
 
 ### Authentication & Security
-- [Authentication Overview](./Authentication-Overview.html)
-- [Role-Based Access Control](./Administration/Roles-and-Permissions.html) ⭐
-- [Identity Framework](./Components/AspNetCore.Identity.FlexDb.html)
+- [Authentication Overview](./Authentication-Overview.md)
+- [Role-Based Access Control](./Administration/Roles-and-Permissions.md) ⭐
+- [Identity Framework](./Components/AspNetCore.Identity.FlexDb.md)
 
 ### Content Management
-- [Page Templates](./Templates/Readme.html)
-- [Layouts](./Layouts/Readme.html)
-- [File Management](./FileManagement/README.html)
-- [Blog System](./blog/BlogPostLifecycle.html)
+- [Page Templates](./Templates/Readme.md)
+- [Layouts](./Layouts/Readme.md)
+- [File Management](./FileManagement/README.md)
+- [Blog System](./blog/BlogPostLifecycle.md)
 
 ### Publishing
-- [Publishing Modes](./Publishing-Overview.html)
-- [Scheduled Publishing](./Editors/PageScheduling.html)
-- [Static Generation](./Publishing-Overview.html)
+- [Publishing Modes](./Publishing-Overview.md)
+- [Scheduled Publishing](./Editors/PageScheduling.md)
+- [Static Generation](./Publishing-Overview.md)
 
 ### Integration
-- [Email Configuration](./Configuration/Email-Overview.html)
-- [CDN Integration](./Configuration/CDN-Overview.html)
-- [Storage Providers](./Configuration/Storage-Overview.html)
+- [Email Configuration](./Configuration/Email-Overview.md)
+- [CDN Integration](./Configuration/CDN-Overview.md)
+- [Storage Providers](./Configuration/Storage-Overview.md)
 
 ---
 
@@ -112,9 +116,9 @@ audience: [all]
 
 | Getting Started | Migration | Reference |
 |----------------|-----------|-----------|
-| [Quick Start Guide](./QuickStart.html) | [From JAMstack](./MigratingFromJAMstack.html) | [Widgets Directory](./Widgets/README.html) |
-| [Learning Paths](./LEARNING_PATHS.html) | [From WordPress](./FAQ.html#wordpress-migration) | [Configuration Reference](./Configuration/README.html) |
-| [First Website Tutorial](./Developer-Guides/Website-Launch-Workflow.html) | [Setup Wizard](./Installation/SetupWizard.html) | [API Documentation](./Developers/README.html) |
+| [Quick Start Guide](./QuickStart.md) | [From JAMstack](./MigratingFromJAMstack.md) | [Widgets Directory](./Widgets/README.md) |
+| [Learning Paths](./LEARNING_PATHS.md) | [From WordPress](./FAQ.html#wordpress-migration) | [Configuration Reference](./Configuration/README.md) |
+| [First Website Tutorial](./Developer-Guides/Website-Launch-Workflow.md) | [Setup Wizard](./Installation/SetupWizard.md) | [API Documentation](./Developers/README.md) |
 
 ---
 
@@ -122,7 +126,7 @@ audience: [all]
 
 - **Can't find what you're looking for?** Try the [complete index](#complete-documentation-index) below
 - **Report issues:** [GitHub Issues](https://github.com/CWALabs/SkyCMS/issues)
-- **Contribute:** [Documentation Guidelines](./CONTRIBUTING.html)
+- **Contribute:** [Documentation Guidelines](./CONTRIBUTING.md)
 
 ---
 
@@ -132,55 +136,55 @@ audience: [all]
 <summary><strong>Click to expand all documentation</strong></summary>
 
 ### Installation & Deployment
-- [Installation Overview](./Installation/README.html)
-- [Minimum Required Settings](./Installation/MinimumRequiredSettings.html)
-- [Setup Wizard](./Installation/SetupWizard.html)
-  - [Welcome](./Installation/SetupWizard-Welcome.html)
-  - [Storage](./Installation/SetupWizard-Step1-Storage.html)
-  - [Admin Account](./Installation/SetupWizard-Step2-Admin.html)
-  - [Publisher](./Installation/SetupWizard-Step3-Publisher.html)
-  - [Email](./Installation/SetupWizard-Step4-Email.html)
-  - [CDN](./Installation/SetupWizard-Step5-CDN.html)
-  - [Review](./Installation/SetupWizard-Step6-Review.html)
-- [Post-Installation](./Installation/Post-Installation.html)
+- [Installation Overview](./Installation/README.md)
+- [Minimum Required Settings](./Installation/MinimumRequiredSettings.md)
+- [Setup Wizard](./Installation/SetupWizard.md)
+  - [Welcome](./Installation/SetupWizard-Welcome.md)
+  - [Storage](./Installation/SetupWizard-Step1-Storage.md)
+  - [Admin Account](./Installation/SetupWizard-Step2-Admin.md)
+  - [Publisher](./Installation/SetupWizard-Step3-Publisher.md)
+  - [Email](./Installation/SetupWizard-Step4-Email.md)
+  - [CDN](./Installation/SetupWizard-Step5-CDN.md)
+  - [Review](./Installation/SetupWizard-Step6-Review.md)
+- [Post-Installation](./Installation/Post-Installation.md)
 - Platform Guides:
-  - [Azure](./Installation/AzureInstall.html)
-  - [AWS S3](./S3StaticWebsite.html)
-  - [Cloudflare Edge](./Installation/CloudflareEdgeHosting.html)
+  - [Azure](./Installation/AzureInstall.md)
+  - [AWS S3](./S3StaticWebsite.md)
+  - [Cloudflare Edge](./Installation/CloudflareEdgeHosting.md)
 
 ### Configuration
-- [Database](./Configuration/Database-Overview.html): [Cosmos DB](./Configuration/Database-CosmosDB.html) | [SQL Server](./Configuration/Database-SQLServer.html) | [MySQL](./Configuration/Database-MySQL.html) | [SQLite](./Configuration/Database-SQLite.html)
-- [Storage](./Configuration/Storage-Overview.html): [Azure Blob](./Configuration/Storage-AzureBlob.html) | [S3](./Configuration/Storage-S3.html) | [R2](./Configuration/Storage-Cloudflare.html) | [GCS](./Configuration/Storage-GoogleCloud.html)
-- [CDN](./Configuration/CDN-Overview.html): [Azure Front Door](./Configuration/CDN-AzureFrontDoor.html) | [Cloudflare](./Configuration/CDN-Cloudflare.html) | [CloudFront](./Configuration/CDN-CloudFront.html) | [Sucuri](./Configuration/CDN-Sucuri.html)
-- [Email](./Configuration/Email-Overview.html): [SendGrid](./Configuration/Email-SendGrid.html) | [Azure Communication](./Configuration/Email-AzureCommunicationServices.html) | [SMTP](./Configuration/Email-SMTP.html)
-- [Multi-Tenant](./Configuration/Multi-Tenant-Configuration.html)
+- [Database](./Configuration/Database-Overview.md): [Cosmos DB](./Configuration/Database-CosmosDB.md) | [SQL Server](./Configuration/Database-SQLServer.md) | [MySQL](./Configuration/Database-MySQL.md) | [SQLite](./Configuration/Database-SQLite.md)
+- [Storage](./Configuration/Storage-Overview.md): [Azure Blob](./Configuration/Storage-AzureBlob.md) | [S3](./Configuration/Storage-S3.md) | [R2](./Configuration/Storage-Cloudflare.md) | [GCS](./Configuration/Storage-GoogleCloud.md)
+- [CDN](./Configuration/CDN-Overview.md): [Azure Front Door](./Configuration/CDN-AzureFrontDoor.md) | [Cloudflare](./Configuration/CDN-Cloudflare.md) | [CloudFront](./Configuration/CDN-CloudFront.md) | [Sucuri](./Configuration/CDN-Sucuri.md)
+- [Email](./Configuration/Email-Overview.md): [SendGrid](./Configuration/Email-SendGrid.md) | [Azure Communication](./Configuration/Email-AzureCommunicationServices.md) | [SMTP](./Configuration/Email-SMTP.md)
+- [Multi-Tenant](./Configuration/Multi-Tenant-Configuration.md)
 
 ### Content Editing
-- **Live Editor:** [Guide](./Editors/LiveEditor/README.html) | [Quick Start](./Editors/LiveEditor/QuickStart.html) | [Visual Guide](./Editors/LiveEditor/VisualGuide.html)
-- **Designer:** [Guide](./Editors/Designer/README.html) | [Quick Start](./Editors/Designer/QuickStart.html)
-- **Code Editor:** [Guide](./Editors/CodeEditor/README.html)
-- **Image Editing:** [Guide](./Editors/ImageEditing/README.html)
-- **File Management:** [Guide](./FileManagement/README.html) | [Quick Start](./FileManagement/Quick-Start.html)
+- **Live Editor:** [Guide](./Editors/LiveEditor/README.md) | [Quick Start](./Editors/LiveEditor/QuickStart.md) | [Visual Guide](./Editors/LiveEditor/VisualGuide.md)
+- **Designer:** [Guide](./Editors/Designer/README.md) | [Quick Start](./Editors/Designer/QuickStart.md)
+- **Code Editor:** [Guide](./Editors/CodeEditor/README.md)
+- **Image Editing:** [Guide](./Editors/ImageEditing/README.md)
+- **File Management:** [Guide](./FileManagement/README.md) | [Quick Start](./FileManagement/Quick-Start.md)
 
 ### Developer Resources
-- [Developer Hub](./Developers/README.html)
-- [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.html)
-- Controllers: [HomeControllerBase](./Developers/Controllers/HomeControllerBase.html) | [PubControllerBase](./Developers/Controllers/PubControllerBase.html)
-- Widgets: [Overview](./Widgets/README.html) | [Image](./Widgets/Image-Widget.html) | [Forms](./Widgets/Forms-Widget.html) | [Search](./Widgets/Search-Widget.html) | [Navigation](./Widgets/Nav-Builder-Widget.html)
-- Architecture: [Startup](./Architecture/Startup-Lifecycle.html) | [Middleware](./Architecture/Middleware-Pipeline.html)
-- [Testing Guide](./Development/Testing/README.html)
+- [Developer Hub](./Developers/README.md)
+- [Website Launch Workflow](./Developer-Guides/Website-Launch-Workflow.md)
+- Controllers: [HomeControllerBase](./Developers/Controllers/HomeControllerBase.md) | [PubControllerBase](./Developers/Controllers/PubControllerBase.md)
+- Widgets: [Overview](./Widgets/README.md) | [Image](./Widgets/Image-Widget.md) | [Forms](./Widgets/Forms-Widget.md) | [Search](./Widgets/Search-Widget.md) | [Navigation](./Widgets/Nav-Builder-Widget.md)
+- Architecture: [Startup](./Architecture/Startup-Lifecycle.md) | [Middleware](./Architecture/Middleware-Pipeline.md)
+- [Testing Guide](./Development/Testing/README.md)
 
 ### Comparisons & Evaluation
-- [Comparisons Matrix](./Comparisons.html)
-- [Developer Experience Comparison](./Developer-Experience-Comparison.html)
-- [SkyCMS vs Headless CMS](./CosmosVsHeadless.html)
-- [Migrating from JAMstack](./MigratingFromJAMstack.html)
-- [FAQ](./FAQ.html)
+- [Comparisons Matrix](./Comparisons.md)
+- [Developer Experience Comparison](./Developer-Experience-Comparison.md)
+- [SkyCMS vs Headless CMS](./CosmosVsHeadless.md)
+- [Migrating from JAMstack](./MigratingFromJAMstack.md)
+- [FAQ](./FAQ.md)
 
 ### Support & Maintenance
-- [Troubleshooting](./Troubleshooting.html)
-- [Documentation Gaps Analysis](./DOCUMENTATION_GAPS_ANALYSIS.html)
-- [Changelog](./CHANGELOG.html)
+- [Troubleshooting](./Troubleshooting.md)
+- [Documentation Gaps Analysis](./DOCUMENTATION_GAPS_ANALYSIS.md)
+- [Changelog](./CHANGELOG.md)
 
 </details>
 
@@ -190,9 +194,9 @@ audience: [all]
 
 - **[Sitemap](./sitemap.xml)** - XML sitemap for search engine crawlers
 - **[JSON Feed](./docs-index.json)** - Machine-readable documentation index
-- **[Analytics Setup](./Analytics-Setup.html)** - Documentation engagement tracking
-- **[AI & SEO Content Standards](./AI-SEO-Content-Standards.html)** - Front matter conventions
-- **[License Information](./License.html)** - Dual licensing (GPL 2.0-or-later / MIT)
+- **[Analytics Setup](./Analytics-Setup.md)** - Documentation engagement tracking
+- **[AI & SEO Content Standards](./AI-SEO-Content-Standards.md)** - Front matter conventions
+- **[License Information](./License.md)** - Dual licensing (GPL 2.0-or-later / MIT)
 
 ---
 
@@ -201,3 +205,4 @@ audience: [all]
 **License:** See [LICENSE-GPL](../LICENSE-GPL) and [LICENSE-MIT](../LICENSE-MIT)
 
 For project overview and "what is SkyCMS," see the [main README](https://github.com/CWALabs/SkyCMS#readme).
+

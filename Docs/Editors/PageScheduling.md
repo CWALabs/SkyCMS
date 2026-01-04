@@ -406,9 +406,9 @@ public interface IArticleScheduler
 ### Further Reading
 
 - [Hangfire Documentation](https://docs.hangfire.io/)
-- ArticleEditLogic source (Editor/Services)
-- [Multi-Tenant Configuration](../../Cosmos.ConnectionStrings/README.md)
-- [SkyCMS Architecture](../../README.md#architecture--technology-stack)
+- ArticleEditLogic source code: `Editor/Services` (see source repository)
+
+> **Note**: For architecture and multi-tenant configuration details, see the source code repository at [GitHub](https://github.com/CWALabs/SkyCMS).
 
 ---
 

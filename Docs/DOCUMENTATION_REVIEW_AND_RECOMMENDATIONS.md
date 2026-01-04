@@ -87,16 +87,16 @@ Create a `LEARNING_PATHS.md` file that provides role-based documentation journey
 ## For Developers
 1. [About SkyCMS](./About.md) - 5 min read
 2. [Developer Experience](./DeveloperExperience.md) - 10 min
-3. [Database Configuration](./Database-Overview.md) - 15 min
-4. [Storage Configuration](./Storage-Overview.md) - 15 min
+3. [Database Configuration](./Configuration/Database-Overview.md) - 15 min
+4. [Storage Configuration](./Configuration/Storage-Overview.md) - 15 min
 5. [Architecture & Components](./Components/Cosmos.Common.md) - Deep dive
 
 ## For DevOps/Administrators
 1. [Quick Start](./QuickStart.md) - 10 min
 2. [Azure Installation](./Installation/AzureInstall.md) OR [CloudFlare Hosting](./Installation/CloudflareEdgeHosting.md)
-3. [Database Configuration](./Database-Overview.md)
-4. [Storage Configuration](./Storage-Overview.md)
-5. [CDN Integration](./CDN-Overview.md)
+3. [Database Configuration](./Configuration/Database-Overview.md)
+4. [Storage Configuration](./Configuration/Storage-Overview.md)
+5. [CDN Integration](./Configuration/CDN-Overview.md)
 6. [Troubleshooting Guide](./Troubleshooting.md) - Keep bookmarked
 ```
 

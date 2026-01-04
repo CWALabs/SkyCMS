@@ -736,7 +736,9 @@ public async Task InvokeAsync(HttpContext context)
 
 ## Code References
 
-- **Program.cs**: [Lines 430-450+](../../Editor/Program.cs#L430) - Middleware pipeline configuration
-- **SetupRedirectMiddleware**: [SetupRedirectMiddleware.cs](../../Editor/Middleware/SetupRedirectMiddleware.cs)
-- **DomainMiddleware**: [DomainMiddleware.cs](../../Cosmos.ConnectionStrings/DomainMiddleware.cs)
-- **TenantValidationMiddleware**: [TenantValidationMiddleware.cs](../../Cosmos.ConnectionStrings/Middleware/TenantValidationMiddleware.cs)
+> **Note**: The following source code files are located in the SkyCMS project repository, not in the published documentation.
+
+- **Program.cs**: Lines 430-450+ - Middleware pipeline configuration (`Editor/Program.cs`)
+- **SetupRedirectMiddleware**: `Editor/Middleware/SetupRedirectMiddleware.cs`
+- **DomainMiddleware**: `Cosmos.ConnectionStrings/DomainMiddleware.cs`
+- **TenantValidationMiddleware**: `Cosmos.ConnectionStrings/Middleware/TenantValidationMiddleware.cs`

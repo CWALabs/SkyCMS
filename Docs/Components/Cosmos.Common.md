@@ -146,6 +146,4 @@ Licensed under the MIT License.
 
 This project is part of the SkyCMS ecosystem. For contribution guidelines, visit the [SkyCMS GitHub repository](https://github.com/CWALabs/SkyCMS).
 
----
-
-For comprehensive documentation, see the full [Cosmos.Common/README.md](../../Common/README.md)
+> **Note**: For comprehensive component documentation, see the source code repository at [GitHub](https://github.com/CWALabs/SkyCMS).

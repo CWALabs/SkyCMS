@@ -542,7 +542,7 @@ git push origin docs/feature-name
 ### Links
 
 ```markdown
-- Descriptive text: [Database Configuration Guide](./Database-Overview.md)
+- Descriptive text: [Database Configuration Guide](./Configuration/Database-Overview.md)
 - Relative paths: Use `./` for same folder, `../` for parent
 - Avoid: [Click here](link), [Link](link)
 ```

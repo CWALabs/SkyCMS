@@ -564,8 +564,10 @@ export CosmosAllowSetup=true
 
 ## Code References
 
-- **Main Startup**: [Program.cs](../../Editor/Program.cs) (495 lines)
-- **Single-Tenant Config**: [SingleTenant.cs](../../Editor/Boot/SingleTenant.cs)
-- **Multi-Tenant Config**: [MultiTenant.cs](../../Editor/Boot/MultiTenant.cs)
-- **Setup Service**: [SetupService.cs](../../Editor/Services/Setup/SetupService.cs)
-- **Domain Middleware**: [DomainMiddleware.cs](../../Cosmos.ConnectionStrings/DomainMiddleware.cs)
+> **Note**: The following source code files are located in the SkyCMS project repository, not in the published documentation.
+
+- **Main Startup**: `Editor/Program.cs` (495 lines)
+- **Single-Tenant Config**: `Editor/Boot/SingleTenant.cs`
+- **Multi-Tenant Config**: `Editor/Boot/MultiTenant.cs`
+- **Setup Service**: `Editor/Services/Setup/SetupService.cs`
+- **Domain Middleware**: `Cosmos.ConnectionStrings/DomainMiddleware.cs`

@@ -164,7 +164,7 @@ Access to the Live Editor is controlled by user roles:
 
 ### External Resources
 - [CKEditor 5 Documentation](https://ckeditor.com/docs/ckeditor5/latest/)
-- [CKEditor 5 Balloon Block Editor](https://ckeditor.com/docs/ckeditor5/latest/examples/builds/balloon-block-editor.html)
+- [CKEditor 5 Balloon Block Editor](https://ckeditor.com/docs/ckeditor5/latest/examples/builds/balloon-block-editor.md)
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/)
 
 ### Getting Help
@@ -211,3 +211,4 @@ SkyCMS is licensed under the GNU Public License, Version 3.0.
 
 *Last Updated: October 2025*  
 *SkyCMS Live Editor Documentation v1.0*
+

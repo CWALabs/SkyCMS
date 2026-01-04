@@ -749,10 +749,10 @@ All team members need training on:
 
 ### Resources
 
-- [Brand Style Guide](link)
-- [Content Guidelines](link)
-- [SkyCMS Documentation](link)
-- [Content Examples](link)
+- [Brand Style Guide](./Style-Guide-Template.md)
+- [Content Guidelines](./Content-Workflow-Template.md)
+- [SkyCMS Documentation](../index.md)
+- [Content Examples](./Content-Workflow-Template.md)
 
 ---
 

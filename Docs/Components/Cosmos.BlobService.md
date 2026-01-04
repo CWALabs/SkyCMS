@@ -131,9 +131,9 @@ builder.Services.AddCosmosCmsDataProtection(builder.Configuration, new DefaultAz
 
 - [Storage Configuration Guide](../Configuration/Storage-Configuration-Reference.md)
 - [Azure Installation Guide](../Installation/AzureInstall.md)
-- [Editor Documentation](../../Editor/README.md)
-- [Publisher Documentation](../../Publisher/README.md)
 - [Common Library](../Components/Cosmos.Common.md)
+
+> **Note**: For component-level documentation (Editor, Publisher, Cosmos.BlobService), see the source code repository at [GitHub](https://github.com/CWALabs/SkyCMS).
 
 ## License
 
@@ -142,7 +142,3 @@ Licensed under the MIT License.
 ## Contributing
 
 This project is part of the Sky CMS ecosystem. Visit the [GitHub repository](https://github.com/CWALabs/SkyCMS) for more information.
-
----
-
-For comprehensive documentation, see the full [Cosmos.BlobService/README.md](../../Cosmos.BlobService/README.md)

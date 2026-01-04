@@ -8,7 +8,7 @@ audience: [developers, architects]
 # AspNetCore.Identity.FlexDb - Flexible Database Provider for ASP.NET Core Identity
 
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
+[![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.md)
 [NuGet package listing coming soon]
 
 A flexible, multi-database implementation of ASP.NET Core Identity that **automatically selects the appropriate database provider** based on your connection string. Supports Azure Cosmos DB, SQL Server, and MySQL with seamless switching between providers.
@@ -241,10 +241,11 @@ This project is licensed under the MIT License. See the license file for details
 
 ## 🔗 Related Projects
 
-- **[SkyCMS](../../README.md)**: Content management system using this identity provider
-- **[Editor](../../Editor/README.md)**: Content editing interface
-- **[Publisher](../../Publisher/README.md)**: Public website engine
+This identity provider is used by the following SkyCMS components (see source repository for details):
 
----
+- **SkyCMS**: Content management system using this identity provider
+- **Editor**: Content editing interface
+- **Publisher**: Public website engine
 
-For comprehensive documentation, see the full [AspNetCore.Identity.FlexDb/README.md](../../AspNetCore.Identity.FlexDb/README.md)
+> **Note**: For comprehensive component documentation, see the source code repository at [GitHub](https://github.com/CWALabs/SkyCMS).
+
