@@ -509,7 +509,7 @@ For issues or questions:
 ## References
 
 - [CKEditor 5 Documentation](https://ckeditor.com/docs/ckeditor5/)
-- [CKEditor 5 Balloon Editor](https://ckeditor.com/docs/ckeditor5/latest/examples/builds/balloon-block-editor.md)
+- [CKEditor 5 Balloon Editor](https://ckeditor.com/docs/ckeditor5/latest/examples/builds/balloon-block-editor.html)
 - [Monaco Editor Documentation](https://microsoft.github.io/monaco-editor/)
 - [SignalR Documentation](https://docs.microsoft.com/aspnet/core/signalr/)
 

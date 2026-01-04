@@ -28,7 +28,7 @@ audience: [all]
 **Version:** 2.0 (Dec 2025) · **Compatible:** v9.2x
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FCWALabs%2FSkyCMS%2Fmain%2FInstallScripts%2FAzure%2Fbicep%2Fmain.json)
-[![Deploy to AWS](./assets/images/deploy-to-aws.svg)](./InstallScripts/AWS/QUICK_START.md)
+[![Deploy to AWS](./assets/images/deploy-to-aws.svg)](./InstallScripts/AWS/QUICK_START.html)
 
 ## Quick links
 - [Is SkyCMS Right for You?](./Is-SkyCMS-Right-For-You.md) ⭐
@@ -118,7 +118,7 @@ audience: [all]
 | Getting Started | Migration | Reference |
 |----------------|-----------|-----------|
 | [Quick Start Guide](./QuickStart.md) | [From JAMstack](./MigratingFromJAMstack.md) | [Widgets Directory](./Widgets/README.md) |
-| [Learning Paths](./LEARNING_PATHS.md) | [From WordPress](./FAQ.html#wordpress-migration) | [Configuration Reference](./Configuration/README.md) |
+| [Learning Paths](./LEARNING_PATHS.md) | [From WordPress](./FAQ.md#wordpress-migration) | [Configuration Reference](./Configuration/README.md) |
 | [First Website Tutorial](./Developer-Guides/Website-Launch-Workflow.md) | [Setup Wizard](./Installation/SetupWizard.md) | [API Documentation](./Developers/README.md) |
 
 ---

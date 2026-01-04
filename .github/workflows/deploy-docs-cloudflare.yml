@@ -36,6 +36,12 @@ jobs:
           JEKYLL_ENV: production
           PAGES_REPO_NWO: ${{ github.repository }}
       
+      - name: Convert .md links to .html in built site
+        working-directory: ./Docs/_site
+        run: |
+          find . -name "*.html" -type f -exec sed -i 's/\(href="[^":#]*\)\.md\([")#]\)/\1.html\2/g' {} +
+          echo "✅ Converted .md links to .html in built HTML files"
+      
       - name: Configure AWS CLI for CloudFlare R2
         run: |
           aws configure set aws_access_key_id ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}

@@ -360,7 +360,7 @@ For optimal performance with [Provider]:
 
 ## See Also
 
-- **[Overview: [Topic]](./path-to-overview.md)** - Compare all [topic] options
+- **[Overview: [Topic]](./path-to-overview.html)** - Compare all [topic] options
 - **[Configuration Reference](./config-reference.md)** - General [topic] configuration
 - **[[Provider] Official Documentation]** - [Provider's official docs]
 - **[Troubleshooting Guide](../Troubleshooting.md)** - Help with common issues

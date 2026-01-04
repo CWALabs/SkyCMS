@@ -8,7 +8,7 @@ audience: [developers, architects]
 # AspNetCore.Identity.FlexDb - Flexible Database Provider for ASP.NET Core Identity
 
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.md)
+[![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 [NuGet package listing coming soon]
 
 A flexible, multi-database implementation of ASP.NET Core Identity that **automatically selects the appropriate database provider** based on your connection string. Supports Azure Cosmos DB, SQL Server, and MySQL with seamless switching between providers.

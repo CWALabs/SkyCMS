@@ -164,7 +164,7 @@ Access to the Live Editor is controlled by user roles:
 
 ### External Resources
 - [CKEditor 5 Documentation](https://ckeditor.com/docs/ckeditor5/latest/)
-- [CKEditor 5 Balloon Block Editor](https://ckeditor.com/docs/ckeditor5/latest/examples/builds/balloon-block-editor.md)
+- [CKEditor 5 Balloon Block Editor](https://ckeditor.com/docs/ckeditor5/latest/examples/builds/balloon-block-editor.html)
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/)
 
 ### Getting Help
