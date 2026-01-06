@@ -44,7 +44,7 @@ namespace Sky.Tests.Security
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "EditorController should have [Authorize] attribute");
-            Assert.AreEqual("Reviewers, Administrators, Editors, Authors", authorizeAttribute.Roles);
+            Assert.AreEqual("Reviewers, Administrators, Editors, Authors", authorizeAttribute?.Roles);
         }
 
         /// <summary>
@@ -120,11 +120,11 @@ namespace Sky.Tests.Security
         {
             // Assert - Verify Trash action has proper authorization
             var trashMethod = typeof(EditorController).GetMethod("Trash");
-            var authorizeAttribute = trashMethod.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            var authorizeAttribute = trashMethod?.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "Trash should have [Authorize] attribute");
-            Assert.AreEqual("Administrators, Editors, Authors", authorizeAttribute.Roles);
+            Assert.AreEqual("Administrators, Editors, Authors", authorizeAttribute?.Roles);
         }
 
         /// <summary>
@@ -135,11 +135,11 @@ namespace Sky.Tests.Security
         {
             // Assert - Verify Create action has proper authorization
             var createMethod = typeof(EditorController).GetMethod("Create", new[] { typeof(string), typeof(string), typeof(string), typeof(int), typeof(int) });
-            var authorizeAttribute = createMethod.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            var authorizeAttribute = createMethod?.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "Create should have [Authorize] attribute");
-            Assert.Contains("Team Members", authorizeAttribute.Roles);
+            Assert.IsTrue(authorizeAttribute?.Roles?.Contains("Team Members") ?? false);
         }
 
         #endregion
@@ -158,7 +158,7 @@ namespace Sky.Tests.Security
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "TemplatesController should have [Authorize] attribute");
-            Assert.AreEqual("Administrators, Editors", authorizeAttribute.Roles);
+            Assert.AreEqual("Administrators, Editors", authorizeAttribute?.Roles);
         }
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace Sky.Tests.Security
             var authorizeAttribute = controllerType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
-            Assert.IsFalse(authorizeAttribute.Roles.Contains("Authors"), "Authors should not be in allowed roles for TemplatesController");
+            Assert.IsFalse(authorizeAttribute?.Roles?.Contains("Authors") ?? true, "Authors should not be in allowed roles for TemplatesController");
         }
 
         /// <summary>
@@ -230,7 +230,7 @@ namespace Sky.Tests.Security
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "LayoutsController should have [Authorize] attribute");
-            Assert.AreEqual("Administrators, Editors", authorizeAttribute.Roles);
+            Assert.AreEqual("Administrators, Editors", authorizeAttribute?.Roles);
         }
 
         /// <summary>
@@ -244,7 +244,7 @@ namespace Sky.Tests.Security
             var authorizeAttribute = controllerType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
-            Assert.IsFalse(authorizeAttribute.Roles.Contains("Authors"), "Authors should not be allowed to access LayoutsController");
+            Assert.IsFalse(authorizeAttribute?.Roles?.Contains("Authors") ?? true, "Authors should not be allowed to access LayoutsController");
         }
 
         /// <summary>
@@ -258,7 +258,7 @@ namespace Sky.Tests.Security
             var authorizeAttribute = controllerType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
-            Assert.IsFalse(authorizeAttribute.Roles.Contains("Reviewers"), "Reviewers should not be allowed to access LayoutsController");
+            Assert.IsFalse(authorizeAttribute?.Roles?.Contains("Reviewers") ?? true, "Reviewers should not be allowed to access LayoutsController");
         }
 
         #endregion
@@ -277,7 +277,7 @@ namespace Sky.Tests.Security
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "UsersController should have [Authorize] attribute");
-            Assert.AreEqual("Administrators", authorizeAttribute.Roles);
+            Assert.AreEqual("Administrators", authorizeAttribute?.Roles);
         }
 
         /// <summary>
@@ -291,7 +291,7 @@ namespace Sky.Tests.Security
             var authorizeAttribute = controllerType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
-            Assert.IsFalse(authorizeAttribute.Roles.Contains("Editors"), "Editors should not be allowed to manage users");
+            Assert.IsFalse(authorizeAttribute?.Roles?.Contains("Editors") ?? true, "Editors should not be allowed to manage users");
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace Sky.Tests.Security
             var authorizeAttribute = controllerType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
-            Assert.IsFalse(authorizeAttribute.Roles.Contains("Authors"), "Authors should not be allowed to manage users");
+            Assert.IsFalse(authorizeAttribute?.Roles?.Contains("Authors") ?? true, "Authors should not be allowed to manage users");
         }
 
         #endregion
@@ -324,7 +324,7 @@ namespace Sky.Tests.Security
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "RolesController should have [Authorize] attribute");
-            Assert.AreEqual("Administrators", authorizeAttribute.Roles);
+            Assert.AreEqual("Administrators", authorizeAttribute?.Roles);
         }
 
         #endregion
@@ -353,7 +353,7 @@ namespace Sky.Tests.Security
         {
             // Assert
             var previewMethod = typeof(BlogController).GetMethod("PreviewStream");
-            var allowAnonymousAttribute = previewMethod.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute), true)
+            var allowAnonymousAttribute = previewMethod?.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute), true)
                 .FirstOrDefault();
 
             Assert.IsNotNull(allowAnonymousAttribute, "PreviewStream should allow anonymous access");
@@ -371,11 +371,11 @@ namespace Sky.Tests.Security
         {
             // Assert - Verify Publish action is restricted
             var publishMethod = typeof(EditorController).GetMethod("Publish", Type.EmptyTypes);
-            var authorizeAttribute = publishMethod.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            var authorizeAttribute = publishMethod?.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "Publish should have [Authorize] attribute");
-            Assert.AreEqual("Administrators, Editors", authorizeAttribute.Roles);
+            Assert.AreEqual("Administrators, Editors", authorizeAttribute?.Roles);
         }
 
         /// <summary>
@@ -386,11 +386,11 @@ namespace Sky.Tests.Security
         {
             // Assert
             var unpublishMethod = typeof(EditorController).GetMethod("UnpublishPage");
-            var authorizeAttribute = unpublishMethod.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            var authorizeAttribute = unpublishMethod?.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(authorizeAttribute, "UnpublishPage should have [Authorize] attribute");
-            Assert.AreEqual("Administrators, Editors", authorizeAttribute.Roles);
+            Assert.AreEqual("Administrators, Editors", authorizeAttribute?.Roles);
         }
 
         #endregion
@@ -405,18 +405,18 @@ namespace Sky.Tests.Security
         {
             // Assert - Both GET and POST should be restricted
             var getPermissionsMethod = typeof(EditorController).GetMethod("Permissions", new[] { typeof(int), typeof(bool), typeof(string), typeof(string), typeof(int), typeof(int) });
-            var getAuthorizeAttribute = getPermissionsMethod.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            var getAuthorizeAttribute = getPermissionsMethod?.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(getAuthorizeAttribute, "Permissions GET should have [Authorize] attribute");
-            Assert.AreEqual("Administrators, Editors", getAuthorizeAttribute.Roles);
+            Assert.AreEqual("Administrators, Editors", getAuthorizeAttribute?.Roles);
 
             var postPermissionsMethod = typeof(EditorController).GetMethod("Permissions", new[] { typeof(int), typeof(string[]) });
-            var postAuthorizeAttribute = postPermissionsMethod.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            var postAuthorizeAttribute = postPermissionsMethod?.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
             Assert.IsNotNull(postAuthorizeAttribute, "Permissions POST should have [Authorize] attribute");
-            Assert.AreEqual("Administrators, Editors", postAuthorizeAttribute.Roles);
+            Assert.AreEqual("Administrators, Editors", postAuthorizeAttribute?.Roles);
         }
 
         #endregion
@@ -473,7 +473,7 @@ namespace Sky.Tests.Security
             var controllerAuthorizeAttribute = typeof(UsersController).GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
                 .FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
 
-            Assert.AreEqual("Administrators", controllerAuthorizeAttribute.Roles, "Only Administrators should manage user roles");
+            Assert.AreEqual("Administrators", controllerAuthorizeAttribute?.Roles, "Only Administrators should manage user roles");
         }
 
         #endregion
@@ -483,7 +483,7 @@ namespace Sky.Tests.Security
         /// <summary>
         /// Creates an EditorController with a user having the specified role.
         /// </summary>
-        private EditorController CreateEditorControllerWithUser(string roles, bool isAuthenticated = true)
+        private EditorController CreateEditorControllerWithUser(string? roles, bool isAuthenticated = true)
         {
             var controller = new EditorController(
                 Logger,
@@ -509,7 +509,7 @@ namespace Sky.Tests.Security
         /// <summary>
         /// Creates a TemplatesController with a user having the specified role.
         /// </summary>
-        private TemplatesController CreateTemplatesControllerWithUser(string roles, bool isAuthenticated = true)
+        private TemplatesController CreateTemplatesControllerWithUser(string? roles, bool isAuthenticated = true)
         {
             var controller = new TemplatesController(
                 Db,
@@ -518,7 +518,8 @@ namespace Sky.Tests.Security
                 Logic,
                 EditorSettings,
                 ArticleHtmlService,
-                TemplateService);
+                TemplateService,
+                Mediator);
 
             SetupControllerContext(controller, roles, isAuthenticated);
             return controller;
@@ -527,7 +528,7 @@ namespace Sky.Tests.Security
         /// <summary>
         /// Sets up controller context with user claims for the specified roles.
         /// </summary>
-        private void SetupControllerContext(Controller controller, string roles, bool isAuthenticated)
+        private void SetupControllerContext(Controller controller, string? roles, bool isAuthenticated)
         {
             var claims = new System.Collections.Generic.List<Claim>
             {

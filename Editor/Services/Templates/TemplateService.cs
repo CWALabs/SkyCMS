@@ -18,6 +18,7 @@ namespace Sky.Editor.Services.Templates
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
+    using Sky.Editor.Features.Shared;
 
     /// <summary>
     /// Implementation of the template service.
@@ -29,6 +30,7 @@ namespace Sky.Editor.Services.Templates
         private readonly ApplicationDbContext dbContext;
         private List<PageTemplate>? _cachedTemplates;
         private readonly SemaphoreSlim _lock = new(1, 1);
+        IMediator mediator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplateService"/> class.
@@ -36,11 +38,17 @@ namespace Sky.Editor.Services.Templates
         /// <param name="environment">The web hosting environment.</param>
         /// <param name="logger">The logger.</param>
         /// <param name="dbContext">The database context.</param>
-        public TemplateService(IWebHostEnvironment environment, ILogger<TemplateService> logger, ApplicationDbContext dbContext)
+        /// <param name="mediator">Mediator instance.</param>
+        public TemplateService(
+            IWebHostEnvironment environment,
+            ILogger<TemplateService> logger,
+            ApplicationDbContext dbContext,
+            IMediator mediator)
         {
             _environment = environment;
             _logger = logger;
             this.dbContext = dbContext;
+            this.mediator = mediator;
         }
 
         /// <inheritdoc/>
@@ -145,6 +153,88 @@ namespace Sky.Editor.Services.Templates
                     t.Description.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||
                     t.Tags.Any(tag => tag.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
+        }
+
+        /// <inheritdoc/>
+        public async Task<List<PageDesignVersion>> GetTemplateDesignVersionsAsync(string key)
+        {
+            var versions = await dbContext.PageDesignVersions
+                .Where(v => v.PageType == key)
+                .OrderByDescending(v => v.Version)
+                .ToListAsync();
+
+            // For backwards compatibility, if no versions are found, create a default version based on the template content.
+            if (versions == null || versions.Count == 0)
+            {
+                var template = await dbContext.Templates.FirstOrDefaultAsync(t => t.PageType == key);
+                var version = new PageDesignVersion
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateId = template.Id, // No template ID for default version
+                    Version = 1,
+                    Title = template.Title,
+                    Description = template?.Description,
+                    Content = template?.Content ?? string.Empty,
+                    PageType = template.PageType,
+                    Published = DateTimeOffset.UtcNow,
+                    Modified = DateTimeOffset.UtcNow
+                };
+
+                dbContext.PageDesignVersions.Add(version);
+                await dbContext.SaveChangesAsync();
+                return new List<PageDesignVersion> { version };
+            }
+
+            return versions;
+        }
+
+        /// <inheritdoc/>
+        public async Task<PageDesignVersion> GetVersionForEdit(string key)
+        {
+            var version = dbContext.PageDesignVersions
+                .Where(v => v.PageType == key)
+                .OrderByDescending(v => v.Version)
+                .FirstOrDefault();
+
+            if (version.Published.HasValue)
+            {
+                var editableVersion = new PageDesignVersion
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateId = version.TemplateId,
+                    Version = version.Version + 1,
+                    Title = version.Title,
+                    Description = version.Description,
+                    Content = version.Content,
+                    PageType = version.PageType,
+                    Published = null, // Not published yet
+                    Modified = DateTimeOffset.UtcNow
+                };
+                
+                dbContext.PageDesignVersions.Add(editableVersion);
+                await dbContext.SaveChangesAsync();
+                return editableVersion;
+            }
+
+            return version;
+        }
+
+        /// <inheritdoc/>
+        public async Task<PageDesignVersion> GetVersion(string id)
+        {
+            return await dbContext.PageDesignVersions.FirstOrDefaultAsync(v => v.Id.ToString() == id);
+        }
+
+        /// <inheritdoc/>
+        public Task Save(PageDesignVersion model)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public Task Publish(PageDesignVersion model)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task<string> LoadTemplateContentAsync(string filePath)

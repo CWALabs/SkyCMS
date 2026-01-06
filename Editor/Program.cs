@@ -35,7 +35,11 @@ using Sky.Editor.Domain.Events;
 using Sky.Editor.Features.Articles.Create;
 using Sky.Editor.Features.Articles.Save;
 using Sky.Editor.Features.Shared;
+using Sky.Editor.Features.Templates.Create;
+using Sky.Editor.Features.Templates.Publish;
+using Sky.Editor.Features.Templates.Save;
 using Sky.Editor.Infrastructure.Time;
+using Sky.Editor.Middleware;
 using Sky.Editor.Services.Authors;
 using Sky.Editor.Services.BlogPublishing;
 using Sky.Editor.Services.Catalog;
@@ -53,7 +57,6 @@ using Sky.Editor.Services.Setup;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
-using Sky.Editor.Middleware;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -154,6 +157,39 @@ if (enableDiagnostics)
 }
 
 // ---------------------------------------------------------------
+// STEP 1.6: APPLY DATABASE MIGRATIONS (IF SETUP ALLOWED)
+// ---------------------------------------------------------------
+if (allowSetup && !isMultiTenantEditor)
+{
+    System.Console.WriteLine("🔄 Checking for database migrations...");
+    
+    var connectionString = builder.Configuration.GetConnectionString("ApplicationDbContextConnection");
+    
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        try
+        {
+            var loggerFactory = LoggerFactory.Create(config => config.AddConsole());
+            var migrationLogger = loggerFactory.CreateLogger("MigrationHelper");
+            
+            await Sky.Editor.Data.MigrationHelper.ApplyMigrationsAsync(connectionString, migrationLogger);
+        }
+        catch (Exception ex)
+        {
+            System.Console.WriteLine($"❌ FATAL ERROR: Failed to apply database migrations: {ex.Message}");
+            System.Console.WriteLine($"   {ex.StackTrace}");
+            System.Console.WriteLine("Application startup halted. Please fix the database configuration and restart.");
+            throw; // Halt startup
+        }
+    }
+    else
+    {
+        System.Console.WriteLine("⚠️ No connection string found. Skipping migration check.");
+        System.Console.WriteLine("   This is normal during initial setup.");
+    }
+}
+
+// ---------------------------------------------------------------
 // STEP 2: Register Core Infrastructure (Common to Both Modes)
 // ---------------------------------------------------------------
 builder.Services.AddMemoryCache();
@@ -212,6 +248,9 @@ builder.Services.AddScoped<ISetupService, SetupService>();
 builder.Services.AddScoped<IMediator, Mediator>();
 builder.Services.AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>, CreateArticleHandler>();
 builder.Services.AddScoped<ICommandHandler<SaveArticleCommand, CommandResult<ArticleUpdateResult>>, SaveArticleHandler>();
+builder.Services.AddScoped<ICommandHandler<CreatePageDesignVersionCommand, CommandResult<PageDesignVersion>>, CreatePageDesignVersionHandler>();
+builder.Services.AddScoped<ICommandHandler<SavePageDesignVersionCommand, CommandResult<PageDesignVersion>>, SavePageDesignVersionHandler>();
+builder.Services.AddScoped<ICommandHandler<PublishPageDesignVersionCommand, CommandResult<Template>>, PublishPageDesignVersionHandler>();
 builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
 builder.Services.AddScoped<IStorageContext, StorageContext>();
 builder.Services.AddScoped<IEditorSettings, EditorSettings>(); // CHANGED: Scoped for per-request tenant context

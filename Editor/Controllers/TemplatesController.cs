@@ -7,11 +7,8 @@
 
 namespace Sky.Cms.Controllers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Cosmos.BlobService;
+    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
@@ -24,11 +21,17 @@ namespace Sky.Cms.Controllers
     using Sky.Cms.Models;
     using Sky.Editor.Data;
     using Sky.Editor.Data.Logic;
+    using Sky.Editor.Features.Articles.Save;
+    using Sky.Editor.Features.Shared;
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Templates;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Templates controller.
@@ -43,6 +46,7 @@ namespace Sky.Cms.Controllers
         private readonly IStorageContext storageContext;
         private readonly IArticleHtmlService htmlService;
         private readonly ITemplateService templateServices;
+        private readonly IMediator mediator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplatesController"/> class.
@@ -55,6 +59,7 @@ namespace Sky.Cms.Controllers
         /// <param name="options">Cosmos Options.</param>
         /// <param name="htmlService">HTML service.</param>
         /// <param name="templateServices">Template services.</param>
+        /// <param name="mediator">Mediator instance.</param>
         public TemplatesController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
@@ -62,7 +67,8 @@ namespace Sky.Cms.Controllers
             ArticleEditLogic articleLogic,
             IEditorSettings options,
             IArticleHtmlService htmlService,
-            ITemplateService templateServices)
+            ITemplateService templateServices,
+            IMediator mediator)
             : base(dbContext, userManager)
         {
             this.dbContext = dbContext;
@@ -71,6 +77,7 @@ namespace Sky.Cms.Controllers
             this.storageContext = storageContext;
             this.htmlService = htmlService;
             this.templateServices = templateServices;
+            this.mediator = mediator;
         }
 
         /// <summary>
@@ -352,7 +359,23 @@ namespace Sky.Cms.Controllers
 
             entity.Content = htmlService.EnsureEditableMarkers(entity.Content);
 
+            // Create the first version of the template.
+            var version = new PageDesignVersion()
+            {
+                TemplateId = entity.Id,
+                Version = 1,
+                Content = entity.Content,
+                Description = entity.Description,
+                Title = entity.Title,
+                CommunityLayoutId = entity.CommunityLayoutId,
+                Id = Guid.NewGuid(),
+                LayoutId = entity.LayoutId,
+                Published = null,
+                Modified = DateTimeOffset.UtcNow,
+            };
+
             dbContext.Templates.Add(entity);
+            dbContext.PageDesignVersions.Add(version);
             await dbContext.SaveChangesAsync();
             return RedirectToAction("EditCode", "Templates", new { entity.Id });
         }
@@ -763,10 +786,47 @@ namespace Sky.Cms.Controllers
                 }
             }
 
-            article.VersionNumber = 0;
             article.Content = templateHtmlDoc.DocumentNode.OuterHtml;
 
-            await articleLogic.SaveArticle(article, Guid.Parse(await GetUserId()));
+            // If template has no editable regions, update the existing version in place
+            // rather than creating a new version (since there's nothing to preserve)
+            if (templateEditableDivs == null)
+            {
+                var entity = await dbContext.Articles
+                    .Where(a => a.ArticleNumber == articleNumber)
+                    .OrderByDescending(a => a.VersionNumber)
+                    .FirstAsync();
+                
+                entity.Content = article.Content;
+                await dbContext.SaveChangesAsync();
+                
+                Console.WriteLine($"Template applied to article {articleNumber} (in-place update)");
+                return;
+            }
+
+            // Template has editable regions, so create a new version
+            article.VersionNumber = 0;
+
+            // NEW: Use SaveArticle command
+            var command = new SaveArticleCommand
+            {
+                ArticleNumber = article.ArticleNumber,
+                Title = article.Title,
+                Content = article.Content,
+                HeadJavaScript = article.HeadJavaScript,
+                FooterJavaScript = article.FooterJavaScript,
+                BannerImage = article.BannerImage,
+                UrlPath = article.UrlPath,
+                ArticleType = (ArticleType)article.ArticleType,
+                Category = article.Category,
+                Introduction = article.Introduction,
+                Published = article.Published,
+                UserId = Guid.Parse(await GetUserId())
+            };
+
+            var result = await mediator.SendAsync(command);
+
+
             Console.WriteLine($"Template applied to article {articleNumber}");
         }
     }

@@ -121,7 +121,9 @@ namespace Sky.Editor.Services.Scheduling
             var templateService = new TemplateService(
                 scopedServices.GetRequiredService<IWebHostEnvironment>(),
                 scopedServices.GetRequiredService<ILogger<TemplateService>>(),
-                dbContext);
+                dbContext,
+                scopedServices.GetRequiredService<Features.Shared.IMediator>()
+                );
 
             var titleChangeService = new TitleChangeService(
                 dbContext,

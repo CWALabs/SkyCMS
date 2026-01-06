@@ -53,7 +53,7 @@ namespace Sky.Tests.Controllers
             _mockUserManager.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
                 .ReturnsAsync(testUser);
 
-            // Create controller with all dependencies
+            // Create controller with all dependencies including Mediator
             _controller = new TemplatesController(
                 Db,
                 _mockUserManager.Object,
@@ -61,7 +61,8 @@ namespace Sky.Tests.Controllers
                 Logic,
                 EditorSettings,
                 ArticleHtmlService,
-                TemplateService);
+                TemplateService,
+                Mediator);
 
             // Setup HttpContext for the controller
             var httpContext = new DefaultHttpContext();
@@ -202,7 +203,7 @@ namespace Sky.Tests.Controllers
             // Assert
             Assert.IsInstanceOfType(result, typeof(RedirectToActionResult));
             var redirectResult = result as RedirectToActionResult;
-            Assert.AreEqual("Pages", redirectResult.ActionName);
+            Assert.AreEqual("Pages", redirectResult?.ActionName);
         }
 
         #endregion
@@ -325,8 +326,7 @@ namespace Sky.Tests.Controllers
                 .OrderByDescending(a => a.VersionNumber)
                 .FirstAsync();
 
-            Assert.Contains("User's Important Content",
-updatedArticle.Content, "Should preserve user content in matching editable region");
+            Assert.Contains("User's Important Content", updatedArticle.Content, "Should preserve user content in matching editable region");
         }
 
         /// <summary>
@@ -372,9 +372,9 @@ updatedArticle.Content, "Should preserve user content in matching editable regio
             // Assert
             Assert.IsInstanceOfType(result, typeof(RedirectToActionResult));
             var redirectResult = result as RedirectToActionResult;
-            Assert.AreEqual("Edit", redirectResult.ActionName);
-            Assert.AreEqual("Editor", redirectResult.ControllerName);
-            Assert.AreEqual(article.ArticleNumber, redirectResult.RouteValues["id"]);
+            Assert.AreEqual("Edit", redirectResult?.ActionName);
+            Assert.AreEqual("Editor", redirectResult?.ControllerName);
+            Assert.AreEqual(article.ArticleNumber, redirectResult?.RouteValues?["id"]);
         }
 
         #endregion

@@ -27,6 +27,7 @@ namespace Sky.Tests.Services
     using Moq;
     using Sky.Cms.Services;
     using Sky.Editor.Data.Logic;
+    using Sky.Editor.Features.Shared;
     using Sky.Editor.Infrastructure.Time;
     using Sky.Editor.Services.Authors;
     using Sky.Editor.Services.BlogPublishing;
@@ -40,6 +41,7 @@ namespace Sky.Tests.Services
     using Sky.Editor.Services.Slugs;
     using Sky.Editor.Services.Templates;
     using Sky.Editor.Services.Titles;
+    using MediatR;
 
     /// <summary>
     /// Unit tests for <see cref="TenantArticleLogicFactory"/> to ensure proper
@@ -153,6 +155,9 @@ namespace Sky.Tests.Services
             services.AddSingleton(_mockConfigProvider.Object);
             services.AddSingleton(new SiteSettings());
 
+            // Register MediatR with handlers from the Editor assembly
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<TemplateService>());
+
             // Register ApplicationDbContext for single-tenant mode
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseInMemoryDatabase($"SingleTenantDb_{Guid.NewGuid()}"));
@@ -164,9 +169,8 @@ namespace Sky.Tests.Services
 
             services.AddSingleton<StorageContext>(sp => new StorageContext(
                 storageConnectionString,
-                sp.GetRequiredService<IMemoryCache>()));
-            
-            services.AddSingleton<IStorageContext>(sp => sp.GetRequiredService<StorageContext>());
+                sp.GetRequiredService<IMemoryCache>()))
+            .AddSingleton<IStorageContext>(sp => sp.GetRequiredService<StorageContext>());
 
             // Service dependencies
             services.AddSingleton<IClock, SystemClock>();
@@ -237,14 +241,8 @@ namespace Sky.Tests.Services
                     sp.GetRequiredService<ILogger<TitleChangeService>>());
             });
 
-            services.AddScoped<ITemplateService>(sp =>
-            {
-                var dbContext = sp.GetRequiredService<ApplicationDbContext>();
-                return new TemplateService(
-                    sp.GetRequiredService<IWebHostEnvironment>(),
-                    sp.GetRequiredService<ILogger<TemplateService>>(),
-                    dbContext);
-            });
+            // Register TemplateService - MediatR will be injected automatically
+            services.AddScoped<ITemplateService, TemplateService>();
 
             // Mock view render service
             var mockViewRenderService = new Mock<IViewRenderService>();
@@ -444,7 +442,7 @@ namespace Sky.Tests.Services
             // Arrange
             _mockEditorSettings.Setup(x => x.IsMultiTenantEditor).Returns(true);
             _mockConfigProvider.Setup(x => x.GetTenantConnectionAsync("nonexistent.com", default))
-                .ReturnsAsync((Connection)null);
+                .ReturnsAsync((Connection?)null);
 
             var factory = new TenantArticleLogicFactory(
                 _serviceProvider,

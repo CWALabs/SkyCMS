@@ -85,78 +85,89 @@ namespace Sky.Editor.Features.Articles.Save
                     command.UserId);
 
                 // Get latest version of the article
-                var article = await dbContext.Articles
+                var currentArticle = await dbContext.Articles
                     .Where(a => a.ArticleNumber == command.ArticleNumber)
                     .OrderByDescending(o => o.VersionNumber)
                     .FirstOrDefaultAsync(cancellationToken);
 
-                if (article == null)
+                if (currentArticle == null)
                 {
                     logger.LogWarning("Article {ArticleNumber} not found", command.ArticleNumber);
                     return CommandResult<ArticleUpdateResult>.Failure($"Article {command.ArticleNumber} not found.");
                 }
 
                 // ✅ FIX: Capture BOTH old title AND old URL path BEFORE making changes
-                var oldTitle = article.Title;
-                var oldUrlPath = article.UrlPath;
+                var oldTitle = currentArticle.Title;
+                var oldUrlPath = currentArticle.UrlPath;
 
                 // Process HTML content
                 var processedContent = htmlService.EnsureEditableMarkers(command.Content);
-                htmlService.EnsureAngularBase(command.HeadJavaScript ?? string.Empty, command.UrlPath ?? article.UrlPath);
+                htmlService.EnsureAngularBase(command.HeadJavaScript ?? string.Empty, command.UrlPath ?? currentArticle.UrlPath);
 
-                // Update article properties
-                article.Content = processedContent;
-                article.Title = command.Title.Trim();  // ← This changes the title
-                article.Updated = clock.UtcNow;
-                article.HeaderJavaScript = command.HeadJavaScript ?? string.Empty;
-                article.FooterJavaScript = command.FooterJavaScript ?? string.Empty;
-                article.BannerImage = command.BannerImage ?? string.Empty;
-                article.UserId = command.UserId.ToString();
-                article.ArticleType = (int)command.ArticleType;
-                article.Category = command.Category ?? string.Empty;
-                article.Published = command.Published;
-
-                if (!string.IsNullOrWhiteSpace(command.Introduction))
+                // Create new version with incremented version number
+                var newArticle = new Article
                 {
-                    article.Introduction = command.Introduction;
-                }
+                    Id = Guid.NewGuid(),
+                    ArticleNumber = currentArticle.ArticleNumber,
+                    VersionNumber = currentArticle.VersionNumber + 1,
+                    Content = processedContent,
+                    Title = command.Title.Trim(),
+                    Updated = clock.UtcNow,
+                    HeaderJavaScript = command.HeadJavaScript ?? string.Empty,
+                    FooterJavaScript = command.FooterJavaScript ?? string.Empty,
+                    BannerImage = command.BannerImage ?? string.Empty,
+                    UserId = command.UserId.ToString(),
+                    ArticleType = (int)command.ArticleType,
+                    Category = command.Category ?? string.Empty,
+                    Published = command.Published,
+                    UrlPath = command.UrlPath ?? currentArticle.UrlPath,
+                    StatusCode = currentArticle.StatusCode,
+                    TemplateId = currentArticle.TemplateId,
+                    Expires = currentArticle.Expires,
+                    Introduction = !string.IsNullOrWhiteSpace(command.Introduction) ? command.Introduction : currentArticle.Introduction,
+                    RedirectTarget = currentArticle.RedirectTarget,
+                    BlogKey = currentArticle.BlogKey
+                };
+
+                // Add the new version to the database
+                dbContext.Articles.Add(newArticle);
 
                 // Save with concurrency handling
-                var saved = await SaveWithRetryAsync(article, cancellationToken);
+                var saved = await SaveWithRetryAsync(newArticle, cancellationToken);
                 if (!saved)
                 {
                     return CommandResult<ArticleUpdateResult>.Failure("Failed to save article due to concurrent modification.");
                 }
 
                 // ✅ FIX: Handle title change with BOTH old title and old URL path
-                if (!oldTitle.Equals(article.Title))
+                if (!oldTitle.Equals(newArticle.Title))
                 {
                     logger.LogInformation(
                         "Title changed from '{OldTitle}' to '{NewTitle}' for article {ArticleNumber}",
                         oldTitle,
-                        article.Title,
-                        article.ArticleNumber);
+                        newArticle.Title,
+                        newArticle.ArticleNumber);
 
-                    await titleChangeService.HandleTitleChangeAsync(article, oldTitle, oldUrlPath);
+                    await titleChangeService.HandleTitleChangeAsync(newArticle, oldTitle, oldUrlPath);
                 }
 
                 // Update catalog
-                await catalogService.UpsertAsync(article, cancellationToken);
+                await catalogService.UpsertAsync(newArticle, cancellationToken);
 
                 // Publish if needed
                 var cdnResults = new List<CdnResult>();
-                if (article.Published.HasValue)
+                if (newArticle.Published.HasValue)
                 {
-                    cdnResults = await publishingService.PublishAsync(article, cancellationToken);
+                    cdnResults = await publishingService.PublishAsync(newArticle, cancellationToken);
                 }
 
                 logger.LogInformation(
                     "Successfully saved article {ArticleNumber} version {VersionNumber}",
-                    article.ArticleNumber,
-                    article.VersionNumber);
+                    newArticle.ArticleNumber,
+                    newArticle.VersionNumber);
 
                 // Build result
-                var viewModel = MapToViewModel(article, command);
+                var viewModel = MapToViewModel(newArticle, command);
                 var result = new ArticleUpdateResult
                 {
                     ServerSideSuccess = true,

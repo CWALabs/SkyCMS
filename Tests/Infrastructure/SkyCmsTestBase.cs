@@ -232,10 +232,15 @@ namespace Sky.Tests
 
             RedirectService = new RedirectService(Db, SlugService, Clock, PublishingService);
             TitleChangeService = new TitleChangeService(Db, SlugService, RedirectService, Clock, EventDispatcher, PublishingService, ReservedPaths, BlogRenderingService, new LoggerFactory().CreateLogger<TitleChangeService>());
-            TemplateService = new TemplateService(webHostEnvironment, new LoggerFactory().CreateLogger<TemplateService>(), Db);
-            TemplateService.EnsureDefaultTemplatesExistAsync().Wait();
+            
+            // ❌ REMOVE THIS - Don't create TemplateService here, it needs Mediator which doesn't exist yet
+            // TemplateService = new TemplateService(
+            //     webHostEnvironment, new LoggerFactory().CreateLogger<TemplateService>(),
+            //     Db);
+            // TemplateService.EnsureDefaultTemplatesExistAsync().Wait();
 
-            Logic = new ArticleEditLogic(Db, Cache, Storage, new NullLogger<ArticleEditLogic>(), EditorSettings, Clock, SlugService, ArticleHtmlService, CatalogService, PublishingService, TitleChangeService, RedirectService, TemplateService);
+            // ❌ REMOVE THIS - Don't create Logic here, it needs TemplateService which doesn't exist yet
+            // Logic = new ArticleEditLogic(Db, Cache, Storage, new NullLogger<ArticleEditLogic>(), EditorSettings, Clock, SlugService, ArticleHtmlService, CatalogService, PublishingService, TitleChangeService, RedirectService, TemplateService);
 
             DynamicConfigurationProvider = new DynamicConfigurationProvider(
                 configuration,
@@ -247,28 +252,11 @@ namespace Sky.Tests
             var mockTenantArticleLogicFactory = new Mock<ITenantArticleLogicFactory>();
             mockTenantArticleLogicFactory
                 .Setup(f => f.CreateForTenantAsync(It.IsAny<string>()))
-                .ReturnsAsync(Logic);
+                .ReturnsAsync(() => Logic); // Use lambda to defer evaluation
             TenantArticleLogicFactory = mockTenantArticleLogicFactory.Object;
 
-            // CREATE FEATURE HANDLER
-            CreateArticleHandler = new CreateArticleHandler(
-                Db,
-                ArticleHtmlService,
-                CatalogService,
-                PublishingService,
-                TitleChangeService,
-                TemplateService,
-                Clock,
-                new NullLogger<CreateArticleHandler>());
-
-            SaveArticleHandler = new SaveArticleHandler(
-                Db,
-                ArticleHtmlService,
-                CatalogService,
-                PublishingService,
-                TitleChangeService,
-                Clock,
-                new NullLogger<SaveArticleHandler>());
+            // ❌ REMOVE THIS - Don't create handlers here, they need TemplateService which doesn't exist yet
+            // CreateArticleHandler and SaveArticleHandler will be created after TemplateService is initialized
 
             // 🔧 FIX: SETUP IDENTITY MANAGERS WITH TOKEN PROVIDERS AND PASSWORD POLICY
             var userStore = new UserStore<IdentityUser>(Db);
@@ -379,7 +367,8 @@ namespace Sky.Tests
                 .AddSingleton<IPublishingService>(PublishingService)
                 .AddSingleton<IRedirectService>(RedirectService)
                 .AddSingleton<ITitleChangeService>(TitleChangeService)
-                .AddSingleton<ITemplateService>(TemplateService)
+                // ❌ REMOVE THIS - Don't register TemplateService yet
+                // .AddSingleton<ITemplateService>(TemplateService)
                 .AddSingleton<ITenantArticleLogicFactory>(TenantArticleLogicFactory)
                 .AddSingleton(new SiteSettings())
                 .AddScoped<ICommandHandler<CreateArticleCommand, CommandResult<ArticleViewModel>>>(sp => CreateArticleHandler)
@@ -390,8 +379,51 @@ namespace Sky.Tests
                 .Services
                 .BuildServiceProvider();
 
-            // GET MEDIATOR FROM SERVICE PROVIDER
+            // ✅ GET MEDIATOR FROM SERVICE PROVIDER FIRST
             Mediator = Services.GetRequiredService<IMediator>();
+
+            // ✅ NOW CREATE TEMPLATE SERVICE WITH MEDIATOR
+            TemplateService = new TemplateService(
+                webHostEnvironment,
+                new LoggerFactory().CreateLogger<TemplateService>(),
+                Db,
+                Mediator); // Pass the mediator!
+
+            // ✅ NOW CREATE LOGIC WITH TEMPLATE SERVICE
+            Logic = new ArticleEditLogic(
+                Db,
+                Cache,
+                Storage,
+                new NullLogger<ArticleEditLogic>(),
+                EditorSettings,
+                Clock,
+                SlugService,
+                ArticleHtmlService,
+                CatalogService,
+                PublishingService,
+                TitleChangeService,
+                RedirectService,
+                TemplateService);
+
+            // ✅ NOW CREATE FEATURE HANDLERS WITH TEMPLATE SERVICE
+            CreateArticleHandler = new CreateArticleHandler(
+                Db,
+                ArticleHtmlService,
+                CatalogService,
+                PublishingService,
+                TitleChangeService,
+                TemplateService, // Now TemplateService is available!
+                Clock,
+                new NullLogger<CreateArticleHandler>());
+
+            SaveArticleHandler = new SaveArticleHandler(
+                Db,
+                ArticleHtmlService,
+                CatalogService,
+                PublishingService,
+                TitleChangeService,
+                Clock,
+                new NullLogger<SaveArticleHandler>());
 
             // ✅ ADD THIS - Get the real IHttpClientFactory from DI
             HttpClientFactory = Services.GetRequiredService<IHttpClientFactory>();
@@ -408,6 +440,7 @@ namespace Sky.Tests
                 Clock,
                 Services);
 
+            // ✅ NOW THESE CAN RUN (after TemplateService is created)
             EnsureBlogStreamTemplateExistsAsync().Wait();
             EnsureBlogPostTemplateExistsAsync().Wait();
 

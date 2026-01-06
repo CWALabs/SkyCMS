@@ -96,6 +96,11 @@ namespace Cosmos.Common.Data
         public DbSet<PublishedPage> Pages { get; set; }
 
         /// <summary>
+        /// Gets or sets page design versions (drafts and historical).
+        /// </summary>
+        public DbSet<PageDesignVersion> PageDesignVersions { get; set; }
+
+        /// <summary>
         /// Gets or sets site settings (key/value configuration).
         /// </summary>
         public DbSet<Setting> Settings { get; set; }
@@ -336,6 +341,11 @@ namespace Cosmos.Common.Data
                     .HasPartitionKey(k => k.Id)
                     .HasKey(node => node.Id);
 
+                modelBuilder.Entity<PageDesignVersion>()
+                    .ToContainer("PageDesignVersions")
+                    .HasPartitionKey(k => k.Id)
+                    .HasKey(node => node.Id);
+
                 modelBuilder.Entity<AuthorInfo>()
                     .ToContainer("AuthorInfo")
                     .HasPartitionKey(k => k.Id)
@@ -368,6 +378,7 @@ namespace Cosmos.Common.Data
                 modelBuilder.Entity<Article>().Property(e => e.RowVersion).IsETagConcurrency();
                 modelBuilder.Entity<CatalogEntry>().Property(e => e.RowVersion).IsETagConcurrency();
                 modelBuilder.Entity<PublishedPage>().Property(e => e.RowVersion).IsETagConcurrency();
+                modelBuilder.Entity<PageDesignVersion>().Property(e => e.RowVersion).IsETagConcurrency();
             }
 
             base.OnModelCreating(modelBuilder);

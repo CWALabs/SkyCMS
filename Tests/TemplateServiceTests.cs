@@ -13,6 +13,7 @@ namespace Sky.Tests.Services.Templates
     using Microsoft.Extensions.Logging;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Sky.Editor.Features.Shared;
     using Sky.Editor.Services.Templates;
     using System;
     using System.Collections.Generic;
@@ -30,6 +31,7 @@ namespace Sky.Tests.Services.Templates
         private Mock<ILogger<TemplateService>> mockLogger;
         private ApplicationDbContext dbContext;
         private TemplateService templateService;
+        private Mock<IMediator> mockMediator;
 
         /// <summary>
         /// Initializes the test environment before each test.
@@ -44,6 +46,9 @@ namespace Sky.Tests.Services.Templates
             // Setup mock ILogger
             mockLogger = new Mock<ILogger<TemplateService>>();
 
+            // Setup mock IMediator
+            mockMediator = new Mock<IMediator>();
+
             // Setup in-memory database
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -51,8 +56,12 @@ namespace Sky.Tests.Services.Templates
 
             dbContext = new ApplicationDbContext(options);
 
-            // Create the service under test
-            templateService = new TemplateService(mockEnvironment.Object, mockLogger.Object, dbContext);
+            // Create the service under test with IMediator
+            templateService = new TemplateService(
+                mockEnvironment.Object,
+                mockLogger.Object,
+                dbContext,
+                mockMediator.Object);
         }
 
         /// <summary>

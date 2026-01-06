@@ -91,6 +91,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Include="Data\PageDesignVersion.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="MailChimp.Net.V3" />
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
 		<PackageReference Include="Otp.NET">

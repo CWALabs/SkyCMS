@@ -41,7 +41,7 @@ namespace Sky.Editor.Pages.Diagnostics
         /// <summary>
         /// Gets the validation result.
         /// </summary>
-        public ValidationResult? Result { get; private set; }
+        public ValidationResult Result { get; private set; }
 
         /// <summary>
         /// Handles GET requests.
