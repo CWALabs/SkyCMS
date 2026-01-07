@@ -27,6 +27,7 @@ namespace Sky.Tests.Features.Articles.Save
         public new void Setup() => InitializeTestContext();
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task SaveArticle_TitleChange_CreatesRedirectFromOldSlug()
         {
             // Arrange - Create a dummy root article first
@@ -69,6 +70,8 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("TitleChanges")]
+        [TestCategory("Slugs")]
         public async Task SaveArticle_TitleWithSpecialCharacters_GeneratesValidSlug()
         {
             // Arrange - Create a dummy root article first
@@ -108,6 +111,7 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task SaveArticle_MinorTitleChange_CaseOnly_DoesNotCreateRedirect()
         {
             // Arrange - Create a dummy root article first
@@ -142,6 +146,8 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("TitleChanges")]
+        [TestCategory("Slugs")]
         public async Task SaveArticle_TitleChangeWithSpaces_NormalizesSlug()
         {
             // Arrange - Create a dummy root article first
@@ -177,6 +183,8 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("TitleChanges")]
+        [TestCategory("Slugs")]
         public async Task SaveArticle_VeryLongTitle_TruncatesSlug()
         {
             // Arrange - Create a dummy root article first
@@ -213,6 +221,8 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("TitleChanges")]
+        [TestCategory("Slugs")]
         public async Task SaveArticle_TitleWithLeadingTrailingSpaces_TrimsCorrectly()
         {
             // Arrange - Create a dummy root article first
@@ -252,6 +262,7 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task SaveArticle_MultipleTitleChanges_CreatesMultipleRedirects()
         {
             // Arrange - Create a dummy root article first
@@ -262,6 +273,7 @@ namespace Sky.Tests.Features.Articles.Save
             await Logic.PublishArticle(article.Id, DateTimeOffset.UtcNow);
             
             var savedArticle = await Db.Articles
+                .AsNoTracking()  // ? FIX: Use AsNoTracking to prevent EF Core from updating this instance
                 .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
 
             // First title change

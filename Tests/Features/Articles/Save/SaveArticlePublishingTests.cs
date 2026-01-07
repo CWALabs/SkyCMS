@@ -109,7 +109,9 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
             
             var updatedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.IsNotNull(updatedArticle!.Published);
             Assert.AreEqual(originalPublishedDate, updatedArticle.Published);
         }
@@ -139,7 +141,9 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
 
             var updatedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.IsNull(updatedArticle!.Published);
         }
 
@@ -168,7 +172,9 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
             
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.IsNotNull(savedArticle!.Published);
             Assert.IsTrue(savedArticle.Published > Clock.UtcNow);
         }
@@ -222,7 +228,9 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
             
             var updated = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == rootArticle.ArticleNumber);
+                .Where(a => a.ArticleNumber == rootArticle.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.IsNotNull(updated);
             Assert.AreEqual("root", updated.UrlPath); // Should remain root
             Assert.AreEqual("Updated Home Page", updated.Title); // Title should update
@@ -293,7 +301,9 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
     
             var updated = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == rootArticle.ArticleNumber);
+                .Where(a => a.ArticleNumber == rootArticle.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.IsNotNull(updated);
             Assert.AreEqual("root", updated.UrlPath);
             Assert.IsNull(updated.Published);
@@ -366,7 +376,9 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
     
             var updated = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == nonRootArticle.ArticleNumber);
+                .Where(a => a.ArticleNumber == nonRootArticle.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
     
             Assert.IsNotNull(updated);
             Assert.AreNotEqual(originalPath, updated.UrlPath, 
@@ -375,7 +387,9 @@ namespace Sky.Tests.Features.Articles.Save
     
             // Verify root article is unchanged
             var rootCheck = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == rootArticle.ArticleNumber);
+                .Where(a => a.ArticleNumber == rootArticle.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.AreEqual("root", rootCheck.UrlPath);
 }
 
@@ -460,7 +474,9 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
     
             var updated = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == rootArticle.ArticleNumber);
+                .Where(a => a.ArticleNumber == rootArticle.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
     
             Assert.IsNotNull(updated);
             Assert.AreEqual("root", updated.UrlPath);
@@ -495,7 +511,9 @@ namespace Sky.Tests.Features.Articles.Save
             Assert.IsTrue(result.IsSuccess);
     
             var updated = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == rootArticle.ArticleNumber);
+                .Where(a => a.ArticleNumber == rootArticle.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
     
             // Should preserve root (case-insensitive comparison)
             Assert.IsNotNull(updated);

@@ -788,46 +788,46 @@ namespace Sky.Cms.Controllers
 
             article.Content = templateHtmlDoc.DocumentNode.OuterHtml;
 
-            // If template has no editable regions, update the existing version in place
-            // rather than creating a new version (since there's nothing to preserve)
-            if (templateEditableDivs == null)
-            {
-                var entity = await dbContext.Articles
-                    .Where(a => a.ArticleNumber == articleNumber)
-                    .OrderByDescending(a => a.VersionNumber)
-                    .FirstAsync();
-                
-                entity.Content = article.Content;
-                await dbContext.SaveChangesAsync();
-                
-                Console.WriteLine($"Template applied to article {articleNumber} (in-place update)");
-                return;
-            }
+            // Reset to version 1
+            // First, delete all existing versions
+            var existingVersions = await dbContext.Articles
+                .Where(a => a.ArticleNumber == articleNumber)
+                .ToListAsync();
+            
+            dbContext.Articles.RemoveRange(existingVersions);
 
-            // Template has editable regions, so create a new version
-            article.VersionNumber = 0;
+            // Get the latest version data before deletion
+            var latestVersion = existingVersions.OrderByDescending(a => a.VersionNumber).First();
 
-            // NEW: Use SaveArticle command
-            var command = new SaveArticleCommand
+            // Create new version 1 with template applied
+            var newArticle = new Article
             {
-                ArticleNumber = article.ArticleNumber,
-                Title = article.Title,
+                Id = Guid.NewGuid(),
+                ArticleNumber = latestVersion.ArticleNumber,
+                VersionNumber = 1,
                 Content = article.Content,
-                HeadJavaScript = article.HeadJavaScript,
-                FooterJavaScript = article.FooterJavaScript,
-                BannerImage = article.BannerImage,
-                UrlPath = article.UrlPath,
-                ArticleType = (ArticleType)article.ArticleType,
-                Category = article.Category,
-                Introduction = article.Introduction,
-                Published = article.Published,
-                UserId = Guid.Parse(await GetUserId())
+                Title = latestVersion.Title,
+                Updated = DateTimeOffset.UtcNow,
+                HeaderJavaScript = latestVersion.HeaderJavaScript,
+                FooterJavaScript = latestVersion.FooterJavaScript,
+                BannerImage = latestVersion.BannerImage,
+                UserId = latestVersion.UserId,
+                ArticleType = latestVersion.ArticleType,
+                Category = latestVersion.Category,
+                Published = latestVersion.Published,
+                UrlPath = latestVersion.UrlPath,
+                StatusCode = latestVersion.StatusCode,
+                TemplateId = latestVersion.TemplateId,
+                Expires = latestVersion.Expires,
+                Introduction = latestVersion.Introduction,
+                RedirectTarget = latestVersion.RedirectTarget,
+                BlogKey = latestVersion.BlogKey
             };
 
-            var result = await mediator.SendAsync(command);
+            dbContext.Articles.Add(newArticle);
+            await dbContext.SaveChangesAsync();
 
-
-            Console.WriteLine($"Template applied to article {articleNumber}");
+            Console.WriteLine($"Template applied to article {articleNumber}, version reset to 1");
         }
     }
 }

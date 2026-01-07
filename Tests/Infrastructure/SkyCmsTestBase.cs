@@ -137,6 +137,7 @@ namespace Sky.Tests
             // In-memory DB (unique per test run).
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
                 .Options;
             Db = new ApplicationDbContext(options);
 

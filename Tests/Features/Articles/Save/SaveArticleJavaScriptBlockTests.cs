@@ -46,7 +46,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.Contains("console.log", savedArticle!.HeaderJavaScript);
         }
 
@@ -72,7 +74,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.Contains("console.log", savedArticle!.FooterJavaScript);
         }
 
@@ -99,7 +103,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.Contains("headVar", savedArticle!.HeaderJavaScript);
             Assert.Contains("console.log", savedArticle.FooterJavaScript);
         }
@@ -130,7 +136,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.IsGreaterThan(10000, savedArticle!.HeaderJavaScript.Length);
         }
 
@@ -157,7 +165,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.AreEqual(string.Empty, savedArticle!.HeaderJavaScript);
             Assert.AreEqual(string.Empty, savedArticle.FooterJavaScript);
         }
@@ -185,7 +195,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.AreEqual(string.Empty, savedArticle!.HeaderJavaScript);
             Assert.AreEqual(string.Empty, savedArticle.FooterJavaScript);
         }
@@ -214,7 +226,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.Contains("value's & test", savedArticle!.HeaderJavaScript);
         }
     }

@@ -65,6 +65,7 @@ namespace Sky.Tests.Services.Redirects
         #region CreateOrUpdateRedirectAsync Tests
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_RootSlug_ReturnsNull()
         {
             // Arrange
@@ -80,6 +81,8 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
+        [TestCategory("Slugs")]
         public async Task CreateOrUpdateRedirectAsync_ValidSlugs_NormalizesSlugs()
         {
             // Arrange
@@ -99,6 +102,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_CreatesRedirectArticle()
         {
             // Arrange
@@ -116,6 +120,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_GeneratesRedirectJavaScript()
         {
             // Arrange
@@ -136,6 +141,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_GeneratesRedirectPageBody()
         {
             // Arrange
@@ -153,6 +159,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_EmptyDatabase_AssignsArticleNumber2()
         {
             // Arrange
@@ -167,6 +174,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ExistingArticles_IncrementsArticleNumber()
         {
             // Arrange
@@ -189,10 +197,11 @@ namespace Sky.Tests.Services.Redirects
             var result = await redirectService.CreateOrUpdateRedirectAsync(fromSlug, toSlug, TestUserId);
 
             // Assert
-            Assert.AreEqual(7, result.ArticleNumber); // Max (5) + 1 + 1
+            Assert.AreEqual(6, result.ArticleNumber); // Max (5) + 1
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SetsTimestampsFromClock()
         {
             // Arrange
@@ -211,6 +220,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SetsVersionNumberTo1()
         {
             // Arrange
@@ -225,6 +235,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SetsUserId()
         {
             // Arrange
@@ -240,6 +251,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SetsBannerImageToEmpty()
         {
             // Arrange
@@ -254,6 +266,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_SavesArticleToDatabase()
         {
             // Arrange
@@ -271,6 +284,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_CreatesArticleNumberEntry()
         {
             // Arrange
@@ -286,6 +300,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ValidInput_PublishesArticle()
         {
             // Arrange
@@ -302,6 +317,8 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
+        [TestCategory("Slugs")]
         public async Task CreateOrUpdateRedirectAsync_FromSlugWithTrailingSlash_TrimsSlash()
         {
             // Arrange
@@ -319,6 +336,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_ToSlugWithSpecialChars_HtmlEncodes()
         {
             // Arrange
@@ -335,6 +353,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_MultipleRedirects_CreatesMultipleArticles()
         {
             // Arrange
@@ -362,6 +381,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_EmptyArticlesTable_HandlesGracefully()
         {
             // Arrange
@@ -385,6 +405,7 @@ namespace Sky.Tests.Services.Redirects
         #region Edge Cases and Error Handling
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_EmptyGuidUserId_SetsEmptyGuidAsString()
         {
             // Arrange
@@ -399,6 +420,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_RootSlugUpperCase_ReturnsNull()
         {
             // Arrange
@@ -413,6 +435,7 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
         public async Task CreateOrUpdateRedirectAsync_VeryLongSlugs_CreatesRedirect()
         {
             // Arrange
@@ -428,6 +451,8 @@ namespace Sky.Tests.Services.Redirects
         }
 
         [TestMethod]
+        [TestCategory("Redirects")]
+        [TestCategory("Concurrency")]
         public async Task CreateOrUpdateRedirectAsync_ConcurrentRequests_HandlesGracefully()
         {
             // Arrange

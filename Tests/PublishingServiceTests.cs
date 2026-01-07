@@ -63,6 +63,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_WhenPublishedIsNull_SetsPublishDate()
         {
             // Arrange
@@ -84,6 +85,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_WhenNewerVersionPublished_UnpublishesEarlierVersions()
         {
             // Arrange
@@ -109,6 +111,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_RemovesPriorNonRedirectPages()
         {
             // Arrange
@@ -141,6 +144,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_PreservesRedirectPages()
         {
             // Arrange
@@ -173,6 +177,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_CreatesNewPublishedPage()
         {
             // Arrange
@@ -197,6 +202,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_SetsParentUrlPathForNestedPages()
         {
             // Arrange
@@ -220,6 +226,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_SetsEmptyParentUrlPathForRootPages()
         {
             // Arrange
@@ -243,6 +250,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task UnpublishAsync_MarksAllVersionsAsUnpublished()
         {
             // Arrange
@@ -273,6 +281,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task UnpublishAsync_RemovesPagesButPreservesRedirects()
         {
             // Arrange
@@ -316,6 +325,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task UnpublishAsync_DoesNothingWhenNoPublishedVersions()
         {
             // Arrange
@@ -336,6 +346,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_OnlyUnpublishesEarlierVersions()
         {
             // Arrange
@@ -370,6 +381,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_DoesNotUnpublishFutureDatedArticles()
         {
             // Arrange
@@ -393,6 +405,7 @@ namespace Sky.Tests.Services.Publishing
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous test operation.</returns>
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task PublishAsync_CreatesStaticFile_WhenStaticPagesEnabled()
         {
             // Arrange

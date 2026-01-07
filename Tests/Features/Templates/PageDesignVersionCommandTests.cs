@@ -24,6 +24,7 @@ namespace Sky.Editor.Tests.Features.Templates
     /// Tests for PageDesignVersion command handlers.
     /// </summary>
     [TestClass]
+    [DoNotParallelize]
     public class PageDesignVersionCommandTests : SkyCmsTestBase
     {
         private CreatePageDesignVersionHandler createHandler = null!;

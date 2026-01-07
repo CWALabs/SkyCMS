@@ -31,6 +31,7 @@ namespace Sky.Tests.Features.Articles.Create
         #region Validation Tests
 
         [TestMethod]
+        [TestCategory("Validation")]
         public async Task HandleAsync_EmptyTitle_ReturnsValidationError()
         {
             // Arrange
@@ -51,6 +52,7 @@ namespace Sky.Tests.Features.Articles.Create
         }
 
         [TestMethod]
+        [TestCategory("Validation")]
         public async Task HandleAsync_TitleTooLong_ReturnsValidationError()
         {
             // Arrange
@@ -70,6 +72,7 @@ namespace Sky.Tests.Features.Articles.Create
         }
 
         [TestMethod]
+        [TestCategory("Validation")]
         public async Task HandleAsync_EmptyUserId_ReturnsValidationError()
         {
             // Arrange
@@ -93,6 +96,7 @@ namespace Sky.Tests.Features.Articles.Create
         #region Success Scenarios
 
         [TestMethod]
+        [TestCategory("Articles")]
         public async Task HandleAsync_ValidCommand_ReturnsSuccess()
         {
             // Arrange
@@ -115,6 +119,7 @@ namespace Sky.Tests.Features.Articles.Create
         }
 
         [TestMethod]
+        [TestCategory("Articles")]
         public async Task HandleAsync_ValidCommand_CreatesArticleInDatabase()
         {
             // Arrange
@@ -139,6 +144,7 @@ namespace Sky.Tests.Features.Articles.Create
         #region First Article Behavior
 
         [TestMethod]
+        [TestCategory("Articles")]
         public async Task HandleAsync_FirstArticle_BecomesRoot()
         {
             // Arrange
@@ -157,6 +163,7 @@ namespace Sky.Tests.Features.Articles.Create
         }
 
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task HandleAsync_FirstArticle_IsPublishedAutomatically()
         {
             // Arrange

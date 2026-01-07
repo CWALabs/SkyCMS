@@ -47,7 +47,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.IsNotNull(savedArticle);
             Assert.AreEqual("Technology", savedArticle.Category);
             Assert.AreEqual((int)ArticleType.BlogPost, savedArticle.ArticleType);
@@ -85,7 +87,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.AreEqual("Science", savedArticle!.Category);
         }
 
@@ -111,7 +115,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.AreEqual("This is the intro text", savedArticle!.Introduction);
         }
 
@@ -137,7 +143,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.IsTrue(string.IsNullOrEmpty(savedArticle!.Category));
         }
 
@@ -172,7 +180,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.AreEqual((int)ArticleType.BlogPost, savedArticle!.ArticleType);
         }
 
@@ -198,7 +208,9 @@ namespace Sky.Tests.Features.Articles.Save
             // Assert
             Assert.IsTrue(result.IsSuccess);
             var savedArticle = await Db.Articles
-                .FirstOrDefaultAsync(a => a.ArticleNumber == article.ArticleNumber);
+                .Where(a => a.ArticleNumber == article.ArticleNumber)
+                .OrderByDescending(a => a.VersionNumber)
+                .FirstOrDefaultAsync();
             Assert.AreEqual("https://example.com/banner.jpg", savedArticle!.BannerImage);
         }
 

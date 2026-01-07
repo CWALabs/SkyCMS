@@ -110,99 +110,186 @@ namespace Sky.Editor.Services.Titles
         /// <inheritdoc/>
         public async Task HandleTitleChangeAsync(Article article, string oldTitle, string oldUrlPath)
         {
-            // Use a local dictionary to track URL changes for this operation
-            var changedUrls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            var oldSlug = oldUrlPath; // The old URL path is already normalized
-            var newSlug = BuildArticleUrl(article);
-
-            // **PRESERVE ROOT PAGE URL PATH**
-            // The root page must always remain at "root" regardless of title changes
-            var isRootPage = article.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase);
+            // Use a database transaction to ensure atomicity (if supported by the database provider)
+            // If any critical operation fails, all changes will be rolled back
+            // Note: In-memory databases may not support transactions
+            var transaction = await db.Database.BeginTransactionAsync();
             
-            if (isRootPage)
+            try
             {
-                logger.LogInformation(
-                    "Title change for root page (article {ArticleNumber}) from '{OldTitle}' to '{NewTitle}'. UrlPath will remain 'root'.",
-                    article.ArticleNumber,
-                    oldTitle,
-                    article.Title);
-                
-                // Update versions but don't change URL paths for root page
-                await UpdateVersionsForRootPageAsync(article);
-                
+                // Use a list to track URL changes with published status for this operation
+                var changedUrls = new List<UrlChange>();
+
+                var oldSlug = oldUrlPath; // The old URL path is already normalized
+                var newSlug = BuildArticleUrl(article);
+
+                // ✅ FIX: Capture the published status BEFORE UpdateVersionsAsync (which may modify it via EF Core tracking)
+                var wasPublished = article.Published.HasValue && article.Published <= clock.UtcNow;
+
+                // **PRESERVE ROOT PAGE URL PATH**
+                // The root page must always remain at "root" regardless of title changes
+                var isRootPage = article.UrlPath.Equals("root", StringComparison.OrdinalIgnoreCase);
+
+                if (isRootPage)
+                {
+                    logger.LogInformation(
+                        "Title change for root page (article {ArticleNumber}) from '{OldTitle}' to '{NewTitle}'. UrlPath will remain 'root'.",
+                        article.ArticleNumber,
+                        oldTitle,
+                        article.Title);
+
+                    // Update versions but don't change URL paths for root page
+                    await UpdateVersionsForRootPageAsync(article);
+
+                    // Republish if the article is currently published
+                    if (wasPublished)
+                    {
+                        await publishingService.PublishAsync(article);
+                    }
+
+                    // Commit transaction before dispatching events
+                    await transaction.CommitAsync();
+
+                    // ✅ FIX: Dispatch event with the actual old title, not the URL path
+                    await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
+
+                    return;
+                }
+
+                // Validate that the new slug doesn't conflict with existing articles
+                var slugConflict = await db.Articles
+                    .AnyAsync(a =>
+                        a.ArticleNumber != article.ArticleNumber &&
+                        a.UrlPath == newSlug &&
+                        a.StatusCode != (int)StatusCodeEnum.Deleted);
+
+                if (slugConflict)
+                {
+                    logger.LogWarning(
+                        "Title change for article {ArticleNumber} would create slug conflict with existing article. Old: {OldSlug}, New: {NewSlug}",
+                        article.ArticleNumber,
+                        oldSlug,
+                        newSlug);
+                    throw new InvalidOperationException($"The slug '{newSlug}' is already in use by another article.");
+                }
+
+                // Track the URL change for redirect creation with published status
+                changedUrls.Add(new UrlChange
+                {
+                    OldUrl = oldSlug,
+                    NewUrl = newSlug,
+                    IsPublished = wasPublished,
+                    ArticleNumber = article.ArticleNumber
+                });
+
+                // Update the article's URL path and blog key (for blog posts and blog streams)
+                article.UrlPath = newSlug;
+
+                // If this is a blog stream, the blog key must match the UrlPath (new slug).
+                if (article.ArticleType == (int)ArticleType.BlogStream)
+                {
+                    article.BlogKey = newSlug;
+                }
+
+                // If this is a blog stream, cascade changes to all associated blog posts
+                if (article.ArticleType == (int)ArticleType.BlogStream)
+                {
+                    await HandleBlogStreamEntriesAsync(article, oldSlug, newSlug, oldTitle, changedUrls);  // ✅ Pass oldTitle
+                }
+                else if (article.ArticleType == (int)ArticleType.General)
+                {
+                    await HandleTitleChangesForChildren(article, oldSlug, newSlug, changedUrls);
+                }
+
+                // Synchronize all versions of this article
+                await UpdateVersionsAsync(article, newSlug, oldSlug);
+
                 // Republish if the article is currently published
-                if (article.Published != null && article.Published <= clock.UtcNow)
+                if (wasPublished)
                 {
                     await publishingService.PublishAsync(article);
                 }
-                
-                // ✅ FIX: Dispatch event with the actual old title, not the URL path
-                await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
-                
-                return;
-            }
 
-            // Validate that the new slug doesn't conflict with existing articles
-            var slugConflict = await db.Articles
-                .AnyAsync(a =>
-                    a.ArticleNumber != article.ArticleNumber &&
-                    a.UrlPath == newSlug &&
-                    a.StatusCode != (int)StatusCodeEnum.Deleted);
-
-            if (slugConflict)
-            {
-                logger.LogWarning(
-                    "Title change for article {ArticleNumber} would create slug conflict with existing article. Old: {OldSlug}, New: {NewSlug}",
-                    article.ArticleNumber,
-                    oldSlug,
-                    newSlug);
-                throw new InvalidOperationException($"The slug '{newSlug}' is already in use by another article.");
-            }
-
-            // Track the URL change for redirect creation
-            changedUrls.TryAdd(oldSlug, newSlug);
-
-            // Update the article's URL path and blog key (for blog posts and blog streams)
-            article.UrlPath = newSlug;
-            
-            // If this is a blog stream, the blog key must match the UrlPath (new slug).
-            if (article.ArticleType == (int)ArticleType.BlogStream)
-            {
-                article.BlogKey = newSlug;
-            }
-
-            // If this is a blog stream, cascade changes to all associated blog posts
-            if (article.ArticleType == (int)ArticleType.BlogStream)
-            {
-                await HandleBlogStreamEntriesAsync(article, oldSlug, newSlug, oldTitle, changedUrls);  // ✅ Pass oldTitle
-            }
-            else if (article.ArticleType == (int)ArticleType.General)
-            {
-                await HandleTitleChangesForChildren(article, oldSlug, newSlug, changedUrls);
-            }
-
-            // Synchronize all versions of this article
-            await UpdateVersionsAsync(article, newSlug, oldSlug);
-
-            // Republish if the article is currently published
-            if (article.Published != null && article.Published <= clock.UtcNow)
-            {
-                await publishingService.PublishAsync(article);
-            }
-
-            // Only proceed if the slug actually changed
-            if (!oldSlug.Equals(newSlug, StringComparison.OrdinalIgnoreCase))
-            {
-                // Create redirects for all changed URLs
-                if (changedUrls.Any() && article.Published.HasValue && article.Published <= clock.UtcNow)
+                // Only proceed if the slug actually changed
+                RedirectCreationResult redirectResult = null;
+                if (!oldSlug.Equals(newSlug, StringComparison.OrdinalIgnoreCase))
                 {
-                    await CreateRedirectsAsync(changedUrls, article.UserId);
+                    // Create redirects only for published articles
+                    // Filter to only URL changes where the article is published
+                    var publishedChanges = changedUrls.Where(c => c.IsPublished).ToList();
+
+                    if (publishedChanges.Any())
+                    {
+                        redirectResult = await CreateRedirectsAsync(publishedChanges, article.UserId);
+
+                        // Check if redirect creation had critical failures
+                        if (redirectResult.FailedRedirects.Any())
+                        {
+                            // Log warnings but don't fail the entire operation
+                            // Redirects are important but not critical enough to rollback article changes
+                            logger.LogWarning(
+                                "Some redirects failed to create for article {ArticleNumber}: {FailureCount} failed out of {TotalCount}",
+                                article.ArticleNumber,
+                                redirectResult.FailedRedirects.Count,
+                                redirectResult.TotalAttempted);
+                        }
+                    }
                 }
+
+                // Commit the transaction - all database changes are now permanent
+                await transaction.CommitAsync();
+
+                logger.LogInformation(
+                    "Title change transaction committed successfully for article {ArticleNumber}",
+                    article.ArticleNumber);
+
+                // Log redirect creation summary after successful commit
+                if (redirectResult != null)
+                {
+                    logger.LogInformation(
+                        "Redirect creation completed for article {ArticleNumber}: {SuccessCount} created, {FailureCount} failed, {SkippedCount} skipped",
+                        article.ArticleNumber,
+                        redirectResult.SuccessCount,
+                        redirectResult.FailedRedirects.Count,
+                        redirectResult.SkippedCount);
+
+                    // Log details of failed redirects
+                    if (redirectResult.FailedRedirects.Any())
+                    {
+                        foreach (var (articleNumber, oldUrl, newUrl, error) in redirectResult.FailedRedirects)
+                        {
+                            logger.LogWarning(
+                                "Failed redirect for article {ArticleNumber}: '{OldUrl}' -> '{NewUrl}': {Error}",
+                                articleNumber,
+                                oldUrl,
+                                newUrl,
+                                error);
+                        }
+                    }
+                }
+
+                // ✅ FIX: Dispatch event with the actual old title AFTER successful commit
+                await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
             }
-            
-            // ✅ FIX: Dispatch event with the actual old title
-            await dispatcher.DispatchAsync(new TitleChangedEvent(article.ArticleNumber, oldTitle, article.Title));
+            catch (Exception ex)
+            {
+                // Rollback transaction on any failure
+                await transaction.RollbackAsync();
+
+                logger.LogError(
+                    ex,
+                    "Title change transaction rolled back for article {ArticleNumber} due to error. Old title: '{OldTitle}', New title: '{NewTitle}'",
+                    article.ArticleNumber,
+                    oldTitle,
+                    article.Title);
+
+                // Re-throw to let the caller handle the error
+                throw;
+            }
+            finally
+            {
+                await transaction.DisposeAsync();
+            }
         }
 
         /// <inheritdoc/>
@@ -291,7 +378,7 @@ namespace Sky.Editor.Services.Titles
             string oldBlogKey,
             string newBlogKey,
             string oldTitle,  // ✅ ADD: New parameter for the actual old title
-            Dictionary<string, string> changedUrls)
+            List<UrlChange> changedUrls)
         {
             // Find all blog posts associated with the old blog key
             var blogEntries = await db.Articles
@@ -307,10 +394,17 @@ namespace Sky.Editor.Services.Titles
                 entry.BlogKey = newBlogKey;
                 entry.UrlPath = newPath;
 
-                // Track URL change if paths differ
+                // Track URL change if paths differ, with published status for this specific blog entry
                 if (!oldPath.Equals(newPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    changedUrls.TryAdd(oldPath, newPath);
+                    var isEntryPublished = entry.Published.HasValue && entry.Published <= clock.UtcNow;
+                    changedUrls.Add(new UrlChange
+                    {
+                        OldUrl = oldPath,
+                        NewUrl = newPath,
+                        IsPublished = isEntryPublished,
+                        ArticleNumber = entry.ArticleNumber
+                    });
                 }
 
                 // Synchronize all versions of this blog post
@@ -415,9 +509,9 @@ namespace Sky.Editor.Services.Titles
                 }
                 else
                 {
-                     version.UrlPath = version.ArticleType == (int)ArticleType.BlogPost
-                        ? slugs.Normalize(version.Title, article.BlogKey)  // Use article.BlogKey
-                        : slugs.Normalize(version.Title);
+                    version.UrlPath = version.ArticleType == (int)ArticleType.BlogPost
+                       ? slugs.Normalize(version.Title, article.BlogKey)  // Use article.BlogKey
+                       : slugs.Normalize(version.Title);
                 }
 
                 // Republish if this version is currently published
@@ -446,9 +540,9 @@ namespace Sky.Editor.Services.Titles
         /// <summary>
         /// Creates redirect articles for all URL changes accumulated during a title change operation.
         /// </summary>
-        /// <param name="changedUrls">Dictionary mapping old URLs (keys) to their new destinations (values).</param>
+        /// <param name="changedUrls">List of URL changes with published status for redirect creation.</param>
         /// <param name="userId">The string identifier of the user initiating the title change, used for audit tracking in redirect records.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        /// <returns>A <see cref="RedirectCreationResult"/> containing details about the redirect creation operation.</returns>
         /// <exception cref="ArgumentException">Thrown if <paramref name="userId"/> is not a valid GUID format.</exception>
         /// <remarks>
         /// <para>
@@ -466,8 +560,10 @@ namespace Sky.Editor.Services.Titles
         /// being passed to the redirect service. If the conversion fails, an <see cref="ArgumentException"/> is thrown.
         /// </para>
         /// </remarks>
-        private async Task CreateRedirectsAsync(Dictionary<string, string> changedUrls, string userId)
+        private async Task<RedirectCreationResult> CreateRedirectsAsync(List<UrlChange> urlChanges, string userId)
         {
+            var result = new RedirectCreationResult();
+
             if (string.IsNullOrWhiteSpace(userId))
             {
                 throw new ArgumentException("User ID cannot be null or empty when creating redirects.", nameof(userId));
@@ -479,24 +575,103 @@ namespace Sky.Editor.Services.Titles
                 throw new ArgumentException($"User ID '{userId}' is not a valid GUID format.", nameof(userId));
             }
 
-            var distinctUrls = changedUrls.ToList().Distinct();
+            // Group by old URL to handle potential duplicates (last one wins)
+            var groupedChanges = urlChanges
+                .GroupBy(c => c.OldUrl, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.Last())
+                .ToList();
 
-            foreach (var kvp in distinctUrls)
+            if (groupedChanges.Count < urlChanges.Count)
             {
+                result.SkippedCount = urlChanges.Count - groupedChanges.Count;
+                logger.LogWarning(
+                    "Detected {DuplicateCount} duplicate old URLs during redirect creation, keeping most recent targets",
+                    result.SkippedCount);
+            }
+
+            foreach (var change in groupedChanges)
+            {
+                // Skip if old and new URLs are the same (shouldn't happen, but defensive)
+                if (change.OldUrl.Equals(change.NewUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    result.SkippedCount++;
+                    logger.LogDebug(
+                        "Skipping redirect creation for article {ArticleNumber}: old and new URLs are identical ('{Url}')",
+                        change.ArticleNumber,
+                        change.OldUrl);
+                    continue;
+                }
+
                 try
                 {
-                    await redirects.CreateOrUpdateRedirectAsync(kvp.Key, kvp.Value, userGuid);
+                    // Resolve the final destination to avoid redirect chains
+                    var finalDestination = await ResolveFinalDestinationAsync(change.NewUrl);
+
+                    if (!finalDestination.Equals(change.NewUrl, StringComparison.OrdinalIgnoreCase))
+                    {
+                        logger.LogInformation(
+                            "Detected redirect chain for article {ArticleNumber}: '{OldUrl}' -> '{NewUrl}' -> '{FinalUrl}', redirecting directly to final destination",
+                            change.ArticleNumber,
+                            change.OldUrl,
+                            change.NewUrl,
+                            finalDestination);
+                    }
+
+                    await redirects.CreateOrUpdateRedirectAsync(change.OldUrl, finalDestination, userGuid);
+
+                    logger.LogDebug(
+                        "Created redirect for article {ArticleNumber}: '{OldUrl}' -> '{NewUrl}'",
+                        change.ArticleNumber,
+                        change.OldUrl,
+                        finalDestination);
+
+                    // Update any existing redirects that point TO the old URL to point to the final destination
+                    // This prevents redirect chains when an article's title changes multiple times
+                    var incomingRedirects = await db.Articles
+                        .Where(a => a.StatusCode == (int)StatusCodeEnum.Redirect &&
+                                   a.RedirectTarget == change.OldUrl)
+                        .ToListAsync();
+
+                    if (incomingRedirects.Any())
+                    {
+                        logger.LogInformation(
+                            "Updating {Count} incoming redirects that point to '{OldUrl}' to point to '{FinalUrl}'",
+                            incomingRedirects.Count,
+                            change.OldUrl,
+                            finalDestination);
+
+                        foreach (var incomingRedirect in incomingRedirects)
+                        {
+                            incomingRedirect.RedirectTarget = finalDestination;
+                            logger.LogDebug(
+                                "Updated redirect chain: '{Source}' -> '{OldTarget}' => '{Source}' -> '{NewTarget}'",
+                                incomingRedirect.UrlPath,
+                                change.OldUrl,
+                                incomingRedirect.UrlPath,
+                                finalDestination);
+                        }
+
+                        await db.SaveChangesAsync();
+                    }
+
+                    result.SuccessCount++;
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(
                         ex,
-                        "Failed to create redirect from '{OldUrl}' to '{NewUrl}' for user {UserId}",
-                        kvp.Key,
-                        kvp.Value,
+                        "Failed to create redirect for article {ArticleNumber} from '{OldUrl}' to '{NewUrl}' for user {UserId}",
+                        change.ArticleNumber,
+                        change.OldUrl,
+                        change.NewUrl,
                         userGuid);
+
+                    // Record the failure for summary reporting (include article number)
+                    result.FailedRedirects.Add((change.ArticleNumber, change.OldUrl, change.NewUrl, ex.Message));
                 }
             }
+
+            return result;
         }
 
         /// <summary>
@@ -534,7 +709,7 @@ namespace Sky.Editor.Services.Titles
         /// ensuring that all child pages remain accessible at their correct relative URLs.
         /// </para>
         /// </remarks>
-        private async Task HandleTitleChangesForChildren(Article article, string oldSlug, string newSlug, Dictionary<string, string> changedUrls)
+        private async Task HandleTitleChangesForChildren(Article article, string oldSlug, string newSlug, List<UrlChange> changedUrls)
         {
             // Find all articles that have the old slug as a parent (URL path starts with old slug)
             var childArticles = await db.Articles
@@ -564,10 +739,17 @@ namespace Sky.Editor.Services.Titles
 
                 child.UrlPath = newChildPath;
 
-                // Track URL change if paths differ and article is published
+                // Track URL change if paths differ, with published status for this specific child
                 if (!oldChildPath.Equals(newChildPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    changedUrls.TryAdd(oldChildPath, newChildPath);
+                    var isChildPublished = child.Published.HasValue && child.Published <= clock.UtcNow;
+                    changedUrls.Add(new UrlChange
+                    {
+                        OldUrl = oldChildPath,
+                        NewUrl = newChildPath,
+                        IsPublished = isChildPublished,
+                        ArticleNumber = child.ArticleNumber
+                    });
                 }
 
                 // Synchronize all versions of this child article
@@ -631,7 +813,7 @@ namespace Sky.Editor.Services.Titles
             {
                 // Update title to match the current article
                 version.Title = article.Title;
-                
+
                 // Ensure UrlPath remains "root" for all versions
                 version.UrlPath = "root";
 
@@ -656,6 +838,57 @@ namespace Sky.Editor.Services.Titles
             {
                 await db.SaveChangesAsync();
             }
+        }
+
+        /// <summary>
+        /// Resolves the final destination of a URL by following any existing redirect chains.
+        /// </summary>
+        /// <param name="targetUrl">The URL to resolve.</param>
+        /// <returns>The final destination URL after following all redirects, or the original URL if no redirects exist.</returns>
+        /// <remarks>
+        /// <para>
+        /// This method prevents redirect chains by checking if the target URL is itself a redirect,
+        /// and if so, following the chain to the final destination. This ensures that new redirects
+        /// always point to actual content, not to other redirects.
+        /// </para>
+        /// <para>
+        /// The method includes protection against infinite loops by limiting the chain depth to 10 redirects.
+        /// If a chain exceeds this limit, an error is logged and the original target URL is returned.
+        /// </para>
+        /// </remarks>
+        private async Task<string> ResolveFinalDestinationAsync(string targetUrl)
+        {
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var current = targetUrl;
+            const int maxDepth = 10;
+
+            while (visited.Add(current) && visited.Count <= maxDepth)
+            {
+                var redirect = await db.Articles
+                    .Where(a => a.UrlPath == current &&
+                               a.StatusCode == (int)StatusCodeEnum.Redirect)
+                    .FirstOrDefaultAsync();
+
+                if (redirect == null || string.IsNullOrWhiteSpace(redirect.RedirectTarget))
+                {
+                    // Found final destination (not a redirect)
+                    return current;
+                }
+
+                current = redirect.RedirectTarget;
+            }
+
+            if (visited.Count > maxDepth)
+            {
+                logger.LogError(
+                    "Redirect chain exceeds maximum depth of {MaxDepth} for URL '{Url}'. Chain: {Chain}",
+                    maxDepth,
+                    targetUrl,
+                    string.Join(" -> ", visited));
+                return targetUrl; // Return original to prevent infinite loop
+            }
+
+            return current;
         }
     }
 }

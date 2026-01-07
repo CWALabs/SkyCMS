@@ -225,6 +225,7 @@ namespace Sky.Editor.Services.Scheduling
                     && a.Published != null && a.Published <= now
                     && a.StatusCode != (int)Cosmos.Common.Data.Logic.StatusCodeEnum.Deleted)
                     .OrderByDescending(a => a.Published)
+                    .ThenByDescending(a => a.VersionNumber)
                     .ToListAsync();
 
                 if (versions.Count < 2)
@@ -253,8 +254,9 @@ namespace Sky.Editor.Services.Scheduling
 
                 // ✅ THEN unpublish old versions (after successful publication)
                 var oldVersions = versions.Where(v =>
-                    v.Published < activeVersion.Published &&
-                    v.Id != activeVersion.Id).ToList();
+                    v.Id != activeVersion.Id &&
+                    (v.Published < activeVersion.Published ||
+                     (v.Published == activeVersion.Published && v.VersionNumber < activeVersion.VersionNumber))).ToList();
 
                 foreach (var oldVersion in oldVersions)
                 {

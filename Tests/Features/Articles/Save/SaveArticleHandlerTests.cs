@@ -28,6 +28,7 @@ namespace Sky.Tests.Features.Articles.Save
         #region Validation Tests
 
         [TestMethod]
+        [TestCategory("Validation")]
         public async Task HandleAsync_InvalidArticleNumber_ReturnsValidationError()
         {
             // Arrange
@@ -49,6 +50,7 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("Validation")]
         public async Task HandleAsync_EmptyTitle_ReturnsValidationError()
         {
             // Arrange
@@ -74,6 +76,7 @@ namespace Sky.Tests.Features.Articles.Save
         #region Success Scenarios
 
         [TestMethod]
+        [TestCategory("Articles")]
         public async Task HandleAsync_ValidCommand_SavesArticle()
         {
             // Arrange - Create an article first
@@ -105,6 +108,7 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("Articles")]
         public async Task HandleAsync_ArticleNotFound_ReturnsError()
         {
             // Arrange
@@ -131,6 +135,7 @@ namespace Sky.Tests.Features.Articles.Save
         #region Title Change Tests
 
         [TestMethod]
+        [TestCategory("TitleChanges")]
         public async Task HandleAsync_TitleChanged_TriggersSlugUpdate()
         {
             // Arrange - Create article
@@ -164,6 +169,7 @@ namespace Sky.Tests.Features.Articles.Save
         #region Catalog Integration
 
         [TestMethod]
+        [TestCategory("Catalog")]
         public async Task HandleAsync_ValidSave_UpdatesCatalog()
         {
             // Arrange - Create article
@@ -200,6 +206,7 @@ namespace Sky.Tests.Features.Articles.Save
         #region Content Processing
 
         [TestMethod]
+        [TestCategory("Content")]
         public async Task HandleAsync_Content_ProcessedForEditableMarkers()
         {
             // Arrange
@@ -235,6 +242,7 @@ namespace Sky.Tests.Features.Articles.Save
         #region Publishing Tests
 
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task HandleAsync_PublishedArticle_TriggersPublishing()
         {
             // Arrange
@@ -265,6 +273,7 @@ namespace Sky.Tests.Features.Articles.Save
         }
 
         [TestMethod]
+        [TestCategory("Publishing")]
         public async Task HandleAsync_UnpublishedArticle_DoesNotTriggerPublishing()
         {
             // Arrange
@@ -304,6 +313,7 @@ namespace Sky.Tests.Features.Articles.Save
         #region Field Updates
 
         [TestMethod]
+        [TestCategory("Articles")]
         public async Task HandleAsync_AllFields_UpdatedCorrectly()
         {
             // Arrange

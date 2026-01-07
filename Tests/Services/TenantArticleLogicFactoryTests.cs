@@ -155,6 +155,10 @@ namespace Sky.Tests.Services
             services.AddSingleton(_mockConfigProvider.Object);
             services.AddSingleton(new SiteSettings());
 
+            // Register custom IMediator implementation
+            services.AddSingleton<Sky.Editor.Features.Shared.IMediator>(sp => 
+                new Sky.Editor.Features.Shared.Mediator(sp));
+
             // Register MediatR with handlers from the Editor assembly
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<TemplateService>());
 

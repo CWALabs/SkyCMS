@@ -76,6 +76,8 @@ namespace Sky.Editor.Features.Articles.Save
                 return CommandResult<ArticleUpdateResult>.Failure(validationErrors);
             }
 
+            Article? currentArticle = null;
+            
             try
             {
                 logger.LogInformation(
@@ -85,7 +87,7 @@ namespace Sky.Editor.Features.Articles.Save
                     command.UserId);
 
                 // Get latest version of the article
-                var currentArticle = await dbContext.Articles
+                currentArticle = await dbContext.Articles
                     .Where(a => a.ArticleNumber == command.ArticleNumber)
                     .OrderByDescending(o => o.VersionNumber)
                     .FirstOrDefaultAsync(cancellationToken);
@@ -96,7 +98,7 @@ namespace Sky.Editor.Features.Articles.Save
                     return CommandResult<ArticleUpdateResult>.Failure($"Article {command.ArticleNumber} not found.");
                 }
 
-                // ✅ FIX: Capture BOTH old title AND old URL path BEFORE making changes
+                // Capture old title and URL path BEFORE making changes
                 var oldTitle = currentArticle.Title;
                 var oldUrlPath = currentArticle.UrlPath;
 
@@ -104,70 +106,67 @@ namespace Sky.Editor.Features.Articles.Save
                 var processedContent = htmlService.EnsureEditableMarkers(command.Content);
                 htmlService.EnsureAngularBase(command.HeadJavaScript ?? string.Empty, command.UrlPath ?? currentArticle.UrlPath);
 
-                // Create new version with incremented version number
-                var newArticle = new Article
-                {
-                    Id = Guid.NewGuid(),
-                    ArticleNumber = currentArticle.ArticleNumber,
-                    VersionNumber = currentArticle.VersionNumber + 1,
-                    Content = processedContent,
-                    Title = command.Title.Trim(),
-                    Updated = clock.UtcNow,
-                    HeaderJavaScript = command.HeadJavaScript ?? string.Empty,
-                    FooterJavaScript = command.FooterJavaScript ?? string.Empty,
-                    BannerImage = command.BannerImage ?? string.Empty,
-                    UserId = command.UserId.ToString(),
-                    ArticleType = (int)command.ArticleType,
-                    Category = command.Category ?? string.Empty,
-                    Published = command.Published,
-                    UrlPath = command.UrlPath ?? currentArticle.UrlPath,
-                    StatusCode = currentArticle.StatusCode,
-                    TemplateId = currentArticle.TemplateId,
-                    Expires = currentArticle.Expires,
-                    Introduction = !string.IsNullOrWhiteSpace(command.Introduction) ? command.Introduction : currentArticle.Introduction,
-                    RedirectTarget = currentArticle.RedirectTarget,
-                    BlogKey = currentArticle.BlogKey
-                };
+                // Update the existing article in-place
+                currentArticle.Content = processedContent;
+                currentArticle.Title = command.Title.Trim();
+                currentArticle.Updated = clock.UtcNow;
+                currentArticle.HeaderJavaScript = command.HeadJavaScript ?? string.Empty;
+                currentArticle.FooterJavaScript = command.FooterJavaScript ?? string.Empty;
+                currentArticle.BannerImage = command.BannerImage ?? string.Empty;
+                currentArticle.UserId = command.UserId.ToString();
+                currentArticle.ArticleType = (int)command.ArticleType;
+                currentArticle.Category = command.Category ?? string.Empty;
+                currentArticle.Published = command.Published;
+                currentArticle.UrlPath = command.UrlPath ?? currentArticle.UrlPath;
+                currentArticle.Introduction = !string.IsNullOrWhiteSpace(command.Introduction) ? command.Introduction : currentArticle.Introduction;
 
-                // Add the new version to the database
-                dbContext.Articles.Add(newArticle);
+                // Check if title is changing
+                var isTitleChanging = !oldTitle.Equals(currentArticle.Title);
 
-                // Save with concurrency handling
-                var saved = await SaveWithRetryAsync(newArticle, cancellationToken);
-                if (!saved)
+                // Only save immediately if title is NOT changing
+                // If title is changing, TitleChangeService will handle the save within its transaction
+                if (!isTitleChanging)
                 {
-                    return CommandResult<ArticleUpdateResult>.Failure("Failed to save article due to concurrent modification.");
+                    // Save with concurrency handling
+                    var saved = await SaveWithRetryAsync(currentArticle, cancellationToken);
+                    if (!saved)
+                    {
+                        return CommandResult<ArticleUpdateResult>.Failure("Failed to save article due to concurrent modification.");
+                    }
                 }
 
-                // ✅ FIX: Handle title change with BOTH old title and old URL path
-                if (!oldTitle.Equals(newArticle.Title))
+                // Handle title change with BOTH old title and old URL path
+                if (isTitleChanging)
                 {
                     logger.LogInformation(
                         "Title changed from '{OldTitle}' to '{NewTitle}' for article {ArticleNumber}",
                         oldTitle,
-                        newArticle.Title,
-                        newArticle.ArticleNumber);
+                        currentArticle.Title,
+                        currentArticle.ArticleNumber);
 
-                    await titleChangeService.HandleTitleChangeAsync(newArticle, oldTitle, oldUrlPath);
+                    // TitleChangeService will save changes within its transaction
+                    await titleChangeService.HandleTitleChangeAsync(currentArticle, oldTitle, oldUrlPath);
+                    
+                    // No need for additional SaveChangesAsync - TitleChangeService handles it
                 }
 
                 // Update catalog
-                await catalogService.UpsertAsync(newArticle, cancellationToken);
+                await catalogService.UpsertAsync(currentArticle, cancellationToken);
 
                 // Publish if needed
                 var cdnResults = new List<CdnResult>();
-                if (newArticle.Published.HasValue)
+                if (currentArticle.Published.HasValue)
                 {
-                    cdnResults = await publishingService.PublishAsync(newArticle, cancellationToken);
+                    cdnResults = await publishingService.PublishAsync(currentArticle, cancellationToken);
                 }
 
                 logger.LogInformation(
                     "Successfully saved article {ArticleNumber} version {VersionNumber}",
-                    newArticle.ArticleNumber,
-                    newArticle.VersionNumber);
+                    currentArticle.ArticleNumber,
+                    currentArticle.VersionNumber);
 
                 // Build result
-                var viewModel = MapToViewModel(newArticle, command);
+                var viewModel = MapToViewModel(currentArticle, command);
                 var result = new ArticleUpdateResult
                 {
                     ServerSideSuccess = true,
@@ -179,6 +178,31 @@ namespace Sky.Editor.Features.Articles.Save
             }
             catch (Exception ex)
             {
+                // Rethrow business validation exceptions that should propagate to the caller
+                if (ex is InvalidOperationException)
+                {
+                    // For in-memory databases that don't support transactions, we need to explicitly
+                    // reload the entity to discard tracked changes
+                    if (currentArticle != null)
+                    {
+                        var entry = dbContext.Entry(currentArticle);
+                        if (entry.State != EntityState.Detached)
+                        {
+                            try
+                            {
+                                await entry.ReloadAsync(cancellationToken);
+                            }
+                            catch
+                            {
+                                // If reload fails, at least detach the entity
+                                entry.State = EntityState.Detached;
+                            }
+                        }
+                    }
+                    
+                    throw;
+                }
+
                 logger.LogError(
                     ex,
                     "Error saving article {ArticleNumber} '{Title}'",
