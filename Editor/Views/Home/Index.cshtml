@@ -1,7 +1,8 @@
 @{
     Layout = null;
-    var frameUrl = "/Home/CcmsContentIndex?target=" + Context.Request.QueryString;
-    var isDebug = frameUrl;
+    // Path + query string
+    var pathAndQuery = Context.Request.Path + Context.Request.QueryString;
+    var frameUrl = $"/Home/CcmsContentIndex?target={pathAndQuery}";
 }
 <!DOCTYPE HTML>
 <html>

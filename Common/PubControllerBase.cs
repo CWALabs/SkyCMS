@@ -133,7 +133,7 @@ namespace Cosmos.Publisher.Controllers
                 {
                     Data = fileData,
                     Metadata = properties,
-                    ETag = new Microsoft.Net.Http.Headers.EntityTagHeaderValue(properties.ETag)
+                    ETag = CreateETag(properties.ETag)
                 };
 
                 memoryCache.CreateEntry(cacheKey)
@@ -150,6 +150,33 @@ namespace Cosmos.Publisher.Controllers
             {
                 logger.LogError(ex, "Error serving file {Path}", path);
                 return NotFound();
+            }
+        }
+
+        private static Microsoft.Net.Http.Headers.EntityTagHeaderValue CreateETag(string etag)
+        {
+            if (string.IsNullOrWhiteSpace(etag))
+            {
+                // Generate a weak ETag if none provided
+                return new Microsoft.Net.Http.Headers.EntityTagHeaderValue("\"default\"", isWeak: true);
+            }
+
+            // Ensure the ETag is properly quoted
+            var quotedETag = etag.Trim();
+            if (!quotedETag.StartsWith("\""))
+            {
+                quotedETag = $"\"{quotedETag}\"";
+            }
+
+            try
+            {
+                return new Microsoft.Net.Http.Headers.EntityTagHeaderValue(quotedETag);
+            }
+            catch (FormatException)
+            {
+                // If the ETag is still invalid, create a weak ETag from hash
+                var validETag = $"\"{Math.Abs(etag.GetHashCode())}\"";
+                return new Microsoft.Net.Http.Headers.EntityTagHeaderValue(validETag, isWeak: true);
             }
         }
 

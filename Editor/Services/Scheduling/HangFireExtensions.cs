@@ -143,7 +143,18 @@ namespace Sky.Editor.Services.Scheduling
                 services.AddHangfire(hangfireConfig =>
                 {
                     hangfireConfig.UseStorage(
-                        new MySqlStorage(connectionString + "Allow User Variables=true;", new MySqlStorageOptions()));
+                        new MySqlStorage(
+                            connectionString + "Allow User Variables=true;", 
+                            new MySqlStorageOptions
+                            {
+                                // Increase timeout for maintenance operations (default is 30s)
+                                TransactionTimeout = TimeSpan.FromMinutes(2),
+                                // Additional optimizations for better performance
+                                QueuePollInterval = TimeSpan.FromSeconds(15),
+                                JobExpirationCheckInterval = TimeSpan.FromHours(1),
+                                CountersAggregateInterval = TimeSpan.FromMinutes(5),
+                                PrepareSchemaIfNecessary = false // Schema already created
+                            }));
                 });
             }
             else if (isSqlite)

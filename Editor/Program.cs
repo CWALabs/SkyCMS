@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -68,11 +69,30 @@ using System.Web;
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
 // ---------------------------------------------------------------
+// CONFIGURATION CONSTANTS
+// ---------------------------------------------------------------
+const string CONFIG_MULTI_TENANT = "MultiTenantEditor";
+const string CONFIG_ALLOW_SETUP = "CosmosAllowSetup";
+const string CONFIG_ENABLE_DIAGNOSTICS = "EnableDiagnostics";
+const string CONFIG_REQUIRES_AUTH = "CosmosRequiresAuthentication";
+const string CONFIG_ALLOW_LOCAL_ACCOUNTS = "AllowLocalAccounts";
+const string CONNECTIONSTRING_APP_DB = "ApplicationDbContextConnection";
+
+// Helper method for extracting hostname from request (used by cookie configuration)
+static string GetHostname(HttpContext context)
+{
+    var hostname = context.Request.Headers["x-origin-hostname"].ToString().ToLowerInvariant();
+    return string.IsNullOrWhiteSpace(hostname)
+        ? context.Request.Host.Host.ToLowerInvariant()
+        : hostname;
+}
+
+// ---------------------------------------------------------------
 // STEP 1: DETERMINE DEPLOYMENT MODE
 // ---------------------------------------------------------------
-var isMultiTenantEditor = builder.Configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
-var allowSetup = builder.Configuration.GetValue<bool?>("CosmosAllowSetup") ?? false;
-var enableDiagnostics = builder.Configuration.GetValue<bool?>("EnableDiagnostics") ?? false;
+var isMultiTenantEditor = builder.Configuration.GetValue<bool?>(CONFIG_MULTI_TENANT) ?? false;
+var allowSetup = builder.Configuration.GetValue<bool?>(CONFIG_ALLOW_SETUP) ?? false;
+var enableDiagnostics = builder.Configuration.GetValue<bool?>(CONFIG_ENABLE_DIAGNOSTICS) ?? false;
 var versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
 if (enableDiagnostics)
@@ -89,7 +109,6 @@ else
 // ---------------------------------------------------------------
 if (enableDiagnostics)
 {
-    bool configurationValid = true;
     ValidationResult? earlyValidationResult = null;
 
     System.Console.WriteLine("Diagnostic mode is enabled - performing early configuration validation...");
@@ -101,7 +120,7 @@ if (enableDiagnostics)
 
     // Run validation synchronously at startup
     earlyValidationResult = validator.ValidateAsync().GetAwaiter().GetResult();
-    configurationValid = earlyValidationResult.IsValid;
+    bool configurationValid = earlyValidationResult.IsValid;
 
     if (!configurationValid)
     {
@@ -163,7 +182,7 @@ if (allowSetup && !isMultiTenantEditor)
 {
     System.Console.WriteLine("🔄 Checking for database migrations...");
     
-    var connectionString = builder.Configuration.GetConnectionString("ApplicationDbContextConnection");
+    var connectionString = builder.Configuration.GetConnectionString(CONNECTIONSTRING_APP_DB);
     
     if (!string.IsNullOrWhiteSpace(connectionString))
     {
@@ -222,8 +241,8 @@ builder.Services.Configure<SiteSettings>(settings =>
 {
     settings.MultiTenantEditor = isMultiTenantEditor;
     settings.AllowSetup = allowSetup;
-    settings.CosmosRequiresAuthentication = builder.Configuration.GetValue<bool?>("CosmosRequiresAuthentication") ?? false;
-    settings.AllowLocalAccounts = builder.Configuration.GetValue<bool?>("AllowLocalAccounts") ?? true;
+    settings.CosmosRequiresAuthentication = builder.Configuration.GetValue<bool?>(CONFIG_REQUIRES_AUTH) ?? false;
+    settings.AllowLocalAccounts = builder.Configuration.GetValue<bool?>(CONFIG_ALLOW_LOCAL_ACCOUNTS) ?? true;
     settings.AllowedFileTypes = ".js,.css,.htm,.html,.mov,.webm,.avi,.mp4,.mpeg,.ts,.svg,.json";
     settings.MultiTenantRedirectUrl = builder.Configuration.GetValue<string>("MultiTenantRedirectUrl") ?? string.Empty;
     settings.MicrosoftAppId = builder.Configuration.GetValue<string>("MicrosoftAppId") ?? string.Empty;
@@ -253,6 +272,7 @@ builder.Services.AddScoped<ICommandHandler<SavePageDesignVersionCommand, Command
 builder.Services.AddScoped<ICommandHandler<PublishPageDesignVersionCommand, CommandResult<Template>>, PublishPageDesignVersionHandler>();
 builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
 builder.Services.AddScoped<IStorageContext, StorageContext>();
+builder.Services.AddScoped<StorageContext>(); // Register concrete class for Hangfire background jobs
 builder.Services.AddScoped<IEditorSettings, EditorSettings>(); // CHANGED: Scoped for per-request tenant context
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>(); // CHANGED: Scoped for Razor view rendering
 
@@ -420,12 +440,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     {
         options.Events.OnValidatePrincipal = async context =>
         {
-            var httpContext = context.HttpContext;
-            var xOriginHostname = httpContext.Request.Headers["x-origin-hostname"].ToString();
-            
-            var currentDomain = !string.IsNullOrWhiteSpace(xOriginHostname) 
-                ? xOriginHostname.ToLowerInvariant() 
-                : httpContext.Request.Host.Host.ToLowerInvariant();
+            var currentDomain = GetHostname(context.HttpContext);
             
             if (context.Principal?.Identity?.IsAuthenticated == true)
             {
@@ -440,12 +455,7 @@ builder.Services.ConfigureApplicationCookie(options =>
         
         options.Events.OnSigningIn = context =>
         {
-            var httpContext = context.HttpContext;
-            var xOriginHostname = httpContext.Request.Headers["x-origin-hostname"].ToString();
-            
-            var currentDomain = !string.IsNullOrWhiteSpace(xOriginHostname) 
-                ? xOriginHostname.ToLowerInvariant() 
-                : httpContext.Request.Host.Host.ToLowerInvariant();
+            var currentDomain = GetHostname(context.HttpContext);
             
             var identity = (System.Security.Claims.ClaimsIdentity)context.Principal.Identity;
             identity.AddClaim(new System.Security.Claims.Claim("CookieDomain", currentDomain));
@@ -464,9 +474,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     {
         var queryParams = System.Web.HttpUtility.ParseQueryString(x.Request.QueryString.Value);
 
-        var website = queryParams["ccmswebsite"];
-        var opt = queryParams["ccmsopt"];
-        var email = queryParams["ccmsemail"];
+        // Remove internal query parameters before redirecting
         queryParams.Remove("ccmswebsite");
         queryParams.Remove("ccmsopt");
         queryParams.Remove("ccmsemail");
@@ -475,6 +483,7 @@ builder.Services.ConfigureApplicationCookie(options =>
         if (x.Request.Path.Equals("/Preview", StringComparison.InvariantCultureIgnoreCase))
         {
             x.Response.Redirect($"/Identity/Account/Login?returnUrl=/Home/Preview?{queryString}");
+            return Task.CompletedTask;
         }
 
         x.Response.Redirect($"/Identity/Account/Login?returnUrl={x.Request.Path}&{queryString}");
@@ -502,18 +511,18 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // ---------------------------------------------------------------
 // STEP 13: Configure Rate Limiting
 // ---------------------------------------------------------------
-builder.Services.AddRateLimiter(_ => _
-    .AddFixedWindowLimiter(policyName: "fixed", options =>
-    {
-        options.PermitLimit = 4;
-        options.Window = TimeSpan.FromSeconds(8);
-        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        options.QueueLimit = 2;
-    }));
-
-// Configure rate limiting for deployment API
 builder.Services.AddRateLimiter(options =>
 {
+    // Fixed window limiter for general use
+    options.AddFixedWindowLimiter(policyName: "fixed", opt =>
+    {
+        opt.PermitLimit = 4;
+        opt.Window = TimeSpan.FromSeconds(8);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 2;
+    });
+    
+    // Deployment API rate limiter
     options.AddFixedWindowLimiter("deployment", opt =>
     {
         opt.Window = TimeSpan.FromMinutes(5);
@@ -569,43 +578,11 @@ if (isMultiTenantEditor)
 }
 
 // ---------------------------------------------------------------
-// STEP: Setup Detection (for valid configurations)
+// UNIFIED SETUP DETECTION MIDDLEWARE (Both Single & Multi-Tenant)
 // ---------------------------------------------------------------
-if (!isMultiTenantEditor && allowSetup)
+if (allowSetup)
 {
-    app.Use(async (context, next) =>
-    {
-        // Skip setup check for setup wizard pages, static files, and health checks
-        if (context.Request.Path.StartsWithSegments("/___setup") ||
-        context.Request.Path.StartsWithSegments("/setup") ||
-            context.Request.Path.StartsWithSegments("/lib") ||
-            context.Request.Path.StartsWithSegments("/css") ||
-            context.Request.Path.StartsWithSegments("/js") ||
-            context.Request.Path.StartsWithSegments("/images") ||
-            context.Request.Path.StartsWithSegments("/fonts") ||
-            context.Request.Path.Value.EndsWith(".css") ||
-            context.Request.Path.Value.EndsWith(".js") ||
-            context.Request.Path.Value.EndsWith(".map") ||
-            context.Request.Path.StartsWithSegments("/healthz") ||
-            context.Request.Path.StartsWithSegments("/.well-known"))
-        {
-            await next();
-            return;
-        }
-
-        // Check if setup is complete
-        var setupService = context.RequestServices.GetRequiredService<ISetupService>();
-        var isComplete = await setupService.IsSetupCompleteAsync();
-
-        if (!isComplete)
-        {
-            // Redirect to setup wizard
-            context.Response.Redirect("/___setup");
-            return;
-        }
-
-        await next();
-    });
+    app.UseSetupDetection(isMultiTenantEditor);
 }
 
 app.UseCosmosCmsDataProtection();
@@ -625,43 +602,10 @@ app.Use(async (context, next) =>
 app.UseForwardedHeaders();
 
 // Setup wizard access control
-app.Use(async (context, next) =>
+if (allowSetup)
 {
-    if (context.Request.Path.StartsWithSegments("/___setup"))
-    {
-        var config = context.RequestServices.GetRequiredService<IConfiguration>();
-        
-        if (!isMultiTenantEditor)
-        {
-            var allowSetup = config.GetValue<bool?>("CosmosAllowSetup") ?? false;
-            if (!allowSetup)
-            {
-                context.Response.Redirect("/");
-                return;
-            }
-        }
-        else
-        {
-            var setupService = context.RequestServices.GetService<IMultiTenantSetupService>();
-            if (setupService != null)
-            {
-                var requiresSetup = await setupService.TenantRequiresSetupAsync();
-                if (!requiresSetup)
-                {
-                    context.Response.Redirect("/");
-                    return;
-                }
-            }
-            else
-            {
-                context.Response.Redirect("/");
-                return;
-            }
-        }
-    }
-
-    await next();
-});
+    app.UseSetupAccessControl(isMultiTenantEditor);
+}
 
 // Environment-specific middleware
 if (app.Environment.IsDevelopment())
@@ -715,7 +659,6 @@ app.MapControllerRoute(name: "blog_post", pattern: "blog/post/{*slug}", defaults
 app.MapControllerRoute(name: "blog_rss", pattern: "blog/rss", defaults: new { controller = "Blog", action = "Rss" });
 app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 
-app.MapRazorPages().WithMetadata(new { Area = "Setup" });
 app.MapAreaControllerRoute(
     name: "setup",
     areaName: "Setup",
@@ -740,12 +683,18 @@ try
                 "article-version-publisher",
                 x => x.ExecuteAsync(),
                 Cron.MinuteInterval(10));
+                
+            app.Logger.LogInformation("✅ Hangfire recurring jobs configured successfully");
+        }
+        else
+        {
+            app.Logger.LogWarning("⚠️ Hangfire IRecurringJobManager not available - background jobs disabled");
         }
     }
 }
 catch (Exception ex)
 {
-    app.Logger.LogInformation("Hangfire recurring jobs not configured: {Message}", ex.Message);
+    app.Logger.LogWarning(ex, "⚠️ Hangfire recurring jobs could not be configured: {Message}", ex.Message);
 }
 
 await app.RunAsync();

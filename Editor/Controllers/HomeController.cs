@@ -100,7 +100,7 @@ namespace Sky.Cms.Controllers
             }
             else
             {
-                article = await articleLogic.GetArticleByUrl(target);
+                article = await articleLogic.GetArticleByUrl(target.TrimStart('/'));
 
                 if (article == null)
                 {
@@ -191,30 +191,30 @@ namespace Sky.Cms.Controllers
                 await userManager.AddToRoleAsync(user, "Administrators");
             }
 
-            if (options.AllowSetup)
-            {
-                // Enable static website for Azure BLOB storage
-                if (!options.CosmosRequiresAuthentication)
-                {
-                    await storageContext.EnableAzureStaticWebsite();
-                }
-                else
-                {
-                    await storageContext.DisableAzureStaticWebsite();
-                }
-            }
+            //if (options.AllowSetup)
+            //{
+            //    // Enable static website for Azure BLOB storage
+            //    if (!options.CosmosRequiresAuthentication)
+            //    {
+            //        await storageContext.EnableAzureStaticWebsite();
+            //    }
+            //    else
+            //    {
+            //        await storageContext.DisableAzureStaticWebsite();
+            //    }
+            //}
 
-            // If we do not yet have a layout, go to a page where we can select one.
-            if (!await EnsureLayoutExists())
-            {
-                return RedirectToAction("Index", "Layouts");
-            }
+            //// If we do not yet have a layout, go to a page where we can select one.
+            //if (!await EnsureLayoutExists())
+            //{
+            //    return RedirectToAction("Index", "Layouts");
+            //}
 
-            // If there are not web pages yet, let's go create a new home page.
-            if (!await EnsureArticleExists())
-            {
-                return RedirectToAction("Index", "Editor");
-            }
+            //// If there are not web pages yet, let's go create a new home page.
+            //if (!await EnsureArticleExists())
+            //{
+            //    return RedirectToAction("Index", "Editor");
+            //}
 
             // If yes, do NOT include headers that allow caching. 
             Response.Headers[HeaderNames.CacheControl] = "no-store";
