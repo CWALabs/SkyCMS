@@ -1,13 +1,21 @@
-﻿using AspNetCore.Identity.FlexDb;
-using Cosmos.Common.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿// <copyright file="MigrationHelper.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
+// See https://github.com/CWALabs/SkyCMS
+// for more information concerning the license and the contributors participating to this project.
+// </copyright>
 
 namespace Sky.Editor.Data
 {
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using AspNetCore.Identity.FlexDb;
+    using AspNetCore.Identity.FlexDb.Strategies;
+    using Cosmos.Common.Data;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Logging;
+
     /// <summary>
     /// Helper service for applying database migrations across different providers.
     /// Supports both single-tenant and multi-tenant scenarios.
@@ -36,39 +44,22 @@ namespace Sky.Editor.Data
 
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
+            // Use custom strategies that include migrations assembly
+            var migrationsAssembly = typeof(MigrationHelper).Assembly.FullName;
+            var strategies = CreateMigrationStrategies(migrationsAssembly);
+            
+            CosmosDbOptionsBuilder.ConfigureDbOptions(optionsBuilder, connectionString, strategies);
+
             switch (provider)
             {
                 case DatabaseProvider.CosmosDb:
                     logger.LogInformation("Cosmos DB detected. Migrations are not supported. Using EnsureCreatedAsync() instead.");
-                    CosmosDbOptionsBuilder.ConfigureDbOptions(optionsBuilder, connectionString);
                     await EnsureCosmosDbCreatedAsync(optionsBuilder.Options, logger);
                     break;
 
                 case DatabaseProvider.SqlServer:
-                    logger.LogInformation("SQL Server detected. Applying migrations...");
-                    optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
-                    {
-                        sqlOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
-                    await ApplyRelationalMigrationsAsync(optionsBuilder.Options, logger, provider);
-                    break;
-
                 case DatabaseProvider.MySql:
-                    logger.LogInformation("MySQL detected. Applying migrations...");
-                    var serverVersion = ServerVersion.AutoDetect(connectionString);
-                    optionsBuilder.UseMySql(connectionString, serverVersion, mySqlOptions =>
-                    {
-                        mySqlOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
-                    await ApplyRelationalMigrationsAsync(optionsBuilder.Options, logger, provider);
-                    break;
-
                 case DatabaseProvider.Sqlite:
-                    logger.LogInformation("SQLite detected. Applying migrations...");
-                    optionsBuilder.UseSqlite(connectionString, sqliteOptions =>
-                    {
-                        sqliteOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
                     await ApplyRelationalMigrationsAsync(optionsBuilder.Options, logger, provider);
                     break;
 
@@ -106,39 +97,26 @@ namespace Sky.Editor.Data
             var provider = DetermineProvider(connectionString);
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-            switch (provider)
+            // Use custom strategies that include migrations assembly
+            var migrationsAssembly = typeof(MigrationHelper).Assembly.FullName;
+            var strategies = CreateMigrationStrategies(migrationsAssembly);
+            
+            CosmosDbOptionsBuilder.ConfigureDbOptions(optionsBuilder, connectionString, strategies);
+
+            if (provider == DatabaseProvider.CosmosDb)
             {
-                case DatabaseProvider.CosmosDb:
-                    throw new InvalidOperationException("Cosmos DB does not support migrations.");
-
-                case DatabaseProvider.SqlServer:
-                    optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
-                    {
-                        sqlOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
-                    await MarkMigrationAsAppliedInternalAsync(optionsBuilder.Options, migrationId, logger, "SQL Server");
-                    break;
-
-                case DatabaseProvider.MySql:
-                    var serverVersion = ServerVersion.AutoDetect(connectionString);
-                    optionsBuilder.UseMySql(connectionString, serverVersion, mySqlOptions =>
-                    {
-                        mySqlOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
-                    await MarkMigrationAsAppliedInternalAsync(optionsBuilder.Options, migrationId, logger, "MySQL");
-                    break;
-
-                case DatabaseProvider.Sqlite:
-                    optionsBuilder.UseSqlite(connectionString, sqliteOptions =>
-                    {
-                        sqliteOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
-                    await MarkMigrationAsAppliedInternalAsync(optionsBuilder.Options, migrationId, logger, "SQLite");
-                    break;
-
-                default:
-                    throw new InvalidOperationException($"Unsupported database provider: {provider}");
+                throw new InvalidOperationException("Cosmos DB does not support migrations.");
             }
+
+            var providerName = provider switch
+            {
+                DatabaseProvider.SqlServer => "SQL Server",
+                DatabaseProvider.MySql => "MySQL",
+                DatabaseProvider.Sqlite => "SQLite",
+                _ => provider.ToString()
+            };
+
+            await MarkMigrationAsAppliedInternalAsync(optionsBuilder.Options, migrationId, logger, providerName);
         }
 
         /// <summary>
@@ -164,33 +142,11 @@ namespace Sky.Editor.Data
 
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-            switch (provider)
-            {
-                case DatabaseProvider.SqlServer:
-                    optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
-                    {
-                        sqlOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
-                    break;
-
-                case DatabaseProvider.MySql:
-                    var serverVersion = ServerVersion.AutoDetect(connectionString);
-                    optionsBuilder.UseMySql(connectionString, serverVersion, mySqlOptions =>
-                    {
-                        mySqlOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
-                    break;
-
-                case DatabaseProvider.Sqlite:
-                    optionsBuilder.UseSqlite(connectionString, sqliteOptions =>
-                    {
-                        sqliteOptions.MigrationsAssembly(typeof(MigrationHelper).Assembly.FullName);
-                    });
-                    break;
-
-                default:
-                    return false;
-            }
+            // Use custom strategies that include migrations assembly
+            var migrationsAssembly = typeof(MigrationHelper).Assembly.FullName;
+            var strategies = CreateMigrationStrategies(migrationsAssembly);
+            
+            CosmosDbOptionsBuilder.ConfigureDbOptions(optionsBuilder, connectionString, strategies);
 
             using var context = new ApplicationDbContext(optionsBuilder.Options);
 
@@ -217,8 +173,25 @@ namespace Sky.Editor.Data
         }
 
         /// <summary>
+        /// Creates custom database configuration strategies with migrations assembly support.
+        /// </summary>
+        /// <param name="migrationsAssembly">The assembly containing migrations.</param>
+        /// <returns>List of configuration strategies.</returns>
+        private static System.Collections.Generic.List<IDatabaseConfigurationStrategy> CreateMigrationStrategies(string migrationsAssembly)
+        {
+            return new System.Collections.Generic.List<IDatabaseConfigurationStrategy>
+            {
+                new CosmosDbConfigurationStrategy(),
+                new SqlServerMigrationStrategy(migrationsAssembly),
+                new MySqlMigrationStrategy(migrationsAssembly),
+                new SqliteMigrationStrategy(migrationsAssembly),
+            };
+        }
+
+        /// <summary>
         /// Applies migrations to a relational database (SQL Server, MySQL, SQLite).
         /// Automatically detects and handles existing databases created without migrations.
+        /// For test scenarios with new databases, uses EnsureCreated for simplicity.
         /// </summary>
         /// <param name="options">The database context options.</param>
         /// <param name="logger">Logger for diagnostic output.</param>
@@ -235,65 +208,162 @@ namespace Sky.Editor.Data
                 // Check if database exists and can be connected to
                 var canConnect = await context.Database.CanConnectAsync();
                 
-                if (canConnect)
+                if (!canConnect)
                 {
-                    // Check if migrations history exists
-                    var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
-                    var appliedList = appliedMigrations.ToList();
+                    // Database doesn't exist - use EnsureCreated for new databases
+                    // This is simpler than migrations for test/dev scenarios
+                    logger.LogInformation("Database does not exist. Creating new database with EnsureCreated()...");
+                    await context.Database.EnsureCreatedAsync();
+                    logger.LogInformation("✅ Database created successfully.");
                     
-                    // Get all migrations defined in code
-                    var allMigrations = context.Database.GetMigrations().ToList();
+                    // Mark all migrations as applied for proper migration tracking
+                    var migrations = context.Database.GetMigrations().ToList();
                     
-                    // SCENARIO 1: Database exists but NO migration history
-                    if (!appliedList.Any() && allMigrations.Any())
+                    if (migrations.Any())
                     {
-                        logger.LogWarning("⚠️ Database exists without migration history. This appears to be an existing database.");
-                        logger.LogInformation("🔄 Automatically marking initial migration as applied to prevent schema conflicts...");
+                        logger.LogInformation("📋 Marking {Count} migration(s) as applied for tracking...", migrations.Count);
                         
-                        // Get the FIRST migration (initial create) for this provider
-                        var initialMigration = allMigrations
-                            .OrderBy(m => m)
-                            .FirstOrDefault(m => m.Contains($"InitialCreate_{provider}"));
-                        
-                        if (initialMigration != null)
+                        var providerName = provider switch
                         {
-                            logger.LogInformation("📋 Initial migration detected: {Migration}", initialMigration);
-                            
-                            // Mark it as applied without running it
-                            var providerName = provider switch
-                            {
-                                DatabaseProvider.SqlServer => "SQL Server",
-                                DatabaseProvider.MySql => "MySQL",
-                                DatabaseProvider.Sqlite => "SQLite",
-                                _ => provider.ToString()
-                            };
-                            
-                            await MarkMigrationAsAppliedInternalAsync(options, initialMigration, logger, providerName);
-                            
-                            logger.LogInformation("✅ Initial migration marked as applied. Checking for additional pending migrations...");
+                            DatabaseProvider.SqlServer => "SQL Server",
+                            DatabaseProvider.MySql => "MySQL",
+                            DatabaseProvider.Sqlite => "SQLite",
+                            _ => provider.ToString()
+                        };
+                        
+                        foreach (var migration in migrations.OrderBy(m => m))
+                        {
+                            logger.LogInformation("  - {Migration}", migration);
+                            await MarkMigrationAsAppliedInternalAsync(options, migration, logger, providerName);
                         }
-                        else
+                        
+                        logger.LogInformation("✅ All migrations marked as applied.");
+                    }
+                    
+                    return;
+                }
+                
+                // Database exists - check migration history
+                var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+                var appliedList = appliedMigrations.ToList();
+                
+                // Get all migrations defined in code
+                var allMigrations = context.Database.GetMigrations().ToList();
+                
+                // SCENARIO 1: Database exists but NO migration history
+                if (!appliedList.Any() && allMigrations.Any())
+                {
+                    logger.LogWarning("⚠️ Database exists without migration history. This appears to be an existing database.");
+                    logger.LogInformation("🔄 Automatically marking all migrations as applied to prevent schema conflicts...");
+                    
+                    // Get ALL migrations for this provider
+                    var providerSuffix = $"_{provider}";
+                    var providerMigrations = allMigrations
+                        .Where(m => m.EndsWith(providerSuffix, StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(m => m)
+                        .ToList();
+                    
+                    var providerName = provider switch
+                    {
+                        DatabaseProvider.SqlServer => "SQL Server",
+                        DatabaseProvider.MySql => "MySQL",
+                        DatabaseProvider.Sqlite => "SQLite",
+                        _ => provider.ToString()
+                    };
+                    
+                    if (providerMigrations.Any())
+                    {
+                        logger.LogInformation("📋 Marking {Count} migration(s) for {Provider} as applied:", 
+                            providerMigrations.Count, provider);
+                        
+                        // Mark all provider-specific migrations as applied
+                        foreach (var migration in providerMigrations)
                         {
-                            logger.LogWarning("⚠️ No InitialCreate migration found for {Provider}. Database state may be inconsistent.", provider);
+                            logger.LogInformation("  - {Migration}", migration);
+                            await MarkMigrationAsAppliedInternalAsync(options, migration, logger, providerName);
+                        }
+                        
+                        logger.LogInformation("✅ All {Provider} migrations marked as applied.", provider);
+                    }
+                    else
+                    {
+                        logger.LogWarning("⚠️ No migrations found for {Provider}. Database state may be inconsistent.", provider);
+                    }
+                    
+                    // Also mark migrations for other providers as applied
+                    var otherProviderMigrations = allMigrations
+                        .Where(m => !m.EndsWith(providerSuffix, StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(m => m)
+                        .ToList();
+                    
+                    if (otherProviderMigrations.Any())
+                    {
+                        logger.LogInformation("ℹ️ Marking {Count} migration(s) for other providers as applied:", 
+                            otherProviderMigrations.Count);
+                        
+                        foreach (var migration in otherProviderMigrations)
+                        {
+                            logger.LogInformation("  - {Migration}", migration);
+                            await MarkMigrationAsAppliedInternalAsync(options, migration, logger, providerName);
                         }
                     }
                 }
 
-                // Now proceed with normal migration application
+                // Check for pending migrations
                 var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
                 var pendingList = pendingMigrations.ToList();
 
                 if (pendingList.Any())
                 {
-                    logger.LogInformation("Found {Count} pending migration(s):", pendingList.Count);
-                    foreach (var migration in pendingList)
+                    // Filter to only include migrations for the current provider
+                    var providerSuffix = $"_{provider}";
+                    var providerSpecificMigrations = pendingList
+                        .Where(m => m.EndsWith(providerSuffix, StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(m => m)
+                        .ToList();
+
+                    // Mark other provider migrations as applied
+                    var otherProviderMigrations = pendingList.Except(providerSpecificMigrations).ToList();
+                    if (otherProviderMigrations.Any())
                     {
-                        logger.LogInformation("  - {Migration}", migration);
+                        logger.LogInformation("ℹ️ Marking {Count} migration(s) for other providers as applied (not applicable to {Provider}):", 
+                            otherProviderMigrations.Count, provider);
+                        
+                        var providerName = provider switch
+                        {
+                            DatabaseProvider.SqlServer => "SQL Server",
+                            DatabaseProvider.MySql => "MySQL",
+                            DatabaseProvider.Sqlite => "SQLite",
+                            _ => provider.ToString()
+                        };
+                        
+                        foreach (var migration in otherProviderMigrations)
+                        {
+                            logger.LogInformation("  - {Migration} (marking as applied, not executing)", migration);
+                            await MarkMigrationAsAppliedInternalAsync(options, migration, logger, providerName);
+                        }
                     }
 
-                    logger.LogInformation("Applying migrations...");
-                    await context.Database.MigrateAsync();
-                    logger.LogInformation("✅ Migrations applied successfully.");
+                    // Re-check pending migrations
+                    pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                    pendingList = pendingMigrations.ToList();
+
+                    if (pendingList.Any())
+                    {
+                        logger.LogInformation("Found {Count} pending {Provider} migration(s):", pendingList.Count, provider);
+                        foreach (var migration in pendingList)
+                        {
+                            logger.LogInformation("  - {Migration}", migration);
+                        }
+
+                        logger.LogInformation("Applying {Provider} migrations...", provider);
+                        await context.Database.MigrateAsync();
+                        logger.LogInformation("✅ Migrations applied successfully.");
+                    }
+                    else
+                    {
+                        logger.LogInformation("✅ Database is up to date. No pending {Provider} migrations.", provider);
+                    }
                 }
                 else
                 {
@@ -303,6 +373,7 @@ namespace Sky.Editor.Data
             catch (Exception ex)
             {
                 logger.LogError(ex, "❌ Migration failed: {Message}", ex.Message);
+                throw;
             }
         }
 
@@ -427,27 +498,39 @@ namespace Sky.Editor.Data
             // Check for SQL Server-specific keywords BEFORE checking for "Data Source="
             // SQL Server uses: Initial Catalog, Integrated Security, User ID, TrustServerCertificate, etc.
             if (connectionString.Contains("Initial Catalog", StringComparison.OrdinalIgnoreCase) ||
-                connectionString.Contains("Database=", StringComparison.OrdinalIgnoreCase) ||
                 connectionString.Contains("Integrated Security", StringComparison.OrdinalIgnoreCase) ||
                 connectionString.Contains("TrustServerCertificate", StringComparison.OrdinalIgnoreCase) ||
-                connectionString.Contains("Trust Server Certificate", StringComparison.OrdinalIgnoreCase) ||
-                (connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) && 
-                 connectionString.Contains("\\", StringComparison.OrdinalIgnoreCase))) // Named instances like COMPUTER\SQLEXPRESS
+                connectionString.Contains("Trust Server Certificate", StringComparison.OrdinalIgnoreCase))
             {
                 return DatabaseProvider.SqlServer;
             }
 
-            if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
-                !connectionString.Contains("Port=3306", StringComparison.OrdinalIgnoreCase))
+            // Check for SQL Server named instances (e.g., "Data Source=SERVER\INSTANCE")
+            // Be more specific: check if backslash appears in the Data Source value itself
+            // by looking for pattern like "Data Source=...\" but NOT file paths ending with .db
+            if (connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) && 
+                connectionString.Contains("\\", StringComparison.OrdinalIgnoreCase) &&
+                !connectionString.Contains(".db", StringComparison.OrdinalIgnoreCase) &&
+                !connectionString.Contains(".sqlite", StringComparison.OrdinalIgnoreCase))
             {
+                // Additional validation: SQL Server connection strings with named instances
+                // typically don't have file extensions
                 return DatabaseProvider.SqlServer;
             }
 
+            // Check for MySQL BEFORE generic Server= check
             if (connectionString.Contains("Port=3306", StringComparison.OrdinalIgnoreCase) ||
-                connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
-                connectionString.Contains("Uid=", StringComparison.OrdinalIgnoreCase))
+                (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
+                 connectionString.Contains("Uid=", StringComparison.OrdinalIgnoreCase)))
             {
                 return DatabaseProvider.MySql;
+            }
+
+            // Generic Server= defaults to SQL Server
+            if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) ||
+                connectionString.Contains("Database=", StringComparison.OrdinalIgnoreCase))
+            {
+                return DatabaseProvider.SqlServer;
             }
 
             // SQLite check LAST (since it only uses "Data Source=" without SQL Server keywords)
@@ -468,6 +551,97 @@ namespace Sky.Editor.Data
             SqlServer,
             MySql,
             Sqlite
+        }
+
+        /// <summary>
+        /// SQL Server strategy with migrations assembly support.
+        /// </summary>
+        private class SqlServerMigrationStrategy : IDatabaseConfigurationStrategy
+        {
+            private readonly string migrationsAssembly;
+
+            public SqlServerMigrationStrategy(string migrationsAssembly)
+            {
+                this.migrationsAssembly = migrationsAssembly;
+            }
+
+            public string ProviderName => "SQL Server";
+
+            public int Priority => 10;
+
+            public bool CanHandle(string connectionString)
+            {
+                return new SqlServerConfigurationStrategy().CanHandle(connectionString);
+            }
+
+            public void Configure(DbContextOptionsBuilder optionsBuilder, string connectionString)
+            {
+                optionsBuilder.UseSqlServer(connectionString, options =>
+                {
+                    options.MigrationsAssembly(migrationsAssembly);
+                });
+            }
+        }
+
+        /// <summary>
+        /// MySQL strategy with migrations assembly support.
+        /// </summary>
+        private class MySqlMigrationStrategy : IDatabaseConfigurationStrategy
+        {
+            private readonly string migrationsAssembly;
+
+            public MySqlMigrationStrategy(string migrationsAssembly)
+            {
+                this.migrationsAssembly = migrationsAssembly;
+            }
+
+            public string ProviderName => "MySQL";
+
+            public int Priority => 20;
+
+            public bool CanHandle(string connectionString)
+            {
+                return new MySqlConfigurationStrategy().CanHandle(connectionString);
+            }
+
+            public void Configure(DbContextOptionsBuilder optionsBuilder, string connectionString)
+            {
+                var serverVersion = ServerVersion.AutoDetect(connectionString);
+                optionsBuilder.UseMySql(connectionString, serverVersion, options =>
+                {
+                    options.MigrationsAssembly(migrationsAssembly);
+                });
+            }
+        }
+
+        /// <summary>
+        /// SQLite strategy with migrations assembly support.
+        /// </summary>
+        private class SqliteMigrationStrategy : IDatabaseConfigurationStrategy
+        {
+            private readonly string migrationsAssembly;
+
+            public SqliteMigrationStrategy(string migrationsAssembly)
+            {
+                this.migrationsAssembly = migrationsAssembly;
+            }
+
+            public string ProviderName => "SQLite";
+
+            public int Priority => 30;
+
+            public bool CanHandle(string connectionString)
+            {
+                return new SqliteConfigurationStrategy().CanHandle(connectionString);
+            }
+
+            public void Configure(DbContextOptionsBuilder optionsBuilder, string connectionString)
+            {
+                optionsBuilder.UseSqlite(connectionString, options =>
+                {
+                    options.MigrationsAssembly(migrationsAssembly);
+                });
+            }
         }
     }
 }

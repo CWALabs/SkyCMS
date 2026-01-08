@@ -254,6 +254,12 @@ namespace Cosmos.Common.Data
             {
                 optionsBuilder.ConfigureWarnings(w => w.Ignore(CosmosEventId.SyncNotSupported));
             }
+            else
+            {
+                // For relational databases, suppress pending model changes warning
+                // This is necessary because we have provider-specific migrations in the same assembly
+                optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+            }
 
             base.OnConfiguring(optionsBuilder);
         }

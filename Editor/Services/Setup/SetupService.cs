@@ -10,7 +10,6 @@ namespace Sky.Editor.Services.Setup
     using System;
     using System.Linq;
     using System.Net.Mail;
-    using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.BlobService;
     using Cosmos.Cms.Data;
@@ -466,8 +465,8 @@ namespace Sky.Editor.Services.Setup
                 config.SmtpPort = smtpPort;
             }
 
-            var smtpUsername = configuration["SmtpEmailProviderOptions:UserName "]
-                  ?? configuration["SmtpEmailProviderOptions__UserName "];
+            var smtpUsername = configuration["SmtpEmailProviderOptions:UserName"]
+                  ?? configuration["SmtpEmailProviderOptions__UserName"];
             if (!string.IsNullOrEmpty(smtpUsername))
             {
                 config.SmtpUsername = smtpUsername;
@@ -1039,6 +1038,70 @@ namespace Sky.Editor.Services.Setup
             }
         }
 
+        /// <inheritdoc/>
+        public async Task<bool> IsSetupCompleteAsync()
+        {
+            try
+            {
+                // Check if the AllowSetup setting is false (which means setup is complete)
+                var allowSetupSetting = await applicationDbContext.Settings
+                    .FirstOrDefaultAsync(s => s.Group == "SYSTEM" && s.Name == "AllowSetup");
+
+                if (allowSetupSetting != null && bool.TryParse(allowSetupSetting.Value, out var allowSetup))
+                {
+                    // If AllowSetup is false, setup is complete
+                    return !allowSetup;
+                }
+
+                // Fallback: Check if setup state exists and is marked as complete
+                var setupState = await GetSetupStateAsync();
+
+                if (setupState != null)
+                {
+                    return setupState.IsComplete;
+                }
+
+                // For legacy setups where no state exists, check if any settings exist that would indicate setup has been completed.
+                // Check for a administrator account.
+                var adminUserExists = await userManager.GetUsersInRoleAsync("Administrators");
+                var layoutExists = await applicationDbContext.Layouts.CountAsync();
+                var homePageExists = await applicationDbContext.Articles.FirstOrDefaultAsync(a => a.UrlPath == "root");
+                var publishedPagesExist = await applicationDbContext.Pages.FirstOrDefaultAsync(p => p.UrlPath == "root");
+
+                // If these exist, we can assume setup is complete.
+                if (adminUserExists.Count > 0 && layoutExists > 0 && (homePageExists != null || publishedPagesExist != null))
+                {
+                    // Save setup state for future checks.
+                    var newState = new SetupConfiguration
+                    {
+                        Id = Guid.NewGuid(),
+                        IsComplete = true,
+                        CompletedAt = DateTime.UtcNow,
+                        SenderEmail = adminUserExists.FirstOrDefault()?.Email,
+                        CurrentStep = 7 // Final step
+                    };
+
+                    // Populate from environment variables
+                    GetEnvironmentVariables(newState);
+
+                    // Save the state
+                    await SaveSetupStateAsync(newState);
+
+                    logger.LogInformation("Legacy setup detected and state saved for setup {SetupId}", newState.Id);
+
+                    return true;
+                }
+
+                // No setup state found - assume setup is required
+                return false;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to check setup completion status, assuming setup is required");
+                return false;
+            }
+        }
+
         /// <summary>
         /// Validates setup configuration.
         /// </summary>
@@ -1527,133 +1590,6 @@ namespace Sky.Editor.Services.Setup
                 logger.LogError(ex, "Failed to create default layout");
 
                 // Don't throw - this is not critical for setup completion
-            }
-        }
-
-        //private async Task DeployHomePage(CancellationToken cancellationToken)
-        //{
-        //    try
-        //    {
-        //        // Check if this is multi-tenant mode
-        //        var isMultiTenant = configuration.GetValue<bool?>("MultiTenantEditor") ?? false;
-
-        //        if (isMultiTenant)
-        //        {
-        //            logger.LogInformation("Multi-tenant mode detected. Post-setup initialization will be handled per-tenant on first request.");
-        //            // Don't process here - let middleware handle it per tenant
-        //            return;
-        //        }
-
-        //        // Single-tenant mode - process immediately
-        //        logger.LogInformation("Single-tenant mode detected. Processing post-setup initialization...");
-
-        //        // Check if home page creation is pending
-        //        var pendingSetting = await applicationDbContext.Settings
-        //            .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "PendingHomePageCreation", cancellationToken);
-
-        //        if (pendingSetting?.Value == "true")
-        //        {
-        //            logger.LogInformation("Detected pending home page creation. Creating home page...");
-
-        //            var userIdSetting = await applicationDbContext.Settings
-        //                .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageUserId", cancellationToken);
-        //            var titleSetting = await applicationDbContext.Settings
-        //                .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageTitle", cancellationToken);
-        //            var templateIdSetting = await applicationDbContext.Settings
-        //                .FirstOrDefaultAsync(s => s.Group == "SETUP" && s.Name == "HomePageTemplateId", cancellationToken);
-
-        //            if (userIdSetting != null && titleSetting != null && Guid.TryParse(userIdSetting.Value, out var userId))
-        //            {
-        //                // Check if home page already exists
-        //                var existingHomePage = await applicationDbContext.Articles
-        //                    .FirstOrDefaultAsync(a => a.ArticleNumber == 1 && a.UrlPath == "root", cancellationToken);
-
-        //                if (existingHomePage == null)
-        //                {
-        //                    Guid? templateId = null;
-        //                    if (templateIdSetting != null && Guid.TryParse(templateIdSetting.Value, out var parsedTemplateId))
-        //                    {
-        //                        templateId = parsedTemplateId;
-        //                    }
-
-        //                    // Create the home page
-        //                    var model = await articleEditLogic.CreateArticle(titleSetting.Value, userId, templateId);
-
-        //                    logger.LogInformation("Home page created successfully with article number {ArticleNumber}", model.ArticleNumber);
-        //                }
-        //                else
-        //                {
-        //                    logger.LogInformation("Home page already exists, skipping creation");
-        //                }
-
-        //                // Clear the pending flags
-        //                applicationDbContext.Settings.Remove(pendingSetting);
-        //                if (userIdSetting != null)
-        //                {
-        //                    applicationDbContext.Settings.Remove(userIdSetting);
-        //                }
-
-        //                if (titleSetting != null)
-        //                {
-        //                    applicationDbContext.Settings.Remove(titleSetting);
-        //                }
-
-        //                if (templateIdSetting != null)
-        //                {
-        //                    applicationDbContext.Settings.Remove(templateIdSetting);
-        //                }
-
-        //                await applicationDbContext.SaveChangesAsync(cancellationToken);
-
-        //                logger.LogInformation("Post-setup initialization completed successfully");
-        //            }
-        //            else
-        //            {
-        //                logger.LogWarning("Missing or invalid settings for home page creation");
-        //            }
-        //        }
-        //        else
-        //        {
-        //            logger.LogInformation("No pending post-setup initialization tasks found");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        logger.LogError(ex, "Failed to complete post-setup initialization");
-        //        // Don't throw - this shouldn't prevent application startup
-        //    }
-        //}
-
-        /// <inheritdoc/>
-        public async Task<bool> IsSetupCompleteAsync()
-        {
-            try
-            {
-                // Check if the AllowSetup setting is false (which means setup is complete)
-                var allowSetupSetting = await applicationDbContext.Settings
-                    .FirstOrDefaultAsync(s => s.Group == "SYSTEM" && s.Name == "AllowSetup");
-
-                if (allowSetupSetting != null && bool.TryParse(allowSetupSetting.Value, out var allowSetup))
-                {
-                    // If AllowSetup is false, setup is complete
-                    return !allowSetup;
-                }
-
-                // Fallback: Check if setup state exists and is marked as complete
-                var setupState = await GetSetupStateAsync();
-
-                if (setupState != null)
-                {
-                    return setupState.IsComplete;
-                }
-
-                // No setup state found - assume setup is required
-                return false;
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to check setup completion status, assuming setup is required");
-                return false;
             }
         }
 
