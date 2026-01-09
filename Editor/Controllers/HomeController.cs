@@ -42,7 +42,6 @@ namespace Sky.Cms.Controllers
         private readonly EditorSettings options;
         private readonly ApplicationDbContext dbContext;
         private readonly UserManager<IdentityUser> userManager;
-        private readonly IStorageContext storageContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HomeController"/> class.
@@ -76,60 +75,6 @@ namespace Sky.Cms.Controllers
             this.userManager = userManager;
             this.storageContext = storageContext;
         }
-
-        /*
-        /// <summary>
-        /// Editor home index method.
-        /// </summary>
-        /// <param name="target">Path to page to edit.</param>
-        /// <param name="articleId">Article ID.</param>
-        /// <param name="layoutId">Layout ID when in preview mode.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task<IActionResult> CcmsContentIndex(string target, Guid? articleId = null, Guid? layoutId = null)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            ArticleViewModel article;
-
-            if (articleId.HasValue)
-            {
-                var user = await userManager.GetUserAsync(User);
-                var userId = new Guid(user.Id);
-                article = await articleLogic.GetArticleById(articleId.Value, EnumControllerName.Edit, userId);
-            }
-            else
-            {
-                article = await articleLogic.GetArticleByUrl(target.TrimStart('/'));
-
-                if (article == null)
-                {
-                    // See if a page is un-published, but does exist, let us edit it.
-                    article = await articleLogic.GetArticleByUrl(HttpContext.Request.Path, publishedOnly: false);
-
-                    // Create your own not found page for a graceful page for users.
-                    article = await articleLogic.GetArticleByUrl("/not_found");
-
-                    HttpContext.Response.StatusCode = 404;
-
-                    if (article == null)
-                    {
-                        return NotFound();
-                    }
-                }
-            }
-
-            if (layoutId.HasValue)
-            {
-                ViewData["LayoutId"] = layoutId.Value.ToString();
-                article.Layout = new LayoutViewModel(await dbContext.Layouts.FirstOrDefaultAsync(f => f.Id == layoutId));
-            }
-
-            return View(article);
-        }
-        */
 
         /// <summary>
         /// Get edit list.

@@ -131,14 +131,14 @@
                     // ═══════════════════════════════════════════════════════
                     // Method 1: Block beforeunload
                     // ═══════════════════════════════════════════════════════
-                    $(iframeWin).on('beforeunload', function(e) {
-                        if (!isNavigating) {
-                            console.warn('🚨 Blocked via beforeunload');
-                            e.preventDefault();
-                            e.returnValue = '';
-                            return '';
-                        }
-                    });
+                    // $(iframeWin).on('beforeunload', function(e) {
+                    //     if (!isNavigating) {
+                    //         console.warn('🚨 Blocked via beforeunload');
+                    //         e.preventDefault();
+                    //         e.returnValue = '';
+                    //         return '';
+                    //     }
+                    // });
 
                     // ═══════════════════════════════════════════════════════
                     // Method 2: Intercept link clicks (ENHANCED for SVG/area)

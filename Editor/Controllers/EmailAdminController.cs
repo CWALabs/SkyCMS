@@ -53,6 +53,7 @@ namespace Sky.Editor.Controllers
         /// <param name="emailMessage">Test email message.</param>
         /// <returns>IActionResult.</returns>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(TestEmailMessageViewModel emailMessage)
         {
             if (ModelState.IsValid)

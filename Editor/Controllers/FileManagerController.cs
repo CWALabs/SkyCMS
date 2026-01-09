@@ -49,7 +49,7 @@ namespace Sky.Cms.Controllers
         private readonly ApplicationDbContext dbContext;
         private readonly UserManager<IdentityUser> userManager;
         private readonly ArticleEditLogic articleLogic;
-        private readonly Uri blobPublicAbsoluteUrl;
+        private readonly string blobPublicAbsoluteUrl;
         private readonly IViewRenderService viewRenderService;
         private readonly ILogger<FileManagerController> logger;
         private readonly IStorageContext storageContext;
@@ -91,14 +91,7 @@ namespace Sky.Cms.Controllers
 
             var htmlUtilities = new HtmlUtilities();
 
-            if (htmlUtilities.IsAbsoluteUri(options.BlobPublicUrl))
-            {
-                blobPublicAbsoluteUrl = new Uri(options.BlobPublicUrl);
-            }
-            else
-            {
-                blobPublicAbsoluteUrl = new Uri(options.PublisherUrl.TrimEnd('/') + "/" + options.BlobPublicUrl.TrimStart('/'));
-            }
+            blobPublicAbsoluteUrl = options.BlobPublicUrl.TrimStart('/');
 
             this.viewRenderService = viewRenderService;
         }

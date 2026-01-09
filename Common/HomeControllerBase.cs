@@ -157,31 +157,6 @@ namespace Cosmos.Common
             return Json(result);
         }
 
-        /// <summary>
-        /// Returns a health check.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [AllowAnonymous]
-        [EnableRateLimiting("fixed")]
-        public async Task<IActionResult> CCMS_UTILITIES_NET_PING_HEALTH_CHECK()
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                _ = await dbContext.Database.CanConnectAsync();
-                return Ok();
-            }
-            catch
-            {
-            }
-
-            return StatusCode(500);
-        }
-
         private async Task<int?> GetArticleNumberFromRequestHeaders()
         {
             string r = Request.Headers["referer"];
