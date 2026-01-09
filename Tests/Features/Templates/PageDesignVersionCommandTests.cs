@@ -16,7 +16,7 @@ namespace Sky.Editor.Tests.Features.Templates
     using Microsoft.Extensions.Logging.Abstractions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Sky.Editor.Features.Templates.Create;
-    using Sky.Editor.Features.Templates.Publish;
+    using Sky.Editor.Features.Templates.Publishing;
     using Sky.Editor.Features.Templates.Save;
     using Sky.Tests;
 

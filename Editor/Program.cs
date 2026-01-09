@@ -37,7 +37,7 @@ using Sky.Editor.Features.Articles.Create;
 using Sky.Editor.Features.Articles.Save;
 using Sky.Editor.Features.Shared;
 using Sky.Editor.Features.Templates.Create;
-using Sky.Editor.Features.Templates.Publish;
+using Sky.Editor.Features.Templates.Publishing;
 using Sky.Editor.Features.Templates.Save;
 using Sky.Editor.Infrastructure.Time;
 using Sky.Editor.Middleware;

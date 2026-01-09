@@ -139,15 +139,11 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Compile Include="Models\InstallationViewModel.BAK" />
-	  <Compile Include="Models\LayoutEditViewModel.cs.BAK" />
-	</ItemGroup>
-
 	<ProjectExtensions>
 		<VisualStudio>
 			<UserProperties libman_1json__JsonSchema="" />
 		</VisualStudio>
 	</ProjectExtensions>
+
 
 </Project>
