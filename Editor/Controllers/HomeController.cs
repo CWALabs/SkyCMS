@@ -25,6 +25,7 @@ namespace Sky.Cms.Controllers
     using Microsoft.Extensions.Logging;
     using Microsoft.Net.Http.Headers;
     using Sky.Cms.Models;
+    using Sky.Cms.Services;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Setup;
@@ -76,6 +77,7 @@ namespace Sky.Cms.Controllers
             this.storageContext = storageContext;
         }
 
+        /*
         /// <summary>
         /// Editor home index method.
         /// </summary>
@@ -127,6 +129,7 @@ namespace Sky.Cms.Controllers
 
             return View(article);
         }
+        */
 
         /// <summary>
         /// Get edit list.
@@ -135,11 +138,18 @@ namespace Sky.Cms.Controllers
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task<IActionResult> EditList(string target)
         {
+            // Decode and normalize the target URL
+            if (!string.IsNullOrEmpty(target))
+            {
+                target = System.Net.WebUtility.UrlDecode(target);
+                target = target.Trim().TrimStart('/').TrimEnd('/');
+            }
+
             var article = await articleLogic.GetArticleByUrl(target);
 
             if (article == null)
             {
-                return NotFound(ModelState);
+                return NotFound($"No article found for URL: {target}");
             }
 
             var data = await dbContext.Articles.OrderByDescending(o => o.VersionNumber)
@@ -164,15 +174,13 @@ namespace Sky.Cms.Controllers
         /// <param name="articleId">Article Id.</param>
         /// <param name="previewType">Preview type.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [AllowAnonymous]
         public async Task<IActionResult> Index(string lang = "", string mode = "", Guid? layoutId = null, Guid? articleId = null, string previewType = "")
         {
             // Note: Setup check is handled by middleware (TenantSetupMiddleware for multi-tenant,
             // or Program.cs middleware for single-tenant) before this action is reached.
-            
+            // Ensure user is authenticated (middleware may bypass during setup)
             if (User.Identity?.IsAuthenticated == false)
             {
-                // If we require authentication, redirect to the login page.
                 Response.Cookies.Delete("CosmosAuthCookie");
                 return Redirect("~/Identity/Account/Login");
             }
@@ -191,39 +199,59 @@ namespace Sky.Cms.Controllers
                 await userManager.AddToRoleAsync(user, "Administrators");
             }
 
-            //if (options.AllowSetup)
-            //{
-            //    // Enable static website for Azure BLOB storage
-            //    if (!options.CosmosRequiresAuthentication)
-            //    {
-            //        await storageContext.EnableAzureStaticWebsite();
-            //    }
-            //    else
-            //    {
-            //        await storageContext.DisableAzureStaticWebsite();
-            //    }
-            //}
-
-            //// If we do not yet have a layout, go to a page where we can select one.
-            //if (!await EnsureLayoutExists())
-            //{
-            //    return RedirectToAction("Index", "Layouts");
-            //}
-
-            //// If there are not web pages yet, let's go create a new home page.
-            //if (!await EnsureArticleExists())
-            //{
-            //    return RedirectToAction("Index", "Editor");
-            //}
-
             // If yes, do NOT include headers that allow caching. 
             Response.Headers[HeaderNames.CacheControl] = "no-store";
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            ArticleViewModel article;
+
+            if (articleId.HasValue)
+            {
+                var userId = new Guid(user.Id);
+                article = await articleLogic.GetArticleById(articleId.Value, EnumControllerName.Edit, userId);
+            }
+            else
+            {
+                var path = HttpContext.Request.Path.Value?.TrimStart('/') ?? string.Empty;
+                article = await articleLogic.GetArticleByUrl(path);
+
+                if (article == null)
+                {
+                    // See if a page is un-published, but does exist, let us edit it.
+                    article = await articleLogic.GetArticleByUrl(HttpContext.Request.Path, publishedOnly: false);
+
+                    // Create your own not found page for a graceful page for users.
+                    article = await articleLogic.GetArticleByUrl("/not_found");
+
+                    HttpContext.Response.StatusCode = 404;
+
+                    if (article == null)
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+
+            if (layoutId.HasValue)
+            {
+                ViewData["LayoutId"] = layoutId.Value.ToString();
+                article.Layout = new LayoutViewModel(await dbContext.Layouts.FirstOrDefaultAsync(f => f.Id == layoutId));
+            }
+
+            var viewRenderingService = HttpContext.RequestServices.GetService(typeof(IViewRenderService)) as IViewRenderService;
+            var renderedView = await viewRenderingService.RenderToStringAsync("~/Views/Home/index.cshtml", article);
+            ViewData["RenderedView"] = renderedView;
+            ViewData["CurrentPath"] = HttpContext.Request.Path.Value?.TrimStart('/') ?? string.Empty;
 
             // If no preview type, load the edit list.
             if (string.IsNullOrEmpty(previewType))
             {
                 ViewData["LoadEditList"] = true; // Signal to load the edit list in the main menu.
-                return View();
+                return View("Wrapper");
             }
 
             return View("~/Views/Home/Preview.cshtml");
@@ -309,22 +337,22 @@ namespace Sky.Cms.Controllers
             return View(model);
         }
 
-        /// <summary>
-        /// Ensures there is a Layout.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        private async Task<bool> EnsureLayoutExists()
-        {
-            return await dbContext.Layouts.CosmosAnyAsync();
-        }
+        ///// <summary>
+        ///// Ensures there is a Layout.
+        ///// </summary>
+        ///// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        //private async Task<bool> EnsureLayoutExists()
+        //{
+        //    return await dbContext.Layouts.CosmosAnyAsync();
+        //}
 
-        /// <summary>
-        /// Ensures there is at least one article.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        private async Task<bool> EnsureArticleExists()
-        {
-            return await dbContext.Articles.CosmosAnyAsync();
-        }
+        ///// <summary>
+        ///// Ensures there is at least one article.
+        ///// </summary>
+        ///// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        //private async Task<bool> EnsureArticleExists()
+        //{
+        //    return await dbContext.Articles.CosmosAnyAsync();
+        //}
     }
 }

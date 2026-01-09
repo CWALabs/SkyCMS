@@ -789,7 +789,7 @@ namespace Sky.Cms.Controllers
                 {
                     var article = await articleLogic.GetArticleById(articleId, EnumControllerName.Edit, Guid.Parse(await GetUserId()));
 
-                    var originalHtml = await articleLogic.ExportArticle(article, blobPublicAbsoluteUrl, viewRenderService);
+                    var originalHtml = await articleLogic.ExportArticle(article, viewRenderService);
                     var originalHtmlDoc = new HtmlAgilityPack.HtmlDocument();
                     originalHtmlDoc.LoadHtml(originalHtml);
 

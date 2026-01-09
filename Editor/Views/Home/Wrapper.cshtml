@@ -1,0 +1,300 @@
+﻿@{
+    Layout = null;
+    var renderedView = ViewData["RenderedView"] as string;
+}
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="https://code.jquery.com/jquery-3.6.2.min.js" integrity="sha256-2krYZKh//PcchRtd+H+VyyQoZ/e3EcrkxhM8ycwASPA=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+</head>
+<body class="cwps-body" style="margin:0px;padding:0px;overflow:hidden;height:100vh;">
+    <partial name="_CosmosMainMenuPartial" />
+    <iframe id="iFrameWebPage" style="position: absolute; top: 52px; bottom: 0px; left: 0px; right: 0px; width: 100%; height: calc(100vh - 52px); margin:0px; padding:0px; border:none; z-index:1;">
+    </iframe>
+    <script>
+        $(document).ready(function() {
+            var iframe = $('#iFrameWebPage')[0];
+            var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            // Strip meta refresh tags before writing
+            var content = @Html.Raw(Json.Serialize(renderedView));
+            content = content.replace(/<meta[^>]*http-equiv=["']?refresh["']?[^>]*>/gi, '');
+            
+            iframeDoc.open();
+            iframeDoc.write(content);
+            iframeDoc.close();
+
+            var isNavigating = false;
+            var allowedUrl = null;
+            var monitoringInterval = null;
+
+            function setupNavigationBlocking(iframe) {
+                try {
+                    var iframeWin = iframe.contentWindow;
+                    var iframeDoc = iframe.contentDocument || iframeWin.document;
+
+                    // Store the ONLY allowed URL
+                    allowedUrl = iframeWin.location.href;
+                    isNavigating = false;
+
+                    // ═══════════════════════════════════════════════════════
+                    // FAILSAFE: Monitor iframe URL
+                    // ═══════════════════════════════════════════════════════
+                    if (monitoringInterval) {
+                        clearInterval(monitoringInterval);
+                    }
+
+                    monitoringInterval = setInterval(function() {
+                        try {
+                            var currentUrl = iframeWin.location.href;
+                            
+                            if (currentUrl !== allowedUrl && !isNavigating) {
+                                console.warn('🚨 Unauthorized navigation blocked:', currentUrl);
+                                iframeDoc.open();
+                                iframeDoc.write(content);
+                                iframeDoc.close();
+                            }
+                        } catch (e) {}
+                    }, 100);
+
+                    // ═══════════════════════════════════════════════════════
+                    // Block window.open
+                    // ═══════════════════════════════════════════════════════
+                    var originalWindowOpen = iframeWin.open;
+                    iframeWin.open = function(url, target, features) {
+                        if (target === '_self' || target === '_parent' || target === '_top' || !target) {
+                            console.warn('🚨 Blocked window.open:', url);
+                            isNavigating = true;
+                            clearInterval(monitoringInterval);
+                            window.location.href = url;
+                            return null;
+                        }
+                        return originalWindowOpen.call(this, url, target, features);
+                    };
+
+                    // ═══════════════════════════════════════════════════════
+                    // Block location.replace() and location.assign()
+                    // ═══════════════════════════════════════════════════════
+                    var originalReplace = iframeWin.location.replace;
+                    var originalAssign = iframeWin.location.assign;
+
+                    iframeWin.location.replace = function(url) {
+                        if (!isNavigating) {
+                            console.warn('🚨 Blocked location.replace:', url);
+                            isNavigating = true;
+                            clearInterval(monitoringInterval);
+                            window.location.href = url;
+                            return;
+                        }
+                        originalReplace.call(iframeWin.location, url);
+                    };
+
+                    iframeWin.location.assign = function(url) {
+                        if (!isNavigating) {
+                            console.warn('🚨 Blocked location.assign:', url);
+                            isNavigating = true;
+                            clearInterval(monitoringInterval);
+                            window.location.href = url;
+                            return;
+                        }
+                        originalAssign.call(iframeWin.location, url);
+                    };
+
+                    // ═══════════════════════════════════════════════════════
+                    // Override location.href property
+                    // ═══════════════════════════════════════════════════════
+                    try {
+                        var hrefDescriptor = Object.getOwnPropertyDescriptor(iframeWin.Location.prototype, 'href');
+                        if (hrefDescriptor && hrefDescriptor.set) {
+                            var originalHrefSetter = hrefDescriptor.set;
+                            Object.defineProperty(iframeWin.location, 'href', {
+                                set: function(url) {
+                                    if (!isNavigating) {
+                                        console.warn('🚨 Blocked location.href setter:', url);
+                                        isNavigating = true;
+                                        clearInterval(monitoringInterval);
+                                        window.location.href = url;
+                                        return;
+                                    }
+                                    originalHrefSetter.call(iframeWin.location, url);
+                                },
+                                get: hrefDescriptor.get,
+                                configurable: true
+                            });
+                        }
+                    } catch (e) {}
+
+                    // ═══════════════════════════════════════════════════════
+                    // Method 1: Block beforeunload
+                    // ═══════════════════════════════════════════════════════
+                    $(iframeWin).on('beforeunload', function(e) {
+                        if (!isNavigating) {
+                            console.warn('🚨 Blocked via beforeunload');
+                            e.preventDefault();
+                            e.returnValue = '';
+                            return '';
+                        }
+                    });
+
+                    // ═══════════════════════════════════════════════════════
+                    // Method 2: Intercept link clicks (ENHANCED for SVG/area)
+                    // ═══════════════════════════════════════════════════════
+                    iframeDoc.addEventListener('click', function(e) {
+                        var anchor = e.target.closest('a, area, [href], [xlink\\:href]');
+                        if (anchor) {
+                            var href = anchor.getAttribute('href') || anchor.getAttribute('xlink:href');
+
+                            if (href && !href.startsWith('#') && !href.startsWith('javascript:') &&
+                                !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.stopImmediatePropagation();
+
+                                isNavigating = true;
+                                clearInterval(monitoringInterval);
+                                window.location.href = anchor.href || new URL(href, iframeWin.location.href).href;
+                            }
+                        }
+                    }, true);
+
+                    // ═══════════════════════════════════════════════════════
+                    // Method 3: Override History API
+                    // ═══════════════════════════════════════════════════════
+                    var originalPushState = iframeWin.history.pushState;
+                    var originalReplaceState = iframeWin.history.replaceState;
+                    
+                    iframeWin.history.pushState = function(state, title, url) {
+                        if (url && !isNavigating) {
+                            isNavigating = true;
+                            clearInterval(monitoringInterval);
+                            var fullUrl = new URL(url, iframeWin.location.href).href;
+                            window.location.href = fullUrl;
+                            return;
+                        }
+                        return originalPushState.apply(this, arguments);
+                    };
+
+                    iframeWin.history.replaceState = function(state, title, url) {
+                        if (url && !isNavigating) {
+                            isNavigating = true;
+                            clearInterval(monitoringInterval);
+                            var fullUrl = new URL(url, iframeWin.location.href).href;
+                            window.location.href = fullUrl;
+                            return;
+                        }
+                        return originalReplaceState.apply(this, arguments);
+                    };
+
+                    // ═══════════════════════════════════════════════════════
+                    // Method 4: Override window.location setters
+                    // ═══════════════════════════════════════════════════════
+                    try {
+                        var locationDescriptor = Object.getOwnPropertyDescriptor(iframeWin.constructor.prototype, 'location');
+                        if (locationDescriptor && locationDescriptor.set) {
+                            var originalLocationSetter = locationDescriptor.set;
+                            Object.defineProperty(iframeWin, 'location', {
+                                set: function(url) {
+                                    if (!isNavigating) {
+                                        isNavigating = true;
+                                        clearInterval(monitoringInterval);
+                                        window.location.href = url;
+                                        return;
+                                    }
+                                    originalLocationSetter.call(iframeWin, url);
+                                },
+                                get: function() {
+                                    return iframeWin.location;
+                                },
+                                configurable: true
+                            });
+                        }
+                    } catch (e) {}
+
+                    // ═══════════════════════════════════════════════════════
+                    // Method 5: Intercept form submissions
+                    // ═══════════════════════════════════════════════════════
+                    iframeDoc.addEventListener('submit', function(e) {
+                        var form = e.target;
+                        if (form.tagName === 'FORM') {
+                            var action = form.getAttribute('action');
+                            if (action && !action.startsWith('#')) {
+                                e.preventDefault();
+                                e.stopPropagation();
+
+                                var method = (form.getAttribute('method') || 'GET').toUpperCase();
+                                if (method === 'GET') {
+                                    var formData = new FormData(form);
+                                    var params = new URLSearchParams(formData);
+                                    var url = action + (action.includes('?') ? '&' : '?') + params.toString();
+                                    isNavigating = true;
+                                    clearInterval(monitoringInterval);
+                                    window.location.href = url;
+                                } else {
+                                    form.target = '_parent';
+                                    isNavigating = true;
+                                    clearInterval(monitoringInterval);
+                                    form.submit();
+                                }
+                            }
+                        }
+                    }, true);
+
+                    // ═══════════════════════════════════════════════════════
+                    // Method 6: MutationObserver
+                    // ═══════════════════════════════════════════════════════
+                    var observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            mutation.addedNodes.forEach(function(node) {
+                                if (node.nodeType === 1) {
+                                    var links = node.tagName === 'A' ? [node] : node.querySelectorAll('a, area, [href]');
+                                    links.forEach(function(link) {
+                                        link.addEventListener('click', function(e) {
+                                            var href = this.getAttribute('href') || this.getAttribute('xlink:href');
+                                            if (href && !href.startsWith('#') && !href.startsWith('javascript:') &&
+                                                !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                e.stopImmediatePropagation();
+                                                isNavigating = true;
+                                                clearInterval(monitoringInterval);
+                                                window.location.href = this.href || new URL(href, iframeWin.location.href).href;
+                                            }
+                                        }, true);
+                                    });
+                                }
+                            });
+                        });
+                    });
+
+                    observer.observe(iframeDoc.body || iframeDoc.documentElement, {
+                        childList: true,
+                        subtree: true
+                    });
+
+                } catch (e) {
+                    console.error('Cannot access iframe content:', e);
+                }
+            }
+
+            // Setup blocking immediately
+            setupNavigationBlocking(iframe);
+
+            // Reinforce on load
+            $(iframe).on('load', function() {
+                setupNavigationBlocking(iframe);
+            });
+
+            // Cleanup
+            $(window).on('beforeunload', function() {
+                if (monitoringInterval) {
+                    clearInterval(monitoringInterval);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

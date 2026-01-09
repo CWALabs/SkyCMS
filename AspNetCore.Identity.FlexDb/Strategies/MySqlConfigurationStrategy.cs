@@ -9,12 +9,15 @@ namespace AspNetCore.Identity.FlexDb.Strategies
 {
     using Microsoft.EntityFrameworkCore;
     using System;
+    using System.Collections.Concurrent;
 
     /// <summary>
     /// Configuration strategy for MySQL.
     /// </summary>
     public class MySqlConfigurationStrategy : IDatabaseConfigurationStrategy
     {
+        private static readonly ConcurrentDictionary<string, ServerVersion> ServerVersionCache = new();
+
         /// <inheritdoc/>
         public string ProviderName => "MySql.EntityFrameworkCore";
 
@@ -41,11 +44,31 @@ namespace AspNetCore.Identity.FlexDb.Strategies
                 throw new ArgumentNullException(nameof(connectionString));
             }
 
-            var serverVersion = ServerVersion.AutoDetectAsync(connectionString).GetAwaiter().GetResult();
+            // Add connection timeout if not specified
+            var connectionStringWithTimeout = EnsureConnectionTimeout(connectionString);
+
+            // Cache server version per connection string to avoid repeated auto-detection
+            var serverVersion = ServerVersionCache.GetOrAdd(
+                connectionStringWithTimeout,
+                cs => ServerVersion.AutoDetectAsync(cs).GetAwaiter().GetResult());
+
             optionsBuilder.UseMySql(
-                connectionString,
+                connectionStringWithTimeout,
                 serverVersion,
                 options => options.EnableRetryOnFailure());
+        }
+
+        private static string EnsureConnectionTimeout(string connectionString)
+        {
+            // Check if connection timeout is already specified
+            if (connectionString.Contains("Connection Timeout=", StringComparison.InvariantCultureIgnoreCase) ||
+                connectionString.Contains("ConnectionTimeout=", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return connectionString;
+            }
+
+            // Add a reasonable connection timeout (30 seconds)
+            return connectionString.TrimEnd(';') + ";Connection Timeout=30;";
         }
     }
 }

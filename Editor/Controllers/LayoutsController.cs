@@ -114,16 +114,7 @@ namespace Sky.Cms.Controllers
                 throw new ArgumentNullException(nameof(options));
             }
 
-            var htmlUtilities = new HtmlUtilities();
-
-            if (htmlUtilities.IsAbsoluteUri(options.BlobPublicUrl))
-            {
-                blobPublicAbsoluteUrl = new Uri(options.BlobPublicUrl);
-            }
-            else
-            {
-                blobPublicAbsoluteUrl = new Uri($"{options.PublisherUrl.TrimEnd('/')}/{options.BlobPublicUrl.TrimStart('/')}");    
-            }
+            blobPublicAbsoluteUrl = options.GetBlobAbsoluteUrl();
         }
 
         /// <summary>

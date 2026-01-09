@@ -249,6 +249,8 @@ namespace Sky.Editor.Data.Logic
                 urlPath = "root";
             }
 
+            urlPath = urlPath.TrimStart('/');
+
             var deletedEnum = (int)StatusCodeEnum.Deleted;
             var entity = await DbContext.Articles
                 .Where(a => a.UrlPath == urlPath && a.StatusCode != deletedEnum)
@@ -293,10 +295,9 @@ namespace Sky.Editor.Data.Logic
         /// Produces a standalone HTML document for the provided article view model (no sanitization beyond what is stored).
         /// </summary>
         /// <param name="article">Article model.</param>
-        /// <param name="blobPublicUri">Public blob root (unused presently).</param>
         /// <param name="renderer">Optional renderer (unused; placeholder for future layout wrapping).</param>
         /// <returns>HTML string (empty if model null).</returns>
-        public async Task<string> ExportArticle(ArticleViewModel article, Uri blobPublicUri, IViewRenderService renderer)
+        public async Task<string> ExportArticle(ArticleViewModel article, IViewRenderService renderer)
         {
             if (article == null)
             {

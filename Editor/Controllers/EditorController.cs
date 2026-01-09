@@ -62,7 +62,7 @@ namespace Sky.Cms.Controllers
         private readonly ApplicationDbContext dbContext;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly UserManager<IdentityUser> userManager;
-        private readonly Uri blobPublicAbsoluteUrl;
+        private readonly string blobPublicAbsoluteUrl;
         private readonly IStorageContext storageContext;
 
         private readonly ILogger<EditorController> logger;
@@ -128,14 +128,7 @@ namespace Sky.Cms.Controllers
 
             var htmlUtilities = new HtmlUtilities();
 
-            if (string.IsNullOrWhiteSpace(editorSettings.BlobPublicUrl) == false && htmlUtilities.IsAbsoluteUri(editorSettings.BlobPublicUrl))
-            {
-                blobPublicAbsoluteUrl = new Uri(editorSettings.BlobPublicUrl);
-            }
-            else
-            {
-                blobPublicAbsoluteUrl = new Uri($"{editorSettings.PublisherUrl.TrimEnd('/')}/{editorSettings.BlobPublicUrl.TrimStart('/')}");
-            }
+            blobPublicAbsoluteUrl = editorSettings.BlobPublicUrl;
 
             this.viewRenderService = viewRenderService;
 
@@ -1888,7 +1881,7 @@ namespace Sky.Cms.Controllers
                 article = await articleLogic.CreateArticle("Blank Page", userId);
             }
 
-            var html = await articleLogic.ExportArticle(article, blobPublicAbsoluteUrl, viewRenderService);
+            var html = await articleLogic.ExportArticle(article, viewRenderService);
 
             var exportName = $"pageid-{article.ArticleNumber}-version-{article.VersionNumber}.html";
 
