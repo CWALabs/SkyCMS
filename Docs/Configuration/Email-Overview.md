@@ -65,7 +65,14 @@ SkyCMS supports **two ways** to configure email providers:
 Set configuration **before** the application starts:
 
 ```powershell
-# SMTP example
+# SMTP example (Simplified - RECOMMENDED)
+$env:SmtpHost = "smtp.gmail.com"
+$env:SmtpPort = "587"
+$env:SmtpUsername = "your-email@gmail.com"
+$env:SmtpPassword = "your-app-password"
+$env:SenderEmail = "admin@yourdomain.com"
+
+# SMTP example (ASP.NET Format - Alternative)
 $env:SmtpEmailProviderOptions__Host = "smtp.gmail.com"
 $env:SmtpEmailProviderOptions__Port = "587"
 $env:SmtpEmailProviderOptions__UserName = "your-email@gmail.com"
@@ -76,11 +83,15 @@ $env:AdminEmail = "admin@yourdomain.com"
 ```powershell
 # SendGrid example
 $env:CosmosSendGridApiKey = "SG.xxxxxxxxxxxxx"
-$env:AdminEmail = "admin@yourdomain.com"
+$env:SenderEmail = "admin@yourdomain.com"  # Or AdminEmail
 ```
 
 ```powershell
-# Azure Communication Services example
+# Azure Communication Services example (Recommended)
+$env:ConnectionStrings__AzureEmailConnectionString = "endpoint=https://xxx.communication.azure.com/;accesskey=xxxxx"
+$env:SenderEmail = "admin@yourdomain.com"
+
+# Azure Communication Services example (Alternative)
 $env:ConnectionStrings__AzureCommunicationConnection = "endpoint=https://xxx.communication.azure.com/;accesskey=xxxxx"
 $env:AdminEmail = "admin@yourdomain.com"
 ```
@@ -114,11 +125,14 @@ SkyCMS tries providers in this order (first available is used):
 
 ## Common settings for all providers
 
-All providers require:
+All providers require a sender email address:
 
-- **`AdminEmail`** - Default sender email address for system emails
-  - Environment variable: `AdminEmail`
+- **`SenderEmail`** or **`AdminEmail`** - Default sender email address for system emails
+  - Environment variables: `SenderEmail` (checked first) or `AdminEmail` (fallback)
   - Used in setup wizard: Yes, displayed as **Sender Email**
+  - The code uses: `configuration["SenderEmail"] ?? configuration["AdminEmail"]`
+  
+**Priority**: If both are set, `SenderEmail` takes precedence over `AdminEmail`.
 
 ## Best practices
 

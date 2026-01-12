@@ -22,7 +22,21 @@ SkyCMS checks for email providers in this order (first available is used):
 
 ### Environment Variables
 
+SkyCMS supports TWO sets of environment variable names for SMTP:
+
+**Option 1: Simplified Names (Recommended)**
 ```powershell
+# Simple names used by EmailConfigurationService
+$env:SmtpHost = "smtp.gmail.com"
+$env:SmtpPort = "587"
+$env:SmtpUsername = "user@example.com"
+$env:SmtpPassword = "password"
+$env:SenderEmail = "user@example.com"  # Or use AdminEmail
+```
+
+**Option 2: ASP.NET Configuration Names**
+```powershell
+# Standard ASP.NET configuration binding names
 $env:SmtpEmailProviderOptions__Host = "smtp.gmail.com"
 $env:SmtpEmailProviderOptions__Port = "587"
 $env:SmtpEmailProviderOptions__UserName = "user@example.com"
@@ -30,6 +44,8 @@ $env:SmtpEmailProviderOptions__Password = "password"
 $env:SmtpEmailProviderOptions__UsesSsl = "false"
 $env:AdminEmail = "user@example.com"
 ```
+
+**Note**: Use **either** set of names, not both. Simplified names are checked first by `EmailConfigurationService`.
 
 ### appsettings.json
 
@@ -47,6 +63,21 @@ $env:AdminEmail = "user@example.com"
 ```
 
 ### Settings Reference
+
+#### Simplified Environment Variables (Recommended)
+
+| Setting | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `SmtpHost` | String | ✅ Yes | N/A | SMTP server address (e.g., `smtp.gmail.com`) |
+| `SmtpPort` | Integer | No | `587` | SMTP port (typically `587` for TLS, `465` for SSL) |
+| `SmtpUsername` | String | ✅ Yes | N/A | Email address or account name for authentication |
+| `SmtpPassword` | String | ✅ Yes | N/A | Password or app-specific password |
+| `SenderEmail` | String | ✅ Yes* | N/A | Default sender email address |
+| `AdminEmail` | String | ✅ Yes* | N/A | Fallback sender email (used if SenderEmail not set) |
+
+*Either `SenderEmail` OR `AdminEmail` must be set.
+
+#### ASP.NET Configuration Names (Alternative)
 
 | Setting | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
@@ -105,10 +136,23 @@ $env:AdminEmail = "user@example.com"
 
 ### Environment Variables
 
+SkyCMS supports TWO ways to set the Azure connection string:
+
+**Option 1: Direct Configuration (Recommended)**
 ```powershell
+# Used by EmailConfigurationService - simpler
+$env:ConnectionStrings__AzureEmailConnectionString = "endpoint=https://yourresource.communication.azure.com/;accesskey=xxxxxxxxxxxxx=="
+$env:SenderEmail = "DoNotReply@yourdomain.azurecomm.net"
+```
+
+**Option 2: ASP.NET Connection String**
+```powershell
+# Standard ASP.NET connection string format
 $env:ConnectionStrings__AzureCommunicationConnection = "endpoint=https://yourresource.communication.azure.com/;accesskey=xxxxxxxxxxxxx=="
 $env:AdminEmail = "DoNotReply@yourdomain.azurecomm.net"
 ```
+
+**Note**: The code checks for `AzureEmailConnectionString` first, then falls back to `AzureCommunicationConnection`.
 
 ### appsettings.json
 
@@ -149,9 +193,16 @@ endpoint=https://skycms-email.communication.azure.com/;accesskey=AbCdEfGhIjKlMnO
 ### Environment Variables
 
 ```powershell
+# SendGrid API key - only one variable name supported
 $env:CosmosSendGridApiKey = "SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-$env:AdminEmail = "noreply@yourdomain.com"
+
+# Sender email - either name works
+$env:SenderEmail = "noreply@yourdomain.com"  # Preferred
+# OR
+$env:AdminEmail = "noreply@yourdomain.com"  # Fallback
 ```
+
+**Note**: `SenderEmail` is checked first; if not set, `AdminEmail` is used.
 
 ### appsettings.json
 
@@ -229,10 +280,21 @@ $env:AdminEmail = "noreply@yourdomain.com"
 
 ## Environment Variable Examples
 
-### Complete SMTP Example
+### Complete SMTP Example (Simplified)
 
 ```powershell
-# Windows PowerShell
+# Windows PowerShell - Simplified names (RECOMMENDED)
+$env:SmtpHost = "smtp.gmail.com"
+$env:SmtpPort = "587"
+$env:SmtpUsername = "your-email@gmail.com"
+$env:SmtpPassword = "app-password-16-chars"
+$env:SenderEmail = "your-email@gmail.com"
+```
+
+### Complete SMTP Example (ASP.NET Format)
+
+```powershell
+# Windows PowerShell - ASP.NET configuration names
 $env:SmtpEmailProviderOptions__Host = "smtp.gmail.com"
 $env:SmtpEmailProviderOptions__Port = "587"
 $env:SmtpEmailProviderOptions__UserName = "your-email@gmail.com"
@@ -244,12 +306,17 @@ $env:AdminEmail = "your-email@gmail.com"
 
 ```powershell
 $env:CosmosSendGridApiKey = "SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-$env:AdminEmail = "noreply@yourdomain.com"
+$env:SenderEmail = "noreply@yourdomain.com"  # Or AdminEmail
 ```
 
 ### Complete Azure Communication Example
 
 ```powershell
+# Recommended format
+$env:ConnectionStrings__AzureEmailConnectionString = "endpoint=https://skycms-email.communication.azure.com/;accesskey=xxxxx=="
+$env:SenderEmail = "DoNotReply@noreply.azurecomm.net"
+
+# Alternative format (also supported)
 $env:ConnectionStrings__AzureCommunicationConnection = "endpoint=https://skycms-email.communication.azure.com/;accesskey=xxxxx=="
 $env:AdminEmail = "DoNotReply@noreply.azurecomm.net"
 ```

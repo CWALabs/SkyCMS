@@ -56,17 +56,9 @@ public class SubmitContactFormHandler : ICommandHandler<SubmitContactFormCommand
                 .Where(s => s.Group == "ContactApi")
                 .ToListAsync(cancellationToken);
 
-            var adminEmail = configSettings.FirstOrDefault(s => s.Name == "AdminEmail")?.Value;
-            
-            // If ContactApi AdminEmail is not configured, fall back to email provider's SenderEmail
-            if (string.IsNullOrWhiteSpace(adminEmail))
-            {
-                logger.LogInformation("Contact API AdminEmail not configured, falling back to email provider settings");
-                var emailSettings = await emailConfigService.GetEmailSettingsAsync();
-                adminEmail = emailSettings.SenderEmail ?? "admin@example.com";
-                logger.LogInformation("Using email provider's SenderEmail as AdminEmail: {AdminEmail}", adminEmail);
-            }
-            
+            var emailSettings = await emailConfigService.GetEmailSettingsAsync();
+            var adminEmail = emailSettings.SenderEmail;
+
             var request = command.Request;
             var remoteIp = command.RemoteIpAddress;
 

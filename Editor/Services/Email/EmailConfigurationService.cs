@@ -49,13 +49,19 @@ public class EmailConfigurationService : IEmailConfigurationService
         try
         {
             // Try environment variables first (highest priority)
-            settings.SendGridApiKey = configuration["SendGridApiKey"];
-            settings.AzureEmailConnectionString = configuration["AzureEmailConnectionString"];
-            settings.SmtpHost = configuration["SmtpHost"];
-            settings.SmtpPort = int.TryParse(configuration["SmtpPort"], out var port) ? port : 587;
-            settings.SmtpUsername = configuration["SmtpUsername"];
-            settings.SmtpPassword = configuration["SmtpPassword"];
-            settings.SenderEmail = configuration["SenderEmail"] ?? configuration["AdminEmail"];
+            settings.SendGridApiKey = configuration["CosmosSendGridApiKey"];
+            settings.AzureEmailConnectionString = configuration.GetConnectionString("AzureCommunicationConnection");
+            settings.SmtpHost = configuration["SmtpEmailProviderOptions:Host"] 
+                ?? configuration["SmtpEmailProviderOptions__Host"];
+            settings.SmtpPort = int.TryParse(
+                configuration["SmtpEmailProviderOptions:Port"] 
+                ?? configuration["SmtpEmailProviderOptions__Port"], 
+                out var port) ? port : 587;
+            settings.SmtpUsername = configuration["SmtpEmailProviderOptions:UserName"] 
+                ?? configuration["SmtpEmailProviderOptions__UserName"];
+            settings.SmtpPassword = configuration["SmtpEmailProviderOptions:Password"] 
+                ?? configuration["SmtpEmailProviderOptions__Password"];
+            settings.SenderEmail = configuration["AdminEmail"];
 
             // If not found in environment, try database settings
             if (string.IsNullOrEmpty(settings.SendGridApiKey) &&

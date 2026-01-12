@@ -39,6 +39,6 @@ namespace Sky.Cms.Api.Shared.Models
         /// <summary>
         /// Gets or sets the CAPTCHA response token.
         /// </summary>
-        public string CaptchaToken { get; set; }
+        public string? CaptchaToken { get; set; }
     }
 }

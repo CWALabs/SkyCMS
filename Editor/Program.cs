@@ -60,6 +60,7 @@ using Sky.Editor.Services.Setup;
 using Sky.Editor.Services.Slugs;
 using Sky.Editor.Services.Templates;
 using Sky.Editor.Services.Titles;
+using Sky.Cms.Api.Shared.Extensions;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -303,6 +304,9 @@ builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddTransient<ISetupCheckService, SetupCheckService>();
 
+// Register Contact API services (required for /_api/contact endpoints)
+builder.Services.AddContactApi(builder.Configuration);
+
 // Register validator for diagnostic page (if setup allowed)
 if (allowSetup)
 {
@@ -542,11 +546,22 @@ builder.Services.AddRateLimiter(options =>
     });
 
     // Contact form submission rate limiter (for Sky.Cms.Api.Shared)
+    // Environment-aware: relaxed in development, strict in production
     options.AddFixedWindowLimiter("contact-form", opt =>
     {
-        opt.Window = TimeSpan.FromMinutes(5);
-        opt.PermitLimit = 3;  // Max 3 contact form submissions per 5 minutes per IP
-        opt.QueueLimit = 0;   // No queuing
+        if (builder.Environment.IsDevelopment())
+        {
+            // Development: Relaxed limits for testing
+            opt.Window = TimeSpan.FromMinutes(1);
+            opt.PermitLimit = 20;  // Allow more frequent testing
+        }
+        else
+        {
+            // Production: Strict anti-spam protection
+            opt.Window = TimeSpan.FromMinutes(5);
+            opt.PermitLimit = 3;
+        }
+        opt.QueueLimit = 0;   // Reject immediately when limit reached
     });
 
     // Add a global rate limiter for general API protection

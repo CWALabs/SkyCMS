@@ -335,6 +335,8 @@ public class ContactApiController : ControllerBase
          * @param {{string}} options.fieldNames.message - Message field name (default: 'message')
          * @param {{Function}} options.onSuccess - Success callback (optional)
          * @param {{Function}} options.onError - Error callback (optional)
+         * @param {{string}} options.errorElementId - ID of element to display errors (optional)
+         * @param {{string}} options.successElementId - ID of element to display success messages (optional)
          */
         init: function(formSelector, options) {{
             const form = typeof formSelector === 'string' 
@@ -364,6 +366,62 @@ public class ContactApiController : ControllerBase
         }},
 
         /**
+         * Display error message using configured method
+         * @param {{Object}} config - Configuration
+         * @param {{string}} message - Error message
+         */
+        displayError: function(config, message) {{
+            if (config.onError) {{
+                try {{
+                    config.onError({{ success: false, message: message }});
+                }} catch (err) {{
+                    console.error('SkyCmsContact: Error in onError callback:', err);
+                    // Fallback to alert if custom handler fails
+                    alert(message);
+                }}
+            }} else if (config.errorElementId) {{
+                const errorEl = document.getElementById(config.errorElementId);
+                if (errorEl) {{
+                    errorEl.textContent = message;
+                    errorEl.style.display = 'block';
+                }} else {{
+                    console.warn('SkyCmsContact: Error element not found: ' + config.errorElementId);
+                    alert(message);
+                }}
+            }} else {{
+                alert(message);
+            }}
+        }},
+
+        /**
+         * Display success message using configured method
+         * @param {{Object}} config - Configuration
+         * @param {{Object}} result - Success result
+         */
+        displaySuccess: function(config, result) {{
+            if (config.onSuccess) {{
+                try {{
+                    config.onSuccess(result);
+                }} catch (err) {{
+                    console.error('SkyCmsContact: Error in onSuccess callback:', err);
+                    // Fallback to alert if custom handler fails
+                    alert(result.message);
+                }}
+            }} else if (config.successElementId) {{
+                const successEl = document.getElementById(config.successElementId);
+                if (successEl) {{
+                    successEl.textContent = result.message;
+                    successEl.style.display = 'block';
+                }} else {{
+                    console.warn('SkyCmsContact: Success element not found: ' + config.successElementId);
+                    alert(result.message);
+                }}
+            }} else {{
+                alert(result.message);
+            }}
+        }},
+
+        /**
          * Handle form submission
          * @param {{HTMLFormElement}} form - Form element
          * @param {{Object}} config - Configuration
@@ -384,11 +442,7 @@ public class ContactApiController : ControllerBase
                     data.captchaToken = await this.getCaptchaToken(config);
                 }} catch (error) {{
                     console.error('SkyCmsContact: CAPTCHA error:', error);
-                    if (config.onError) {{
-                        config.onError({{ success: false, message: 'CAPTCHA validation failed. Please try again.' }});
-                    }} else {{
-                        alert('CAPTCHA validation failed. Please try again.');
-                    }}
+                    this.displayError(config, 'CAPTCHA validation failed. Please try again.');
                     return;
                 }}
             }}
@@ -406,26 +460,14 @@ public class ContactApiController : ControllerBase
                 const result = await response.json();
 
                 if (result.success) {{
-                    if (config.onSuccess) {{
-                        config.onSuccess(result);
-                    }} else {{
-                        alert(result.message);
-                        form.reset();
-                    }}
+                    this.displaySuccess(config, result);
+                    form.reset();
                 }} else {{
-                    if (config.onError) {{
-                        config.onError(result);
-                    }} else {{
-                        alert(result.message || 'Submission failed. Please try again.');
-                    }}
+                    this.displayError(config, result.message || 'Submission failed. Please try again.');
                 }}
             }} catch (error) {{
                 console.error('SkyCmsContact submission error:', error);
-                if (config.onError) {{
-                    config.onError({{ success: false, message: 'Network error. Please try again.' }});
-                }} else {{
-                    alert('Network error. Please try again.');
-                }}
+                this.displayError(config, 'Network error. Please try again.');
             }}
         }},{captchaImplementation}
     }};
