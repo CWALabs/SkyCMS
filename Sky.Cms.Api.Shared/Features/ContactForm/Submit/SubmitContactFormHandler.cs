@@ -10,9 +10,9 @@ namespace Sky.Cms.Api.Shared.Features.ContactForm.Submit;
 using Cosmos.EmailServices;
 using Cosmos.Common.Data;
 using Cosmos.Common.Features.Shared;
+using Cosmos.Common.Services.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Sky.Cms.Api.Shared.Models;
 
 /// <summary>
@@ -20,9 +20,10 @@ using Sky.Cms.Api.Shared.Models;
 /// </summary>
 public class SubmitContactFormHandler : ICommandHandler<SubmitContactFormCommand, CommandResult<ContactFormResponse>>
 {
-    private readonly ICosmosEmailSender emailSender; // Already tenant-aware!
-    private readonly ApplicationDbContext dbContext;  // Already tenant-aware!
+    private readonly ICosmosEmailSender emailSender;
+    private readonly ApplicationDbContext dbContext;
     private readonly ILogger<SubmitContactFormHandler> logger;
+    private readonly IEmailConfigurationService emailConfigService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SubmitContactFormHandler"/> class.
@@ -30,14 +31,17 @@ public class SubmitContactFormHandler : ICommandHandler<SubmitContactFormCommand
     /// <param name="emailSender">Email sender service.</param>
     /// <param name="dbContext">Database context.</param>
     /// <param name="logger">Logger instance.</param>
+    /// <param name="emailConfigService">Email configuration service for fallback admin email.</param>
     public SubmitContactFormHandler(
         ICosmosEmailSender emailSender,
         ApplicationDbContext dbContext,
-        ILogger<SubmitContactFormHandler> logger)
+        ILogger<SubmitContactFormHandler> logger,
+        IEmailConfigurationService emailConfigService)
     {
         this.emailSender = emailSender;
         this.dbContext = dbContext;
         this.logger = logger;
+        this.emailConfigService = emailConfigService;
     }
 
     /// <inheritdoc/>
@@ -52,8 +56,16 @@ public class SubmitContactFormHandler : ICommandHandler<SubmitContactFormCommand
                 .Where(s => s.Group == "ContactApi")
                 .ToListAsync(cancellationToken);
 
-            var adminEmail = configSettings.FirstOrDefault(s => s.Name == "AdminEmail")?.Value 
-                ?? "admin@example.com";
+            var adminEmail = configSettings.FirstOrDefault(s => s.Name == "AdminEmail")?.Value;
+            
+            // If ContactApi AdminEmail is not configured, fall back to email provider's SenderEmail
+            if (string.IsNullOrWhiteSpace(adminEmail))
+            {
+                logger.LogInformation("Contact API AdminEmail not configured, falling back to email provider settings");
+                var emailSettings = await emailConfigService.GetEmailSettingsAsync();
+                adminEmail = emailSettings.SenderEmail ?? "admin@example.com";
+                logger.LogInformation("Using email provider's SenderEmail as AdminEmail: {AdminEmail}", adminEmail);
+            }
             
             var request = command.Request;
             var remoteIp = command.RemoteIpAddress;

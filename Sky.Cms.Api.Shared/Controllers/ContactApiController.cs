@@ -12,8 +12,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Cosmos.Common.Features.Shared;
+using Cosmos.Common.Services.Email;
 using Sky.Cms.Api.Shared.Features.ContactForm.Submit;
 using Sky.Cms.Api.Shared.Features.ContactForm.ValidateCaptcha;
 using Sky.Cms.Api.Shared.Models;
@@ -30,7 +30,8 @@ public class ContactApiController : ControllerBase
     private readonly IMediator mediator;
     private readonly IAntiforgery antiforgery;
     private readonly ILogger<ContactApiController> logger;
-    private readonly ApplicationDbContext dbContext; // Tenant-aware!
+    private readonly ApplicationDbContext dbContext;
+    private readonly IEmailConfigurationService emailConfigService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ContactApiController"/> class.
@@ -39,16 +40,19 @@ public class ContactApiController : ControllerBase
     /// <param name="antiforgery">Antiforgery service.</param>
     /// <param name="logger">Logger instance.</param>
     /// <param name="dbContext">Database context.</param>
+    /// <param name="emailConfigService">Email configuration service for fallback admin email.</param>
     public ContactApiController(
         IMediator mediator,
         IAntiforgery antiforgery,
         ILogger<ContactApiController> logger,
-        ApplicationDbContext dbContext)
+        ApplicationDbContext dbContext,
+        IEmailConfigurationService emailConfigService)
     {
         this.mediator = mediator;
         this.antiforgery = antiforgery;
         this.logger = logger;
         this.dbContext = dbContext;
+        this.emailConfigService = emailConfigService;
     }
 
     /// <summary>
@@ -198,6 +202,7 @@ public class ContactApiController : ControllerBase
     /// <summary>
     /// Loads Contact API configuration from the Settings table in the database.
     /// Reads CAPTCHA settings as a JSON string from the CAPTCHA group.
+    /// Falls back to email provider's AdminEmail if Contact API AdminEmail is not configured.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>ContactApiConfig populated from database settings.</returns>
@@ -210,8 +215,26 @@ public class ContactApiController : ControllerBase
                 .Where(s => s.Group == "ContactApi")
                 .ToListAsync(cancellationToken);
 
-            var adminEmail = contactApiSettings.FirstOrDefault(s => s.Name == "AdminEmail")?.Value 
-                ?? "admin@example.com";
+            var adminEmail = contactApiSettings.FirstOrDefault(s => s.Name == "AdminEmail")?.Value;
+            
+            // If ContactApi AdminEmail is not configured, fall back to email provider's SenderEmail
+            if (string.IsNullOrWhiteSpace(adminEmail))
+            {
+                logger.LogInformation("Contact API AdminEmail not configured, falling back to email provider settings");
+                var emailSettings = await emailConfigService.GetEmailSettingsAsync();
+                adminEmail = emailSettings.SenderEmail;
+                
+                if (string.IsNullOrWhiteSpace(adminEmail))
+                {
+                    logger.LogWarning("No AdminEmail found in Contact API or Email settings, using default");
+                    adminEmail = "admin@example.com";
+                }
+                else
+                {
+                    logger.LogInformation("Using email provider's SenderEmail as AdminEmail: {AdminEmail}", adminEmail);
+                }
+            }
+            
             var maxMessageLength = int.Parse(
                 contactApiSettings.FirstOrDefault(s => s.Name == "MaxMessageLength")?.Value ?? "5000");
 
@@ -226,7 +249,8 @@ public class ContactApiController : ControllerBase
                 captchaSetting?.Value);
 
             logger.LogInformation(
-                "Loaded Contact API config - CAPTCHA: {Enabled}, Provider: {Provider}",
+                "Loaded Contact API config - AdminEmail: {AdminEmail}, CAPTCHA: {Enabled}, Provider: {Provider}",
+                config.AdminEmail,
                 config.RequireCaptcha,
                 config.CaptchaProvider ?? "none");
 
@@ -236,13 +260,33 @@ public class ContactApiController : ControllerBase
         {
             logger.LogError(ex, "Failed to load Contact API configuration from database");
             
-            // Return safe defaults on error
-            return new ContactApiConfig
+            // Try to get email settings as final fallback
+            try
             {
-                AdminEmail = "admin@example.com",
-                MaxMessageLength = 5000,
-                RequireCaptcha = false
-            };
+                var emailSettings = await emailConfigService.GetEmailSettingsAsync();
+                var fallbackEmail = !string.IsNullOrWhiteSpace(emailSettings.SenderEmail) 
+                    ? emailSettings.SenderEmail 
+                    : "admin@example.com";
+                
+                logger.LogInformation("Using fallback email configuration: {AdminEmail}", fallbackEmail);
+                
+                return new ContactApiConfig
+                {
+                    AdminEmail = fallbackEmail,
+                    MaxMessageLength = 5000,
+                    RequireCaptcha = false
+                };
+            }
+            catch
+            {
+                // Return absolute safe defaults on complete failure
+                return new ContactApiConfig
+                {
+                    AdminEmail = "admin@example.com",
+                    MaxMessageLength = 5000,
+                    RequireCaptcha = false
+                };
+            }
         }
     }
 

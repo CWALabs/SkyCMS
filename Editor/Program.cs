@@ -13,6 +13,7 @@ using Cosmos.Common;
 using Cosmos.Common.Data;
 using Cosmos.Common.Models;
 using Cosmos.Common.Services.Configurations;
+using Cosmos.Common.Services.Email;
 using Cosmos.DynamicConfig;
 using Cosmos.EmailServices;
 using Hangfire;
@@ -29,8 +30,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
-using Sky.Cms.Api.Shared.Features.ContactForm.Submit;
-using Sky.Cms.Api.Shared.Models;
 using Sky.Cms.Hubs;
 using Sky.Cms.Services;
 using Sky.Editor.Boot;
@@ -137,12 +136,13 @@ if (enableDiagnostics)
     }
 
     // DIAGNOSTIC-ONLY MODE: Minimal services to show diagnostic page
+    // Note: This branch exits early and never reaches the normal service registration below
     System.Console.WriteLine("Registering minimal services for diagnostic-only mode...");
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ConfigurationValidator>();
     builder.Services.AddRazorPages();
-    builder.Services.AddControllersWithViews();
+    builder.Services.AddControllersWithViews(); // Minimal - no API controllers
 
     // Build minimal app
     var diagnosticApp = builder.Build();
@@ -175,7 +175,7 @@ if (enableDiagnostics)
     System.Console.WriteLine("   Fix configuration issues and restart the application");
 
     await diagnosticApp.RunAsync();
-    return; // Exit here - don't continue with normal startup
+    return; // ← EXIT - Normal startup below NEVER runs
 }
 
 // ---------------------------------------------------------------
@@ -222,7 +222,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
 // ---------------------------------------------------------------
-// STEP 3: Configure Mode-Specific Services
+// STEP 3: Configure ApplicationDbContext and other services based
+// on deployment mode.
 // ---------------------------------------------------------------
 if (isMultiTenantEditor)
 {
@@ -297,7 +298,7 @@ builder.Services.AddTransient<IReservedPaths, ReservedPaths>();
 builder.Services.AddTransient<ISlugService, SlugService>();
 builder.Services.AddTransient<ITitleChangeService, TitleChangeService>();
 builder.Services.AddTransient<IBlogRenderingService, BlogRenderingService>();
-builder.Services.AddTransient<IEmailConfigurationService, EmailConfigurationService>();
+builder.Services.AddTransient<IEmailConfigurationService, EmailConfigurationService>(); // Email configuration service tenant-aware
 builder.Services.AddTransient<ArticleScheduler>();
 builder.Services.AddTransient<ArticleEditLogic>();
 builder.Services.AddTransient<ISetupCheckService, SetupCheckService>();
@@ -328,6 +329,8 @@ builder.Services.AddSignalR();
 // ---------------------------------------------------------------
 // STEP 9: Register MVC & Razor Pages
 // ---------------------------------------------------------------
+// Normal mode: Full controller registration with API support
+// Api route is /_api/*
 builder.Services.AddControllersWithViews()
     .AddApplicationPart(typeof(Sky.Cms.Api.Shared.Controllers.ContactApiController).Assembly);
 

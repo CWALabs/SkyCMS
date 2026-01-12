@@ -6,6 +6,8 @@ Welcome to the Sky.Cms.Api.Shared documentation. This shared API library provide
 
 Sky.Cms.Api.Shared is a .NET library that implements a custom CQRS-like pattern for handling API endpoints and business logic. Currently, it provides a contact form API that allows website administrators to receive visitor messages with built-in CAPTCHA validation and rate limiting.
 
+**Latest Updates**: See [UPDATES.md](./UPDATES.md) for recent changes and integration notes.
+
 ## Architecture
 
 The API follows a modular architecture organized by features:
@@ -60,6 +62,10 @@ See [Contact Form API Documentation](./ContactForm.md) for complete endpoint det
    }
    ```
 
+### Quick Tutorial
+
+Want to add a contact form to your website? Follow the [Step-by-Step Tutorial](./Tutorial.md) to get a working form in 5 minutes.
+
 See [Configuration Guide](./Configuration.md) for all configuration options and environment variable support.
 
 ## API Endpoints
@@ -72,9 +78,11 @@ See [Contact Form API](./ContactForm.md) for request/response schemas and exampl
 
 ## For Developers
 
+- [Step-by-Step Tutorial](./Tutorial.md) - Add a working contact form to your website in 5 minutes (**START HERE**)
+- [Integration Guide](./Integration-Guide.md) - How to integrate the Contact Form API into your website
+- [Contact Form API Reference](./ContactForm.md) - Complete endpoint documentation and examples
 - [Architecture & Design Patterns](./ARCHITECTURE.md) - How the API is structured
 - [Configuration Guide](./Configuration.md) - All available configuration options
-- [Contact Form API](./ContactForm.md) - Complete endpoint documentation
 - [Development Guide](./DEVELOPMENT.md) - How to extend and add new endpoints
 - [Testing](./TESTING.md) - How to test the API
 
