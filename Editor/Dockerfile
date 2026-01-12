@@ -21,7 +21,9 @@ COPY ["Directory.Packages.props", "./"]
 COPY ["AspNetCore.Identity.FlexDb/AspNetCore.Identity.FlexDb.csproj", "AspNetCore.Identity.FlexDb/"]
 COPY ["Cosmos.BlobService/Cosmos.BlobService.csproj", "Cosmos.BlobService/"]
 COPY ["Cosmos.ConnectionStrings/Cosmos.DynamicConfig.csproj", "Cosmos.ConnectionStrings/"]
+COPY ["Cosmos.EmailServices/Cosmos.EmailServices.csproj", "Cosmos.EmailServices/"]
 COPY ["Common/Cosmos.Common.csproj", "Common/"]
+COPY ["Sky.Cms.Api.Shared/Sky.Cms.Api.Shared.csproj", "Sky.Cms.Api.Shared/"]
 COPY ["Editor/Sky.Editor.csproj", "Editor/"]
 RUN dotnet restore "./Editor/Sky.Editor.csproj"
 COPY . .
