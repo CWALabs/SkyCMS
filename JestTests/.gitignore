@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Test artifacts
+.jest-cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

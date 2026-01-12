@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Sky.Cms.Api.Shared": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:54107;http://localhost:54108"
+    }
+  }
+}

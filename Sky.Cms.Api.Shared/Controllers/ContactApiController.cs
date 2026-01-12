@@ -1,0 +1,563 @@
+// <copyright file="ContactApiController.cs" company="Moonrise Software, LLC">
+// Copyright (c) Moonrise Software, LLC. All rights reserved.
+// Licensed under the MIT License (https://opensource.org/licenses/MIT)
+// See https://github.com/CWALabs/SkyCMS
+// for more information concerning the license and the contributors participating to this project.
+// </copyright>
+
+namespace Sky.Cms.Api.Shared.Controllers;
+
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Cosmos.Common.Features.Shared;
+using Sky.Cms.Api.Shared.Features.ContactForm.Submit;
+using Sky.Cms.Api.Shared.Features.ContactForm.ValidateCaptcha;
+using Sky.Cms.Api.Shared.Models;
+using Cosmos.Common.Data;
+using Microsoft.EntityFrameworkCore;
+
+/// <summary>
+/// API controller for handling contact form submissions.
+/// </summary>
+[ApiController]
+[Route("_api/contact")]
+public class ContactApiController : ControllerBase
+{
+    private readonly IMediator mediator;
+    private readonly IAntiforgery antiforgery;
+    private readonly ILogger<ContactApiController> logger;
+    private readonly ApplicationDbContext dbContext; // Tenant-aware!
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContactApiController"/> class.
+    /// </summary>
+    /// <param name="mediator">Mediator for CQRS commands and queries.</param>
+    /// <param name="antiforgery">Antiforgery service.</param>
+    /// <param name="logger">Logger instance.</param>
+    /// <param name="dbContext">Database context.</param>
+    public ContactApiController(
+        IMediator mediator,
+        IAntiforgery antiforgery,
+        ILogger<ContactApiController> logger,
+        ApplicationDbContext dbContext)
+    {
+        this.mediator = mediator;
+        this.antiforgery = antiforgery;
+        this.logger = logger;
+        this.dbContext = dbContext;
+    }
+
+    /// <summary>
+    /// Gets the JavaScript library with embedded antiforgery token and configuration.
+    /// </summary>
+    /// <returns>JavaScript file content.</returns>
+    [HttpGet("skycms-contact.js")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetContactScript(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Load tenant-specific configuration from database
+            var config = await LoadContactApiConfigAsync(cancellationToken);
+
+            // Generate antiforgery token
+            var tokens = antiforgery.GetAndStoreTokens(HttpContext);
+            var token = tokens.RequestToken ?? string.Empty; // Fix nullable warning
+
+            // Build JavaScript with embedded configuration
+            var script = GenerateJavaScriptLibrary(token, config);
+
+            return Content(script, "application/javascript");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error generating contact form JavaScript");
+            return StatusCode(500, "// Error generating script");
+        }
+    }
+
+    /// <summary>
+    /// Submits a contact form.
+    /// </summary>
+    /// <param name="request">Contact form request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Contact form response.</returns>
+    [HttpPost("submit")]
+    [EnableRateLimiting("contact-form")]
+    [ValidateAntiForgeryToken]
+    [ProducesResponseType(typeof(ContactFormResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ContactFormResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ContactFormResponse), StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> Submit([FromBody] ContactFormRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Validate model state
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>());
+
+                return BadRequest(new ContactFormResponse
+                {
+                    Success = false,
+                    Message = "Validation failed. Please check your input.",
+                    Error = string.Join(", ", errors.SelectMany(e => e.Value))
+                });
+            }
+
+            // Load tenant-specific configuration from database
+            var config = await LoadContactApiConfigAsync(cancellationToken);
+
+            // Get remote IP address
+            var remoteIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+            // Validate CAPTCHA if required
+            if (config.RequireCaptcha)
+            {
+                if (string.IsNullOrEmpty(request.CaptchaToken))
+                {
+                    logger.LogWarning("CAPTCHA token missing for IP: {RemoteIp}", remoteIp);
+                    return BadRequest(new ContactFormResponse
+                    {
+                        Success = false,
+                        Message = "CAPTCHA validation is required.",
+                        Error = "Missing CAPTCHA token"
+                    });
+                }
+
+                var captchaQuery = new ValidateCaptchaQuery
+                {
+                    Token = request.CaptchaToken,
+                    RemoteIpAddress = remoteIp,
+                    CaptchaProvider = config.CaptchaProvider,
+                    SecretKey = config.CaptchaSecretKey
+                };
+
+                var captchaValid = await mediator.QueryAsync(captchaQuery, cancellationToken);
+                
+                if (!captchaValid)
+                {
+                    logger.LogWarning(
+                        "CAPTCHA validation failed for IP: {RemoteIp} using provider: {Provider}",
+                        remoteIp,
+                        config.CaptchaProvider);
+                    
+                    return BadRequest(new ContactFormResponse
+                    {
+                        Success = false,
+                        Message = "CAPTCHA validation failed. Please try again.",
+                        Error = "Invalid CAPTCHA"
+                    });
+                }
+            }
+
+            // Submit contact form via mediator
+            var command = new SubmitContactFormCommand
+            {
+                Request = request,
+                RemoteIpAddress = remoteIp
+            };
+
+            var result = await mediator.SendAsync(command, cancellationToken);
+
+            if (result.IsSuccess && result.Data != null)
+            {
+                logger.LogInformation("Contact form submitted successfully from IP: {RemoteIp}", remoteIp);
+                return Ok(result.Data);
+            }
+            else
+            {
+                return BadRequest(new ContactFormResponse
+                {
+                    Success = false,
+                    Message = result.ErrorMessage ?? "Failed to submit contact form.",
+                    Error = result.ErrorMessage
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error processing contact form submission");
+            return StatusCode(500, new ContactFormResponse
+            {
+                Success = false,
+                Message = "An unexpected error occurred. Please try again later.",
+                Error = "Internal server error"
+            });
+        }
+    }
+
+    /// <summary>
+    /// Loads Contact API configuration from the Settings table in the database.
+    /// Reads CAPTCHA settings as a JSON string from the CAPTCHA group.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>ContactApiConfig populated from database settings.</returns>
+    private async Task<ContactApiConfig> LoadContactApiConfigAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Load admin email and max message length from ContactApi group
+            var contactApiSettings = await dbContext.Settings
+                .Where(s => s.Group == "ContactApi")
+                .ToListAsync(cancellationToken);
+
+            var adminEmail = contactApiSettings.FirstOrDefault(s => s.Name == "AdminEmail")?.Value 
+                ?? "admin@example.com";
+            var maxMessageLength = int.Parse(
+                contactApiSettings.FirstOrDefault(s => s.Name == "MaxMessageLength")?.Value ?? "5000");
+
+            // Load CAPTCHA settings as JSON from CAPTCHA group
+            var captchaSetting = await dbContext.Settings
+                .FirstOrDefaultAsync(s => s.Group == "CAPTCHA" && s.Name == "Config", cancellationToken);
+
+            // Use the JSON constructor or factory method from ContactApiConfig
+            var config = ContactApiConfig.FromDatabaseSettings(
+                adminEmail,
+                maxMessageLength,
+                captchaSetting?.Value);
+
+            logger.LogInformation(
+                "Loaded Contact API config - CAPTCHA: {Enabled}, Provider: {Provider}",
+                config.RequireCaptcha,
+                config.CaptchaProvider ?? "none");
+
+            return config;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to load Contact API configuration from database");
+            
+            // Return safe defaults on error
+            return new ContactApiConfig
+            {
+                AdminEmail = "admin@example.com",
+                MaxMessageLength = 5000,
+                RequireCaptcha = false
+            };
+        }
+    }
+
+    private string GenerateJavaScriptLibrary(string antiforgeryToken, ContactApiConfig config)
+    {
+        var captchaConfig = config.RequireCaptcha
+            ? $@"
+        requireCaptcha: true,
+        captchaProvider: '{config.CaptchaProvider}',
+        captchaSiteKey: '{config.CaptchaSiteKey}'"
+            : @"
+        requireCaptcha: false";
+
+        // Generate provider-specific CAPTCHA implementation
+        var captchaImplementation = GenerateCaptchaImplementation(config);
+
+        return $@"
+/**
+ * SkyCMS Contact Form API Client
+ * Auto-generated with embedded configuration and antiforgery token
+ * Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC
+ * CAPTCHA Provider: {config.CaptchaProvider ?? "none"}
+ */
+(function(window) {{
+    'use strict';
+
+    const SkyCmsContact = {{
+        config: {{{captchaConfig},
+            antiforgeryToken: '{antiforgeryToken}',
+            submitEndpoint: '/_api/contact/submit',
+            maxMessageLength: {config.MaxMessageLength},
+            fieldNames: {{
+                name: 'name',
+                email: 'email',
+                message: 'message'
+            }}
+        }},
+
+        /**
+         * Initialize contact form
+         * @param {{string|HTMLFormElement}} formSelector - Form selector or element
+         * @param {{Object}} options - Configuration options
+         * @param {{Object}} options.fieldNames - Custom field names mapping (optional)
+         * @param {{string}} options.fieldNames.name - Name field name (default: 'name')
+         * @param {{string}} options.fieldNames.email - Email field name (default: 'email')
+         * @param {{string}} options.fieldNames.message - Message field name (default: 'message')
+         * @param {{Function}} options.onSuccess - Success callback (optional)
+         * @param {{Function}} options.onError - Error callback (optional)
+         */
+        init: function(formSelector, options) {{
+            const form = typeof formSelector === 'string' 
+                ? document.querySelector(formSelector) 
+                : formSelector;
+
+            if (!form) {{
+                console.error('SkyCmsContact: Form not found');
+                return;
+            }}
+
+            const config = {{ 
+                ...this.config, 
+                ...options,
+                fieldNames: {{ ...this.config.fieldNames, ...(options?.fieldNames || {{}}) }}
+            }};
+
+            form.addEventListener('submit', async (e) => {{
+                e.preventDefault();
+                await this.handleSubmit(form, config);
+            }});
+
+            // Load CAPTCHA if required
+            if (this.config.requireCaptcha) {{
+                this.loadCaptcha(config);
+            }}
+        }},
+
+        /**
+         * Handle form submission
+         * @param {{HTMLFormElement}} form - Form element
+         * @param {{Object}} config - Configuration
+         */
+        handleSubmit: async function(form, config) {{
+            const formData = new FormData(form);
+            const fieldNames = config.fieldNames || this.config.fieldNames;
+            
+            const data = {{
+                name: formData.get(fieldNames.name),
+                email: formData.get(fieldNames.email),
+                message: formData.get(fieldNames.message)
+            }};
+
+            // Add CAPTCHA token if required
+            if (config.requireCaptcha) {{
+                try {{
+                    data.captchaToken = await this.getCaptchaToken(config);
+                }} catch (error) {{
+                    console.error('SkyCmsContact: CAPTCHA error:', error);
+                    if (config.onError) {{
+                        config.onError({{ success: false, message: 'CAPTCHA validation failed. Please try again.' }});
+                    }} else {{
+                        alert('CAPTCHA validation failed. Please try again.');
+                    }}
+                    return;
+                }}
+            }}
+
+            try {{
+                const response = await fetch(config.submitEndpoint, {{
+                    method: 'POST',
+                    headers: {{
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': config.antiforgeryToken
+                    }},
+                    body: JSON.stringify(data)
+                }});
+
+                const result = await response.json();
+
+                if (result.success) {{
+                    if (config.onSuccess) {{
+                        config.onSuccess(result);
+                    }} else {{
+                        alert(result.message);
+                        form.reset();
+                    }}
+                }} else {{
+                    if (config.onError) {{
+                        config.onError(result);
+                    }} else {{
+                        alert(result.message || 'Submission failed. Please try again.');
+                    }}
+                }}
+            }} catch (error) {{
+                console.error('SkyCmsContact submission error:', error);
+                if (config.onError) {{
+                    config.onError({{ success: false, message: 'Network error. Please try again.' }});
+                }} else {{
+                    alert('Network error. Please try again.');
+                }}
+            }}
+        }},{captchaImplementation}
+    }};
+
+    window.SkyCmsContact = SkyCmsContact;
+
+}})(window);
+";
+    }
+
+    private string GenerateCaptchaImplementation(ContactApiConfig config)
+    {
+        if (!config.RequireCaptcha || string.IsNullOrEmpty(config.CaptchaProvider))
+        {
+            return @"
+
+        /**
+         * Load CAPTCHA script (No CAPTCHA configured)
+         */
+        loadCaptcha: function(config) {
+            // No CAPTCHA provider configured
+        },
+
+        /**
+         * Get CAPTCHA token (No CAPTCHA configured)
+         */
+        getCaptchaToken: async function(config) {
+            return '';
+        }";
+        }
+
+        return config.CaptchaProvider.ToLower() switch
+        {
+            "turnstile" => GenerateTurnstileImplementation(),
+            "recaptcha" => GenerateReCaptchaImplementation(),
+            _ => @"
+        // Unknown provider implementation
+        "
+        };
+    }
+
+    private string GenerateTurnstileImplementation()
+    {
+        return @"
+
+        /**
+         * Load Cloudflare Turnstile script
+         */
+        loadCaptcha: function(config) {
+            if (document.getElementById('turnstile-script')) {
+                return; // Already loaded
+            }
+
+            const script = document.createElement('script');
+            script.id = 'turnstile-script';
+            script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+
+            console.log('SkyCmsContact: Cloudflare Turnstile loaded');
+        },
+
+        /**
+         * Get Cloudflare Turnstile token
+         * @param {Object} config - Configuration
+         * @returns {Promise<string>} Turnstile token
+         */
+        getCaptchaToken: async function(config) {
+            return new Promise((resolve, reject) => {
+                // Wait for Turnstile to load
+                const checkTurnstile = setInterval(() => {
+                    if (typeof window.turnstile !== 'undefined') {
+                        clearInterval(checkTurnstile);
+
+                        try {
+                            // Check if already rendered
+                            const existingWidget = document.querySelector('.cf-turnstile');
+                            if (existingWidget && existingWidget.querySelector('input[name=""cf-turnstile-response""]')) {
+                                const token = existingWidget.querySelector('input[name=""cf-turnstile-response""]').value;
+                                if (token) {
+                                    resolve(token);
+                                    return;
+                                }
+                            }
+
+                            // Create container if it doesn't exist
+                            let container = document.querySelector('.cf-turnstile');
+                            if (!container) {
+                                container = document.createElement('div');
+                                container.className = 'cf-turnstile';
+                                document.body.appendChild(container);
+                            }
+
+                            // Render Turnstile widget
+                            window.turnstile.render(container, {
+                                sitekey: config.captchaSiteKey,
+                                callback: function(token) {
+                                    resolve(token);
+                                },
+                                'error-callback': function() {
+                                    reject(new Error('Turnstile validation failed'));
+                                },
+                                'expired-callback': function() {
+                                    reject(new Error('Turnstile token expired'));
+                                },
+                                'timeout-callback': function() {
+                                    reject(new Error('Turnstile validation timeout'));
+                                }
+                            });
+                        } catch (error) {
+                            reject(error);
+                        }
+                    }
+                }, 100);
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    clearInterval(checkTurnstile);
+                    reject(new Error('Turnstile failed to load'));
+                }, 10000);
+            });
+        }";
+    }
+
+    private string GenerateReCaptchaImplementation()
+    {
+        return @"
+
+        /**
+         * Load Google reCAPTCHA script
+         */
+        loadCaptcha: function(config) {
+            if (document.getElementById('recaptcha-script')) {
+                return; // Already loaded
+            }
+
+            const script = document.createElement('script');
+            script.id = 'recaptcha-script';
+            script.src = 'https://www.google.com/recaptcha/api.js?render=' + config.captchaSiteKey;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+
+            console.log('SkyCmsContact: Google reCAPTCHA loaded');
+        },
+
+        /**
+         * Get Google reCAPTCHA token
+         * @param {Object} config - Configuration
+         * @returns {Promise<string>} reCAPTCHA token
+         */
+        getCaptchaToken: async function(config) {
+            return new Promise((resolve, reject) => {
+                // Wait for reCAPTCHA to load
+                const checkRecaptcha = setInterval(() => {
+                    if (typeof window.grecaptcha !== 'undefined' && window.grecaptcha.ready) {
+                        clearInterval(checkRecaptcha);
+
+                        window.grecaptcha.ready(async () => {
+                            try {
+                                const token = await window.grecaptcha.execute(config.captchaSiteKey, { action: 'submit' });
+                                resolve(token);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        });
+                    }
+                }, 100);
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    clearInterval(checkRecaptcha);
+                    reject(new Error('reCAPTCHA failed to load'));
+                }, 10000);
+            });
+        }";
+    }
+}

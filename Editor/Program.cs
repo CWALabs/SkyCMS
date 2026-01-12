@@ -14,6 +14,7 @@ using Cosmos.Common.Data;
 using Cosmos.Common.Models;
 using Cosmos.Common.Services.Configurations;
 using Cosmos.DynamicConfig;
+using Cosmos.EmailServices;
 using Hangfire;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -28,6 +29,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+using Sky.Cms.Api.Shared.Features.ContactForm.Submit;
+using Sky.Cms.Api.Shared.Models;
 using Sky.Cms.Hubs;
 using Sky.Cms.Services;
 using Sky.Editor.Boot;
@@ -274,7 +277,11 @@ builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
 builder.Services.AddScoped<IStorageContext, StorageContext>();
 builder.Services.AddScoped<StorageContext>(); // Register concrete class for Hangfire background jobs
 builder.Services.AddScoped<IEditorSettings, EditorSettings>(); // CHANGED: Scoped for per-request tenant context
-builder.Services.AddScoped<IViewRenderService, ViewRenderService>(); // CHANGED: Scoped for Razor view rendering
+builder.Services.AddScoped<IViewRenderService, ViewRenderService>(); // CHANGED: Scoped for Razor view rendering// Add Email services
+
+// Register tenant-aware email sender (supports multi-tenant with database-driven configuration)
+builder.Services.AddScoped<ICosmosEmailSender, TenantAwareEmailSender>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender>(sp => sp.GetRequiredService<ICosmosEmailSender>());
 
 // Transient services (stateless operations, created each time)
 builder.Services.AddTransient<ICdnServiceFactory, CdnServiceFactory>();
@@ -321,7 +328,8 @@ builder.Services.AddSignalR();
 // ---------------------------------------------------------------
 // STEP 9: Register MVC & Razor Pages
 // ---------------------------------------------------------------
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddApplicationPart(typeof(Sky.Cms.Api.Shared.Controllers.ContactApiController).Assembly);
 
 builder.Services.AddCosmosIdentity<ApplicationDbContext, IdentityUser, IdentityRole, string>(
       options => options.SignIn.RequireConfirmedAccount = true)
@@ -528,6 +536,14 @@ builder.Services.AddRateLimiter(options =>
         opt.Window = TimeSpan.FromMinutes(5);
         opt.PermitLimit = 10;  // Max 10 deployments per 5 minutes per IP
         opt.QueueLimit = 0;    // No queuing
+    });
+
+    // Contact form submission rate limiter (for Sky.Cms.Api.Shared)
+    options.AddFixedWindowLimiter("contact-form", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(5);
+        opt.PermitLimit = 3;  // Max 3 contact form submissions per 5 minutes per IP
+        opt.QueueLimit = 0;   // No queuing
     });
 
     // Add a global rate limiter for general API protection

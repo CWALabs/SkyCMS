@@ -89,7 +89,6 @@
 		<PackageReference Include="Azure.ResourceManager" />
 		<PackageReference Include="Azure.ResourceManager.Cdn" />
 		<PackageReference Include="BCrypt.Net-Next" />
-		<PackageReference Include="Cosmos.EmailServices" />
 		<PackageReference Include="CsvHelper" />
 		<PackageReference Include="Hangfire.AspNetCore" />
 		<PackageReference Include="Hangfire.AzureCosmosDB" />
@@ -123,6 +122,8 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Common\Cosmos.Common.csproj" />
+	  <ProjectReference Include="..\Cosmos.EmailServices\Cosmos.EmailServices.csproj" />
+	  <ProjectReference Include="..\Sky.Cms.Api.Shared\Sky.Cms.Api.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

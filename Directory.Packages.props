@@ -9,9 +9,13 @@
     <!-- Core .NET 9 packages with version constraints -->
     <PackageVersion Include="AWSSDK.CloudFront" Version="4.0.10.3" />
     <PackageVersion Include="AWSSDK.SecretsManager" Version="4.0.4.1" />
+    <PackageVersion Include="Azure.Communication.Email" Version="1.1.0" />
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageVersion Include="coverlet.msbuild" Version="6.0.4" />
     <PackageVersion Include="MediatR" Version="14.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Antiforgery" Version="2.3.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.3.9" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="[9.0.10,10.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Cosmos" Version="[9.0.10,10.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="9.0.10" />
@@ -21,10 +25,11 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="[9.0.10,10.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="[9.0.0,10.0)" />
     <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="[9.0.0,10.0)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.11" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="[9.0.0,10.0)" />
     <!-- ASP.NET Core Identity packages -->
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="[9.0.10,10.0)" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="[9.0.10,10.0)" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.11" />
     <PackageVersion Include="Duende.IdentityServer.EntityFramework.Storage" Version="7.4.3" />
     <!-- ASP.NET Core Authentication packages -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="[9.0.10,10.0)" />
@@ -41,7 +46,7 @@
     <!-- Azure packages -->
     <PackageVersion Include="Azure.Storage.Blobs" Version="[12.24.0,13.0)" />
     <PackageVersion Include="Azure.Storage.Files.Shares" Version="[12.24.0,13.0)" />
-    <PackageVersion Include="Azure.Identity" Version="[1.17.0,2.0)" />
+    <PackageVersion Include="Azure.Identity" Version="1.17.1" />
     <PackageVersion Include="Azure.Monitor.Query" Version="1.5.0" />
     <PackageVersion Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="[1.5.1,2.0)" />
     <PackageVersion Include="Azure.ResourceManager" Version="[1.13.2,2.0)" />
@@ -65,12 +70,12 @@
     <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
     <PackageVersion Include="X.Web.Sitemap" Version="[2.11.3,3.0)" />
     <PackageVersion Include="Newtonsoft.Json" Version="[13.0.3,14.0)" />
-    <PackageVersion Include="HtmlAgilityPack" Version="[1.11.71,2.0)" />
+    <PackageVersion Include="HtmlAgilityPack" Version="1.12.4" />
     <!-- Application Insights -->
     <PackageVersion Include="Microsoft.ApplicationInsights.AspNetCore" Version="[2.23.0,3.0)" />
     <!-- Email Services -->
-    <PackageVersion Include="Cosmos.EmailServices" Version="[9.0.1,10.0)" />
-    <PackageVersion Include="SendGrid" Version="[9.29.3,10.0)" />
+    <PackageVersion Include="Cosmos.EmailServices" Version="9.0.1" />
+    <PackageVersion Include="SendGrid" Version="9.29.3" />
     <!-- Hangfire -->
     <PackageVersion Include="Hangfire.AspNetCore" Version="[1.8.22,2.0)" />
     <PackageVersion Include="Hangfire.AzureCosmosDB" Version="[2.0.8,3.0)" />

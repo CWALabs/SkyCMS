@@ -13,7 +13,6 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using Cosmos.Cms.Common.Services.Configurations;
     using Cosmos.Cms.Data;
     using Cosmos.Common.Data;
     using Cosmos.Editor.Services;
@@ -27,10 +26,8 @@ namespace Sky.Cms.Areas.Identity.Pages.Account
     using Microsoft.AspNetCore.RateLimiting;
     using Microsoft.AspNetCore.WebUtilities;
     using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
 
     /// <summary>
     /// Register page model.

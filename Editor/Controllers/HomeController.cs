@@ -63,7 +63,6 @@ namespace Sky.Cms.Controllers
             ArticleEditLogic articleLogic,
             UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager,
-            IStorageContext storageContext,
             IEmailSender emailSender,
             IConfiguration configuration,
             IServiceProvider services)
@@ -73,7 +72,6 @@ namespace Sky.Cms.Controllers
             this.articleLogic = articleLogic;
             this.dbContext = dbContext;
             this.userManager = userManager;
-            this.storageContext = storageContext;
         }
 
         /// <summary>

@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<UserSecretsId>c44b0fbc-a20c-4a15-8e5b-1a9eb09e6ac1</UserSecretsId>
+		<Version>9.2.3.22</Version>
+
+
+		<!-- Enable code coverage -->
+		<CollectCoverage>true</CollectCoverage>
+		<CoverletOutputFormat>cobertura,json,lcov,opencover</CoverletOutputFormat>
+		<CoverletOutput>./TestResults/</CoverletOutput>
+		<!-- Exclude: test projects, migrations, boot/startup, and model/DTO classes -->
+		<Exclude>[*.Tests]*,[*.Tests.*]*,[*]*.Migrations.*,[*].Boot.*,[*].Models.*</Exclude>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<!-- Suppress CS0618: Using obsolete SaveArticle method for legacy integration tests -->
+		<NoWarn>$(NoWarn);CS0618</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="coverlet.collector">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="coverlet.msbuild">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="MediatR" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="MSTest.TestAdapter" />
+		<PackageReference Include="MSTest.TestFramework" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+		<PackageReference Include="Moq" />
+		<PackageReference Include="RazorLight" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Editor\Sky.Editor.csproj" />
+		<ProjectReference Include="..\Sky.Cms.Api.Shared\Sky.Cms.Api.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+	</ItemGroup>
+
+</Project>
