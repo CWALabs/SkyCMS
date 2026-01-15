@@ -8,6 +8,23 @@
  */
 const Duplicator = (function () {
 
+    // Shared GUID generator with fallback if the shared helper is not loaded yet.
+    const ccmsGenerateGuid = (typeof window !== 'undefined' && window.ccmsGenerateGuid)
+        ? window.ccmsGenerateGuid
+        : function ccmsGenerateGuidFallback() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        };
+
+    if (typeof window !== 'undefined') {
+        window.ccmsGenerateGuid = ccmsGenerateGuid;
+        window.ccms__generateGUID = ccmsGenerateGuid;
+        window.ccms___generateGUID = ccmsGenerateGuid;
+    }
+
     /**
      * Generates a new GUID.
      * @memberof Duplicator
@@ -15,12 +32,7 @@ const Duplicator = (function () {
     * @type {string}
     */
     function newGuid() {
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000)
-                .toString(16)
-                .substring(1);
-        }
-        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        return ccmsGenerateGuid();
     }
 
     /**
@@ -41,6 +53,9 @@ const Duplicator = (function () {
         } else {
             clone = element.cloneNode(true);
         }
+
+        // Mark clone so we can re-ID editable regions before initializing editors.
+        clone.setAttribute('data-ccms-cloned', 'true');
 
         const container = clone.querySelector('.icon-container');
         if (container) {
@@ -174,8 +189,19 @@ const Duplicator = (function () {
      * @description Normally editors are created when the page is loaded. This function is used to create editors for elements that are created dynamically.
      */
     function onCreate(item) {
-        const childDivs = item.querySelectorAll(`div[data-ccms-ceid]`);
-        childDivs.forEach(function (element) {
+        // If this item was cloned, re-ID all editable regions to avoid duplicate data-ccms-ceid values.
+        const isCloned = item.getAttribute('data-ccms-cloned') === 'true';
+        if (isCloned) {
+            const editableChildren = item.querySelectorAll('[data-ccms-ceid]');
+            editableChildren.forEach(child => {
+                child.setAttribute('data-ccms-ceid', ccmsGenerateGuid());
+                child.removeAttribute('data-ccms-new');
+            });
+            item.removeAttribute('data-ccms-cloned');
+        }
+
+        const childElements = item.querySelectorAll(`[data-ccms-ceid]`);
+        childElements.forEach(function (element) {
             const type = element.getAttribute("data-editor-config");
             if (type && type === "image-widget") {
                 ccms___setupImageWidget(element);

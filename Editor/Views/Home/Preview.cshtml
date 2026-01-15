@@ -1,9 +1,6 @@
 ﻿@{
     Layout = null;
     var returnUrl = (string)ViewData["ReturnUrl"];
-    var frameUrl = "/Home/CcmsContentIndex" + Context.Request.QueryString.ToString();
-    var layoutId = Context.Request.Query["layoutId"].ToString() ?? ViewData["layoutId"].ToString() ?? "";
-    var articleId = Context.Request.Query["articleId"].ToString() ?? ViewData["articleId"].ToString() ?? "";
     var renderedView = ViewData["RenderedView"] as string;
 }
 <!DOCTYPE HTML>

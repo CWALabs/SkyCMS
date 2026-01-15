@@ -29,6 +29,9 @@ npm run test:api
 
 # Run only Editor tests
 npm run test:editor
+
+# Run only Editor unit suite explicitly
+npm run test:unit:editor
 ```
 
 ## Test Structure
@@ -41,7 +44,10 @@ JestTests/
 │   │   ├── skycms-contact.test.js
 │   │   └── generated-script.test.js
 │   └── editor/           # Editor JavaScript tests
-│       └── (future tests)
+│       ├── ckeditor-widget.test.js
+│       ├── dublicator.test.js
+│       ├── guid.test.js
+│       └── image-widget.test.js
 ├── coverage/             # Coverage reports (generated)
 └── node_modules/         # Dependencies (after npm install)
 ```
@@ -59,8 +65,11 @@ JestTests/
   
 - **generated-script.test.js**: Integration tests for the actual generated JavaScript from `/_api/contact/skycms-contact.js`
 
-### Future: Editor Tests
-Tests for Editor web app JavaScript libraries will go in `tests/editor/`
+### Editor Tests
+- **ckeditor-widget.test.js**: Config logic (GUID assignment for new regions, heading vs. content config selection)
+- **dublicator.test.js**: Fresh `data-ccms-ceid` assignment for cloned blocks
+- **image-widget.test.js**: GUID assignment for new image widgets
+- **guid.test.js**: Shared GUID helper format/uniqueness
 
 ## Coverage Reports
 

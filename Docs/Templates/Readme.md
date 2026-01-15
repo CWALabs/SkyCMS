@@ -63,28 +63,37 @@ SkyCMS provides two editing modes for templates:
 
 ### Step 3: Define Editable Regions
 
-Editable regions are areas where content editors can add page-specific content. To create an editable region, use the `contenteditable` attribute or add the `data-ccms-ceid` attribute:
+Editable regions are areas where content editors can add page-specific content. You can use `contenteditable` **or** the SkyCMS identifier `data-ccms-ceid` (recommended). The editor will auto-assign a GUID when `data-ccms-new="true"` is present.
 
 ```html
-<div contenteditable="true">
+<!-- Rich content area (full toolbar) -->
+<div data-ccms-ceid="hero-body" class="ck-content">
   This content can be edited on individual pages
 </div>
+
+<!-- Title / heading (minimal toolbar) -->
+<h1 data-ccms-ceid="hero-title" data-editor-config="title">Page Title</h1>
+
+<!-- Image widget (managed by image-widget.js) -->
+<div data-editor-config="image-widget" data-ccms-new="true" class="ck-content"></div>
 ```
 
-Or:
+**Element types and configs:**
 
-```html
-<div data-ccms-ceid="unique-id">
-  This is an editable region
-</div>
-```
+- **Titles/Subtitles:** Use `<h1>`–`<h6>` or set `data-editor-config="title"`/`"heading"` for the minimal toolbar (no rich embeds).
+- **Rich content:** Use block elements such as `<div>`, `<section>`, `<article>`, `<aside>`, `<main>`, `<header>`, `<footer>`; add `class="ck-content"` so CKEditor styles apply.
+- **Images:** Use `data-editor-config="image-widget"` for the FilePond-based image widget; first image often becomes the page “banner” by convention.
+
+**Data attributes:**
+- `data-ccms-ceid`: Required stable ID; use meaningful names when possible.
+- `data-ccms-new="true"`: Auto-generates a GUID on first save using the shared generator.
+- `data-editor-config`: `title`/`heading` for minimal toolbar, `image-widget` for the image widget, omit for normal rich content.
 
 **Important Notes:**
-
-- Each editable region must have a unique ID (`data-ccms-ceid`)
-- The system automatically generates IDs if not provided
-- Nested editable regions are not allowed
-- Editable regions enable the "Live Editor" for pages
+- Each editable region must have a unique `data-ccms-ceid` (the system will generate one if `data-ccms-new` is set).
+- Nested editable regions are not allowed; the backend will reject them.
+- Editable regions enable the "Live Editor" for pages.
+- Keep `ck-content` on non-title editable areas to align with CKEditor CSS; avoid overriding those base styles.
 
 ### Step 4: Save and Test
 
@@ -296,14 +305,17 @@ Template management requires one of the following roles:
 
 - `contenteditable="true"`: Marks an element as editable
 - `data-ccms-ceid="[unique-id]"`: SkyCMS unique identifier for editable regions
-- Both attributes can be present; `data-ccms-ceid` is required for updates
+- `data-ccms-new="true"`: Auto-generate a GUID on first save
+- `data-editor-config`: `title`/`heading` (minimal toolbar), `image-widget` (image uploader); omit for normal rich content
+- Both `contenteditable` and `data-ccms-ceid` can be present; `data-ccms-ceid` (or `data-ccms-new`) is required for updates
 
 ### Supported Editable Elements
 
-- `<div>`
-- `<h1>`, `<h2>`, `<h3>`, `<h4>`, `<h5>`
+- `<div>` and other block elements (`<section>`, `<article>`, `<aside>`, `<main>`, `<header>`, `<footer>`, etc.)
+- `<h1>`–`<h6>` for titles/subtitles (minimal toolbar)
+- Image widgets via `<div data-editor-config="image-widget">`
 
-Other elements with `contenteditable` will work in the editor but may not be properly tracked for template updates.
+Use block elements for predictable layout; avoid nesting editable regions.
 
 ---
 
@@ -311,6 +323,7 @@ Other elements with `contenteditable` will work in the editor but may not be pro
 
 - [Creating Content](../README.md)
 - [Live Editor Guide](../Editors/LiveEditor/README.md)
+- [Developer Guide: Creating Editable Areas](../Developer-Guides/CreatingEditableAreas.md)
 - [Layouts Documentation](../Layouts/Readme.md)
 - [SkyCMS Documentation](https://www.moonrise.net/cosmos/documentation/)
 

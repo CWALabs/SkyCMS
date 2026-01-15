@@ -5,7 +5,7 @@
 A **professional, staged JavaScript testing infrastructure** for the Sky.Cms.Api.Shared Contact API with three distinct test levels:
 
 ### Stage 1: Unit Tests ✅ Complete
-- **Location**: `tests/unit/api/`
+- **Location**: `tests/unit/api/` (Contact API) and `tests/unit/editor/` (Editor JS)
 - **Test Count**: 45+ test cases
 - **Speed**: ~1 second
 - **Dependencies**: None (jsdom in Node)
@@ -38,9 +38,14 @@ JestTests/
 │
 ├── tests/
 │   ├── unit/
-│   │   └── api/
-│   │       ├── skycms-contact.test.js            (40+ tests)
-│   │       └── generated-script.test.js          (~10 tests)
+│   │   ├── api/
+│   │   │   ├── skycms-contact.test.js            (40+ tests)
+│   │   │   └── generated-script.test.js          (~10 tests)
+│   │   └── editor/
+│   │       ├── ckeditor-widget.test.js           (config behavior)
+│   │       ├── dublicator.test.js                (clone ID regeneration)
+│   │       ├── guid.test.js                      (shared guid helper)
+│   │       └── image-widget.test.js              (widget GUID assignment)
 │   │
 │   ├── integration/
 │   │   └── api/

@@ -49,6 +49,23 @@ import PageLink from "pagelink";
 import VsCodeEditor from "vscodeeditor";
 import SignalR from "signalr";
 
+// Shared GUID generator with fallbacks if the shared helper is not loaded yet.
+const ccmsGenerateGuid = (typeof window !== 'undefined' && window.ccmsGenerateGuid)
+    ? window.ccmsGenerateGuid
+    : function ccmsGenerateGuidFallback() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+
+if (typeof window !== 'undefined') {
+    window.ccmsGenerateGuid = ccmsGenerateGuid;
+    window.ccms__generateGUID = ccmsGenerateGuid;
+    window.ccms___generateGUID = ccmsGenerateGuid;
+}
+
 function getDistanceFromTop() {
     const element = document.getElementById('ccms---header---end');
     let distance = 0;
@@ -260,6 +277,42 @@ const EditorConfig = {
     }
 };
 
+// Minimal configuration for title/heading elements
+const TitleEditorConfig = {
+    plugins: [
+        Autosave,
+        BalloonToolbar,
+        Bold,
+        Essentials,
+        Italic,
+        Paragraph,
+        SignalR,
+    ],
+    balloonToolbar: ['bold', 'italic'],
+    placeholder: 'Enter title...',
+    licenseKey: LICENSE_KEY,
+    toolbar: {
+        items: [],
+        shouldNotGroupWhenFull: false
+    },
+    autosave: {
+        waitingTime: 1000, // in ms
+        save(editor) {
+            if (parent.enableAutoSave === true) {
+                return parent.saveEditorRegion(editor.getData(), editor.sourceElement.getAttribute("data-ccms-ceid"));
+            }
+        }
+    },
+    menuBar: {
+        isVisible: false
+    },
+    ui: {
+        viewportOffset: {
+            top: getDistanceFromTop(),
+        }
+    }
+};
+
 function ccms___createEditor(editorElement) {
 
     if (typeof editorElement.ckeditorInstance !== "undefined" && editorElement.ckeditorInstance !== null) {
@@ -269,13 +322,27 @@ function ccms___createEditor(editorElement) {
     const isNew = editorElement.getAttribute("data-ccms-new");
 
     if (isNew) {
-        const guid = ccms__generateGUID(); // This function is defined in the Editor/wwwroot/lib/cosmos/dublicator/dublicator.js file.
+        const guid = ccmsGenerateGuid();
         editorElement.setAttribute("data-ccms-ceid", guid);
         editorElement.removeAttribute("data-ccms-new");
     }
 
+    // Determine which configuration to use
+    let config = EditorConfig;
+    const tagName = editorElement.tagName.toLowerCase();
+    const editorType = editorElement.hasAttribute('data-editor-config') 
+        ? editorElement.getAttribute('data-editor-config').toLowerCase() 
+        : null;
+
+    // Use minimal config for title elements
+    if (editorType === 'title' || editorType === 'heading' || 
+        tagName === 'h1' || tagName === 'h2' || tagName === 'h3' || 
+        tagName === 'h4' || tagName === 'h5' || tagName === 'h6') {
+        config = TitleEditorConfig;
+    }
+
     InlineEditor
-        .create(editorElement, EditorConfig)
+        .create(editorElement, config)
         .then(editor => {
             window.editor = editor;
             const imageUploadEditing = editor.plugins.get('ImageUploadEditing');

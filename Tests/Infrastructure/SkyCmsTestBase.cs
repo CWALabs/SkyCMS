@@ -387,8 +387,7 @@ namespace Sky.Tests
             TemplateService = new TemplateService(
                 webHostEnvironment,
                 new LoggerFactory().CreateLogger<TemplateService>(),
-                Db,
-                Mediator); // Pass the mediator!
+                Db);
 
             // ✅ NOW CREATE LOGIC WITH TEMPLATE SERVICE
             Logic = new ArticleEditLogic(

@@ -368,11 +368,8 @@
                     break;
                 case "Preview":
                     next = function () {
-                        if ("@controllerName" == "Editor") {
-                            window.location.href = "/Home/Index?articleId=" + $("#Id").val() + "&previewType=article&editorUrl=@editorPath";
-                        } else {
-                            window.location.href = "/@controllerName/Preview/" + itemId;
-                        }
+                        let previewType = "@controllerName.ToLower()";
+                        window.location.href = "/Home/Index?itemId=" + $("#Id").val() + "&previewType=" + previewType + "&editorUrl=@editorPath";
                     }
                     saveChanges();
                     break;

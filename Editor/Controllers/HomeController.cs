@@ -9,12 +9,15 @@ namespace Sky.Cms.Controllers
 {
     using System;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Text;
     using System.Threading.Tasks;
-    using Cosmos.BlobService;
     using Cosmos.Common.Data;
+    using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
+    using HtmlAgilityPack;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Identity;
@@ -28,7 +31,8 @@ namespace Sky.Cms.Controllers
     using Sky.Cms.Services;
     using Sky.Editor.Data.Logic;
     using Sky.Editor.Services.EditorSettings;
-    using Sky.Editor.Services.Setup;
+    using Sky.Editor.Services.Html;
+    using Sky.Editor.Services.Layouts;
 
     /// <summary>
     /// Home page controller.
@@ -52,7 +56,6 @@ namespace Sky.Cms.Controllers
         /// <param name="articleLogic"><see cref="ArticleEditLogic">Article edit logic.</see>.</param>
         /// <param name="userManager">User manager.</param>
         /// <param name="signInManager">Sign in manager service.</param>
-        /// <param name="storageContext"><see cref="StorageContext">File storage context</see>.</param>
         /// <param name="emailSender">Email service.</param>
         /// <param name="configuration">Website configuration.</param>
         /// <param name="services">Services provider.</param>
@@ -113,11 +116,10 @@ namespace Sky.Cms.Controllers
         /// </summary>
         /// <param name="lang">Language code.</param>
         /// <param name="mode">json or nothing.</param>
-        /// <param name="layoutId">Layout ID when previewing a layout.</param>
-        /// <param name="articleId">Article Id.</param>
-        /// <param name="previewType">Preview type.</param>
+        /// <param name="itemId">Article, Template or Layout ID when previewing.</param>
+        /// <param name="previewType">Type of object we are previewing.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task<IActionResult> Index(string lang = "", string mode = "", Guid? layoutId = null, Guid? articleId = null, string previewType = "")
+        public async Task<IActionResult> Index(string lang = "", string mode = "", Guid? itemId = null, string previewType = "")
         {
             // Note: Setup check is handled by middleware (TenantSetupMiddleware for multi-tenant,
             // or Program.cs middleware for single-tenant) before this action is reached.
@@ -152,13 +154,12 @@ namespace Sky.Cms.Controllers
 
             ArticleViewModel article;
 
-            if (articleId.HasValue)
+            // This is NOT a preview, so we need to load the article by URL. If it doesn't exist, we need to load the not found page.
+            if (string.IsNullOrEmpty(previewType))
             {
-                var userId = new Guid(user.Id);
-                article = await articleLogic.GetArticleById(articleId.Value, EnumControllerName.Edit, userId);
-            }
-            else
-            {
+                ViewData["LoadEditList"] = true;
+                ViewData["IsPreview"] = false;
+
                 var path = HttpContext.Request.Path.Value?.TrimStart('/') ?? string.Empty;
                 article = await articleLogic.GetArticleByUrl(path);
 
@@ -177,55 +178,37 @@ namespace Sky.Cms.Controllers
                         return NotFound();
                     }
                 }
-            }
 
-            if (layoutId.HasValue)
-            {
-                ViewData["LayoutId"] = layoutId.Value.ToString();
-                article.Layout = new LayoutViewModel(await dbContext.Layouts.FirstOrDefaultAsync(f => f.Id == layoutId));
-            }
-
-            var viewRenderingService = HttpContext.RequestServices.GetService(typeof(IViewRenderService)) as IViewRenderService;
-            var renderedView = await viewRenderingService.RenderToStringAsync("~/Views/Home/index.cshtml", article);
-            ViewData["RenderedView"] = renderedView;
-            ViewData["CurrentPath"] = HttpContext.Request.Path.Value?.TrimStart('/') ?? string.Empty;
-
-            // If no preview type, load the edit list.
-            if (string.IsNullOrEmpty(previewType))
-            {
-                ViewData["LoadEditList"] = true; // Signal to load the edit list in the main menu.
+                await SetRenderedView(article);
                 return View("Wrapper");
             }
 
-            return View("~/Views/Home/Preview.cshtml");
-        }
+            // This is a preview, so we need to load the object by ID. If it doesn't exist, we need to load the not found page.
+            ViewData["IsPreview"] = true;
+            ViewData["LoadEditList"] = false;
 
-        /// <summary>
-        ///     Gets an article by its ID (or row key).
-        /// </summary>
-        /// <param name="articleNumber">Article number.</param>
-        /// <param name="versionNumber">Version number.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task<IActionResult> Preview(int articleNumber, int? versionNumber = null)
-        {
-            if (!ModelState.IsValid)
+            if (previewType == "editor")
             {
-                return BadRequest(ModelState);
+                // This is an article preview
+                var userId = new Guid(user.Id);
+                await SetRenderedView(await articleLogic.GetArticleById(itemId.Value, EnumControllerName.Edit, userId));
+            }
+            else if (previewType == "layouts")
+            {
+                await SetRenderedView(await GetLayoutPreview(itemId));
+            }
+            else if (previewType == "templates")
+            {
+                await SetRenderedView(await GetTemplatePreview(itemId.Value));
+            }
+            else
+            {
+                return BadRequest($"Invalid preview type: {previewType}");
             }
 
-            ViewData["EditModeOn"] = false;
-            var article = await articleLogic.GetArticleByArticleNumber(articleNumber, versionNumber);
+            ViewData["CurrentPath"] = HttpContext.Request.Path.Value?.TrimStart('/') ?? string.Empty;
 
-            // Home/Preview/154
-            if (article != null)
-            {
-                article.ReadWriteMode = false;
-                article.EditModeOn = false;
-
-                return View("Preview", article);
-            }
-
-            return NotFound();
+            return View("Wrapper");
         }
 
         /// <summary>
@@ -280,22 +263,145 @@ namespace Sky.Cms.Controllers
             return View(model);
         }
 
-        ///// <summary>
-        ///// Ensures there is a Layout.
-        ///// </summary>
-        ///// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        //private async Task<bool> EnsureLayoutExists()
-        //{
-        //    return await dbContext.Layouts.CosmosAnyAsync();
-        //}
+        private async Task<ArticleViewModel> GetLayoutPreview(Guid? itemId)
+        {
+            var entity = await dbContext.Layouts.FirstOrDefaultAsync(f => f.Id == itemId);
 
-        ///// <summary>
-        ///// Ensures there is at least one article.
-        ///// </summary>
-        ///// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        //private async Task<bool> EnsureArticleExists()
-        //{
-        //    return await dbContext.Articles.CosmosAnyAsync();
-        //}
+            var layoutTemplateService
+                = HttpContext.RequestServices.GetService(typeof(ILayoutTemplateService)) as ILayoutTemplateService;
+
+            var previews = await layoutTemplateService.GetAllTemplatesAsync();
+            var defaultPreview = previews.FirstOrDefault();
+
+            ArticleViewModel model = new ()
+            {
+                ArticleNumber = 1,
+                LanguageCode = string.Empty,
+                LanguageName = string.Empty,
+                CacheDuration = 10,
+                Content = defaultPreview.Content,
+                StatusCode = StatusCodeEnum.Active,
+                Id = entity.Id,
+                Published = DateTimeOffset.UtcNow,
+                Title = defaultPreview.Name,
+                UrlPath = Guid.NewGuid().ToString(),
+                Updated = DateTimeOffset.UtcNow,
+                VersionNumber = 1,
+                HeadJavaScript = string.Empty,
+                FooterJavaScript = string.Empty,
+                Layout = new LayoutViewModel(entity)
+            };
+            return model;
+        }
+
+        private async Task<ArticleViewModel> GetTemplatePreview(Guid? itemId)
+        {
+            var entity = await dbContext.Templates.FirstOrDefaultAsync(f => f.Id == itemId);
+
+            var guid = Guid.NewGuid();
+
+            // Prepare preview content: ensure markers, then populate editable regions with Lorem Ipsum.
+            var htmlService = HttpContext.RequestServices.GetService(typeof(IArticleHtmlService)) as IArticleHtmlService;
+            var markedHtml = htmlService.EnsureEditableMarkers(entity.Content);
+
+            var doc = new HtmlDocument();
+            doc.LoadHtml(markedHtml);
+
+            var legacyEditableNodes = doc.DocumentNode.SelectNodes("//*[@contenteditable]") ?? new HtmlNodeCollection(null);
+            bool templateUpdated = false;
+
+            foreach (var node in legacyEditableNodes)
+            {
+                if (node.Attributes["contenteditable"] != null)
+                {
+                    node.Attributes.Remove("contenteditable");
+                    templateUpdated = true;
+                }
+
+                var existingCeid = node.GetAttributeValue("data-ccms-ceid", string.Empty);
+                if (string.IsNullOrWhiteSpace(existingCeid))
+                {
+                    node.SetAttributeValue("data-ccms-ceid", Guid.NewGuid().ToString());
+                    templateUpdated = true;
+                }
+            }
+
+            var convertedHtml = doc.DocumentNode.OuterHtml;
+
+            if (templateUpdated)
+            {
+                entity.Content = convertedHtml;
+                await dbContext.SaveChangesAsync();
+            }
+
+            var previewDoc = new HtmlDocument();
+            previewDoc.LoadHtml(convertedHtml);
+
+            var editableNodes = previewDoc.DocumentNode.SelectNodes("//*[@data-ccms-ceid]") ?? new HtmlNodeCollection(null);
+
+            int titleIndex = 0;
+            int textIndex = 0;
+
+            foreach (var node in editableNodes)
+            {
+                // Skip non-text widgets (e.g., image widget)
+                var editorConfig = node.GetAttributeValue("data-editor-config", string.Empty).ToLowerInvariant();
+                if (editorConfig == "image-widget")
+                {
+                    continue;
+                }
+
+                bool isTitle = editorConfig == "title" || editorConfig == "heading";
+                if (!isTitle)
+                {
+                    var tagName = node.Name?.ToLowerInvariant();
+                    isTitle = tagName == "h1" || tagName == "h2" || tagName == "h3" || tagName == "h4" || tagName == "h5" || tagName == "h6";
+                }
+
+                if (isTitle)
+                {
+                    var text = LoremIpsum.Titles[titleIndex % LoremIpsum.Titles.Length];
+                    node.InnerHtml = WebUtility.HtmlEncode(text);
+                    titleIndex++;
+                }
+                else
+                {
+                    var text = LoremIpsum.Texts[textIndex % LoremIpsum.Texts.Length];
+                    node.InnerHtml = $"<p>{WebUtility.HtmlEncode(text)}</p>";
+                    textIndex++;
+                }
+            }
+
+            var previewHtml = previewDoc.DocumentNode.OuterHtml;
+
+            // Template preview
+            ArticleViewModel model = new ()
+            {
+                ArticleNumber = 1,
+                LanguageCode = string.Empty,
+                LanguageName = string.Empty,
+                CacheDuration = 10,
+                Content = previewHtml,
+                StatusCode = StatusCodeEnum.Active,
+                Id = entity.Id,
+                Published = DateTimeOffset.UtcNow,
+                Title = entity.Title,
+                UrlPath = guid.ToString(),
+                Updated = DateTimeOffset.UtcNow,
+                VersionNumber = 1,
+                HeadJavaScript = string.Empty,
+                FooterJavaScript = string.Empty,
+                Layout = await articleLogic.GetDefaultLayout()
+            };
+
+            return model;
+        }
+
+        private async Task SetRenderedView(ArticleViewModel model)
+        {
+            var viewRenderingService = HttpContext.RequestServices.GetService(typeof(IViewRenderService)) as IViewRenderService;
+            var renderedView = await viewRenderingService.RenderToStringAsync("~/Views/Home/Index.cshtml", model);
+            ViewData["RenderedView"] = renderedView;
+        }
     }
 }

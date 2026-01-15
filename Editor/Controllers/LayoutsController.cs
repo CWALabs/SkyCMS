@@ -685,45 +685,6 @@ namespace Sky.Cms.Controllers
         }
 
         /// <summary>
-        /// Preview. 
-        /// </summary>
-        /// <param name="id">ID of the layout to preview.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task<IActionResult> Preview(Guid id)
-        {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Invalid layout ID");
-            }
-
-            try
-            {
-                var layout = await dbContext.Layouts.FirstOrDefaultAsync(f => f.Id == id);
-
-                if (layout == null)
-                {
-                    return NotFound($"Layout with ID {id} not found");
-                }
-
-                var referer = Request.Headers["Referer"].ToString();
-                var url = !string.IsNullOrEmpty(referer) ? new Uri(referer) : new Uri("/");
-
-                var model = await articleLogic.GetArticleByUrl(string.Empty);
-                model.Layout = new LayoutViewModel(layout);
-                model.EditModeOn = false;
-                model.ReadWriteMode = false;
-                model.PreviewMode = true;
-
-                return RedirectToAction("Index", "Home", new { layoutId = layout.Id, previewType = "layout", editorUrl = url.AbsolutePath });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error loading preview for layout {LayoutId}", id);
-                return StatusCode(500, "An error occurred while loading the preview");
-            }
-        }
-
-        /// <summary>
         /// Preview how a layout will look in edit mode.
         /// </summary>
         /// <param name="id">ID of the layout.</param>

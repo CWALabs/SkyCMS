@@ -7,8 +7,12 @@
 
 namespace Sky.Cms.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net;
+    using System.Threading.Tasks;
     using Cosmos.BlobService;
-    using Cosmos.Cms.Common;
     using Cosmos.Common.Data;
     using Cosmos.Common.Data.Logic;
     using Cosmos.Common.Models;
@@ -19,19 +23,15 @@ namespace Sky.Cms.Controllers
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Sky.Cms.Models;
+    using Sky.Cms.Services;
     using Sky.Editor.Data;
     using Sky.Editor.Data.Logic;
-    using Sky.Editor.Features.Articles.Save;
     using Sky.Editor.Features.Shared;
     using Sky.Editor.Models;
     using Sky.Editor.Models.GrapesJs;
     using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
     using Sky.Editor.Services.Templates;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Templates controller.
@@ -46,7 +46,6 @@ namespace Sky.Cms.Controllers
         private readonly IStorageContext storageContext;
         private readonly IArticleHtmlService htmlService;
         private readonly ITemplateService templateServices;
-        private readonly IMediator mediator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplatesController"/> class.
@@ -59,7 +58,6 @@ namespace Sky.Cms.Controllers
         /// <param name="options">Cosmos Options.</param>
         /// <param name="htmlService">HTML service.</param>
         /// <param name="templateServices">Template services.</param>
-        /// <param name="mediator">Mediator instance.</param>
         public TemplatesController(
             ApplicationDbContext dbContext,
             UserManager<IdentityUser> userManager,
@@ -77,7 +75,6 @@ namespace Sky.Cms.Controllers
             this.storageContext = storageContext;
             this.htmlService = htmlService;
             this.templateServices = templateServices;
-            this.mediator = mediator;
         }
 
         /// <summary>
@@ -630,47 +627,6 @@ namespace Sky.Cms.Controllers
             await dbContext.SaveChangesAsync();
 
             return Json(new { success = true });
-        }
-
-        /// <summary>
-        /// Preview a template.
-        /// </summary>
-        /// <param name="id">Template ID.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task<IActionResult> Preview(Guid id)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var entity = await dbContext.Templates.FirstOrDefaultAsync(f => f.Id == id);
-
-            var guid = Guid.NewGuid();
-
-            // Template preview
-            ArticleViewModel model = new()
-            {
-                ArticleNumber = 1,
-                LanguageCode = string.Empty,
-                LanguageName = string.Empty,
-                CacheDuration = 10,
-                Content = htmlService.EnsureEditableMarkers(entity.Content),
-                StatusCode = StatusCodeEnum.Active,
-                Id = entity.Id,
-                Published = DateTimeOffset.UtcNow,
-                Title = entity.Title,
-                UrlPath = guid.ToString(),
-                Updated = DateTimeOffset.UtcNow,
-                VersionNumber = 1,
-                HeadJavaScript = string.Empty,
-                FooterJavaScript = string.Empty,
-                Layout = await articleLogic.GetDefaultLayout()
-            };
-
-            ViewData["UseGoogleTranslate"] = false;
-
-            return View("~/Views/Home/Preview.cshtml", model);
         }
 
         /// <summary>

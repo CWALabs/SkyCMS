@@ -27,6 +27,7 @@ namespace Sky.Editor.Services.Scheduling
     using Sky.Editor.Services.Catalog;
     using Sky.Editor.Services.EditorSettings;
     using Sky.Editor.Services.Html;
+    using Sky.Editor.Services.Layouts;
     using Sky.Editor.Services.Publishing;
     using Sky.Editor.Services.Redirects;
     using Sky.Editor.Services.Slugs;
@@ -121,9 +122,12 @@ namespace Sky.Editor.Services.Scheduling
             var templateService = new TemplateService(
                 scopedServices.GetRequiredService<IWebHostEnvironment>(),
                 scopedServices.GetRequiredService<ILogger<TemplateService>>(),
-                dbContext,
-                scopedServices.GetRequiredService<Features.Shared.IMediator>()
+                dbContext
                 );
+
+            var layoutPreviewService = new LayoutTemplateService(
+                scopedServices.GetRequiredService<IWebHostEnvironment>(),
+                scopedServices.GetRequiredService<ILogger<LayoutTemplateService>>());
 
             var titleChangeService = new TitleChangeService(
                 dbContext,

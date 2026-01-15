@@ -741,45 +741,7 @@ namespace Sky.Tests.Controllers
         }
 
         #endregion
-
-        #region Preview Tests
-
-        /// <summary>
-        /// Tests that Preview redirects to home with layout ID.
-        /// </summary>
-        [TestMethod]
-        public async Task Preview_RedirectsToHomeWithLayoutId()
-        {
-            // Arrange
-            var layout = await Db.Layouts.FirstAsync();
-            await Logic.CreateArticle("Root", TestUserId); // Create root article for preview
-            _controller.ControllerContext.HttpContext.Request.Headers["Referer"] = "https://example.com/layouts/editcode";
-
-            // Act
-            var result = await _controller.Preview(layout.Id);
-
-            // Assert
-            Assert.IsInstanceOfType(result, typeof(RedirectToActionResult));
-            var redirectResult = result as RedirectToActionResult;
-            Assert.AreEqual("Index", redirectResult.ActionName);
-            Assert.AreEqual("Home", redirectResult.ControllerName);
-        }
-
-        /// <summary>
-        /// Tests that Preview handles empty GUID.
-        /// </summary>
-        [TestMethod]
-        public async Task Preview_HandlesEmptyGuid()
-        {
-            // Act
-            var result = await _controller.Preview(Guid.Empty);
-
-            // Assert
-            Assert.IsInstanceOfType(result, typeof(BadRequestObjectResult));
-        }
-
-        #endregion
-
+                
         #region Import Tests
 
         /// <summary>

@@ -12,9 +12,10 @@
     var previewType = Context.Request.Query["previewType"].ToString().ToLower();
     var editorUrl = Context.Request.Query["editorUrl"].ToString().ToLower();
 
-    var layoutId = Context.Request.Query["layoutId"].ToString() ?? "";
-    var articleId = Context.Request.Query["articleId"].ToString() ?? "";
-    var templateId = Context.Request.Query["templateId"].ToString() ?? "";
+    var itemId = Context.Request.Query["itemId"].ToString() ?? "";
+    // var layoutId = Context.Request.Query["layoutId"].ToString() ?? "";
+    // var articleId = Context.Request.Query["articleId"].ToString() ?? "";
+    // var templateId = Context.Request.Query["templateId"].ToString() ?? "";
 
     if (User != null && User.IsInRole("Editors"))
     {
@@ -70,7 +71,7 @@
                         </div>
                     </li>
                 }
-                else if ((previewType.Equals("layout") || previewType.Equals("template")) && (isEditor || isAdministrator))
+                else
                 {
                     <li class="nav-item">
                         <a href="#" role="button" class="btn btn-sm btn-secondary mt-1 ms-2 btnPublish">
@@ -104,14 +105,14 @@
     $(".btnPublish").on("click", function (e) {
         e.preventDefault();
         switch (previewType) {
-            case "article":
-                location.href = "/Editor/PublishPage?articleId=@articleId&datetime=" + $("#tbPublished").val() + "&editorUrl=@editorUrl";
+            case "editor":
+                location.href = "/Editor/PublishPage?articleId=@itemId&datetime=" + $("#tbPublished").val() + "&editorUrl=@editorUrl";
                 break;
-            case "layout":
-                location.href = "/Layouts/Publish/@layoutId";
+            case "layouts":
+                location.href = "/Layouts/Publish/@itemId";
                 break;
-            case "template":
-                location.href = "/Templates/Publish/@templateId";
+            case "templates":
+                location.href = "/Templates/Publish/@itemId";
                 break;
         }
     });
@@ -124,7 +125,7 @@
             return;
         }
         const utcDateTime = moment(publishDate, 'MM/DD/YYYY hh:mm A').utc().format('YYYY-MM-DDTHH:mm:ss[Z]');
-        location.href = "/Editor/PublishPage?articleId=@articleId&datetime=" + utcDateTime + "&editorUrl=@editorUrl";
+        location.href = "/Editor/PublishPage?articleId=@itemId&datetime=" + utcDateTime + "&editorUrl=@editorUrl";
     });
 
     $('#tbPublished').daterangepicker({

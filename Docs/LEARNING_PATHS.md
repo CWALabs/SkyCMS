@@ -111,6 +111,7 @@ audience: [all]
   - [HomeControllerBase](./Developers/Controllers/HomeControllerBase.md)
   - [PubControllerBase](./Developers/Controllers/PubControllerBase.md)
 - **[Widgets Overview](./Widgets/README.md)** - Building custom widgets
+- **[Creating Editable Areas](./Developer-Guides/CreatingEditableAreas.md)** - Defining regions, headings, and image widgets
 - **[Testing Guide](./Development/Testing/README.md)** - Writing and running tests
 
 ### Step 6: Advanced Topics (Optional)

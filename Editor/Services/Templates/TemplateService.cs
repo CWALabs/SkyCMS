@@ -18,7 +18,6 @@ namespace Sky.Editor.Services.Templates
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
-    using Sky.Editor.Features.Shared;
 
     /// <summary>
     /// Implementation of the template service.
@@ -30,7 +29,6 @@ namespace Sky.Editor.Services.Templates
         private readonly ApplicationDbContext dbContext;
         private List<PageTemplate>? _cachedTemplates;
         private readonly SemaphoreSlim _lock = new(1, 1);
-        IMediator mediator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplateService"/> class.
@@ -38,17 +36,14 @@ namespace Sky.Editor.Services.Templates
         /// <param name="environment">The web hosting environment.</param>
         /// <param name="logger">The logger.</param>
         /// <param name="dbContext">The database context.</param>
-        /// <param name="mediator">Mediator instance.</param>
         public TemplateService(
             IWebHostEnvironment environment,
             ILogger<TemplateService> logger,
-            ApplicationDbContext dbContext,
-            IMediator mediator)
+            ApplicationDbContext dbContext)
         {
             _environment = environment;
             _logger = logger;
             this.dbContext = dbContext;
-            this.mediator = mediator;
         }
 
         /// <inheritdoc/>

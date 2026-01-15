@@ -102,22 +102,26 @@ if (typeof window.CCMS_IMAGE_WIDGET_CONFIG === "undefined") {
     };
 }
 
+// Shared GUID generator with fallback if the shared helper is not loaded yet.
+const ccmsGenerateGuid = (typeof window !== 'undefined' && window.ccmsGenerateGuid)
+    ? window.ccmsGenerateGuid
+    : function ccmsGenerateGuidFallback() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+
+if (typeof window !== 'undefined') {
+    window.ccmsGenerateGuid = ccmsGenerateGuid;
+    window.ccms__generateGUID = ccmsGenerateGuid;
+    window.ccms___generateGUID = ccmsGenerateGuid;
+}
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-
-/**
- * Generates a random GUID/UUID for unique element identification.
- * @returns {string} A UUID v4 formatted string
- */
-function ccms___newGuid() {
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000)
-            .toString(16)
-            .substring(1);
-    }
-    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-}
 
 /**
  * Creates a debounced version of a function that delays execution.
@@ -970,7 +974,7 @@ function ccms___setupImageWidget(element) {
 
     // Generate ID for new widgets
     if (isNew) {
-        const guid = ccms___newGuid();
+        const guid = ccmsGenerateGuid();
         element.setAttribute('data-ccms-ceid', guid);
         element.removeAttribute('data-ccms-new');
         id = guid;

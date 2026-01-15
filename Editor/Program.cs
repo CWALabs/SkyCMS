@@ -276,6 +276,7 @@ builder.Services.AddScoped<ICommandHandler<CreatePageDesignVersionCommand, Comma
 builder.Services.AddScoped<ICommandHandler<SavePageDesignVersionCommand, CommandResult<PageDesignVersion>>, SavePageDesignVersionHandler>();
 builder.Services.AddScoped<ICommandHandler<PublishPageDesignVersionCommand, CommandResult<Template>>, PublishPageDesignVersionHandler>();
 builder.Services.AddScoped<ILayoutImportService, LayoutImportService>();
+builder.Services.AddScoped<ILayoutTemplateService, LayoutTemplateService>();
 builder.Services.AddScoped<IStorageContext, StorageContext>();
 builder.Services.AddScoped<StorageContext>(); // Register concrete class for Hangfire background jobs
 builder.Services.AddScoped<IEditorSettings, EditorSettings>(); // CHANGED: Scoped for per-request tenant context

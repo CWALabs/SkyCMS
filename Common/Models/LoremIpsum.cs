@@ -13,6 +13,26 @@ namespace Cosmos.Common.Models
     public static class LoremIpsum
     {
         /// <summary>
+        /// Gets a text array.
+        /// </summary>
+        public static readonly string[] Texts =
+        [
+            SubSection1, SubSection2, SubSection3, SubSection4,
+            SubSection5, SubSection6, SubSection7, SubSection8,
+            SubSection9, SubSection10, SubSection11, SubSection12,
+            SubSection13, SubSection14, SubSection15, SubSection16,
+            SubSection17, SubSection18, SubSection19, SubSection20
+        ];
+
+        /// <summary>
+        /// Gets a title array.
+        /// </summary>
+        public static readonly string[] Titles =
+        [
+            Title1, Title2, Title3, Title4, Title5, Title6
+        ];
+
+        /// <summary>
         ///     Lorem ipsum explanation text.
         /// </summary>
         public const string WhyLoremIpsum =
@@ -137,5 +157,35 @@ namespace Cosmos.Common.Models
         /// </summary>
         public const string SubSection20 =
             "Donec at finibus est. Quisque massa arcu, viverra at justo quis, placerat rhoncus nisi. Nullam venenatis, diam eget maximus viverra, magna tellus porttitor leo, nec tincidunt purus enim venenatis mi. Nam bibendum elit libero, eget volutpat nisl ullamcorper vel. Fusce eget sem luctus, pharetra ex vitae, pulvinar velit. Curabitur et pulvinar neque. Phasellus sit amet velit sollicitudin, varius est consectetur, consequat velit. Fusce vulputate pharetra lorem, ut tempus erat tristique non. Ut egestas vestibulum arcu ut blandit.";
+
+        /// <summary>
+        ///    Example Lorem Ipsum Title text 1.
+        /// </summary>
+        public const string Title1 = "Lorem Ipsum";
+
+        /// <summary>
+        ///    Example Lorem Ipsum Title text 1.
+        /// </summary>
+        public const string Title2 = "Dolor Sit";
+
+        /// <summary>
+        ///    Example Lorem Ipsum Title text 1.
+        /// </summary>
+        public const string Title3 = "Amet Consectetur";
+
+        /// <summary>
+        ///    Example Lorem Ipsum Title text 1.
+        /// </summary>
+        public const string Title4 = "Adipiscing Elit";
+
+        /// <summary>
+        ///    Example Lorem Ipsum Title text 1.
+        /// </summary>
+        public const string Title5 = "Sed Eiusmod";
+
+        /// <summary>
+        ///    Example Lorem Ipsum Title text 1.
+        /// </summary>
+        public const string Title6 = "Tempor Incididunt";
     }
 }

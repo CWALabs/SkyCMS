@@ -60,8 +60,7 @@ namespace Sky.Tests.Services.Templates
             templateService = new TemplateService(
                 mockEnvironment.Object,
                 mockLogger.Object,
-                dbContext,
-                mockMediator.Object);
+                dbContext);
         }
 
         /// <summary>
