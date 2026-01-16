@@ -11,6 +11,60 @@ The Contact Form API provides a complete, production-ready solution for handling
 - Anti-forgery token protection
 - Comprehensive error handling
 
+## Architecture
+
+### Deployment Pattern
+
+The Contact Form API is typically deployed behind a **CloudFlare Worker** that acts as a reverse proxy. This architecture provides several benefits:
+
+```
+┌─────────────────────────┐
+│  Public Website Domain  │
+│  (visitor.example.com)  │
+└────────────┬────────────┘
+             │ /_api/contact/*
+             ↓
+     ┌──────────────────┐
+     │ CloudFlare Worker│ (Proxy/Gateway)
+     │ • Route requests │
+     │ • Validate CORS  │
+     │ • Set headers    │
+     └────────┬─────────┘
+              │ x-origin-hostname header
+              ↓
+    ┌──────────────────────────┐
+    │ SkyCMS Editor API        │
+    │ (edit.example.com)       │
+    │ • Process submissions    │
+    │ • Send notifications     │
+    │ • Validate CAPTCHA       │
+    └──────────────────────────┘
+```
+
+### Why Use a CloudFlare Worker?
+
+1. **Tenant Resolution** - The worker sets the `x-origin-hostname` header, enabling SkyCMS's multi-tenant system to route requests to the correct tenant
+2. **CORS Handling** - Allows cross-origin requests from your public domain to the backend API
+3. **Request Routing** - Intelligently routes `/_api/contact/*` requests to the backend
+4. **Security** - Restricts access to your zone domain and validates request methods
+5. **Global Distribution** - CloudFlare's CDN ensures low latency worldwide
+6. **Error Handling** - Gracefully handles backend failures with meaningful error responses
+
+### Worker Configuration
+
+The CloudFlare Worker is configured with:
+
+- **Routes**: Matches `/_api/contact/*` requests on your domain
+- **Method Restrictions**: Only allows GET (for form scripts) and POST (for submissions)
+- **CORS Validation**: Restricts requests to your configured zone domain
+- **Header Management**: 
+  - Sets `host` to backend hostname
+  - Sets `x-origin-hostname` for multi-tenant routing
+  - Forwards all other headers to backend
+- **Error Handling**: Returns 503 if backend is unavailable
+
+For detailed worker configuration and deployment instructions, see [CloudFlare Worker README](../../Scripts/CloudFlare/Workers/ContactUsApi/README.md).
+
 ## Endpoints
 
 ### 1. Get Contact Script

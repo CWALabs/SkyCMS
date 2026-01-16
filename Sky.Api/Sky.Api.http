@@ -1,0 +1,6 @@
+@Sky.Api_HostAddress = http://localhost:5228
+
+GET {{Sky.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
