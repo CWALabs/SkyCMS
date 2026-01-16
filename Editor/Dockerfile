@@ -28,6 +28,11 @@ COPY ["Editor/Sky.Editor.csproj", "Editor/"]
 RUN dotnet restore "./Editor/Sky.Editor.csproj"
 COPY . .
 WORKDIR "/src/Editor"
+
+# Install and run LibMan to restore client-side libraries
+RUN dotnet tool install -g Microsoft.Web.LibraryManager.Cli
+ENV PATH="${PATH}:/root/.dotnet/tools"
+RUN libman restore
 RUN dotnet build "./Sky.Editor.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
